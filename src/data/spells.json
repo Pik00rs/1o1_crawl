@@ -1,80 +1,78 @@
 {
-  "basicMelee": {
-    "id": "basicMelee",
-    "name": "Attaque",
-    "cost": 2,
-    "type": "attack",
-    "range": 1,
-    "targetType": "enemy",
-    "description": "Attaque de mêlée."
+  "_meta": {
+    "description": "Sorts. Référencés par les amulettes (champ amulet.spell). Format compatible avec les attaques d'arme (mêmes champs).",
+    "format": {
+      "id": "ID unique",
+      "name": "Nom affiché",
+      "type": "spell | attack",
+      "cost": "AP requis",
+      "cooldown": "Tours de CD (optionnel)",
+      "range": "Portée en cases",
+      "aoe": "Rayon AOE en cases (optionnel, omis = single target)",
+      "targetType": "enemy | tile",
+      "damage": "[min, max] (optionnel si damageMult)",
+      "damageType": "fire | ice | shock | poison | magic | ...",
+      "damageMult": "Multiplicateur (optionnel)",
+      "applyStatus": "{ id, duration, power?, chance? }",
+      "description": "Texte affiché dans la tooltip"
+    }
   },
-  "basicRanged": {
-    "id": "basicRanged",
-    "name": "Tir",
-    "cost": 2,
-    "type": "attack",
-    "range": 5,
-    "targetType": "enemy",
-    "description": "Tir à distance."
-  },
-  "flameStrike": {
-    "id": "flameStrike",
-    "name": "Coup Ardent",
-    "cost": 3,
-    "cooldown": 2,
-    "type": "attack",
-    "range": 1,
-    "targetType": "enemy",
-    "damageMult": 1.5,
-    "applyStatus": { "id": "burning", "duration": 3, "power": 4 },
-    "description": "x1.5 dégâts. Brûlé 3 tours."
-  },
-  "precisionShot": {
-    "id": "precisionShot",
-    "name": "Tir Précis",
-    "cost": 4,
-    "cooldown": 3,
-    "type": "attack",
-    "range": 6,
-    "targetType": "enemy",
-    "damageMult": 2,
-    "critBonus": 25,
-    "description": "x2 dégâts, +25% crit."
-  },
-  "quickStab": {
-    "id": "quickStab",
-    "name": "Coup Rapide",
-    "cost": 1,
-    "type": "attack",
-    "range": 1,
-    "targetType": "enemy",
-    "damageMult": 0.7,
-    "description": "1 AP, dégâts réduits."
-  },
-  "frostBolt": {
-    "id": "frostBolt",
-    "name": "Trait de Givre",
-    "cost": 3,
-    "type": "spell",
-    "range": 5,
-    "targetType": "enemy",
-    "damage": [10, 14],
-    "damageType": "ice",
-    "applyStatus": { "id": "frozen", "duration": 1, "chance": 30 },
-    "description": "Glace, 30% Gelé."
-  },
+
   "fireball": {
     "id": "fireball",
-    "name": "Boule de Feu",
+    "name": "Boule de feu",
+    "type": "spell",
     "cost": 4,
     "cooldown": 3,
-    "type": "spell",
     "range": 4,
     "aoe": 1,
     "targetType": "tile",
-    "damage": [12, 16],
+    "damage": [12, 18],
     "damageType": "fire",
-    "applyStatus": { "id": "burning", "duration": 2, "power": 3 },
-    "description": "Feu zone 3×3. Brûlé."
+    "applyStatus": { "id": "burning", "duration": 3, "power": 4, "chance": 60 },
+    "description": "Zone 3×3 · 60% Brûlure"
+  },
+
+  "frostBolt": {
+    "id": "frostBolt",
+    "name": "Trait de givre",
+    "type": "spell",
+    "cost": 3,
+    "cooldown": 2,
+    "range": 5,
+    "targetType": "enemy",
+    "damage": [10, 15],
+    "damageType": "ice",
+    "applyStatus": { "id": "chilled", "duration": 3, "chance": 80 },
+    "description": "Single target · 80% Chill"
+  },
+
+  "lightningStrike": {
+    "id": "lightningStrike",
+    "name": "Foudre concentrée",
+    "type": "spell",
+    "cost": 4,
+    "cooldown": 3,
+    "range": 6,
+    "targetType": "enemy",
+    "damage": [14, 20],
+    "damageType": "shock",
+    "applyStatus": { "id": "shocked", "duration": 2, "chance": 50 },
+    "description": "Long range · 50% Shock"
+  },
+
+  "toxicCloud": {
+    "id": "toxicCloud",
+    "name": "Nuage toxique",
+    "type": "spell",
+    "cost": 5,
+    "cooldown": 4,
+    "range": 4,
+    "aoe": 1,
+    "targetType": "tile",
+    "damage": [8, 12],
+    "damageType": "poison",
+    "applyStatus": { "id": "poisoned", "duration": 5, "power": 3, "chance": 90 },
+    "description": "Zone 3×3 · 90% Poison long"
   }
 }
