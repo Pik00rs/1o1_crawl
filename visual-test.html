@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reactor Hollow — Visual Test</title>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0a0a0f;
+    color: #aaa;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #2a2a30;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #ff5722;
+    text-transform: uppercase;
+  }
+  header h1 span { color: #aaa; font-weight: 400; }
+  header .crumb {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #666;
+  }
+  header a {
+    color: #4fc3f7;
+    text-decoration: none;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border: 1px solid #4fc3f7;
+    padding: 4px 10px;
+  }
+  header a:hover { background: #4fc3f7; color: #000; }
+
+  main {
+    flex: 1;
+    padding: 16px 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 16px;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  #canvas-host {
+    background: #0a0a0f;
+    border: 1px solid #2a2a30;
+    position: relative;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+  }
+  #game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  #status-overlay {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #aaa;
+  }
+  #status-overlay span:first-child { color: #ff5722; }
+
+  .panel {
+    background: #14141c;
+    border: 1px solid #2a2a30;
+    padding: 14px;
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #4fc3f7;
+    text-transform: uppercase;
+    border-bottom: 1px solid #2a2a30;
+    padding-bottom: 8px;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .controls button {
+    background: transparent;
+    color: #aaa;
+    border: 1px solid #2a2a30;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    text-align: left;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .controls button:hover {
+    background: rgba(79,195,247,0.12);
+    color: #fff;
+    border-color: #4fc3f7;
+  }
+  .controls button.active {
+    background: #4fc3f7;
+    color: #000;
+    border-color: #4fc3f7;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    padding: 4px 0;
+    border-bottom: 1px solid #1a1a20;
+  }
+  .info-row span:first-child { color: #666; letter-spacing: 1px; }
+  .info-row span:last-child { color: #fff; font-weight: 600; }
+  .info-row:last-child { border-bottom: none; }
+
+  .tip {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(79,195,247,0.06);
+    border-left: 2px solid #4fc3f7;
+    font-size: 10px;
+    color: #888;
+    line-height: 1.5;
+  }
+  .tip strong { color: #4fc3f7; }
+
+  #error-display {
+    display: none;
+    background: #2a0808;
+    border: 1px solid #ff5252;
+    padding: 16px;
+    color: #ff8a80;
+    font-size: 12px;
+    margin: 24px;
+  }
+  #error-display pre {
+    background: rgba(0,0,0,0.4);
+    padding: 10px;
+    overflow-x: auto;
+    font-size: 11px;
+    color: #ffcdd2;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>▸ REACTOR_HOLLOW <span>// VISUAL_TEST</span></h1>
+    <div class="crumb">Page de démo isolée — moteur iso 2.5D</div>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="index.html">▸ DASHBOARD</a>
+    <a href="game.html">▸ JEU</a>
+  </div>
+</header>
+
+<div id="error-display"></div>
+
+<main>
+  <div id="canvas-host">
+    <canvas id="game-canvas"></canvas>
+    <div id="status-overlay">
+      <span>▸ HOVER A TILE</span>
+      <span id="status-text">Ready</span>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:12px;">
+
+    <div class="panel">
+      <h2>◢ Biomes</h2>
+      <div class="controls" id="biome-controls"></div>
+    </div>
+
+    <div class="panel">
+      <h2>◢ Options</h2>
+      <div class="controls">
+        <button id="btn-grid">Toggle GRID</button>
+        <button id="btn-bevel" class="active">Toggle BEVEL</button>
+        <button id="btn-night">Toggle DAY/NIGHT</button>
+        <button id="btn-fx">FX +/- (currently 1)</button>
+        <button id="btn-reroll">▸ RE-ROLL MAP</button>
+        <button id="btn-reset">▸ RESET PLAYER</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>◢ Info</h2>
+      <div class="info-row"><span>Biome</span><span id="info-biome">--</span></div>
+      <div class="info-row"><span>Map seed</span><span id="info-seed">--</span></div>
+      <div class="info-row"><span>Player pos</span><span id="info-pos">1,2</span></div>
+      <div class="info-row"><span>Walls</span><span id="info-walls">0</span></div>
+      <div class="info-row"><span>FX level</span><span id="info-fx">1</span></div>
+      <div class="info-row"><span>Particles</span><span id="info-particles">0</span></div>
+    </div>
+
+    <div class="tip">
+      <strong>▸ Comment ça marche :</strong><br>
+      Cette page utilise les fichiers <code>src/js/render/*</code><br>
+      Clique sur une tuile pour déplacer Kael.<br>
+      Les ennemis patrouillent automatiquement.
+    </div>
+
+  </div>
+</main>
+
+<script type="module">
+import { renderFrame } from './src/js/render/iso-engine.js';
+import { getBiome, listBiomeConfigs } from './src/js/render/biomes/index.js';
+import { ParticleSystem } from './src/js/render/particles.js';
+import { TILE_W, TILE_H, screenToIso } from './src/js/render/iso-projection.js';
+import { rng, pickWeighted } from './src/js/render/iso-utils.js';
+
+// =============================================================================
+// SETUP CANVAS
+// =============================================================================
+
+const host = document.getElementById('canvas-host');
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const viewport = { width: 0, height: 0 };
+function resize(){
+  const r = host.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = r.width * dpr;
+  canvas.height = r.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  viewport.width = r.width;
+  viewport.height = r.height;
+}
+new ResizeObserver(resize).observe(host);
+resize();
+
+// =============================================================================
+// STATE LOCAL (factice pour la démo)
+// =============================================================================
+
+const state = {
+  gridW: 9,
+  gridH: 7,
+  biomeId: 'inferno',
+  mapSeed: 1,
+  tileGrid: {},
+  hover: null,
+  reachableSet: new Set(),
+  options: {
+    showGrid: false,
+    bevel: true,
+    night: false,
+    fxLevel: 1,
+  },
+  time: 0,
+};
+
+const particles = new ParticleSystem();
+
+// =============================================================================
+// ACTORS (factices)
+// =============================================================================
+
+function makeActor(opts){
+  return Object.assign({
+    gx: 0, gy: 0, ax: 0, ay: 0,
+    idle: Math.random() * Math.PI * 2,
+    target: null, moveT: 0, moveFrom: null,
+    isPlayer: false, isDead: false,
+    archetype: 'hero',
+    bodyColor: '#3a4a5c', accentColor: '#4fc3f7', glowColor: '#aee6ff',
+    skinColor: '#f4d4a8', hairColor: '#2c3640', capeColor: '#1a2230',
+    hp: 100, maxHp: 100,
+    name: '?',
+  }, opts);
+}
+
+const player = makeActor({
+  gx: 1, gy: 2, ax: 1, ay: 2,
+  isPlayer: true, archetype: 'hero',
+  name: 'KAEL',
+});
+
+const enemies = [
+  makeActor({
+    gx: 7, gy: 1, ax: 7, ay: 1,
+    archetype: 'hero', // pas de brute renderer pour l'instant
+    bodyColor: '#8b1f15', accentColor: '#ffb74d', glowColor: '#ff8a4d',
+    skinColor: '#a06850', hairColor: '#1a0a08', capeColor: '#3a0a05',
+    name: 'BRÛLANT',
+    patrol: [[7,1],[7,5],[8,5],[8,1]],
+  }),
+  makeActor({
+    gx: 5, gy: 5, ax: 5, ay: 5,
+    archetype: 'hero',
+    bodyColor: '#5e2c70', accentColor: '#e040fb', glowColor: '#ce93d8',
+    skinColor: '#c0a4d0', hairColor: '#3a1c4c', capeColor: '#2a0a35',
+    name: 'PYROMANCIEN',
+    patrol: [[5,5],[3,5],[3,4],[5,4]],
+  }),
+];
+for(const e of enemies){ e.patrolIdx = 1; e.patrolWait = 60; }
+
+const allActors = [player, ...enemies];
+
+// =============================================================================
+// MAP GENERATION
+// =============================================================================
+
+function genTileMap(){
+  state.tileGrid = {};
+  const biome = getBiome(state.biomeId);
+  const r = rng(state.mapSeed * 7919 + state.biomeId.charCodeAt(0) * 13);
+
+  for(let x = 0; x < state.gridW; x++){
+    for(let y = 0; y < state.gridH; y++){
+      const type = pickWeighted(biome.config.tileWeights, r());
+      const seed = (x*101 + y*239 + state.mapSeed*7) % 9999;
+      state.tileGrid[x+','+y] = {
+        type, seed,
+        microElev: (Math.sin(x*1.7+y*2.3)*0.5+Math.cos(x*0.7+y*1.4)*0.5)*0.6,
+        tintShift: (r() - 0.5) * 0.18,
+        noiseSeeds: [r(),r(),r(),r(),r()],
+        isWall: false,
+        prop: null,
+      };
+    }
+  }
+
+  // Place 6-9 walls with random props
+  const wallCount = 6 + (r() * 4)|0;
+  let placed = 0, tries = 0;
+  while(placed < wallCount && tries < 50){
+    tries++;
+    const x = (r() * state.gridW)|0;
+    const y = (r() * state.gridH)|0;
+    if(Math.abs(x-1) + Math.abs(y-2) <= 1) continue;
+    const t = state.tileGrid[x+','+y];
+    if(t.isWall) continue;
+    t.isWall = true;
+    t.prop = biome.config.props[(r() * biome.config.props.length)|0];
+    placed++;
+  }
+  // Garantir départ joueur libre
+  state.tileGrid['1,2'].isWall = false;
+  state.tileGrid['1,2'].prop = null;
+  state.tileGrid['2,2'].isWall = false;
+  state.tileGrid['2,2'].prop = null;
+
+  document.getElementById('info-seed').textContent = state.mapSeed;
+  document.getElementById('info-walls').textContent = placed;
+}
+genTileMap();
+
+// =============================================================================
+// MOVEMENT
+// =============================================================================
+
+function isWall(x, y){
+  const t = state.tileGrid[x+','+y];
+  return t ? t.isWall : false;
+}
+function blockedByActor(x, y, self){
+  for(const a of allActors){
+    if(a === self) continue;
+    if(a.gx === x && a.gy === y) return true;
+  }
+  return false;
+}
+function moveActor(actor, tx, ty){
+  if(actor.target) return;
+  if(tx<0 || ty<0 || tx>=state.gridW || ty>=state.gridH) return;
+  if(isWall(tx, ty)) return;
+  if(blockedByActor(tx, ty, actor)) return;
+  actor.moveFrom = { x: actor.ax, y: actor.ay };
+  actor.target = { x: tx, y: ty };
+  actor.moveT = 0;
+  actor.gx = tx;
+  actor.gy = ty;
+}
+function updateActor(actor, dt){
+  actor.idle += dt * 0.06;
+  if(actor.target){
+    actor.moveT += dt * 0.08;
+    if(actor.moveT >= 1){
+      actor.ax = actor.target.x;
+      actor.ay = actor.target.y;
+      actor.target = null;
+      actor.moveT = 0;
+      // Petit nuage de poussière à l'arrivée
+      const tile = state.tileGrid[actor.ax+','+actor.ay];
+      const elev = tile ? tile.microElev : 0;
+      const sx = viewport.width/2 - TILE_W*0.5 + (actor.ax - actor.ay) * TILE_W/2;
+      const sy = viewport.height/2 - TILE_H*1.5 + (actor.ax + actor.ay) * TILE_H/2 - elev;
+      particles.emitDust(sx, sy + 4);
+    } else {
+      const t = actor.moveT;
+      const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+      actor.ax = actor.moveFrom.x + (actor.target.x - actor.moveFrom.x) * ease;
+      actor.ay = actor.moveFrom.y + (actor.target.y - actor.moveFrom.y) * ease;
+    }
+  }
+}
+function tickEnemy(e){
+  if(e.target || e.isDead) return;
+  e.patrolWait--;
+  if(e.patrolWait > 0) return;
+  const next = e.patrol[e.patrolIdx];
+  if(!next) return;
+  if(e.gx === next[0] && e.gy === next[1]){
+    e.patrolIdx = (e.patrolIdx + 1) % e.patrol.length;
+    e.patrolWait = 60 + Math.floor(Math.random() * 40);
+    return;
+  }
+  const dx = Math.sign(next[0] - e.gx), dy = Math.sign(next[1] - e.gy);
+  let tx = e.gx, ty = e.gy;
+  if(Math.abs(next[0] - e.gx) >= Math.abs(next[1] - e.gy)){ tx += dx; }
+  else { ty += dy; }
+  moveActor(e, tx, ty);
+  e.patrolWait = 30 + Math.floor(Math.random() * 30);
+}
+
+function computeReachable(){
+  state.reachableSet.clear();
+  for(let x = 0; x < state.gridW; x++){
+    for(let y = 0; y < state.gridH; y++){
+      if(isWall(x, y)) continue;
+      const d = Math.max(Math.abs(x - player.gx), Math.abs(y - player.gy));
+      if(d > 0 && d <= 4) state.reachableSet.add(x+','+y);
+    }
+  }
+}
+computeReachable();
+
+// =============================================================================
+// INPUT
+// =============================================================================
+
+function getElev(gx, gy){
+  const t = state.tileGrid[gx+','+gy];
+  return t ? t.microElev : 0;
+}
+
+canvas.addEventListener('mousemove', (ev) => {
+  const r = canvas.getBoundingClientRect();
+  const sx = ev.clientX - r.left;
+  const sy = ev.clientY - r.top;
+  state.hover = screenToIso(sx, sy, state.gridW, state.gridH, viewport, getElev);
+  if(state.hover){
+    const t = state.tileGrid[state.hover.gx+','+state.hover.gy];
+    const biome = getBiome(state.biomeId);
+    const w = t.isWall ? `WALL: ${t.prop}` : biome.config.tileTypes[t.type];
+    document.getElementById('status-text').textContent = `(${state.hover.gx},${state.hover.gy}) · ${w}`;
+  } else {
+    document.getElementById('status-text').textContent = 'Ready';
+  }
+});
+canvas.addEventListener('click', () => {
+  if(!state.hover) return;
+  if(isWall(state.hover.gx, state.hover.gy)) return;
+  moveActor(player, state.hover.gx, state.hover.gy);
+  computeReachable();
+  updatePlayerInfo();
+});
+canvas.addEventListener('mouseleave', () => { state.hover = null; });
+
+function updatePlayerInfo(){
+  document.getElementById('info-pos').textContent = `${player.gx},${player.gy}`;
+}
+
+// =============================================================================
+// BIOME BUTTONS
+// =============================================================================
+
+const biomeControls = document.getElementById('biome-controls');
+const biomes = listBiomeConfigs();
+for(const cfg of biomes){
+  const btn = document.createElement('button');
+  btn.dataset.biome = cfg.id;
+  btn.textContent = `▸ ${cfg.name}`;
+  btn.classList.toggle('active', cfg.id === state.biomeId);
+  btn.addEventListener('click', () => {
+    state.biomeId = cfg.id;
+    genTileMap();
+    document.querySelectorAll('#biome-controls button').forEach(b => {
+      b.classList.toggle('active', b.dataset.biome === state.biomeId);
+    });
+    document.getElementById('info-biome').textContent = cfg.name;
+  });
+  biomeControls.appendChild(btn);
+}
+document.getElementById('info-biome').textContent = getBiome(state.biomeId).config.name;
+
+// =============================================================================
+// OPTION BUTTONS
+// =============================================================================
+
+document.getElementById('btn-grid').addEventListener('click', (e) => {
+  state.options.showGrid = !state.options.showGrid;
+  e.target.classList.toggle('active', state.options.showGrid);
+});
+document.getElementById('btn-bevel').addEventListener('click', (e) => {
+  state.options.bevel = !state.options.bevel;
+  e.target.classList.toggle('active', state.options.bevel);
+});
+document.getElementById('btn-night').addEventListener('click', (e) => {
+  state.options.night = !state.options.night;
+  e.target.classList.toggle('active', state.options.night);
+});
+document.getElementById('btn-fx').addEventListener('click', (e) => {
+  state.options.fxLevel = (state.options.fxLevel + 1) % 3;
+  e.target.textContent = `FX +/- (currently ${state.options.fxLevel})`;
+  document.getElementById('info-fx').textContent = state.options.fxLevel;
+});
+document.getElementById('btn-reroll').addEventListener('click', () => {
+  state.mapSeed = Math.floor(Math.random() * 9999);
+  genTileMap();
+  computeReachable();
+});
+document.getElementById('btn-reset').addEventListener('click', () => {
+  player.gx = 1; player.gy = 2;
+  player.ax = 1; player.ay = 2;
+  player.target = null;
+  particles.clear();
+  computeReachable();
+  updatePlayerInfo();
+});
+
+// =============================================================================
+// MAIN LOOP
+// =============================================================================
+
+function tick(){
+  updateActor(player, 1);
+  for(const e of enemies){
+    tickEnemy(e);
+    updateActor(e, 1);
+  }
+  particles.update();
+
+  document.getElementById('info-particles').textContent = particles.particles.length;
+}
+setInterval(tick, 16);
+
+function render(){
+  renderFrame(ctx, {
+    viewport,
+    tileGrid: state.tileGrid,
+    gridW: state.gridW,
+    gridH: state.gridH,
+    actors: allActors,
+    hover: state.hover,
+    reachableSet: state.reachableSet,
+    biome: getBiome(state.biomeId),
+    particles,
+    time: state.time++,
+    options: state.options,
+  });
+  requestAnimationFrame(render);
+}
+render();
+
+// =============================================================================
+// ERROR HANDLING
+// =============================================================================
+
+window.addEventListener('error', (ev) => {
+  const display = document.getElementById('error-display');
+  display.style.display = 'block';
+  display.innerHTML = `
+    <strong>⚠ Erreur de chargement :</strong>
+    <pre>${ev.message}\nSource: ${ev.filename}:${ev.lineno}</pre>
+    <p style="margin-top:12px;color:#aaa">
+      Vérifie que tous les fichiers sont bien dans <code>src/js/render/</code> et que tu accèdes via WAMP (http://localhost/...) et pas en double-cliquant le HTML.
+    </p>
+  `;
+});
+</script>
+</body>
+</html>
