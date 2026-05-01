@@ -180,6 +180,101 @@
   .action-btn.spell .ab-cost { color: #ce93d8; }
   .action-btn.pass .ab-cost { color: #888; }
 
+  /* Damage range badge under cost */
+  .ab-dmg {
+    font-size: 9px; font-weight: 700; color: #fff;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+  }
+  .ab-type {
+    font-size: 7px; color: #aaa; letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Mini-info icon top-right of action button */
+  .ab-info-btn {
+    position: absolute; top: 3px; right: 4px;
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .ab-info-btn:hover, .ab-info-btn:active {
+    color: #fff;
+    background: rgba(79,195,247,0.3);
+  }
+
+  /* Action info popup */
+  #action-info-popup {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 32px);
+    max-width: 360px;
+    background: rgba(10,10,15,0.97);
+    border: 1px solid #4fc3f7;
+    backdrop-filter: blur(10px);
+    padding: 12px 14px;
+    z-index: 22;
+    display: none;
+    box-shadow: 0 4px 24px rgba(79,195,247,0.25);
+    font-size: 10px; line-height: 1.55;
+  }
+  #action-info-popup .aip-title {
+    font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+    color: #fff;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #2a2a30;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  #action-info-popup .aip-row {
+    display: flex; justify-content: space-between;
+    padding: 3px 0;
+    color: #aaa;
+  }
+  #action-info-popup .aip-row .lbl {
+    color: #666; letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 9px;
+  }
+  #action-info-popup .aip-row .val {
+    color: #fff;
+    font-weight: 600;
+  }
+  #action-info-popup .aip-section {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px dashed #2a2a30;
+  }
+  #action-info-popup .aip-desc {
+    color: #888;
+    font-style: italic;
+    line-height: 1.5;
+    margin-top: 6px;
+  }
+  #action-info-popup .aip-affix {
+    background: rgba(76,175,80,0.1);
+    border-left: 2px solid #4caf50;
+    padding: 4px 8px;
+    margin-top: 4px;
+    color: #8bc34a;
+    font-size: 10px;
+  }
+  #action-info-popup .aip-close {
+    width: 20px; height: 20px;
+    border: 1px solid #4fc3f7;
+    background: transparent;
+    color: #aee6ff;
+    cursor: pointer;
+    font-family: inherit; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #action-info-popup .aip-close:hover { background: #4fc3f7; color: #000; }
+
   /* ================================================================
    * SLIDE-IN PANELS (map / log / options / enemy)
    * ================================================================ */
@@ -311,20 +406,9 @@
     gap: 6px;
   }
 
-  /* ENEMY HOVER CARD (auto, when hovering an enemy on grid) */
+  /* ENEMY HOVER CARD - replaced by enemies panel, kept for legacy code */
   #enemy-hover {
-    position: fixed; top: 56px; right: 56px;
-    width: 220px;
-    background: rgba(20,8,8,0.95);
-    border: 1px solid #ff5252;
-    backdrop-filter: blur(10px);
-    padding: 10px 12px;
-    font-size: 10px; line-height: 1.5;
-    display: none; pointer-events: none;
-    z-index: 30;
-  }
-  @media (max-width: 500px) {
-    #enemy-hover { width: calc(100vw - 80px); right: 56px; top: 56px; }
+    display: none !important;
   }
 
   /* TARGETING HINT */
@@ -527,8 +611,9 @@
 
 <!-- LEFT ICON BUTTONS -->
 <div id="side-left">
-  <button class="icon-btn" id="btn-map" title="Map &amp; enemies">🗺</button>
+  <button class="icon-btn" id="btn-map" title="Map">🗺</button>
   <button class="icon-btn" id="btn-stuff" title="Stuff &amp; stats">🎒</button>
+  <button class="icon-btn" id="btn-enemies" title="Enemies info">👹</button>
   <button class="icon-btn" id="btn-log" title="Combat log">📜</button>
   <button class="icon-btn" id="btn-options" title="Options">⚙</button>
 </div>
@@ -575,28 +660,40 @@
   <button class="action-btn move" data-action="move">
     <div class="ab-icon">🏃</div>
     <div class="ab-name">MOVE</div>
-    <div class="ab-cost">1 AP</div>
+    <div class="ab-cost">1 AP / case</div>
+    <div class="ab-info-btn" data-info="move">ⓘ</div>
   </button>
   <button class="action-btn primary" data-action="slash">
     <div class="ab-icon">⚔</div>
     <div class="ab-name">SLASH</div>
     <div class="ab-cost">1 AP</div>
+    <div class="ab-dmg">7-12 <span class="ab-type">tr.</span></div>
+    <div class="ab-info-btn" data-info="slash">ⓘ</div>
   </button>
   <button class="action-btn primary" data-action="heavy">
     <div class="ab-icon">⚔</div>
     <div class="ab-name">CRUSH</div>
-    <div class="ab-cost">3 · CD2</div>
+    <div class="ab-cost">3 AP · CD2</div>
+    <div class="ab-dmg">12-18 <span class="ab-type">tr.</span></div>
+    <div class="ab-info-btn" data-info="heavy">ⓘ</div>
   </button>
   <button class="action-btn spell" data-action="fireball">
     <div class="ab-icon">🔥</div>
     <div class="ab-name">FIREBALL</div>
-    <div class="ab-cost">4 · CD3</div>
+    <div class="ab-cost">4 AP · CD3</div>
+    <div class="ab-dmg">14-20 <span class="ab-type">mg.</span></div>
+    <div class="ab-info-btn" data-info="fireball">ⓘ</div>
   </button>
   <button class="action-btn pass" data-action="endturn">
     <div class="ab-icon">▶</div>
     <div class="ab-name">END</div>
     <div class="ab-cost">turn</div>
   </button>
+</div>
+
+<!-- ACTION INFO POPUP -->
+<div id="action-info-popup">
+  <div id="aip-content"></div>
 </div>
 
 <!-- =============================================================
@@ -660,6 +757,17 @@
     <div class="panel-section-title">▸ DAMAGE OUTPUT</div>
     <div id="dmg-summary" style="font-size:10px; line-height:1.7; color:#aaa;"></div>
   </div>
+</div>
+
+<!-- =============================================================
+   PANEL : ENEMIES INFO
+   ============================================================= -->
+<div class="panel" id="panel-enemies">
+  <div class="panel-header">
+    <span class="panel-title">▸ ENEMIES</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div id="enemies-detail-list"></div>
 </div>
 
 <!-- =============================================================
@@ -737,6 +845,7 @@ const state = {
   hover: null,
   hoveredEnemy: null,
   reachableSet: new Set(),
+  reachableMap: new Map(),
   validTargets: new Set(),
   aoePreview: new Set(),
   selectedAction: null,
@@ -754,10 +863,31 @@ const particles = new ParticleSystem();
 // ACTIONS
 // ============================================================================
 const ACTIONS = {
-  move:     { id:'move',     name:'MOVE',          cost:1, type:'move' },
-  slash:    { id:'slash',    name:'SLASH',         cost:1, range:1, type:'attack', dmgType:'tranchant', baseDmg:[7,12] },
-  heavy:    { id:'heavy',    name:'CRUSHING BLOW', cost:3, range:1, cd:2, type:'attack', dmgType:'tranchant', baseDmg:[12,18] },
-  fireball: { id:'fireball', name:'FIREBALL',      cost:4, range:5, cd:3, type:'spell', aoe:1, dmgType:'magique', baseDmg:[14,20] },
+  move: {
+    id:'move', name:'MOVE', cost:1, type:'move',
+    description:'Move along a path. Costs 1 AP per tile in 4 directions (N/E/S/W). Walls and enemies block the path.',
+  },
+  slash: {
+    id:'slash', name:'SLASH', cost:1, range:1, type:'attack',
+    dmgType:'tranchant', baseDmg:[7,12],
+    statusProc:{ id:'bleed', name:'Saignement', chance:15, dur:3 },
+    source:'Épée de fer (mainhand)',
+    description:'Light sword attack. Slashing damage. Chance to apply Bleed (DoT that ignores armor).',
+  },
+  heavy: {
+    id:'heavy', name:'CRUSHING BLOW', cost:3, range:1, cd:2, type:'attack',
+    dmgType:'tranchant', baseDmg:[12,18], mult:1.6,
+    statusProc:{ id:'stun', name:'Étourdi', chance:40, dur:1 },
+    source:'Épée de fer (mainhand)',
+    description:'Heavy two-handed swing. ×1.6 damage. High chance to stun (target loses AP next turn).',
+  },
+  fireball: {
+    id:'fireball', name:'FIREBALL', cost:4, range:5, cd:3, type:'spell', aoe:1,
+    dmgType:'magique', baseDmg:[14,20],
+    statusProc:{ id:'burn', name:'Brûlure', chance:60, dur:3 },
+    source:'Amulette Pyromantique',
+    description:'AOE fire spell. 3×3 explosion. Ignores armor. High chance to apply Burn (fire DoT).',
+  },
 };
 
 // ============================================================================
@@ -937,23 +1067,47 @@ function isOccupied(gx,gy,exclude){
 // MOVEMENT
 // ============================================================================
 function moveActor(actor, tx, ty){
-  if(actor.target || isWall(tx,ty) || isOccupied(tx,ty,actor)) return false;
+  if(actor.target || actor.path) return false;
+  if(isWall(tx,ty) || isOccupied(tx,ty,actor)) return false;
   if(tx<0||ty<0||tx>=state.gridW||ty>=state.gridH) return false;
-  actor.moveFrom = { x:actor.ax, y:actor.ay };
-  actor.target = { x:tx, y:ty };
-  actor.moveT = 0;
-  actor.gx = tx; actor.gy = ty;
+  // Calcule le chemin (4 directions, A*)
+  const path = (actor === player) ? findPath(tx, ty) : null;
+  if(path && path.length > 1){
+    actor.path = path;
+    actor.pathStep = 0;
+    // Lance le 1er step
+    actor.moveFrom = { x: actor.ax, y: actor.ay };
+    actor.target = { x: path[0].x, y: path[0].y };
+    actor.moveT = 0;
+    actor.gx = tx; actor.gy = ty; // La position logique va direct au final
+  } else {
+    // Mouvement direct simple (cas ennemi ou voisin direct)
+    actor.moveFrom = { x:actor.ax, y:actor.ay };
+    actor.target = { x:tx, y:ty };
+    actor.moveT = 0;
+    actor.gx = tx; actor.gy = ty;
+  }
   return true;
 }
 function updateActor(actor){
   actor.idle += 0.06;
   if(actor.target){
-    actor.moveT += 0.08;
+    actor.moveT += 0.18; // plus rapide pour pas que les chemins longs traînent
     if(actor.moveT >= 1){
       actor.ax = actor.target.x; actor.ay = actor.target.y;
-      actor.target = null; actor.moveT = 0;
-      const sp = isoToScreen(actor.ax, actor.ay, getElev(actor.ax,actor.ay), viewport, state.view);
-      particles.emitDust(sp.x, sp.y+4);
+      // Step suivant si on suit un chemin
+      if(actor.path && actor.pathStep < actor.path.length - 1){
+        actor.pathStep++;
+        actor.moveFrom = { x: actor.ax, y: actor.ay };
+        actor.target = { x: actor.path[actor.pathStep].x, y: actor.path[actor.pathStep].y };
+        actor.moveT = 0;
+      } else {
+        actor.target = null; actor.moveT = 0;
+        actor.path = null;
+        actor.pathStep = 0;
+        const sp = isoToScreen(actor.ax, actor.ay, getElev(actor.ax,actor.ay), viewport, state.view);
+        particles.emitDust(sp.x, sp.y+4);
+      }
     } else {
       const t = actor.moveT;
       const ease = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
@@ -966,15 +1120,114 @@ function updateActor(actor){
 // ============================================================================
 // REACHABILITY / TARGETS
 // ============================================================================
-function computeReachable(){
-  state.reachableSet.clear();
-  if(player.ap<1 || state.combatOver) return;
-  for(let x=0;x<state.gridW;x++) for(let y=0;y<state.gridH;y++){
-    if(isWall(x,y) || isOccupied(x,y,player)) continue;
-    const d = Math.max(Math.abs(x-player.gx), Math.abs(y-player.gy));
-    if(d>0 && d<=player.ap) state.reachableSet.add(x+','+y);
-  }
+// ============================================================================
+// PATHFINDING : 4-directions (haut/bas/gauche/droite), 1 AP par case
+// ============================================================================
+
+const DIRS_4 = [[0,-1],[1,0],[0,1],[-1,0]]; // N E S W
+
+function passable(x, y, ignoreActor){
+  if(x < 0 || y < 0 || x >= state.gridW || y >= state.gridH) return false;
+  if(isWall(x, y)) return false;
+  if(isOccupied(x, y, ignoreActor)) return false;
+  return true;
 }
+
+/**
+ * BFS depuis le joueur : retourne une Map "x,y" -> coût AP minimal pour y aller.
+ * On garde uniquement les cases atteignables avec player.ap AP.
+ */
+function bfsReachable(){
+  const out = new Map();
+  if(player.ap < 1 || state.combatOver) return out;
+  const startK = player.gx + ',' + player.gy;
+  out.set(startK, 0);
+  let frontier = [{ x: player.gx, y: player.gy, cost: 0 }];
+  while(frontier.length){
+    const next = [];
+    for(const node of frontier){
+      for(const [dx, dy] of DIRS_4){
+        const nx = node.x + dx, ny = node.y + dy;
+        if(!passable(nx, ny, player)) continue;
+        const nk = nx + ',' + ny;
+        const newCost = node.cost + 1;
+        if(newCost > player.ap) continue;
+        if(out.has(nk) && out.get(nk) <= newCost) continue;
+        out.set(nk, newCost);
+        next.push({ x: nx, y: ny, cost: newCost });
+      }
+    }
+    frontier = next;
+  }
+  // Retire la case du joueur (pas une destination)
+  out.delete(startK);
+  return out;
+}
+
+function computeReachable(){
+  state.reachableMap = bfsReachable();
+  state.reachableSet.clear();
+  for(const k of state.reachableMap.keys()) state.reachableSet.add(k);
+}
+
+/**
+ * A* du joueur vers (tx, ty). Retourne un tableau de cases [{x,y}, ...] (chemin)
+ * ou null si pas de chemin. La distance Manhattan est l'heuristique parfaite
+ * pour une grille 4-directions à coût uniforme.
+ */
+function findPath(tx, ty){
+  if(tx === player.gx && ty === player.gy) return [];
+  if(!passable(tx, ty, player)) return null;
+  const start = player.gx + ',' + player.gy;
+  const goal = tx + ',' + ty;
+  const openSet = new Set([start]);
+  const cameFrom = new Map();
+  const gScore = new Map([[start, 0]]);
+  const fScore = new Map([[start, Math.abs(tx-player.gx)+Math.abs(ty-player.gy)]]);
+  // Cap à player.ap pour pas chercher des chemins trop longs
+  const maxCost = player.ap;
+
+  while(openSet.size){
+    // Sélectionne le node de openSet avec le fScore minimal
+    let current = null, currentF = Infinity;
+    for(const k of openSet){
+      const f = fScore.get(k) ?? Infinity;
+      if(f < currentF){ currentF = f; current = k; }
+    }
+    if(current === goal){
+      // Reconstruction du chemin
+      const path = [];
+      let c = current;
+      while(c !== start){
+        const [cx, cy] = c.split(',').map(Number);
+        path.push({ x: cx, y: cy });
+        c = cameFrom.get(c);
+      }
+      return path.reverse();
+    }
+    openSet.delete(current);
+    const [cx, cy] = current.split(',').map(Number);
+    const cg = gScore.get(current);
+    if(cg >= maxCost) continue; // pas la peine d'aller plus loin
+    for(const [dx, dy] of DIRS_4){
+      const nx = cx + dx, ny = cy + dy;
+      const nk = nx + ',' + ny;
+      // Le goal est forcément passable (testé), les intermédiaires aussi
+      if(nk !== goal && !passable(nx, ny, player)) continue;
+      if(nk === goal && !passable(nx, ny, player)) continue;
+      const tentG = cg + 1;
+      if(tentG > maxCost) continue;
+      if(tentG < (gScore.get(nk) ?? Infinity)){
+        cameFrom.set(nk, current);
+        gScore.set(nk, tentG);
+        fScore.set(nk, tentG + Math.abs(tx-nx) + Math.abs(ty-ny));
+        openSet.add(nk);
+      }
+    }
+  }
+  return null;
+}
+
 function computeValidTargets(act){
   state.validTargets.clear();
   if(!act) return;
@@ -982,6 +1235,7 @@ function computeValidTargets(act){
     for(const k of state.reachableSet) state.validTargets.add(k);
     return;
   }
+  // Pour les attaques/spells : Chebyshev distance OK (8 directions)
   for(let x=0;x<state.gridW;x++) for(let y=0;y<state.gridH;y++){
     const d = Math.max(Math.abs(x-player.gx), Math.abs(y-player.gy));
     if(d===0 || d>act.range) continue;
@@ -1015,11 +1269,12 @@ function executePlayerAction(targetX, targetY){
   if(!state.validTargets.has(targetX+','+targetY)) return;
 
   if(act.id === 'move'){
-    const dist = Math.max(Math.abs(targetX-player.gx), Math.abs(targetY-player.gy));
-    if(player.ap < dist) return;
+    // Coût = nombre de cases dans le chemin BFS (1 AP par case, 4-directions)
+    const cost = state.reachableMap?.get(targetX+','+targetY);
+    if(cost === undefined || player.ap < cost) return;
     moveActor(player, targetX, targetY);
-    player.ap -= dist;
-    addLog(`▸ Kael moves to (${targetX},${targetY}) [-${dist} AP]`, '#aaa');
+    player.ap -= cost;
+    addLog(`▸ Kael moves to (${targetX},${targetY}) [-${cost} AP]`, '#aaa');
   } else if(act.type === 'attack'){
     const target = enemies.find(e=>!e.isDead && e.gx===targetX && e.gy===targetY);
     if(!target) return;
@@ -1495,6 +1750,8 @@ function updateUI(){
   updateActionButtons();
   updateEnemyList();
   updatePlayerStatusList();
+  // Re-render le panel ennemis s'il est ouvert
+  if(state.openPanel === 'enemies') renderEnemiesPanel();
 }
 
 function updateActionButtons(){
@@ -1640,6 +1897,7 @@ function openPanel(id){
     if(btn) btn.classList.add('active');
     if(id === 'map') drawMinimap();
     if(id === 'stuff') renderStuffPanel();
+    if(id === 'enemies') renderEnemiesPanel();
   }
 }
 function closeAllPanels(){
@@ -1653,6 +1911,9 @@ document.getElementById('btn-map').addEventListener('click', () => {
 });
 document.getElementById('btn-stuff').addEventListener('click', () => {
   state.openPanel === 'stuff' ? closeAllPanels() : openPanel('stuff');
+});
+document.getElementById('btn-enemies').addEventListener('click', () => {
+  state.openPanel === 'enemies' ? closeAllPanels() : openPanel('enemies');
 });
 document.getElementById('btn-log').addEventListener('click', () => {
   state.openPanel === 'log' ? closeAllPanels() : openPanel('log');
@@ -1818,10 +2079,122 @@ function labelStat(k){
 }
 
 // ============================================================================
+// ENEMIES PANEL RENDERING (detailed enemy info - replaces hover popup)
+// ============================================================================
+function renderEnemiesPanel(){
+  const list = document.getElementById('enemies-detail-list');
+  list.innerHTML = '';
+
+  const aliveEnemies = enemies.filter(e => !e.isDead);
+  const deadEnemies = enemies.filter(e => e.isDead);
+
+  if(aliveEnemies.length === 0){
+    list.innerHTML = `
+      <div style="padding:24px; text-align:center; color:#4caf50; font-size:11px; letter-spacing:1.5px;">
+        ▸ ALL ENEMIES DEFEATED
+      </div>
+    `;
+    return;
+  }
+
+  for(const e of aliveEnemies){
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: rgba(20,8,8,0.6);
+      border: 1px solid #2a0808;
+      border-left: 3px solid #ff5252;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 10px;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: background 0.15s;
+    `;
+    const ratio = e.hp / e.maxHp;
+    const hpColor = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#f44336';
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="color:#ff5252; font-weight:700; letter-spacing:1.5px; font-size:12px;">${e.name}</span>
+        <span style="color:#666; font-size:8px; letter-spacing:1px;">${e.tier || ''}</span>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-bottom:2px;">
+          <span>HP</span><span style="color:#fff;">${e.hp}/${e.maxHp}</span>
+        </div>
+        <div style="height:6px; background:#1a0808; border:1px solid #3a1414;">
+          <div style="height:100%; width:${ratio*100}%; background:${hpColor}; transition:width 0.3s;"></div>
+        </div>
+      </div>
+
+      <div style="margin:8px 0; padding:6px 8px; background:rgba(255,82,82,0.1); border-left:2px solid #ff5252;">
+        <div style="color:#ff8a80; font-size:8px; letter-spacing:1px; margin-bottom:3px;">▸ NEXT MOVE</div>
+        <div style="color:#fff; font-size:11px; font-weight:700;">${e.intent?.name || '—'}</div>
+        <div style="color:#aaa; font-size:9px;">${e.intent?.desc || ''}</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed #2a1010;">
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">ARMOR</div>
+          <div style="color:#fff; font-weight:700; font-size:13px;">${e.armor || 0}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">DODGE</div>
+          <div style="color:#fff; font-weight:700; font-size:13px;">${e.dodge || 0}%</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">F.RES</div>
+          <div style="color:#fff; font-weight:700; font-size:13px;">${e.fireRes || 0}%</div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px; padding-top:6px; border-top:1px dashed #2a1010; font-size:9px; color:#888;">
+        ▸ Position : <span style="color:#fff;">(${e.gx}, ${e.gy})</span>
+        · Distance : <span style="color:#fff;">${Math.max(Math.abs(e.gx-player.gx), Math.abs(e.gy-player.gy))}</span>
+      </div>
+
+      <div style="margin-top:8px; font-size:9px; color:#666; letter-spacing:1px; text-align:right;">
+        ▸ TAP TO CENTER CAMERA
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      // Centre la caméra sur l'ennemi
+      const sp = isoToScreen(e.gx, e.gy, 0, viewport, { camX:0, camY:0, zoom:state.view.zoom });
+      state.view.camX = viewport.width/2 - sp.x;
+      state.view.camY = viewport.height/2 - sp.y;
+      closeAllPanels();
+    });
+    list.appendChild(card);
+  }
+
+  // Section ennemis morts (compacte)
+  if(deadEnemies.length){
+    const sep = document.createElement('div');
+    sep.style.cssText = 'margin-top:14px; padding-top:10px; border-top:1px solid #2a2a30; font-size:9px; letter-spacing:1.5px; color:#666;';
+    sep.textContent = `▸ DEFEATED (${deadEnemies.length})`;
+    list.appendChild(sep);
+    for(const e of deadEnemies){
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:6px 8px; background:rgba(0,0,0,0.4); margin-top:4px; opacity:0.5; font-size:10px; color:#666; border-left:2px solid #444;';
+      div.innerHTML = `<span style="color:#888;">${e.name}</span> <span style="float:right; color:#666; font-size:9px; letter-spacing:1px;">DEAD</span>`;
+      list.appendChild(div);
+    }
+  }
+}
+
+// ============================================================================
 // ACTION BAR
 // ============================================================================
 document.querySelectorAll('.action-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    // Si on clique sur le ⓘ : ouvre le popup info, n'active PAS l'action
+    if(e.target.classList.contains('ab-info-btn')){
+      e.stopPropagation();
+      const infoId = e.target.dataset.info;
+      showActionInfo(infoId);
+      return;
+    }
     if(state.combatOver) return;
     const id = btn.dataset.action;
     if(id === 'endturn'){ endTurn(); return; }
@@ -1841,7 +2214,120 @@ document.querySelectorAll('.action-btn').forEach(btn => {
     updateActionButtons();
     showTargeting(act);
     closeAllPanels();
+    hideActionInfo();
   });
+});
+
+// ============================================================================
+// ACTION INFO POPUP
+// ============================================================================
+const actionInfoPopup = document.getElementById('action-info-popup');
+const aipContent = document.getElementById('aip-content');
+
+function showActionInfo(actId){
+  const act = ACTIONS[actId];
+  if(!act) return;
+  const dmgStr = act.baseDmg ? `${act.baseDmg[0]}-${act.baseDmg[1]}` : '—';
+  const typeStr = act.dmgType ? act.dmgType : '—';
+  const rangeStr = act.range ? act.range : '—';
+  const aoeStr = act.aoe ? `${act.aoe*2+1}×${act.aoe*2+1} (rayon ${act.aoe})` : 'Single target';
+  const cdStr = act.cd ? `${act.cd} turn(s)` : 'None';
+  const multStr = act.mult ? `×${act.mult}` : '×1.0';
+
+  // Couleur selon type
+  let typeColor = '#aee6ff';
+  if(act.type === 'attack') typeColor = '#ff8a4d';
+  if(act.type === 'spell') typeColor = '#ce93d8';
+  if(act.id === 'move') typeColor = '#69f0ae';
+
+  let html = `
+    <div class="aip-title">
+      <span style="color:${typeColor};">▸ ${act.name}</span>
+      <button class="aip-close" id="aip-close-btn">×</button>
+    </div>
+  `;
+
+  if(act.id === 'move'){
+    html += `
+      <div class="aip-row"><span class="lbl">▸ Cost</span><span class="val">${act.cost} AP / tile</span></div>
+      <div class="aip-row"><span class="lbl">▸ Direction</span><span class="val">4 (N/E/S/W)</span></div>
+      <div class="aip-row"><span class="lbl">▸ Pathfinding</span><span class="val">A* (auto-contour)</span></div>
+      <div class="aip-desc">${act.description}</div>
+    `;
+  } else {
+    html += `
+      <div class="aip-row"><span class="lbl">▸ AP Cost</span><span class="val">${act.cost} AP</span></div>
+      <div class="aip-row"><span class="lbl">▸ Cooldown</span><span class="val">${cdStr}</span></div>
+      <div class="aip-row"><span class="lbl">▸ Range</span><span class="val">${rangeStr} tile${rangeStr>1?'s':''}</span></div>
+      <div class="aip-row"><span class="lbl">▸ AOE</span><span class="val">${aoeStr}</span></div>
+
+      <div class="aip-section">
+        <div class="aip-row"><span class="lbl">▸ Damage</span><span class="val" style="color:#ff8a4d;">${dmgStr}</span></div>
+        <div class="aip-row"><span class="lbl">▸ Type</span><span class="val" style="color:${typeColor};">${typeStr.toUpperCase()}</span></div>
+        ${act.mult ? `<div class="aip-row"><span class="lbl">▸ Multiplier</span><span class="val" style="color:#ff8a4d;">${multStr}</span></div>` : ''}
+      </div>
+
+      ${act.statusProc ? `
+        <div class="aip-section">
+          <div class="aip-row"><span class="lbl">▸ Status proc</span><span class="val" style="color:#ffb74d;">${act.statusProc.name}</span></div>
+          <div class="aip-row"><span class="lbl">▸ Chance</span><span class="val">${act.statusProc.chance}%</span></div>
+          <div class="aip-row"><span class="lbl">▸ Duration</span><span class="val">${act.statusProc.dur} turn(s)</span></div>
+        </div>
+      ` : ''}
+
+      ${act.source ? `
+        <div class="aip-section">
+          <div class="aip-row"><span class="lbl">▸ Source</span><span class="val" style="color:#aee6ff; font-size:9px;">${act.source}</span></div>
+        </div>
+      ` : ''}
+
+      <div class="aip-desc">${act.description}</div>
+    `;
+  }
+
+  // Bonus de l'arme/amulette si applicable
+  if(act.id === 'slash' || act.id === 'heavy'){
+    const mh = player.equipment?.mainhand;
+    if(mh){
+      html += `<div class="aip-section"><div class="lbl" style="color:#666; font-size:9px; letter-spacing:1.5px; margin-bottom:4px;">▸ WEAPON BONUSES</div>`;
+      html += `<div class="aip-affix">+ ${mh.damage[0]}-${mh.damage[1]} base damage from ${mh.name}</div>`;
+      html += `</div>`;
+    }
+  }
+  if(act.id === 'fireball'){
+    const am = player.equipment?.amulet;
+    if(am?.passive){
+      html += `<div class="aip-section"><div class="lbl" style="color:#666; font-size:9px; letter-spacing:1.5px; margin-bottom:4px;">▸ AMULET BONUSES</div>`;
+      for(const [k,v] of Object.entries(am.passive)){
+        html += `<div class="aip-affix">+ ${v} ${k}</div>`;
+      }
+      html += `</div>`;
+    }
+    // Player passif pyrokin
+    if(player.finalStats?.bonusFire){
+      html += `<div class="aip-affix">+ ${player.finalStats.bonusFire} bonus fire damage (final stats)</div>`;
+    }
+  }
+
+  aipContent.innerHTML = html;
+  actionInfoPopup.style.display = 'block';
+
+  document.getElementById('aip-close-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    hideActionInfo();
+  });
+}
+
+function hideActionInfo(){
+  actionInfoPopup.style.display = 'none';
+}
+
+// Fermer le popup info si on clique ailleurs
+document.addEventListener('click', e => {
+  if(actionInfoPopup.style.display !== 'block') return;
+  if(e.target.closest('#action-info-popup')) return;
+  if(e.target.classList.contains('ab-info-btn')) return;
+  hideActionInfo();
 });
 
 // ============================================================================
@@ -2000,8 +2486,94 @@ function render(){
     view: state.view,
     options: { ...state.options, targetColor, targetStroke },
   });
+
+  // Trait blanc du chemin survolé (mode MOVE uniquement)
+  drawPathOverlay();
+
   if(state.openPanel === 'map') drawMinimap();
   requestAnimationFrame(render);
+}
+
+// =============================================================================
+// PATH OVERLAY : trait blanc du joueur vers la case survolée + étiquette AP
+// =============================================================================
+function drawPathOverlay(){
+  if(!state.selectedAction || state.selectedAction.id !== 'move') return;
+  if(!state.hover) return;
+  const k = state.hover.gx + ',' + state.hover.gy;
+  if(!state.reachableSet.has(k)) return;
+  if(player.target || player.path) return; // ne pas dessiner pendant l'animation
+
+  const path = findPath(state.hover.gx, state.hover.gy);
+  if(!path || path.length === 0) return;
+
+  // Tracé : start = position joueur, puis chaque step
+  ctx.save();
+
+  // Ligne pointillée discrète en arrière
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  const sStart = isoToScreen(player.ax, player.ay, getElev(player.gx, player.gy), viewport, state.view);
+  ctx.moveTo(sStart.x, sStart.y);
+  for(const p of path){
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, state.view);
+    ctx.lineTo(sp.x, sp.y);
+  }
+  ctx.stroke();
+
+  // Trait blanc principal
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(sStart.x, sStart.y);
+  for(const p of path){
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, state.view);
+    ctx.lineTo(sp.x, sp.y);
+  }
+  ctx.stroke();
+
+  // Pastilles aux points de passage
+  for(let i = 0; i < path.length - 1; i++){
+    const p = path[i];
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, state.view);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Pastille verte à la destination + étiquette AP
+  const last = path[path.length - 1];
+  const sLast = isoToScreen(last.x, last.y, getElev(last.x, last.y), viewport, state.view);
+  ctx.fillStyle = '#4caf50';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(sLast.x, sLast.y, 6, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Étiquette : "X AP"
+  const cost = path.length;
+  const labelX = sLast.x + 14;
+  const labelY = sLast.y - 14;
+  const labelText = `${cost} AP`;
+  ctx.font = 'bold 12px monospace';
+  const tw = ctx.measureText(labelText).width;
+  // Background
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
+  ctx.fillRect(labelX - 4, labelY - 12, tw + 8, 16);
+  ctx.strokeStyle = cost > player.ap ? '#f44336' : '#4caf50';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(labelX - 4, labelY - 12, tw + 8, 16);
+  // Text
+  ctx.fillStyle = cost > player.ap ? '#ff8a80' : '#69f0ae';
+  ctx.fillText(labelText, labelX, labelY);
+
+  ctx.restore();
 }
 
 // ============================================================================
