@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Reactor Hollow — Visual Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0a0a0f;
+    color: #aaa;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  #game-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    z-index: 1;
+  }
+
+  /* ================================================================
+   * TOP BAR — minimal: titre + tour à gauche, HP/AP à droite
+   * ================================================================ */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 44px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.4));
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 10px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #top-left {
+    display: flex; flex-direction: column; gap: 2px;
+    pointer-events: auto;
+  }
+  #title { color: #ff5722; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+  #turn-text { color: #888; font-size: 9px; letter-spacing: 1px; }
+
+  #top-right {
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.4);
+    padding: 6px 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+    min-width: 130px;
+  }
+  .top-line { display: flex; align-items: center; gap: 6px; font-size: 9px; }
+  .top-line .lab { color: #666; letter-spacing: 1px; min-width: 18px; }
+  .top-line .val { color: #fff; font-weight: 600; margin-left: auto; font-size: 9px; }
+  #hp-bar-mini {
+    height: 4px; background: #1a0a0a;
+    flex: 1; min-width: 50px;
+  }
+  #hp-bar-mini-fill {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+    transition: width 0.3s, background 0.3s;
+  }
+  #ap-mini { display: flex; gap: 2px; flex: 1; min-width: 50px; }
+  .ap-mini-dot {
+    width: 8px; height: 8px;
+    border: 1px solid #4fc3f7; background: transparent;
+    border-radius: 50%;
+  }
+  .ap-mini-dot.full { background: #4fc3f7; box-shadow: 0 0 3px #4fc3f7; }
+
+  /* ================================================================
+   * SIDE ICON BUTTONS — left for panels, right for zoom
+   * ================================================================ */
+  #side-left {
+    position: fixed; top: 56px; left: 8px;
+    display: flex; flex-direction: column; gap: 6px;
+    z-index: 10;
+  }
+  #side-right {
+    position: fixed; top: 56px; right: 8px;
+    display: flex; flex-direction: column; gap: 6px;
+    z-index: 10;
+  }
+  .icon-btn {
+    width: 38px; height: 38px;
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.4);
+    color: #aee6ff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+    transition: all 0.15s;
+    font-family: inherit;
+    padding: 0;
+  }
+  .icon-btn:hover, .icon-btn:active {
+    background: rgba(79,195,247,0.2);
+    border-color: #4fc3f7;
+    transform: scale(1.05);
+  }
+  .icon-btn.active {
+    background: #4fc3f7;
+    color: #000;
+    border-color: #4fc3f7;
+  }
+  .icon-btn .label {
+    position: absolute; bottom: 2px; right: 2px;
+    font-size: 7px; color: #aaa; pointer-events: none;
+    letter-spacing: 0;
+  }
+  #zoom-display {
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.3);
+    width: 38px; padding: 3px 0;
+    text-align: center; font-size: 9px; color: #aaa;
+    backdrop-filter: blur(6px);
+    letter-spacing: 1px;
+  }
+
+  /* ================================================================
+   * BOTTOM ACTION BAR — 5 buttons in a row, full width
+   * ================================================================ */
+  #action-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 78px;
+    background: rgba(0,0,0,0.92);
+    border-top: 1px solid rgba(79,195,247,0.4);
+    display: flex; gap: 4px;
+    padding: 6px;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+  }
+  .action-btn {
+    flex: 1;
+    background: rgba(20,20,28,0.95);
+    border: 1px solid #2a2a30;
+    color: #aaa;
+    cursor: pointer;
+    padding: 6px 4px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: all 0.15s;
+    font-family: inherit;
+    position: relative;
+    min-width: 0;
+  }
+  .action-btn:hover:not(.disabled),
+  .action-btn:active:not(.disabled) {
+    border-color: #4fc3f7; color: #fff;
+  }
+  .action-btn.selected {
+    border-color: #4fc3f7; background: rgba(79,195,247,0.2);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(79,195,247,0.5) inset;
+  }
+  .action-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+  .action-btn.move { border-left: 3px solid #4fc3f7; }
+  .action-btn.primary { border-left: 3px solid #ff5722; }
+  .action-btn.spell { border-left: 3px solid #9c27b0; }
+  .action-btn.pass { border-left: 3px solid #888; }
+  .ab-icon { font-size: 18px; line-height: 1; margin-bottom: 2px; }
+  .ab-name {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+    color: #fff; text-align: center;
+    white-space: nowrap; overflow: hidden;
+  }
+  .ab-cost {
+    font-size: 8px; letter-spacing: 0.5px;
+    margin-top: 1px;
+  }
+  .action-btn.move .ab-cost { color: #4fc3f7; }
+  .action-btn.primary .ab-cost { color: #ff8a4d; }
+  .action-btn.spell .ab-cost { color: #ce93d8; }
+  .action-btn.pass .ab-cost { color: #888; }
+
+  /* ================================================================
+   * SLIDE-IN PANELS (map / log / options / enemy)
+   * ================================================================ */
+  .panel {
+    position: fixed;
+    top: 56px; bottom: 86px; left: 8px;
+    width: calc(100vw - 16px);
+    max-width: 380px;
+    background: rgba(10,10,15,0.97);
+    border: 1px solid #4fc3f7;
+    z-index: 50;
+    transform: translateX(-110%);
+    transition: transform 0.25s ease-out;
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+    padding: 14px;
+  }
+  .panel.open { transform: translateX(0); }
+  .panel.right { left: auto; right: 8px; transform: translateX(110%); }
+  .panel.right.open { transform: translateX(0); }
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2a2a30;
+  }
+  .panel-title {
+    color: #4fc3f7;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1.5px;
+  }
+  .panel-close {
+    width: 26px; height: 26px;
+    border: 1px solid #4fc3f7;
+    background: transparent;
+    color: #aee6ff;
+    cursor: pointer;
+    font-family: inherit; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .panel-close:hover { background: #4fc3f7; color: #000; }
+  .panel-section {
+    margin-bottom: 14px;
+  }
+  .panel-section-title {
+    color: #666;
+    font-size: 9px; letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+
+  /* MAP PANEL CONTENT */
+  #minimap {
+    display: block; width: 100%;
+    height: auto; aspect-ratio: 14/10;
+    background: #000;
+    border: 1px solid #2a2a30;
+    cursor: crosshair;
+    image-rendering: pixelated;
+  }
+  .enemy-card {
+    background: rgba(255,82,82,0.08);
+    border-left: 2px solid #ff5252;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 10px; line-height: 1.5;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .enemy-card:hover { background: rgba(255,82,82,0.15); }
+  .enemy-card-name {
+    color: #ff5252; font-weight: 600; letter-spacing: 1px;
+    display: flex; justify-content: space-between;
+  }
+  .enemy-card-tier { color: #888; font-size: 8px; letter-spacing: 1px; }
+  .enemy-card-bar {
+    height: 4px; background: #1a0a0a; margin: 4px 0;
+  }
+  .enemy-card-bar-fill { height: 100%; }
+  .enemy-card-info { color: #aaa; font-size: 9px; }
+
+  .status-pill {
+    display: inline-block;
+    padding: 3px 7px;
+    background: #4fc3f720;
+    border: 1px solid #4fc3f7;
+    color: #aee6ff;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    margin: 0 4px 4px 0;
+  }
+
+  /* LOG PANEL */
+  #log-entries {
+    font-size: 10px; line-height: 1.6;
+  }
+  #log-entries div {
+    margin-bottom: 4px;
+    padding: 3px 6px;
+    background: rgba(255,255,255,0.02);
+    animation: logIn 0.3s ease-out;
+  }
+  @keyframes logIn {
+    from { opacity: 0; transform: translateY(-2px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* OPTIONS PANEL */
+  .opt-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid #2a2a30;
+    color: #aaa;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    text-align: left;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .opt-btn:hover { border-color: #4fc3f7; color: #fff; }
+  .opt-btn.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+
+  .biome-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  /* ENEMY HOVER CARD (auto, when hovering an enemy on grid) */
+  #enemy-hover {
+    position: fixed; top: 56px; right: 56px;
+    width: 220px;
+    background: rgba(20,8,8,0.95);
+    border: 1px solid #ff5252;
+    backdrop-filter: blur(10px);
+    padding: 10px 12px;
+    font-size: 10px; line-height: 1.5;
+    display: none; pointer-events: none;
+    z-index: 30;
+  }
+  @media (max-width: 500px) {
+    #enemy-hover { width: calc(100vw - 80px); right: 56px; top: 56px; }
+  }
+
+  /* TARGETING HINT */
+  #targeting-hint {
+    position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
+    padding: 8px 14px;
+    background: rgba(0,0,0,0.92);
+    border: 1px solid #4fc3f7;
+    color: #4fc3f7;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    display: none;
+    z-index: 20;
+    text-align: center;
+  }
+
+  /* FLOATING DAMAGE */
+  .float-text {
+    position: fixed;
+    font-weight: 700; font-size: 18px;
+    pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+    text-shadow: 0 0 4px currentColor, 0 1px 0 #000;
+    z-index: 25;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-50px); opacity: 0; }
+  }
+
+  /* ERROR */
+  #error-display {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    display: none;
+    background: #2a0808;
+    border: 1px solid #ff5252;
+    padding: 16px;
+    color: #ff8a80;
+    font-size: 12px;
+    max-width: 80vw;
+    z-index: 100;
+  }
+  #error-display pre {
+    background: rgba(0,0,0,0.4);
+    padding: 8px;
+    overflow-x: auto;
+    font-size: 10px;
+    color: #ffcdd2;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<div id="error-display"></div>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div id="top-left">
+    <div id="title">▸ R_HOLLOW</div>
+    <div id="turn-text">TURN 1</div>
+  </div>
+  <div id="top-right">
+    <div class="top-line">
+      <span class="lab">HP</span>
+      <div id="hp-bar-mini"><div id="hp-bar-mini-fill"></div></div>
+      <span class="val" id="hp-text">100/100</span>
+    </div>
+    <div class="top-line">
+      <span class="lab">AP</span>
+      <div id="ap-mini"></div>
+      <span class="val" id="ap-text">6/6</span>
+    </div>
+  </div>
+</div>
+
+<!-- LEFT ICON BUTTONS -->
+<div id="side-left">
+  <button class="icon-btn" id="btn-map" title="Map &amp; enemies">🗺</button>
+  <button class="icon-btn" id="btn-log" title="Combat log">📜</button>
+  <button class="icon-btn" id="btn-options" title="Options">⚙</button>
+</div>
+
+<!-- RIGHT ICON BUTTONS (zoom) -->
+<div id="side-right">
+  <button class="icon-btn" id="btn-zoom-in" title="Zoom in">+</button>
+  <div id="zoom-display">100%</div>
+  <button class="icon-btn" id="btn-zoom-out" title="Zoom out">−</button>
+  <button class="icon-btn" id="btn-center" title="Center camera">⊙</button>
+</div>
+
+<!-- TARGETING HINT -->
+<div id="targeting-hint">
+  <span id="targeting-text">▸ SELECT TARGET</span>
+</div>
+
+<!-- ENEMY HOVER CARD (mini) -->
+<div id="enemy-hover">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span id="eh-name" style="color:#ff5252; font-weight:600; letter-spacing:1.5px; font-size:11px;">ENEMY</span>
+    <span id="eh-tier" style="color:#666; font-size:8px; letter-spacing:1px;">TIER</span>
+  </div>
+  <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-top:6px;">
+    <span>HP</span><span id="eh-hp">--</span>
+  </div>
+  <div style="height:5px; background:#1a0808; margin:2px 0 6px;">
+    <div id="eh-hp-fill" style="height:100%; width:100%; background:#4caf50; transition:width 0.3s;"></div>
+  </div>
+  <div style="margin-top:6px; padding:5px 7px; background:rgba(255,82,82,0.1); border-left:2px solid #ff5252;">
+    <div style="color:#ff8a80; font-size:8px; letter-spacing:1px;">▸ NEXT</div>
+    <div id="eh-intent-name" style="color:#fff; font-size:11px; font-weight:600;">--</div>
+    <div id="eh-intent-desc" style="color:#aaa; font-size:8px; line-height:1.3;">--</div>
+  </div>
+  <div style="margin-top:6px; font-size:9px; color:#888; display:flex; justify-content:space-around;">
+    <span>ARM <span id="eh-armor" style="color:#fff;">0</span></span>
+    <span>DOD <span id="eh-dodge" style="color:#fff;">0</span></span>
+    <span>F.RES <span id="eh-fire" style="color:#fff;">0</span></span>
+  </div>
+</div>
+
+<!-- ACTION BAR -->
+<div id="action-bar">
+  <button class="action-btn move" data-action="move">
+    <div class="ab-icon">🏃</div>
+    <div class="ab-name">MOVE</div>
+    <div class="ab-cost">1 AP</div>
+  </button>
+  <button class="action-btn primary" data-action="slash">
+    <div class="ab-icon">⚔</div>
+    <div class="ab-name">SLASH</div>
+    <div class="ab-cost">1 AP</div>
+  </button>
+  <button class="action-btn primary" data-action="heavy">
+    <div class="ab-icon">⚔</div>
+    <div class="ab-name">CRUSH</div>
+    <div class="ab-cost">3 · CD2</div>
+  </button>
+  <button class="action-btn spell" data-action="fireball">
+    <div class="ab-icon">🔥</div>
+    <div class="ab-name">FIREBALL</div>
+    <div class="ab-cost">4 · CD3</div>
+  </button>
+  <button class="action-btn pass" data-action="endturn">
+    <div class="ab-icon">▶</div>
+    <div class="ab-name">END</div>
+    <div class="ab-cost">turn</div>
+  </button>
+</div>
+
+<!-- =============================================================
+   PANEL : MAP & ENEMIES
+   ============================================================= -->
+<div class="panel" id="panel-map">
+  <div class="panel-header">
+    <span class="panel-title">▸ MAP &amp; ENEMIES</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ MINI-MAP · TAP TO PAN</div>
+    <canvas id="minimap" width="280" height="200"></canvas>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ ENEMIES</div>
+    <div id="enemy-list"></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ YOUR STATUSES</div>
+    <div id="player-status-list">
+      <span style="color:#666; font-size:10px;">No active statuses</span>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================
+   PANEL : LOG
+   ============================================================= -->
+<div class="panel" id="panel-log">
+  <div class="panel-header">
+    <span class="panel-title">▸ COMBAT LOG</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div id="log-entries"></div>
+</div>
+
+<!-- =============================================================
+   PANEL : OPTIONS
+   ============================================================= -->
+<div class="panel right" id="panel-options">
+  <div class="panel-header">
+    <span class="panel-title">▸ OPTIONS</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ BIOME</div>
+    <div class="biome-grid" id="biome-buttons"></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ DISPLAY</div>
+    <button class="opt-btn" id="opt-grid">Toggle GRID</button>
+    <button class="opt-btn" id="opt-night">Toggle NIGHT</button>
+    <button class="opt-btn" id="opt-bevel">Toggle BEVEL</button>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ ACTIONS</div>
+    <button class="opt-btn" id="opt-reroll">▸ RE-ROLL MAP</button>
+    <button class="opt-btn" id="opt-reset">▸ RESET COMBAT</button>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ NAV</div>
+    <a href="index.html" class="opt-btn" style="display:block; text-align:left; text-decoration:none;">DASHBOARD</a>
+    <a href="game.html" class="opt-btn" style="display:block; text-align:left; text-decoration:none;">JEU</a>
+  </div>
+</div>
+
+<script type="module">
+import { renderFrame } from './src/js/render/iso-engine.js';
+import { getBiome, listBiomeConfigs } from './src/js/render/biomes/index.js';
+import { ParticleSystem } from './src/js/render/particles.js';
+import { TILE_W, TILE_H, screenToIso, isoToScreen } from './src/js/render/iso-projection.js';
+import { rng, pickWeighted } from './src/js/render/iso-utils.js';
+
+// ============================================================================
+// SETUP
+// ============================================================================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const mctx = minimap.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+mctx.imageSmoothingEnabled = false;
+
+const viewport = { width: 0, height: 0 };
+function resize(){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  viewport.width = window.innerWidth;
+  viewport.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ============================================================================
+// STATE
+// ============================================================================
+const state = {
+  gridW: 14, gridH: 10,
+  biomeId: 'inferno',
+  mapSeed: 7,
+  tileGrid: {},
+  hover: null,
+  hoveredEnemy: null,
+  reachableSet: new Set(),
+  validTargets: new Set(),
+  aoePreview: new Set(),
+  selectedAction: null,
+  view: { camX: 0, camY: 0, zoom: 1 },
+  options: { showGrid: false, bevel: true, night: false, fxLevel: 1 },
+  time: 0,
+  turn: 1,
+  combatOver: false,
+  openPanel: null,
+};
+
+const particles = new ParticleSystem();
+
+// ============================================================================
+// ACTIONS
+// ============================================================================
+const ACTIONS = {
+  move:     { id:'move',     name:'MOVE',          cost:1, type:'move' },
+  slash:    { id:'slash',    name:'SLASH',         cost:1, range:1, type:'attack', dmgType:'tranchant', baseDmg:[7,12] },
+  heavy:    { id:'heavy',    name:'CRUSHING BLOW', cost:3, range:1, cd:2, type:'attack', dmgType:'tranchant', baseDmg:[12,18] },
+  fireball: { id:'fireball', name:'FIREBALL',      cost:4, range:5, cd:3, type:'spell', aoe:1, dmgType:'magique', baseDmg:[14,20] },
+};
+
+// ============================================================================
+// ACTORS
+// ============================================================================
+function makeActor(opts){
+  return Object.assign({
+    gx:0, gy:0, ax:0, ay:0,
+    idle: Math.random()*Math.PI*2,
+    target:null, moveT:0, moveFrom:null,
+    isPlayer:false, isDead:false,
+    archetype:'hero',
+    bodyColor:'#3a4a5c', accentColor:'#4fc3f7', glowColor:'#aee6ff',
+    skinColor:'#f4d4a8', hairColor:'#2c3640', capeColor:'#1a2230',
+    hp:100, maxHp:100,
+    statuses:[],
+    name:'?',
+  }, opts);
+}
+
+const player = makeActor({
+  gx:2, gy:3, ax:2, ay:3,
+  isPlayer:true, archetype:'hero',
+  name:'KAEL',
+  hp:100, maxHp:100,
+  ap:6, maxAp:6,
+  cooldowns:{},
+  level:3, stuff:'BALANCED',
+});
+
+const enemies = [
+  makeActor({
+    gx:9, gy:2, ax:9, ay:2,
+    archetype:'hero',
+    bodyColor:'#8b1f15', accentColor:'#ffb74d', glowColor:'#ff8a4d',
+    skinColor:'#a06850', hairColor:'#1a0a08', capeColor:'#3a0a05',
+    name:'BRÛLANT',
+    tier:'RARE · BRUTE', role:'brute',
+    hp:60, maxHp:80,
+    armor:12, dodge:5, fireRes:25,
+    intent:{ id:'slam', name:'SLAM', desc:'Blunt 12-18 · Range 1', color:'#ff5722' },
+  }),
+  makeActor({
+    gx:6, gy:7, ax:6, ay:7,
+    archetype:'hero',
+    bodyColor:'#5e2c70', accentColor:'#e040fb', glowColor:'#ce93d8',
+    skinColor:'#c0a4d0', hairColor:'#3a1c4c', capeColor:'#2a0a35',
+    name:'PYROMANCIEN',
+    tier:'UNCOMMON · CASTER', role:'caster',
+    hp:35, maxHp:50,
+    armor:4, dodge:12, fireRes:50,
+    intent:{ id:'fireball', name:'FIREBALL', desc:'Fire 14-20 · Range 5 · AOE', color:'#ff5722' },
+  }),
+  makeActor({
+    gx:11, gy:6, ax:11, ay:6,
+    archetype:'hero',
+    bodyColor:'#4a2c30', accentColor:'#ff8080', glowColor:'#ffaaaa',
+    skinColor:'#d4a890', hairColor:'#1a0808',
+    name:'RAVAGEUR',
+    tier:'COMMON · MOB', role:'mob',
+    hp:25, maxHp:30,
+    armor:6, dodge:8, fireRes:0,
+    intent:{ id:'slash', name:'SLASH', desc:'Tranchant 6-9', color:'#ff5252' },
+  }),
+];
+const allActors = [player, ...enemies];
+
+// ============================================================================
+// MAP
+// ============================================================================
+function genTileMap(){
+  state.tileGrid = {};
+  const biome = getBiome(state.biomeId);
+  const r = rng(state.mapSeed*7919 + state.biomeId.charCodeAt(0)*13);
+  for(let x=0;x<state.gridW;x++) for(let y=0;y<state.gridH;y++){
+    const type = pickWeighted(biome.config.tileWeights, r());
+    state.tileGrid[x+','+y] = {
+      type, seed:(x*101+y*239+state.mapSeed*7)%9999,
+      microElev:(Math.sin(x*1.7+y*2.3)*0.5+Math.cos(x*0.7+y*1.4)*0.5)*0.6,
+      tintShift:(r()-0.5)*0.18,
+      noiseSeeds:[r(),r(),r(),r(),r()],
+      isWall:false, prop:null,
+    };
+  }
+  const wallCount = 10+(r()*6)|0;
+  let placed=0, tries=0;
+  while(placed<wallCount && tries<80){
+    tries++;
+    const x=(r()*state.gridW)|0, y=(r()*state.gridH)|0;
+    if(Math.abs(x-player.gx)+Math.abs(y-player.gy)<=1) continue;
+    if(enemies.some(e=>e.gx===x && e.gy===y)) continue;
+    const t = state.tileGrid[x+','+y];
+    if(t.isWall) continue;
+    t.isWall = true;
+    t.prop = biome.config.props[(r()*biome.config.props.length)|0];
+    placed++;
+  }
+  for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
+    const k = (player.gx+dx)+','+(player.gy+dy);
+    if(state.tileGrid[k]){ state.tileGrid[k].isWall=false; state.tileGrid[k].prop=null; }
+  }
+}
+genTileMap();
+
+function getElev(gx,gy){ const t=state.tileGrid[gx+','+gy]; return t?t.microElev:0; }
+function isWall(gx,gy){ const t=state.tileGrid[gx+','+gy]; return t?t.isWall:false; }
+function isOccupied(gx,gy,exclude){
+  for(const a of allActors){
+    if(a===exclude || a.isDead) continue;
+    if(a.gx===gx && a.gy===gy) return true;
+  }
+  return false;
+}
+
+// ============================================================================
+// MOVEMENT
+// ============================================================================
+function moveActor(actor, tx, ty){
+  if(actor.target || isWall(tx,ty) || isOccupied(tx,ty,actor)) return false;
+  if(tx<0||ty<0||tx>=state.gridW||ty>=state.gridH) return false;
+  actor.moveFrom = { x:actor.ax, y:actor.ay };
+  actor.target = { x:tx, y:ty };
+  actor.moveT = 0;
+  actor.gx = tx; actor.gy = ty;
+  return true;
+}
+function updateActor(actor){
+  actor.idle += 0.06;
+  if(actor.target){
+    actor.moveT += 0.08;
+    if(actor.moveT >= 1){
+      actor.ax = actor.target.x; actor.ay = actor.target.y;
+      actor.target = null; actor.moveT = 0;
+      const sp = isoToScreen(actor.ax, actor.ay, getElev(actor.ax,actor.ay), viewport, state.view);
+      particles.emitDust(sp.x, sp.y+4);
+    } else {
+      const t = actor.moveT;
+      const ease = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+      actor.ax = actor.moveFrom.x + (actor.target.x-actor.moveFrom.x)*ease;
+      actor.ay = actor.moveFrom.y + (actor.target.y-actor.moveFrom.y)*ease;
+    }
+  }
+}
+
+// ============================================================================
+// REACHABILITY / TARGETS
+// ============================================================================
+function computeReachable(){
+  state.reachableSet.clear();
+  if(player.ap<1 || state.combatOver) return;
+  for(let x=0;x<state.gridW;x++) for(let y=0;y<state.gridH;y++){
+    if(isWall(x,y) || isOccupied(x,y,player)) continue;
+    const d = Math.max(Math.abs(x-player.gx), Math.abs(y-player.gy));
+    if(d>0 && d<=player.ap) state.reachableSet.add(x+','+y);
+  }
+}
+function computeValidTargets(act){
+  state.validTargets.clear();
+  if(!act) return;
+  if(act.id === 'move'){
+    for(const k of state.reachableSet) state.validTargets.add(k);
+    return;
+  }
+  for(let x=0;x<state.gridW;x++) for(let y=0;y<state.gridH;y++){
+    const d = Math.max(Math.abs(x-player.gx), Math.abs(y-player.gy));
+    if(d===0 || d>act.range) continue;
+    if(act.type === 'attack'){
+      const e = enemies.find(en=>!en.isDead && en.gx===x && en.gy===y);
+      if(e) state.validTargets.add(x+','+y);
+    } else if(act.type === 'spell'){
+      if(!isWall(x,y)) state.validTargets.add(x+','+y);
+    }
+  }
+}
+function computeAoePreview(){
+  state.aoePreview.clear();
+  if(!state.selectedAction || !state.selectedAction.aoe || !state.hover) return;
+  const aoe = state.selectedAction.aoe;
+  for(let dx=-aoe;dx<=aoe;dx++) for(let dy=-aoe;dy<=aoe;dy++){
+    const ax=state.hover.gx+dx, ay=state.hover.gy+dy;
+    if(ax<0||ay<0||ax>=state.gridW||ay>=state.gridH) continue;
+    state.aoePreview.add(ax+','+ay);
+  }
+}
+
+// ============================================================================
+// COMBAT
+// ============================================================================
+function rollDmg(range){ return range[0]+Math.floor(Math.random()*(range[1]-range[0]+1)); }
+
+function executePlayerAction(targetX, targetY){
+  const act = state.selectedAction;
+  if(!act) return;
+  if(!state.validTargets.has(targetX+','+targetY)) return;
+
+  if(act.id === 'move'){
+    const dist = Math.max(Math.abs(targetX-player.gx), Math.abs(targetY-player.gy));
+    if(player.ap < dist) return;
+    moveActor(player, targetX, targetY);
+    player.ap -= dist;
+    addLog(`▸ Kael moves to (${targetX},${targetY}) [-${dist} AP]`, '#aaa');
+  } else if(act.type === 'attack'){
+    const target = enemies.find(e=>!e.isDead && e.gx===targetX && e.gy===targetY);
+    if(!target) return;
+    const dmg = rollDmg(act.baseDmg);
+    target.hp = Math.max(0, target.hp-dmg);
+    player.ap -= act.cost;
+    if(act.cd) player.cooldowns[act.id] = act.cd+1;
+    addLog(`▸ Kael uses <span style="color:#fff">${act.name}</span> → ${target.name} <span style="color:#ff5252">${dmg} dmg</span>`, '#aee6ff');
+    floatText(target.gx, target.gy, '-'+dmg, '#ff5252');
+    if(target.hp<=0){ target.isDead=true; addLog(`▸ <span style="color:#fff">${target.name} defeated</span>`, '#ffb300'); checkVictory(); }
+  } else if(act.type === 'spell'){
+    let hits = 0;
+    const aoe = act.aoe||0;
+    for(let dx=-aoe;dx<=aoe;dx++) for(let dy=-aoe;dy<=aoe;dy++){
+      const tx=targetX+dx, ty=targetY+dy;
+      const t = enemies.find(e=>!e.isDead && e.gx===tx && e.gy===ty);
+      if(t){
+        const dmg = rollDmg(act.baseDmg);
+        t.hp = Math.max(0, t.hp-dmg);
+        floatText(t.gx, t.gy, '-'+dmg, '#ff5722');
+        addLog(`▸ ${t.name} hit for <span style="color:#ff5722">${dmg} fire</span>`, '#aaa');
+        if(t.hp<=0){ t.isDead=true; addLog(`▸ <span style="color:#fff">${t.name} defeated</span>`, '#ffb300'); }
+        hits++;
+      }
+    }
+    player.ap -= act.cost;
+    if(act.cd) player.cooldowns[act.id] = act.cd+1;
+    addLog(`▸ Kael casts <span style="color:#fff">${act.name}</span> (${hits} hit${hits>1?'s':''})`, '#ce93d8');
+    checkVictory();
+  }
+
+  state.selectedAction = null;
+  computeReachable();
+  state.validTargets.clear();
+  state.aoePreview.clear();
+  updateUI();
+  hideTargeting();
+}
+
+function checkVictory(){
+  if(enemies.every(e=>e.isDead)){
+    addLog(`▸ <span style="color:#4caf50; font-weight:700">VICTORY · All enemies defeated</span>`, '#4caf50');
+    state.combatOver = true;
+  }
+}
+
+function endTurn(){
+  if(state.combatOver) return;
+  addLog(`▸ <span style="color:#fff">Turn ${state.turn} ended</span>`, '#666');
+  for(const k in player.cooldowns) if(player.cooldowns[k]>0) player.cooldowns[k]--;
+  player.statuses = player.statuses.filter(s=>--s.dur > 0);
+
+  for(const e of enemies){
+    if(e.isDead) continue;
+    const d = Math.max(Math.abs(e.gx-player.gx), Math.abs(e.gy-player.gy));
+    if(e.intent && e.intent.id==='slam' && d<=1){
+      const dmg = 12+Math.floor(Math.random()*7);
+      player.hp = Math.max(0, player.hp-dmg);
+      addLog(`▸ ${e.name} uses <span style="color:#ff5252">${e.intent.name}</span> → ${dmg} dmg`, '#ff8a4d');
+      floatText(player.gx, player.gy, '-'+dmg, '#ff5252');
+    } else if(e.intent && e.intent.id==='fireball' && d<=5){
+      const dmg = 14+Math.floor(Math.random()*7);
+      player.hp = Math.max(0, player.hp-dmg);
+      addLog(`▸ ${e.name} casts <span style="color:#ff5722">${e.intent.name}</span> → ${dmg} fire`, '#ce93d8');
+      floatText(player.gx, player.gy, '-'+dmg, '#ff5722');
+    } else if(e.intent && e.intent.id==='slash' && d<=1){
+      const dmg = 6+Math.floor(Math.random()*4);
+      player.hp = Math.max(0, player.hp-dmg);
+      addLog(`▸ ${e.name} attacks → ${dmg} dmg`, '#ff8a8a');
+      floatText(player.gx, player.gy, '-'+dmg, '#ff5252');
+    } else {
+      const dx=Math.sign(player.gx-e.gx), dy=Math.sign(player.gy-e.gy);
+      const nx=e.gx+dx, ny=e.gy+dy;
+      if(!isWall(nx,ny) && !isOccupied(nx,ny,e)){
+        moveActor(e, nx, ny);
+        addLog(`▸ ${e.name} approaches`, '#888');
+      } else { addLog(`▸ ${e.name} waits`, '#666'); }
+    }
+  }
+
+  if(player.hp<=0){
+    addLog(`▸ <span style="color:#ff5252; font-weight:700">DEFEAT · Kael fell</span>`, '#ff5252');
+    state.combatOver = true;
+    return;
+  }
+
+  state.turn++;
+  player.ap = player.maxAp;
+  document.getElementById('turn-text').textContent = `TURN ${state.turn}`;
+  addLog(`▸ <span style="color:#4fc3f7; font-weight:700">Turn ${state.turn} · AP refilled</span>`, '#4fc3f7');
+
+  state.selectedAction = null;
+  computeReachable();
+  state.validTargets.clear();
+  state.aoePreview.clear();
+  updateUI();
+  hideTargeting();
+}
+
+// ============================================================================
+// INPUT
+// ============================================================================
+const keys = {};
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = true;
+  if(e.key === 'Escape'){
+    state.selectedAction = null;
+    state.validTargets.clear();
+    state.aoePreview.clear();
+    updateUI();
+    hideTargeting();
+    closeAllPanels();
+  }
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = false;
+});
+
+const cam = { dragging:false, sx:0, sy:0, ox:0, oy:0, justDragged:false };
+function getEvCoords(e){
+  if(e.touches && e.touches[0]) return { x:e.touches[0].clientX, y:e.touches[0].clientY };
+  return { x:e.clientX, y:e.clientY };
+}
+canvas.addEventListener('mousedown', startDrag);
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); startDrag(e); }, { passive:false });
+function startDrag(e){
+  const c = getEvCoords(e);
+  cam.dragging = true;
+  cam.sx = c.x; cam.sy = c.y;
+  cam.ox = state.view.camX; cam.oy = state.view.camY;
+  cam.justDragged = false;
+}
+
+canvas.addEventListener('mousemove', moveDrag);
+canvas.addEventListener('touchmove', e=>{ e.preventDefault(); moveDrag(e); }, { passive:false });
+function moveDrag(e){
+  const c = getEvCoords(e);
+  if(cam.dragging){
+    const dx = c.x-cam.sx, dy = c.y-cam.sy;
+    if(Math.abs(dx)+Math.abs(dy)>4) cam.justDragged = true;
+    state.view.camX = cam.ox+dx;
+    state.view.camY = cam.oy+dy;
+  }
+  state.hover = screenToIso(c.x, c.y, state.gridW, state.gridH, viewport, getElev, state.view);
+  let foundEnemy = null;
+  if(state.hover){
+    for(const en of enemies){
+      if(en.isDead) continue;
+      if(en.gx===state.hover.gx && en.gy===state.hover.gy){ foundEnemy = en; break; }
+    }
+  }
+  if(foundEnemy !== state.hoveredEnemy){
+    state.hoveredEnemy = foundEnemy;
+    updateEnemyHover();
+  }
+  computeAoePreview();
+}
+
+canvas.addEventListener('mouseup', endDrag);
+canvas.addEventListener('touchend', e=>{ e.preventDefault(); endDrag(e); }, { passive:false });
+function endDrag(e){
+  if(cam.dragging && !cam.justDragged){ handleClick(); }
+  cam.dragging = false;
+}
+canvas.addEventListener('mouseleave', () => {
+  cam.dragging = false;
+  state.hover = null; state.hoveredEnemy = null;
+  state.aoePreview.clear();
+  updateEnemyHover();
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  state.view.zoom = Math.max(0.4, Math.min(2.5, state.view.zoom*factor));
+  updateZoomDisplay();
+}, { passive:false });
+
+function handleClick(){
+  if(state.combatOver) return;
+  if(!state.hover || !state.selectedAction) return;
+  executePlayerAction(state.hover.gx, state.hover.gy);
+}
+
+// ============================================================================
+// UI
+// ============================================================================
+function updateUI(){
+  // Top: HP bar mini
+  const hpFill = document.getElementById('hp-bar-mini-fill');
+  const hpRatio = player.hp/player.maxHp;
+  hpFill.style.width = `${hpRatio*100}%`;
+  hpFill.style.background = hpRatio>0.5 ? 'linear-gradient(90deg,#4caf50,#8bc34a)' : hpRatio>0.25 ? '#ffb300' : '#f44336';
+  document.getElementById('hp-text').textContent = `${player.hp}/${player.maxHp}`;
+  // Top: AP dots
+  const apMini = document.getElementById('ap-mini');
+  apMini.innerHTML = '';
+  for(let i=0;i<player.maxAp;i++){
+    const d = document.createElement('div');
+    d.className = 'ap-mini-dot' + (i<player.ap ? ' full' : '');
+    apMini.appendChild(d);
+  }
+  document.getElementById('ap-text').textContent = `${player.ap}/${player.maxAp}`;
+
+  updateActionButtons();
+  updateEnemyList();
+  updatePlayerStatusList();
+}
+
+function updateActionButtons(){
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    const id = btn.dataset.action;
+    btn.classList.remove('selected', 'disabled');
+    if(id === 'endturn') return;
+    if(state.combatOver){ btn.classList.add('disabled'); return; }
+    const act = ACTIONS[id];
+    if(!act) return;
+    if(player.ap < act.cost){ btn.classList.add('disabled'); return; }
+    if(act.cd){
+      const cd = player.cooldowns[id]||0;
+      if(cd > 0){ btn.classList.add('disabled'); }
+    }
+    if(state.selectedAction && state.selectedAction.id===id) btn.classList.add('selected');
+  });
+}
+
+function updateEnemyHover(){
+  const eh = document.getElementById('enemy-hover');
+  if(!state.hoveredEnemy){ eh.style.display = 'none'; return; }
+  eh.style.display = 'block';
+  const e = state.hoveredEnemy;
+  document.getElementById('eh-name').textContent = e.name;
+  document.getElementById('eh-tier').textContent = e.tier||'';
+  document.getElementById('eh-hp').textContent = `${e.hp}/${e.maxHp}`;
+  const fill = document.getElementById('eh-hp-fill');
+  const ratio = e.hp/e.maxHp;
+  fill.style.width = `${ratio*100}%`;
+  fill.style.background = ratio>0.5 ? '#4caf50' : ratio>0.25 ? '#ffb300' : '#f44336';
+  document.getElementById('eh-intent-name').textContent = e.intent?.name||'--';
+  document.getElementById('eh-intent-desc').textContent = e.intent?.desc||'';
+  document.getElementById('eh-armor').textContent = e.armor||0;
+  document.getElementById('eh-dodge').textContent = (e.dodge||0)+'%';
+  document.getElementById('eh-fire').textContent = (e.fireRes||0)+'%';
+}
+
+function updateEnemyList(){
+  const list = document.getElementById('enemy-list');
+  list.innerHTML = '';
+  for(const e of enemies){
+    if(e.isDead){
+      const dead = document.createElement('div');
+      dead.className = 'enemy-card';
+      dead.style.opacity = '0.3';
+      dead.style.borderLeftColor = '#666';
+      dead.innerHTML = `
+        <div class="enemy-card-name"><span style="color:#666">${e.name}</span><span class="enemy-card-tier">DEAD</span></div>
+      `;
+      list.appendChild(dead);
+      continue;
+    }
+    const card = document.createElement('div');
+    card.className = 'enemy-card';
+    const ratio = e.hp/e.maxHp;
+    const hpColor = ratio>0.5 ? '#4caf50' : ratio>0.25 ? '#ffb300' : '#f44336';
+    card.innerHTML = `
+      <div class="enemy-card-name">
+        <span>${e.name}</span><span class="enemy-card-tier">${e.tier||''}</span>
+      </div>
+      <div class="enemy-card-bar">
+        <div class="enemy-card-bar-fill" style="width:${ratio*100}%; background:${hpColor};"></div>
+      </div>
+      <div class="enemy-card-info">
+        <span style="color:#aaa;">HP ${e.hp}/${e.maxHp}</span>
+        ${e.intent ? `<span style="float:right; color:${e.intent.color};">▸ ${e.intent.name}</span>` : ''}
+      </div>
+      <div class="enemy-card-info" style="font-size:8px; color:#888; margin-top:2px;">
+        ${e.intent?.desc || ''}
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      // Center camera on enemy
+      const sp = isoToScreen(e.gx, e.gy, 0, viewport, { camX:0, camY:0, zoom:state.view.zoom });
+      state.view.camX = viewport.width/2 - sp.x;
+      state.view.camY = viewport.height/2 - sp.y;
+      closeAllPanels();
+    });
+    list.appendChild(card);
+  }
+}
+
+function updatePlayerStatusList(){
+  const list = document.getElementById('player-status-list');
+  if(!player.statuses.length){
+    list.innerHTML = `<span style="color:#666; font-size:10px;">No active statuses</span>`;
+    return;
+  }
+  list.innerHTML = '';
+  for(const s of player.statuses){
+    const span = document.createElement('span');
+    span.className = 'status-pill';
+    span.textContent = `${s.icon||'•'} ${s.name} ${s.dur}t`;
+    list.appendChild(span);
+  }
+}
+
+function showTargeting(act){
+  const t = document.getElementById('targeting-hint');
+  t.style.display = 'block';
+  document.getElementById('targeting-text').textContent = `▸ TARGET FOR ${act.name} · ESC to cancel`;
+}
+function hideTargeting(){
+  document.getElementById('targeting-hint').style.display = 'none';
+}
+
+function addLog(html, color){
+  const entries = document.getElementById('log-entries');
+  const div = document.createElement('div');
+  div.style.color = color||'#aaa';
+  div.innerHTML = html;
+  entries.appendChild(div);
+  if(entries.children.length>25) entries.removeChild(entries.firstChild);
+  entries.scrollTop = entries.scrollHeight;
+}
+
+function floatText(gx, gy, text, color){
+  const sp = isoToScreen(gx, gy, getElev(gx,gy), viewport, state.view);
+  const div = document.createElement('div');
+  div.className = 'float-text';
+  div.style.color = color;
+  div.style.left = sp.x+'px';
+  div.style.top = (sp.y-30)+'px';
+  div.textContent = text;
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(), 1200);
+}
+
+// ============================================================================
+// PANEL CONTROLS
+// ============================================================================
+function openPanel(id){
+  closeAllPanels();
+  const p = document.getElementById('panel-'+id);
+  if(p){
+    p.classList.add('open');
+    state.openPanel = id;
+    document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('btn-'+id);
+    if(btn) btn.classList.add('active');
+    if(id === 'map') drawMinimap();
+  }
+}
+function closeAllPanels(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+  state.openPanel = null;
+}
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAllPanels));
+document.getElementById('btn-map').addEventListener('click', () => {
+  state.openPanel === 'map' ? closeAllPanels() : openPanel('map');
+});
+document.getElementById('btn-log').addEventListener('click', () => {
+  state.openPanel === 'log' ? closeAllPanels() : openPanel('log');
+});
+document.getElementById('btn-options').addEventListener('click', () => {
+  state.openPanel === 'options' ? closeAllPanels() : openPanel('options');
+});
+
+// ============================================================================
+// ACTION BAR
+// ============================================================================
+document.querySelectorAll('.action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(state.combatOver) return;
+    const id = btn.dataset.action;
+    if(id === 'endturn'){ endTurn(); return; }
+    if(btn.classList.contains('disabled')) return;
+    const act = ACTIONS[id];
+    if(state.selectedAction && state.selectedAction.id === id){
+      // Toggle off
+      state.selectedAction = null;
+      state.validTargets.clear();
+      state.aoePreview.clear();
+      updateActionButtons();
+      hideTargeting();
+      return;
+    }
+    state.selectedAction = act;
+    computeValidTargets(act);
+    updateActionButtons();
+    showTargeting(act);
+    closeAllPanels();
+  });
+});
+
+// ============================================================================
+// ZOOM CONTROLS
+// ============================================================================
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+  state.view.zoom = Math.min(2.5, state.view.zoom*1.15);
+  updateZoomDisplay();
+});
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+  state.view.zoom = Math.max(0.4, state.view.zoom/1.15);
+  updateZoomDisplay();
+});
+document.getElementById('btn-center').addEventListener('click', () => {
+  state.view.camX = 0; state.view.camY = 0;
+});
+function updateZoomDisplay(){
+  document.getElementById('zoom-display').textContent = `${Math.round(state.view.zoom*100)}%`;
+}
+
+// ============================================================================
+// OPTIONS PANEL
+// ============================================================================
+const biomeButtons = document.getElementById('biome-buttons');
+const biomes = listBiomeConfigs();
+for(const cfg of biomes){
+  const btn = document.createElement('button');
+  btn.className = 'opt-btn' + (cfg.id===state.biomeId ? ' active' : '');
+  btn.dataset.biome = cfg.id;
+  btn.textContent = cfg.name;
+  btn.style.textAlign = 'center';
+  btn.addEventListener('click', () => {
+    state.biomeId = cfg.id;
+    genTileMap();
+    document.querySelectorAll('#biome-buttons button').forEach(b =>
+      b.classList.toggle('active', b.dataset.biome===state.biomeId));
+  });
+  biomeButtons.appendChild(btn);
+}
+document.getElementById('opt-grid').addEventListener('click', e => {
+  state.options.showGrid = !state.options.showGrid;
+  e.target.classList.toggle('active', state.options.showGrid);
+});
+document.getElementById('opt-night').addEventListener('click', e => {
+  state.options.night = !state.options.night;
+  e.target.classList.toggle('active', state.options.night);
+});
+document.getElementById('opt-bevel').addEventListener('click', e => {
+  state.options.bevel = !state.options.bevel;
+  e.target.classList.toggle('active', !state.options.bevel);
+});
+document.getElementById('opt-reroll').addEventListener('click', () => {
+  state.mapSeed = Math.floor(Math.random()*9999);
+  genTileMap();
+  computeReachable();
+  drawMinimap();
+});
+document.getElementById('opt-reset').addEventListener('click', () => {
+  // Reset combat
+  player.gx=2; player.gy=3; player.ax=2; player.ay=3;
+  player.hp=player.maxHp; player.ap=player.maxAp;
+  player.target=null; player.cooldowns={};
+  for(const e of enemies){
+    e.isDead = false;
+    e.hp = e.maxHp;
+  }
+  enemies[0].gx=9; enemies[0].gy=2; enemies[0].ax=9; enemies[0].ay=2;
+  enemies[1].gx=6; enemies[1].gy=7; enemies[1].ax=6; enemies[1].ay=7;
+  enemies[2].gx=11; enemies[2].gy=6; enemies[2].ax=11; enemies[2].ay=6;
+  state.turn = 1;
+  state.combatOver = false;
+  state.selectedAction = null;
+  document.getElementById('turn-text').textContent = 'TURN 1';
+  document.getElementById('log-entries').innerHTML = '';
+  addLog(`▸ <span style="color:#4fc3f7">Combat reset</span>`, '#aaa');
+  computeReachable();
+  updateUI();
+  closeAllPanels();
+});
+
+// ============================================================================
+// MINIMAP
+// ============================================================================
+function drawMinimap(){
+  const w = minimap.width, h = minimap.height;
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0,0,w,h);
+  const sx = w/state.gridW, sy = h/state.gridH;
+  const biome = getBiome(state.biomeId);
+  for(let x=0;x<state.gridW;x++) for(let y=0;y<state.gridH;y++){
+    const t = state.tileGrid[x+','+y];
+    if(!t) continue;
+    mctx.fillStyle = t.isWall ? '#222' : biome.config.base;
+    mctx.fillRect(x*sx, y*sy, sx-0.3, sy-0.3);
+  }
+  mctx.fillStyle = '#4fc3f7';
+  mctx.fillRect(player.gx*sx-1, player.gy*sy-1, sx+2, sy+2);
+  for(const e of enemies){
+    if(e.isDead) continue;
+    mctx.fillStyle = '#ff5252';
+    mctx.fillRect(e.gx*sx-1, e.gy*sy-1, sx+2, sy+2);
+  }
+}
+minimap.addEventListener('click', e => {
+  const r = minimap.getBoundingClientRect();
+  const mx = (e.clientX-r.left)/r.width;
+  const my = (e.clientY-r.top)/r.height;
+  const gx = mx*state.gridW;
+  const gy = my*state.gridH;
+  const sp = isoToScreen(gx, gy, 0, viewport, { camX:0, camY:0, zoom:state.view.zoom });
+  state.view.camX = viewport.width/2 - sp.x;
+  state.view.camY = viewport.height/2 - sp.y;
+  closeAllPanels();
+});
+
+// ============================================================================
+// LOOP
+// ============================================================================
+function tick(){
+  for(const a of allActors) updateActor(a);
+  particles.update();
+  if(keys.w) state.view.camY += 5;
+  if(keys.s) state.view.camY -= 5;
+  if(keys.a) state.view.camX += 5;
+  if(keys.d) state.view.camX -= 5;
+}
+setInterval(tick, 16);
+
+function render(){
+  let targetColor = '#ff5252';
+  if(state.selectedAction){
+    if(state.selectedAction.type === 'spell') targetColor = '#9c27b0';
+    else if(state.selectedAction.id === 'move') targetColor = getBiome(state.biomeId).config.accent;
+  }
+  renderFrame(ctx, {
+    viewport,
+    tileGrid: state.tileGrid,
+    gridW: state.gridW, gridH: state.gridH,
+    actors: allActors,
+    hover: state.hover,
+    reachableSet: state.selectedAction?.id === 'move' ? state.reachableSet : new Set(),
+    validTargets: state.selectedAction && state.selectedAction.id !== 'move' ? state.validTargets : new Set(),
+    aoePreview: state.aoePreview,
+    biome: getBiome(state.biomeId),
+    particles,
+    time: state.time++,
+    view: state.view,
+    options: { ...state.options, targetColor },
+  });
+  if(state.openPanel === 'map') drawMinimap();
+  requestAnimationFrame(render);
+}
+
+// ============================================================================
+// INIT
+// ============================================================================
+addLog(`▸ <span style="color:#4fc3f7">Combat start in INFERNO_07</span>`, '#aaa');
+addLog(`▸ 3 enemies detected`, '#aaa');
+addLog(`▸ <span style="color:#4fc3f7">Turn 1 · Your move</span>`, '#aaa');
+computeReachable();
+updateUI();
+updateZoomDisplay();
+render();
+
+window.addEventListener('error', ev => {
+  const display = document.getElementById('error-display');
+  display.style.display = 'block';
+  display.innerHTML = `
+    <strong>⚠ Erreur :</strong>
+    <pre>${ev.message}\nSource: ${ev.filename}:${ev.lineno}</pre>
+    <p style="margin-top:10px; color:#aaa">Vérifie que tous les fichiers sont à jour dans <code>src/js/render/</code>.</p>
+  `;
+});
+</script>
+</body>
+</html>
