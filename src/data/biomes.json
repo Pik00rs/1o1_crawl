@@ -1,0 +1,101 @@
+{
+  "_meta": {
+    "description": "Les 5 biomes du jeu. Chaque biome a un thème, des tags favorisés (pour les drops d'affixes), et une essence spécifique.",
+    "rule": "Quand un drop a lieu dans un biome, 50% chance que les affixes rollés soient du tag favorisé du biome."
+  },
+  "inferno": {
+    "id": "inferno",
+    "name": "Inferno Sector",
+    "icon": "🔥",
+    "theme": "Industrial in flames",
+    "description": "Forges désaffectées, raffineries en flammes, machines en surchauffe.",
+    "favoredTags": ["Fire", "Stun", "Rage"],
+    "essence": {
+      "id": "ashEmber",
+      "name": "Cendres ardentes",
+      "icon": "🔥"
+    },
+    "enemyArchetypes": ["Pyro", "Brute", "Berserker"],
+    "favoredImplicits": ["sword", "axe", "mace", "wand", "staff"],
+    "lootBonus": {
+      "fireTaggedAffix": 0.5,
+      "fireWeaponDropBonus": 0.3
+    }
+  },
+  "cryo": {
+    "id": "cryo",
+    "name": "Cryo Vault",
+    "icon": "❄️",
+    "theme": "Cryogenic storage facility",
+    "description": "Coffres-forts cryogéniques, IA dormantes, glace bleue éternelle.",
+    "favoredTags": ["Ice", "Slow", "Shield"],
+    "essence": {
+      "id": "frostShard",
+      "name": "Éclats glacés",
+      "icon": "❄️"
+    },
+    "enemyArchetypes": ["Frost", "Tank", "Sentinel"],
+    "favoredImplicits": ["shield", "staff", "wand", "mace"],
+    "lootBonus": {
+      "iceTaggedAffix": 0.5,
+      "shieldDropBonus": 0.3
+    }
+  },
+  "toxic": {
+    "id": "toxic",
+    "name": "Toxic Wastes",
+    "icon": "☠️",
+    "theme": "Mutant sewers",
+    "description": "Égouts mutants, déchets bio-toxiques, bêtes acidifiées.",
+    "favoredTags": ["Poison", "Bleed", "Lifesteal"],
+    "essence": {
+      "id": "acidBile",
+      "name": "Bave acide",
+      "icon": "☠️"
+    },
+    "enemyArchetypes": ["Beast", "Decay", "Mutant"],
+    "favoredImplicits": ["dagger", "axe", "bow", "wand"],
+    "lootBonus": {
+      "poisonOrBleedAffix": 0.5,
+      "lifestealAffix": 0.2
+    }
+  },
+  "voidnet": {
+    "id": "voidnet",
+    "name": "Voidnet",
+    "icon": "⚡",
+    "theme": "Cyberspace",
+    "description": "Grille numérique, glitches, fantômes IA, code qui défile.",
+    "favoredTags": ["Shock", "Crit", "Echo"],
+    "essence": {
+      "id": "digitalFragment",
+      "name": "Fragments numériques",
+      "icon": "⚡"
+    },
+    "enemyArchetypes": ["Netrunner", "Spectre", "AI"],
+    "favoredImplicits": ["pistol", "wand", "bow", "staff"],
+    "lootBonus": {
+      "shockOrCritAffix": 0.5,
+      "casterDropBonus": 0.3
+    }
+  },
+  "crimson": {
+    "id": "crimson",
+    "name": "Crimson Pits",
+    "icon": "🩸",
+    "theme": "Bloody arena",
+    "description": "Arènes underground corpo, fight clubs, charniers de gladiateurs.",
+    "favoredTags": ["Bleed", "Execute", "Crit"],
+    "essence": {
+      "id": "coagulatedBlood",
+      "name": "Sang coagulé",
+      "icon": "🩸"
+    },
+    "enemyArchetypes": ["Berserker", "Blade", "Gladiator"],
+    "favoredImplicits": ["sword", "axe", "dagger", "halberd"],
+    "lootBonus": {
+      "bleedOrExecuteAffix": 0.5,
+      "meleeWeaponDropBonus": 0.3
+    }
+  }
+}

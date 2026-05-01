@@ -1,0 +1,48 @@
+.actions { display: flex; flex-direction: column; gap: 4px; }
+.action-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid #555;
+  padding: 8px;
+  font-family: inherit; font-size: 12px;
+  cursor: pointer; border-radius: 3px;
+  text-align: left; transition: background 0.1s;
+}
+.action-btn:hover:not(:disabled) {
+  background: #4a4a4a; border-color: var(--accent);
+}
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.action-btn.selected {
+  background: var(--accent); color: var(--bg-primary);
+  border-color: var(--accent);
+}
+.action-cost { color: #88f; float: right; }
+.action-cd { color: #f88; float: right; font-size: 10px; }
+
+#end-turn-btn {
+  background: #c44; color: white; border: none;
+  padding: 10px; font-family: inherit; font-size: 13px;
+  cursor: pointer; border-radius: 3px; margin-top: 8px;
+}
+#end-turn-btn:hover { background: #d55; }
+
+#combat-end {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent);
+  padding: 30px; border-radius: 8px;
+  text-align: center; z-index: 200; display: none;
+  min-width: 300px;
+}
+#combat-end h2 { font-size: 24px; margin-bottom: 12px; border-bottom: none; }
+#combat-end button {
+  background: var(--accent); color: var(--bg-primary);
+  border: none; padding: 10px 20px; margin-top: 12px;
+  cursor: pointer; font-family: inherit; font-weight: bold;
+  border-radius: 3px;
+}
+.loot-item {
+  margin: 4px 0; padding: 4px;
+  background: var(--bg-primary); border-radius: 3px;
+}

@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Dungeon Crawler — Prototype</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', monospace;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  h1 { color: #f0c060; margin-bottom: 10px; font-size: 20px; }
+  .layout {
+    display: grid;
+    grid-template-columns: auto 320px;
+    gap: 20px;
+    max-width: 1100px;
+  }
+  .left-panel { display: flex; flex-direction: column; gap: 12px; }
+  .right-panel { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Timeline */
+  #timeline {
+    background: #2a2a2a;
+    padding: 8px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .timeline-entry {
+    padding: 4px 8px;
+    background: #3a3a3a;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .timeline-entry.active {
+    background: #f0c060;
+    color: #1a1a1a;
+    font-weight: bold;
+  }
+  .timeline-entry.dead { opacity: 0.3; text-decoration: line-through; }
+
+  /* Grid */
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);
+    grid-template-rows: repeat(6, 60px);
+    gap: 2px;
+    background: #444;
+    padding: 2px;
+    border-radius: 4px;
+  }
+  .cell {
+    background: #2d2d2d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .cell:hover { background: #3d3d3d; }
+  .cell.wall { background: #555; cursor: not-allowed; }
+  .cell.move-range { background: #2a4a2a; }
+  .cell.move-range:hover { background: #3a6a3a; }
+  .cell.attack-range { background: #4a2a2a; }
+  .cell.attack-range:hover { background: #6a3a3a; }
+  .cell.spell-range { background: #2a2a4a; }
+  .cell.spell-range:hover { background: #3a3a6a; }
+  .cell.spell-aoe { background: #4a4a2a; }
+  .cell.fire { background: #4a2a1a; }
+  .hp-bar {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    right: 4px;
+    height: 4px;
+    background: #222;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .hp-bar-fill {
+    height: 100%;
+    background: #4a8;
+    transition: width 0.2s;
+  }
+  .hp-bar-fill.enemy { background: #c44; }
+  .status-icons {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+    display: flex;
+    gap: 1px;
+  }
+
+  /* Player info */
+  .panel {
+    background: #2a2a2a;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+  }
+  .panel h2 {
+    font-size: 14px;
+    color: #f0c060;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 4px;
+  }
+  .stat-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 2px 0;
+  }
+  .stat-bar {
+    height: 14px;
+    background: #1a1a1a;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 2px 0 6px 0;
+    position: relative;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    transition: width 0.2s;
+  }
+  .stat-bar-text {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    text-align: center;
+    font-size: 11px;
+    line-height: 14px;
+    color: #fff;
+    text-shadow: 1px 1px 1px #000;
+  }
+
+  /* Actions */
+  .actions { display: flex; flex-direction: column; gap: 4px; }
+  .action-btn {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #555;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    text-align: left;
+    transition: background 0.1s;
+  }
+  .action-btn:hover:not(:disabled) { background: #4a4a4a; border-color: #f0c060; }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-btn.selected { background: #f0c060; color: #1a1a1a; border-color: #f0c060; }
+  .action-cost { color: #88f; float: right; }
+  .action-cd { color: #f88; float: right; font-size: 10px; }
+
+  /* Equipment */
+  .equip-slot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    background: #1f1f1f;
+    margin: 2px 0;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .equip-slot:hover { background: #2f2f2f; }
+  .equip-icon { font-size: 18px; }
+  .rarity-common { color: #ccc; }
+  .rarity-magic { color: #6af; }
+  .rarity-rare { color: #fc4; }
+  .rarity-epic { color: #c4f; }
+
+  /* Log */
+  #log {
+    background: #1a1a1a;
+    padding: 8px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    height: 180px;
+    overflow-y: auto;
+    font-size: 11px;
+  }
+  .log-entry { padding: 2px 0; border-bottom: 1px solid #2a2a2a; }
+  .log-damage { color: #f88; }
+  .log-heal { color: #8f8; }
+  .log-status { color: #fc4; }
+  .log-info { color: #aaa; }
+  .log-combat-end { color: #f0c060; font-weight: bold; }
+
+  #end-turn-btn {
+    background: #c44;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+  #end-turn-btn:hover { background: #d55; }
+
+  .tooltip {
+    position: absolute;
+    background: #000;
+    border: 1px solid #f0c060;
+    padding: 8px;
+    font-size: 11px;
+    max-width: 250px;
+    pointer-events: none;
+    z-index: 100;
+    border-radius: 3px;
+    display: none;
+  }
+
+  #combat-end {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #2a2a2a;
+    border: 2px solid #f0c060;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    z-index: 200;
+    display: none;
+  }
+  #combat-end h2 { color: #f0c060; font-size: 24px; margin-bottom: 12px; }
+  #combat-end button {
+    background: #f0c060;
+    color: #1a1a1a;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    border-radius: 3px;
+  }
+  .loot-item { margin: 4px 0; padding: 4px; background: #1a1a1a; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>⚔️ Dungeon Crawler — Prototype v0.1</h1>
+
+<div id="timeline"></div>
+
+<div class="layout">
+  <div class="left-panel">
+    <div id="grid"></div>
+    <div class="panel">
+      <h2>📜 Journal de combat</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="panel">
+      <h2 id="player-name">🧙 Kael</h2>
+      <div class="stat-line"><span>PV</span><span id="hp-text">32/32</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="hp-fill" style="background:#4a8;width:100%"></div></div>
+      <div class="stat-line"><span>AP</span><span id="ap-text">6/6</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="ap-fill" style="background:#48f;width:100%"></div></div>
+      <div class="stat-line"><span>Armure</span><span id="armor-text">14</span></div>
+      <div class="stat-line" id="status-line"><span>Statuts</span><span id="status-text">Aucun</span></div>
+    </div>
+
+    <div class="panel">
+      <h2>⚔️ Actions</h2>
+      <div class="actions" id="actions"></div>
+      <button id="end-turn-btn">▶ Fin du tour</button>
+    </div>
+
+    <div class="panel">
+      <h2>🎒 Équipement</h2>
+      <div id="equipment"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip" class="tooltip"></div>
+
+<div id="combat-end">
+  <h2 id="end-title">Victoire !</h2>
+  <div id="end-content"></div>
+  <button onclick="restartCombat()">Recommencer</button>
+</div>
+
+<script>
+// ============================================================
+//                    DATA — DÉFINITIONS
+// ============================================================
+
+const WEAPONS = {
+  flameSword: {
+    id: 'flameSword',
+    name: 'Lame de l\'Embrasement',
+    icon: '🗡️',
+    rarity: 'rare',
+    type: 'weapon',
+    damage: [18, 24],
+    damageType: 'slash',
+    bonusDamage: { fire: [5, 8] },
+    skills: [
+      {
+        id: 'basicAttack',
+        name: 'Attaque',
+        cost: 2,
+        type: 'attack',
+        range: 1,
+        targetType: 'enemy',
+        desc: 'Attaque de mêlée tranchante.',
+      },
+      {
+        id: 'flameStrike',
+        name: 'Coup Ardent',
+        cost: 3,
+        cooldown: 2,
+        type: 'attack',
+        range: 1,
+        targetType: 'enemy',
+        damageMult: 1.5,
+        applyStatus: { id: 'burning', duration: 3, power: 4 },
+        desc: 'Frappe enflammée x1.5 dégâts. Inflige Brûlé 3 tours.',
+      },
+    ],
+  },
+  shortBow: {
+    id: 'shortBow',
+    name: 'Arc Court',
+    icon: '🏹',
+    rarity: 'common',
+    type: 'weapon',
+    damage: [10, 16],
+    damageType: 'pierce',
+    skills: [
+      {
+        id: 'basicAttack',
+        name: 'Tir',
+        cost: 2,
+        type: 'attack',
+        range: 5,
+        targetType: 'enemy',
+        desc: 'Tir à distance.',
+      },
+      {
+        id: 'precisionShot',
+        name: 'Tir Précis',
+        cost: 4,
+        cooldown: 3,
+        type: 'attack',
+        range: 6,
+        targetType: 'enemy',
+        damageMult: 2,
+        critBonus: 25,
+        desc: 'Tir x2 dégâts, +25% chance de critique.',
+      },
+    ],
+  },
+};
+
+const ARMOR = {
+  guardShield: {
+    id: 'guardShield',
+    name: 'Bouclier de Garde',
+    icon: '🛡️',
+    rarity: 'magic',
+    type: 'offhand',
+    armor: 8,
+    desc: 'Réduit les dégâts. Riposte automatique en mêlée (passif).',
+  },
+};
+
+const ACCESSORIES = {
+  windBoots: {
+    id: 'windBoots',
+    name: 'Bottes des Vents',
+    icon: '👢',
+    rarity: 'magic',
+    type: 'boots',
+    bonusAP: 1,
+    desc: '+1 AP par tour.',
+  },
+  pyroRing: {
+    id: 'pyroRing',
+    name: 'Anneau de Pyromancie',
+    icon: '💍',
+    rarity: 'rare',
+    type: 'ring',
+    skills: [
+      {
+        id: 'fireball',
+        name: 'Boule de Feu',
+        cost: 4,
+        cooldown: 3,
+        type: 'spell',
+        range: 4,
+        aoe: 1, // rayon 1 = 3x3
+        targetType: 'tile',
+        damage: [12, 16],
+        damageType: 'fire',
+        applyStatus: { id: 'burning', duration: 2, power: 3 },
+        desc: 'Sort de feu en zone 3x3. Inflige Brûlé.',
+      },
+    ],
+    desc: 'Octroie le sort Boule de Feu.',
+  },
+};
+
+const STATUSES = {
+  burning: {
+    id: 'burning',
+    name: 'Brûlé',
+    icon: '🔥',
+    type: 'dot',
+    desc: 'Subit des dégâts de feu chaque tour.',
+  },
+  bleeding: {
+    id: 'bleeding',
+    name: 'Saignement',
+    icon: '🩸',
+    type: 'dot',
+    desc: 'Dégâts physiques chaque tour, ignore l\'armure.',
+  },
+  stunned: {
+    id: 'stunned',
+    name: 'Étourdi',
+    icon: '💫',
+    type: 'cc',
+    desc: 'Saute son prochain tour.',
+  },
+};
+
+const ENEMY_TYPES = {
+  goblinWarrior: {
+    name: 'Gobelin Guerrier',
+    icon: '👹',
+    hp: 14,
+    armor: 4,
+    attackPower: [6, 9],
+    damageType: 'slash',
+    range: 1,
+    moveSpeed: 4,
+    initiative: 12,
+    ai: 'aggressive',
+  },
+  goblinShaman: {
+    name: 'Chaman Gobelin',
+    icon: '🧌',
+    hp: 12,
+    armor: 2,
+    attackPower: [10, 14],
+    damageType: 'lightning',
+    range: 4,
+    moveSpeed: 3,
+    initiative: 14,
+    ai: 'caster',
+    hasHeal: true,
+  },
+};
+
+// ============================================================
+//                    ÉTAT DU JEU
+// ============================================================
+
+const GRID_W = 8;
+const GRID_H = 6;
+
+let state = {};
+
+function initState() {
+  state = {
+    turn: 0,
+    currentActorIdx: 0,
+    initiative: [],
+    walls: new Set(['3,2', '3,3', '4,2', '4,3']),
+    fireTiles: new Map(), // "x,y" -> turnsLeft
+    selectedSkill: null,
+    targetingMode: null, // null | 'move' | 'attack' | 'spell'
+    validTargets: new Set(),
+    aoePreview: new Set(),
+    log: [],
+    combatOver: false,
+  };
+
+  state.player = {
+    id: 'player',
+    name: 'Kael',
+    icon: '🧙',
+    isPlayer: true,
+    x: 1, y: 2,
+    hp: 32, maxHp: 32,
+    ap: 0, maxAp: 6,
+    bonusAp: 1, // bottes
+    armor: 14,
+    initiative: 18,
+    statuses: [],
+    cooldowns: {},
+    equipment: {
+      mainhand: WEAPONS.flameSword,
+      offhand: ARMOR.guardShield,
+      boots: ACCESSORIES.windBoots,
+      ring: ACCESSORIES.pyroRing,
+    },
+    isDead: false,
+  };
+
+  state.enemies = [
+    createEnemy('goblin1', 'goblinWarrior', 6, 2),
+    createEnemy('goblin2', 'goblinWarrior', 6, 3),
+    createEnemy('shaman1', 'goblinShaman', 6, 5),
+  ];
+
+  state.actors = [state.player, ...state.enemies];
+  computeInitiative();
+}
+
+function createEnemy(id, typeId, x, y) {
+  const t = ENEMY_TYPES[typeId];
+  return {
+    id, typeId,
+    name: t.name,
+    icon: t.icon,
+    isPlayer: false,
+    x, y,
+    hp: t.hp, maxHp: t.hp,
+    armor: t.armor,
+    attackPower: t.attackPower,
+    damageType: t.damageType,
+    range: t.range,
+    moveSpeed: t.moveSpeed,
+    initiative: t.initiative + Math.floor(Math.random() * 5),
+    ai: t.ai,
+    hasHeal: t.hasHeal,
+    statuses: [],
+    healCooldown: 0,
+    isDead: false,
+  };
+}
+
+// ============================================================
+//                    HELPERS
+// ============================================================
+
+function key(x, y) { return `${x},${y}`; }
+function inBounds(x, y) { return x >= 0 && x < GRID_W && y >= 0 && y < GRID_H; }
+function isWall(x, y) { return state.walls.has(key(x, y)); }
+
+function getActorAt(x, y) {
+  return state.actors.find(a => !a.isDead && a.x === x && a.y === y);
+}
+
+function distance(a, b) {
+  // Distance Chebyshev (8 directions)
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+}
+
+function isPassable(x, y, ignoreActor) {
+  if (!inBounds(x, y)) return false;
+  if (isWall(x, y)) return false;
+  const a = getActorAt(x, y);
+  if (a && a !== ignoreActor) return false;
+  return true;
+}
+
+function rollDamage(range) {
+  return range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1));
+}
+
+function getCellsInAOE(cx, cy, radius) {
+  const cells = [];
+  for (let dx = -radius; dx <= radius; dx++) {
+    for (let dy = -radius; dy <= radius; dy++) {
+      const nx = cx + dx, ny = cy + dy;
+      if (inBounds(nx, ny) && !isWall(nx, ny)) {
+        cells.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return cells;
+}
+
+function getReachableCells(actor, maxAP) {
+  // BFS pour le mouvement (8 directions, coût 1 par case)
+  const reachable = new Map(); // "x,y" -> AP utilisé
+  reachable.set(key(actor.x, actor.y), 0);
+  const queue = [{ x: actor.x, y: actor.y, cost: 0 }];
+
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    if (cur.cost >= maxAP) continue;
+
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = cur.x + dx, ny = cur.y + dy;
+        const k = key(nx, ny);
+        if (!isPassable(nx, ny, actor)) continue;
+        const newCost = cur.cost + 1;
+        if (!reachable.has(k) || reachable.get(k) > newCost) {
+          if (newCost <= maxAP) {
+            reachable.set(k, newCost);
+            queue.push({ x: nx, y: ny, cost: newCost });
+          }
+        }
+      }
+    }
+  }
+  reachable.delete(key(actor.x, actor.y));
+  return reachable;
+}
+
+// ============================================================
+//                    INITIATIVE & TOURS
+// ============================================================
+
+function computeInitiative() {
+  state.initiative = [...state.actors]
+    .filter(a => !a.isDead)
+    .sort((a, b) => b.initiative - a.initiative);
+}
+
+function getCurrentActor() {
+  return state.initiative[state.currentActorIdx];
+}
+
+function startTurn(actor) {
+  // Reset AP
+  actor.ap = (actor.maxAp || 0) + (actor.bonusAp || 0);
+
+  // Tick statuses (DoT au début du tour)
+  applyDoTStatuses(actor);
+  if (actor.isDead) return advanceTurn();
+
+  // Tick cooldowns
+  if (actor.cooldowns) {
+    for (const k in actor.cooldowns) {
+      if (actor.cooldowns[k] > 0) actor.cooldowns[k]--;
+    }
+  }
+  if (actor.healCooldown > 0) actor.healCooldown--;
+
+  // Décrément durée des statuts
+  actor.statuses = actor.statuses.filter(s => {
+    s.duration--;
+    return s.duration > 0;
+  });
+
+  // Statut Étourdi : passe le tour
+  const stunned = actor.statuses.find(s => s.id === 'stunned');
+  if (stunned) {
+    log(`${actor.name} est étourdi et passe son tour.`, 'status');
+    setTimeout(() => endTurn(), 600);
+    return;
+  }
+
+  log(`--- Tour de ${actor.name} ---`, 'info');
+
+  if (actor.isPlayer) {
+    state.selectedSkill = null;
+    state.targetingMode = null;
+    render();
+  } else {
+    setTimeout(() => runEnemyAI(actor), 600);
+  }
+}
+
+function endTurn() {
+  // Tick fire tiles
+  for (const [k, turns] of state.fireTiles.entries()) {
+    state.fireTiles.set(k, turns - 1);
+    if (state.fireTiles.get(k) <= 0) state.fireTiles.delete(k);
+  }
+  advanceTurn();
+}
+
+function advanceTurn() {
+  if (checkCombatEnd()) return;
+  state.currentActorIdx = (state.currentActorIdx + 1) % state.initiative.length;
+  if (state.currentActorIdx === 0) state.turn++;
+  const next = getCurrentActor();
+  if (next.isDead) return advanceTurn();
+  startTurn(next);
+}
+
+function applyDoTStatuses(actor) {
+  for (const s of actor.statuses) {
+    if (s.id === 'burning') {
+      const dmg = s.power;
+      actor.hp -= dmg;
+      log(`${actor.name} subit ${dmg} dégâts de feu (Brûlé).`, 'damage');
+      if (actor.hp <= 0) killActor(actor);
+    } else if (s.id === 'bleeding') {
+      const dmg = s.power;
+      actor.hp -= dmg;
+      log(`${actor.name} subit ${dmg} dégâts (Saignement).`, 'damage');
+      if (actor.hp <= 0) killActor(actor);
+    }
+  }
+}
+
+function checkCombatEnd() {
+  if (state.player.isDead) {
+    state.combatOver = true;
+    showCombatEnd(false);
+    return true;
+  }
+  if (state.enemies.every(e => e.isDead)) {
+    state.combatOver = true;
+    showCombatEnd(true);
+    return true;
+  }
+  return false;
+}
+
+// ============================================================
+//                    COMBAT — RÉSOLUTION
+// ============================================================
+
+function performAttack(attacker, target, skill, weapon) {
+  if (target.isDead) return;
+  let dmg;
+  let isSpell = skill.type === 'spell';
+
+  if (skill.damage) {
+    // Sort avec dégâts définis
+    dmg = rollDamage(skill.damage);
+  } else if (weapon) {
+    dmg = rollDamage(weapon.damage);
+    if (weapon.bonusDamage) {
+      for (const t in weapon.bonusDamage) {
+        dmg += rollDamage(weapon.bonusDamage[t]);
+      }
+    }
+  } else {
+    // attaque ennemie
+    dmg = rollDamage(attacker.attackPower);
+  }
+
+  if (skill.damageMult) dmg = Math.floor(dmg * skill.damageMult);
+
+  // Critique
+  let critChance = 5 + (skill.critBonus || 0);
+  let isCrit = Math.random() * 100 < critChance;
+  if (isCrit) dmg *= 2;
+
+  // Mitigation par armure (sorts ignorent 50% armure)
+  const effArmor = isSpell ? Math.floor(target.armor / 2) : target.armor;
+  dmg = Math.max(1, dmg - effArmor);
+
+  target.hp -= dmg;
+
+  log(`${attacker.name} frappe ${target.name} pour ${dmg} dégâts${isCrit ? ' (CRIT!)' : ''}.`, 'damage');
+
+  // Apply status
+  if (skill.applyStatus) {
+    applyStatus(target, skill.applyStatus);
+  }
+
+  // Riposte (passif bouclier)
+  if (target.isPlayer && target.equipment?.offhand?.id === 'guardShield' && skill.range === 1 && !isSpell) {
+    if (!target.ripostedThisTurn) {
+      target.ripostedThisTurn = true;
+      const riposteDmg = Math.max(1, Math.floor(rollDamage([4, 7]) - attacker.armor / 2));
+      attacker.hp -= riposteDmg;
+      log(`${target.name} riposte pour ${riposteDmg} dégâts !`, 'damage');
+      if (attacker.hp <= 0) killActor(attacker);
+    }
+  }
+
+  if (target.hp <= 0) killActor(target);
+}
+
+function applyStatus(target, statusDef) {
+  const existing = target.statuses.find(s => s.id === statusDef.id);
+  if (existing) {
+    existing.duration = Math.max(existing.duration, statusDef.duration);
+    existing.power = Math.max(existing.power || 0, statusDef.power || 0);
+  } else {
+    target.statuses.push({ ...statusDef });
+  }
+  log(`${target.name} est ${STATUSES[statusDef.id].name} !`, 'status');
+}
+
+function killActor(actor) {
+  actor.isDead = true;
+  log(`💀 ${actor.name} est vaincu !`, 'combat-end');
+}
+
+// ============================================================
+//                    SKILLS DU JOUEUR
+// ============================================================
+
+function getPlayerSkills() {
+  const skills = [];
+  const eq = state.player.equipment;
+  for (const slot in eq) {
+    const item = eq[slot];
+    if (item.skills) {
+      for (const sk of item.skills) {
+        skills.push({ ...sk, source: item, sourceSlot: slot });
+      }
+    }
+  }
+  return skills;
+}
+
+function selectSkill(skill) {
+  if (state.player.ap < skill.cost) return;
+  if (skill.cooldown && state.player.cooldowns[skill.id] > 0) return;
+
+  state.selectedSkill = skill;
+
+  if (skill.type === 'attack' || skill.type === 'spell') {
+    state.targetingMode = skill.aoe ? 'aoe' : 'attack';
+    state.validTargets = new Set();
+    // Valid targets = cases dans la portée
+    for (let x = 0; x < GRID_W; x++) {
+      for (let y = 0; y < GRID_H; y++) {
+        if (!inBounds(x, y) || isWall(x, y)) continue;
+        const dx = Math.abs(x - state.player.x);
+        const dy = Math.abs(y - state.player.y);
+        const dist = Math.max(dx, dy);
+        if (dist === 0) continue;
+        if (dist > skill.range) continue;
+        if (skill.targetType === 'enemy') {
+          const a = getActorAt(x, y);
+          if (a && !a.isDead && !a.isPlayer) state.validTargets.add(key(x, y));
+        } else if (skill.targetType === 'tile') {
+          state.validTargets.add(key(x, y));
+        }
+      }
+    }
+  }
+  render();
+}
+
+function selectMove() {
+  state.selectedSkill = { id: 'move', name: 'Déplacement' };
+  state.targetingMode = 'move';
+  state.validTargets = new Set();
+  const reachable = getReachableCells(state.player, state.player.ap);
+  for (const k of reachable.keys()) state.validTargets.add(k);
+  render();
+}
+
+function executeAction(targetX, targetY) {
+  const sk = state.selectedSkill;
+  if (!sk) return;
+
+  if (sk.id === 'move') {
+    const reachable = getReachableCells(state.player, state.player.ap);
+    const cost = reachable.get(key(targetX, targetY));
+    if (cost === undefined) return;
+    state.player.x = targetX;
+    state.player.y = targetY;
+    state.player.ap -= cost;
+    log(`${state.player.name} se déplace (${cost} AP).`, 'info');
+  } else if (sk.type === 'attack' || sk.type === 'spell') {
+    if (!state.validTargets.has(key(targetX, targetY))) return;
+    state.player.ap -= sk.cost;
+    if (sk.cooldown) state.player.cooldowns[sk.id] = sk.cooldown + 1; // +1 car décrémenté au prochain tour
+
+    if (sk.aoe) {
+      const cells = getCellsInAOE(targetX, targetY, sk.aoe);
+      for (const c of cells) {
+        const a = getActorAt(c.x, c.y);
+        if (a && !a.isDead && !a.isPlayer) {
+          performAttack(state.player, a, sk, sk.source);
+        }
+        // Pose du feu au sol si sort de feu
+        if (sk.damageType === 'fire' || sk.id === 'fireball') {
+          state.fireTiles.set(key(c.x, c.y), 2);
+        }
+      }
+      log(`${state.player.name} lance ${sk.name} en zone !`, 'info');
+    } else {
+      const target = getActorAt(targetX, targetY);
+      if (target) {
+        performAttack(state.player, target, sk, sk.source);
+      }
+    }
+  }
+
+  state.selectedSkill = null;
+  state.targetingMode = null;
+  state.validTargets = new Set();
+  state.aoePreview = new Set();
+
+  if (checkCombatEnd()) return;
+  render();
+}
+
+// ============================================================
+//                    IA ENNEMIE
+// ============================================================
+
+function runEnemyAI(enemy) {
+  if (enemy.isDead) return endTurn();
+
+  // Soin si blessé (chaman)
+  if (enemy.hasHeal && enemy.healCooldown === 0) {
+    const wounded = state.enemies.find(e =>
+      !e.isDead && e !== enemy && e.hp < e.maxHp * 0.5 && distance(enemy, e) <= 4
+    );
+    if (wounded) {
+      const healed = 8;
+      wounded.hp = Math.min(wounded.maxHp, wounded.hp + healed);
+      enemy.healCooldown = 3;
+      log(`${enemy.name} soigne ${wounded.name} de ${healed} PV.`, 'heal');
+      return setTimeout(() => endTurn(), 800);
+    }
+  }
+
+  const target = state.player;
+  if (target.isDead) return endTurn();
+
+  const dist = distance(enemy, target);
+
+  // Si à portée d'attaque, attaque
+  if (dist <= enemy.range) {
+    const skill = {
+      type: 'attack',
+      damageType: enemy.damageType,
+      range: enemy.range,
+    };
+    performAttack(enemy, target, skill, null);
+    if (checkCombatEnd()) return;
+    return setTimeout(() => endTurn(), 800);
+  }
+
+  // Sinon avance vers le joueur (BFS simple)
+  const reachable = getReachableCells(enemy, enemy.moveSpeed);
+  let bestCell = null;
+  let bestDist = dist;
+  for (const [k, cost] of reachable.entries()) {
+    const [x, y] = k.split(',').map(Number);
+    const d = Math.max(Math.abs(x - target.x), Math.abs(y - target.y));
+    if (d < bestDist) {
+      bestDist = d;
+      bestCell = { x, y };
+    }
+  }
+
+  if (bestCell) {
+    enemy.x = bestCell.x;
+    enemy.y = bestCell.y;
+    log(`${enemy.name} avance.`, 'info');
+
+    // Si maintenant à portée, attaque
+    if (distance(enemy, target) <= enemy.range) {
+      const skill = { type: 'attack', damageType: enemy.damageType, range: enemy.range };
+      performAttack(enemy, target, skill, null);
+      if (checkCombatEnd()) return;
+    }
+  } else {
+    log(`${enemy.name} reste sur place.`, 'info');
+  }
+
+  setTimeout(() => endTurn(), 800);
+}
+
+// ============================================================
+//                    RENDERING
+// ============================================================
+
+function render() {
+  renderGrid();
+  renderTimeline();
+  renderPlayerInfo();
+  renderActions();
+  renderEquipment();
+  renderLog();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.x = x;
+      cell.dataset.y = y;
+
+      if (isWall(x, y)) cell.classList.add('wall');
+
+      const k = key(x, y);
+
+      // Highlights selon mode
+      if (state.targetingMode === 'move' && state.validTargets.has(k)) {
+        cell.classList.add('move-range');
+      }
+      if ((state.targetingMode === 'attack' || state.targetingMode === 'aoe') && state.validTargets.has(k)) {
+        const sk = state.selectedSkill;
+        if (sk && sk.type === 'spell') {
+          cell.classList.add('spell-range');
+        } else {
+          cell.classList.add('attack-range');
+        }
+      }
+      if (state.aoePreview.has(k)) cell.classList.add('spell-aoe');
+
+      // Fire tiles
+      if (state.fireTiles.has(k)) cell.classList.add('fire');
+
+      // Actor
+      const actor = getActorAt(x, y);
+      if (actor) {
+        cell.innerHTML = `<span style="filter: ${actor === getCurrentActor() ? 'drop-shadow(0 0 6px gold)' : ''}">${actor.icon}</span>`;
+        const hpBar = document.createElement('div');
+        hpBar.className = 'hp-bar';
+        const hpFill = document.createElement('div');
+        hpFill.className = 'hp-bar-fill' + (actor.isPlayer ? '' : ' enemy');
+        hpFill.style.width = (actor.hp / actor.maxHp * 100) + '%';
+        hpBar.appendChild(hpFill);
+        cell.appendChild(hpBar);
+
+        if (actor.statuses.length > 0) {
+          const si = document.createElement('div');
+          si.className = 'status-icons';
+          si.innerHTML = actor.statuses.map(s => STATUSES[s.id].icon).join('');
+          cell.appendChild(si);
+        }
+      } else if (state.fireTiles.has(k) && !actor) {
+        cell.innerHTML = '🔥';
+      }
+
+      cell.addEventListener('click', () => onCellClick(x, y));
+      cell.addEventListener('mouseenter', () => onCellHover(x, y));
+      cell.addEventListener('mouseleave', () => { state.aoePreview = new Set(); renderGrid(); });
+
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function onCellHover(x, y) {
+  const sk = state.selectedSkill;
+  if (sk && sk.aoe && state.validTargets.has(key(x, y))) {
+    state.aoePreview = new Set();
+    const cells = getCellsInAOE(x, y, sk.aoe);
+    cells.forEach(c => state.aoePreview.add(key(c.x, c.y)));
+    renderGrid();
+  }
+}
+
+function onCellClick(x, y) {
+  if (state.combatOver) return;
+  const cur = getCurrentActor();
+  if (!cur.isPlayer) return;
+  if (state.targetingMode) {
+    executeAction(x, y);
+  }
+}
+
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '<span style="color:#888;font-size:11px;">Tour ' + (state.turn + 1) + ' :</span>';
+  state.initiative.forEach((a, i) => {
+    const e = document.createElement('div');
+    e.className = 'timeline-entry';
+    if (i === state.currentActorIdx && !a.isDead) e.classList.add('active');
+    if (a.isDead) e.classList.add('dead');
+    e.textContent = a.icon + ' ' + a.name;
+    tl.appendChild(e);
+  });
+}
+
+function renderPlayerInfo() {
+  const p = state.player;
+  document.getElementById('hp-text').textContent = `${Math.max(0, p.hp)}/${p.maxHp}`;
+  document.getElementById('hp-fill').style.width = (Math.max(0, p.hp) / p.maxHp * 100) + '%';
+  document.getElementById('ap-text').textContent = `${p.ap}/${p.maxAp + (p.bonusAp || 0)}`;
+  document.getElementById('ap-fill').style.width = (p.ap / (p.maxAp + (p.bonusAp || 0)) * 100) + '%';
+  document.getElementById('armor-text').textContent = p.armor;
+  const statusEl = document.getElementById('status-text');
+  if (p.statuses.length === 0) {
+    statusEl.textContent = 'Aucun';
+  } else {
+    statusEl.textContent = p.statuses.map(s => STATUSES[s.id].icon + ' ' + STATUSES[s.id].name + ' (' + s.duration + ')').join(', ');
+  }
+}
+
+function renderActions() {
+  const cont = document.getElementById('actions');
+  cont.innerHTML = '';
+
+  const cur = getCurrentActor();
+  const isPlayerTurn = cur && cur.isPlayer && !state.combatOver;
+
+  // Move button
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'action-btn';
+  if (state.selectedSkill?.id === 'move') moveBtn.classList.add('selected');
+  moveBtn.innerHTML = `🏃 Déplacement <span class="action-cost">1 AP / case</span>`;
+  moveBtn.disabled = !isPlayerTurn || state.player.ap < 1;
+  moveBtn.onclick = () => selectMove();
+  cont.appendChild(moveBtn);
+
+  // Skills
+  const skills = getPlayerSkills();
+  for (const sk of skills) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn';
+    if (state.selectedSkill?.id === sk.id) btn.classList.add('selected');
+    const cd = state.player.cooldowns[sk.id] || 0;
+    let extra = `<span class="action-cost">${sk.cost} AP</span>`;
+    if (cd > 0) extra = `<span class="action-cd">CD: ${cd}</span>` + extra;
+    btn.innerHTML = `${sk.source.icon} ${sk.name} ${extra}<br><small style="color:#888">${sk.desc}</small>`;
+    btn.disabled = !isPlayerTurn || state.player.ap < sk.cost || cd > 0;
+    btn.onclick = () => selectSkill(sk);
+    cont.appendChild(btn);
+  }
+}
+
+function renderEquipment() {
+  const cont = document.getElementById('equipment');
+  cont.innerHTML = '';
+  const eq = state.player.equipment;
+  for (const slot in eq) {
+    const it = eq[slot];
+    const div = document.createElement('div');
+    div.className = 'equip-slot';
+    div.innerHTML = `<span class="equip-icon">${it.icon}</span><span class="rarity-${it.rarity}">${it.name}</span>`;
+    div.title = it.desc || '';
+    cont.appendChild(div);
+  }
+}
+
+function renderLog() {
+  const logEl = document.getElementById('log');
+  logEl.innerHTML = state.log.slice(-50).map(e =>
+    `<div class="log-entry log-${e.type}">${e.msg}</div>`
+  ).join('');
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function log(msg, type = 'info') {
+  state.log.push({ msg, type });
+  renderLog();
+}
+
+// ============================================================
+//                    FIN DE COMBAT & LOOT
+// ============================================================
+
+function rollLoot() {
+  const possibleLoots = [
+    { name: 'Dague Rouillée', icon: '🗡️', rarity: 'common', desc: 'Dégâts: 8-12 perforants' },
+    { name: 'Anneau de Vigueur', icon: '💍', rarity: 'magic', desc: '+5 PV max' },
+    { name: 'Casque Gobelin', icon: '⛑️', rarity: 'common', desc: '+3 armure' },
+    { name: 'Potion de Soin', icon: '🧪', rarity: 'common', desc: 'Restaure 15 PV' },
+    { name: 'Bracelet du Sang', icon: '📿', rarity: 'rare', desc: '+10% chance Saignement, +1 AP' },
+    { name: 'Grimoire Mineur', icon: '📕', rarity: 'magic', desc: 'Octroie le sort Éclair de Glace' },
+  ];
+  const n = 1 + Math.floor(Math.random() * 3);
+  const loot = [];
+  for (let i = 0; i < n; i++) {
+    loot.push(possibleLoots[Math.floor(Math.random() * possibleLoots.length)]);
+  }
+  return loot;
+}
+
+function showCombatEnd(victory) {
+  const endEl = document.getElementById('combat-end');
+  const titleEl = document.getElementById('end-title');
+  const contentEl = document.getElementById('end-content');
+
+  if (victory) {
+    titleEl.textContent = '🏆 Victoire !';
+    titleEl.style.color = '#f0c060';
+    const loot = rollLoot();
+    contentEl.innerHTML = `
+      <p style="margin-bottom:10px;">Vous avez vaincu vos ennemis !</p>
+      <p style="margin-bottom:6px;"><strong>Butin trouvé :</strong></p>
+      ${loot.map(l => `<div class="loot-item rarity-${l.rarity}">${l.icon} ${l.name}<br><small style="color:#888">${l.desc}</small></div>`).join('')}
+    `;
+  } else {
+    titleEl.textContent = '💀 Défaite';
+    titleEl.style.color = '#c44';
+    contentEl.innerHTML = '<p>Vous avez été vaincu...</p>';
+  }
+  endEl.style.display = 'block';
+}
+
+function restartCombat() {
+  document.getElementById('combat-end').style.display = 'none';
+  initState();
+  log('🎲 Nouveau combat ! Bonne chance.', 'info');
+  startTurn(getCurrentActor());
+  render();
+}
+
+// ============================================================
+//                    INIT
+// ============================================================
+
+document.getElementById('end-turn-btn').onclick = () => {
+  const cur = getCurrentActor();
+  if (cur?.isPlayer && !state.combatOver) {
+    state.player.ripostedThisTurn = false;
+    log(`${state.player.name} termine son tour.`, 'info');
+    endTurn();
+  }
+};
+
+initState();
+log('🎲 Combat initialisé. Cliquez sur une action puis sur une case cible.', 'info');
+log('💡 Astuce : survolez les boutons pour les descriptions.', 'info');
+startTurn(getCurrentActor());
+render();
+</script>
+
+</body>
+</html>

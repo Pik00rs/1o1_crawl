@@ -1,0 +1,22 @@
+{
+  "goblinWarrior": {
+    "id": "goblinWarrior", "name": "Gobelin Guerrier", "icon": "👹",
+    "hp": 14, "armor": 4, "attackPower": [6, 9], "damageType": "slash",
+    "range": 1, "moveSpeed": 4, "initiative": 12, "ai": "aggressive"
+  },
+  "goblinShaman": {
+    "id": "goblinShaman", "name": "Chaman Gobelin", "icon": "🧌",
+    "hp": 12, "armor": 2, "attackPower": [10, 14], "damageType": "lightning",
+    "range": 4, "moveSpeed": 3, "initiative": 14, "ai": "caster", "hasHeal": true
+  },
+  "skeleton": {
+    "id": "skeleton", "name": "Squelette", "icon": "💀",
+    "hp": 18, "armor": 6, "attackPower": [8, 12], "damageType": "slash",
+    "range": 1, "moveSpeed": 3, "initiative": 8, "ai": "aggressive"
+  },
+  "giantRat": {
+    "id": "giantRat", "name": "Rat Géant", "icon": "🐀",
+    "hp": 8, "armor": 1, "attackPower": [4, 7], "damageType": "pierce",
+    "range": 1, "moveSpeed": 5, "initiative": 16, "ai": "aggressive"
+  }
+}

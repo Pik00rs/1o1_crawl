@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-7 // Tactical Override</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #050308;
+  --bg-deep: #0a0612;
+  --bg-panel: rgba(15, 8, 25, 0.85);
+  --bg-cell: #0d0818;
+  --bg-cell-active: #1a0d2e;
+
+  --neon-pink: #ff2e88;
+  --neon-cyan: #00f0ff;
+  --neon-purple: #b026ff;
+  --neon-yellow: #fff200;
+  --neon-orange: #ff6b1a;
+  --neon-red: #ff003c;
+  --neon-green: #39ff14;
+
+  --text-primary: #e8d5ff;
+  --text-secondary: #8a7aa8;
+  --text-muted: #524668;
+
+  --grid-line: rgba(255, 46, 136, 0.12);
+  --scan-line: rgba(0, 240, 255, 0.03);
+
+  --cell-size: 64px;
+  --grid-cols: 8;
+  --grid-rows: 6;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes scanlines {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100vh; }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.85; filter: brightness(1.3); }
+}
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(-1px, -1px); }
+  60% { transform: translate(1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.4; }
+  94% { opacity: 1; }
+  96% { opacity: 0.7; }
+  97% { opacity: 1; }
+}
+
+@keyframes data-flow {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes turn-pulse {
+  0%, 100% { box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 20px rgba(0, 240, 255, 0.3); }
+  50% { box-shadow: 0 0 40px var(--neon-cyan), inset 0 0 30px rgba(0, 240, 255, 0.5); }
+}
+
+@keyframes damage-flash {
+  0% { background: var(--neon-red); transform: scale(1.1); }
+  100% { background: var(--bg-cell); transform: scale(1); }
+}
+
+@keyframes hp-bar-fill {
+  from { width: 0; }
+}
+
+@keyframes float-up {
+  0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -40px) scale(1.4); opacity: 0; }
+}
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Background atmosphere */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(255, 46, 136, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(0, 240, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(176, 38, 255, 0.1) 0%, transparent 60%),
+    var(--bg-deep);
+  z-index: -2;
+}
+
+/* Scanlines overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 2px,
+    var(--scan-line) 2px,
+    var(--scan-line) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+  animation: scanlines 8s linear infinite;
+}
+
+/* Grid background */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Data rain */
+.data-rain {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.15;
+}
+.data-stream {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100vh;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    var(--neon-cyan) 50%,
+    transparent 100%);
+  animation: data-flow 4s linear infinite;
+}
+
+/* Header */
+header {
+  padding: 20px 40px;
+  border-bottom: 1px solid rgba(255, 46, 136, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(10, 6, 18, 0.6);
+  backdrop-filter: blur(8px);
+  position: relative;
+}
+header::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--neon-pink) 20%,
+    var(--neon-cyan) 50%,
+    var(--neon-purple) 80%,
+    transparent);
+}
+
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--neon-pink);
+  position: relative;
+  transform: rotate(45deg);
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+.logo-mark::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: var(--neon-pink);
+  box-shadow: 0 0 15px var(--neon-pink);
+}
+.logo .accent {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink);
+}
+.logo .sub {
+  color: var(--text-secondary);
+  font-size: 11px;
+  letter-spacing: 6px;
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+.system-status {
+  display: flex;
+  gap: 24px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.status-item { display: flex; align-items: center; gap: 6px; }
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+  animation: flicker 3s infinite;
+}
+.status-dot.warn { background: var(--neon-yellow); box-shadow: 0 0 8px var(--neon-yellow); }
+.status-dot.crit { background: var(--neon-red); box-shadow: 0 0 8px var(--neon-red); }
+
+/* Mission briefing */
+.mission-bar {
+  padding: 12px 40px;
+  background: rgba(255, 46, 136, 0.05);
+  border-bottom: 1px solid rgba(255, 46, 136, 0.2);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+.mission-bar .label {
+  color: var(--neon-pink);
+  letter-spacing: 2px;
+}
+.blink {
+  animation: flicker 1.5s infinite;
+}
+
+/* Main layout */
+.main {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 24px;
+  padding: 24px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 46, 136, 0.2);
+  backdrop-filter: blur(8px);
+  position: relative;
+  padding: 16px;
+  clip-path: polygon(
+    0 0, calc(100% - 12px) 0, 100% 12px,
+    100% 100%, 12px 100%, 0 calc(100% - 12px)
+  );
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 30px;
+  height: 1px;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+.panel-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-title::before {
+  content: '◢';
+  color: var(--neon-pink);
+}
+
+/* === LEFT PANEL — Operator === */
+.operator-portrait {
+  width: 100%;
+  height: 180px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(0, 240, 255, 0.3), transparent 70%),
+    linear-gradient(135deg, var(--bg-cell) 0%, var(--bg-cell-active) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.operator-portrait::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent 0, transparent 3px,
+    rgba(0, 240, 255, 0.05) 3px, rgba(0, 240, 255, 0.05) 4px
+  );
+}
+.operator-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  filter: drop-shadow(0 0 20px var(--neon-cyan));
+  animation: bob 3s ease-in-out infinite;
+}
+.operator-corners {
+  position: absolute;
+  inset: 8px;
+}
+.operator-corners::before, .operator-corners::after,
+.operator-corner-tr, .operator-corner-br {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--neon-pink);
+}
+.operator-corners::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+.operator-corners::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+.op-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+.op-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+.operator-corners > div {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--neon-pink);
+}
+
+.op-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--neon-pink);
+  text-shadow: 0 0 12px var(--neon-pink);
+  margin-bottom: 4px;
+}
+.op-callsign {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+
+.vital-bars { display: flex; flex-direction: column; gap: 10px; }
+.vital {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vital-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 1.5px;
+}
+.vital-label .value {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.vital-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+.vital-fill {
+  height: 100%;
+  position: relative;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.vital-fill.hp {
+  background: linear-gradient(90deg, var(--neon-red), var(--neon-pink));
+  box-shadow: 0 0 10px var(--neon-pink);
+}
+.vital-fill.ap {
+  background: linear-gradient(90deg, var(--neon-cyan), #00aaff);
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+.vital-fill.shield {
+  background: linear-gradient(90deg, var(--neon-purple), #8000ff);
+  box-shadow: 0 0 10px var(--neon-purple);
+}
+
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 16px;
+}
+.equip-slot {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.equip-slot:hover {
+  border-color: var(--neon-pink);
+  background: rgba(255, 46, 136, 0.08);
+  color: var(--text-primary);
+}
+.equip-slot .icon { font-size: 16px; }
+.equip-slot.rare { border-color: rgba(255, 242, 0, 0.4); }
+.equip-slot.rare:hover { border-color: var(--neon-yellow); box-shadow: 0 0 10px rgba(255, 242, 0, 0.3); }
+.equip-slot.legendary { border-color: rgba(255, 107, 26, 0.4); }
+.equip-slot.legendary:hover { border-color: var(--neon-orange); box-shadow: 0 0 10px rgba(255, 107, 26, 0.3); }
+
+/* === CENTER PANEL — Combat grid === */
+.combat-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Initiative Timeline */
+.timeline {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.timeline-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--neon-cyan);
+}
+.timeline-track {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tl-actor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  position: relative;
+  transition: all 0.3s;
+}
+.tl-actor.current {
+  border-color: var(--neon-pink);
+  background: rgba(255, 46, 136, 0.15);
+  color: var(--neon-pink);
+  box-shadow: 0 0 15px rgba(255, 46, 136, 0.5);
+  animation: turn-pulse 2s ease-in-out infinite;
+}
+.tl-actor.dead {
+  opacity: 0.3;
+  text-decoration: line-through;
+}
+.tl-actor .ico { font-size: 14px; }
+.tl-arrow { color: var(--text-muted); }
+
+/* Combat grid with 2.5D perspective */
+.battlefield-frame {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 46, 136, 0.3);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(
+    0 0, calc(100% - 16px) 0, 100% 16px,
+    100% 100%, 16px 100%, 0 calc(100% - 16px)
+  );
+}
+.battlefield-frame::before {
+  content: 'GRID-7 // SECTOR 02';
+  position: absolute;
+  top: 8px;
+  right: 24px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--neon-cyan);
+  letter-spacing: 2px;
+  opacity: 0.6;
+}
+.battlefield-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 40%,
+    rgba(5, 3, 8, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+.grid-perspective {
+  perspective: 1200px;
+  perspective-origin: 50% 30%;
+  display: flex;
+  justify-content: center;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), var(--cell-size));
+  grid-template-rows: repeat(var(--grid-rows), var(--cell-size));
+  gap: 3px;
+  transform: rotateX(35deg) rotateZ(0deg);
+  transform-style: preserve-3d;
+  background:
+    linear-gradient(180deg, rgba(176, 38, 255, 0.05), rgba(255, 46, 136, 0.05));
+  padding: 4px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow:
+    0 0 60px rgba(176, 38, 255, 0.2),
+    inset 0 0 40px rgba(0, 240, 255, 0.05);
+  position: relative;
+}
+
+.cell {
+  background: var(--bg-cell);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 240, 255, 0.08);
+  transform-style: preserve-3d;
+}
+.cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(0, 240, 255, 0.04) 50%,
+    rgba(255, 46, 136, 0.04) 100%);
+  pointer-events: none;
+}
+.cell:hover {
+  background: var(--bg-cell-active);
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+.cell.wall {
+  background: linear-gradient(135deg, #2a1845, #1a0d2e);
+  border-color: var(--neon-purple);
+  cursor: not-allowed;
+  transform: translateZ(20px);
+  box-shadow: 0 0 15px rgba(176, 38, 255, 0.3);
+}
+.cell.wall::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: repeating-linear-gradient(45deg,
+    transparent 0, transparent 3px,
+    rgba(176, 38, 255, 0.3) 3px, rgba(176, 38, 255, 0.3) 4px);
+}
+
+.cell.move-range {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: var(--neon-cyan);
+  box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.2);
+}
+.cell.move-range:hover {
+  background: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 12px rgba(0, 240, 255, 0.4);
+  transform: translateZ(8px);
+}
+.cell.attack-range {
+  background: rgba(255, 0, 60, 0.12);
+  border-color: var(--neon-red);
+  box-shadow: inset 0 0 12px rgba(255, 0, 60, 0.3);
+}
+.cell.attack-range:hover {
+  background: rgba(255, 0, 60, 0.3);
+  box-shadow: 0 0 20px var(--neon-red);
+  transform: translateZ(8px);
+}
+.cell.spell-range {
+  background: rgba(176, 38, 255, 0.15);
+  border-color: var(--neon-purple);
+  box-shadow: inset 0 0 12px rgba(176, 38, 255, 0.3);
+}
+.cell.spell-aoe {
+  background: rgba(255, 242, 0, 0.2);
+  border-color: var(--neon-yellow);
+  box-shadow: 0 0 16px var(--neon-yellow);
+}
+
+.cell.fire {
+  background: radial-gradient(circle, var(--neon-orange), var(--neon-red));
+  box-shadow: 0 0 20px var(--neon-orange);
+  animation: neon-pulse 0.8s ease-in-out infinite;
+}
+
+.actor {
+  font-size: 36px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  transform: translateZ(15px) rotateX(-35deg);
+  animation: bob 2s ease-in-out infinite;
+  position: relative;
+  z-index: 2;
+}
+.actor.player {
+  filter:
+    drop-shadow(0 0 8px var(--neon-cyan))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+.actor.enemy {
+  filter:
+    drop-shadow(0 0 6px var(--neon-red))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+.actor.current-turn::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 4px;
+  background: var(--neon-pink);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--neon-pink);
+  animation: neon-pulse 1s infinite;
+}
+
+.cell-hp {
+  position: absolute;
+  bottom: 3px;
+  left: 4px;
+  right: 4px;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 3;
+}
+.cell-hp-fill {
+  height: 100%;
+  transition: width 0.3s;
+  box-shadow: 0 0 4px currentColor;
+}
+.cell-hp-fill.player-hp { background: var(--neon-cyan); color: var(--neon-cyan); }
+.cell-hp-fill.enemy-hp { background: var(--neon-red); color: var(--neon-red); }
+
+.status-icons {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 1px;
+  font-size: 9px;
+  z-index: 3;
+}
+
+.damage-popup {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 8px var(--neon-yellow);
+  pointer-events: none;
+  z-index: 10;
+  animation: float-up 1s ease-out forwards;
+}
+.damage-popup.crit {
+  color: var(--neon-pink);
+  text-shadow: 0 0 12px var(--neon-pink);
+  font-size: 24px;
+}
+
+/* Combat log */
+.combat-log {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  height: 140px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  position: relative;
+}
+.combat-log::-webkit-scrollbar { width: 4px; }
+.combat-log::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+.combat-log::-webkit-scrollbar-thumb { background: var(--neon-pink); }
+
+.log-line {
+  padding: 2px 0;
+  display: flex;
+  gap: 8px;
+  border-left: 2px solid transparent;
+  padding-left: 8px;
+  margin-bottom: 1px;
+}
+.log-line .ts {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.log-line.dmg { border-left-color: var(--neon-red); color: #ff8aa8; }
+.log-line.crit { border-left-color: var(--neon-pink); color: var(--neon-pink); font-weight: 700; }
+.log-line.heal { border-left-color: var(--neon-green); color: #8aff9c; }
+.log-line.status { border-left-color: var(--neon-yellow); color: #ffec8a; }
+.log-line.info { border-left-color: var(--neon-cyan); color: var(--text-secondary); }
+.log-line.kill { border-left-color: var(--neon-purple); color: var(--neon-purple); font-weight: 700; }
+
+/* === RIGHT PANEL — Actions === */
+.actions-stack { display: flex; flex-direction: column; gap: 8px; }
+.action-btn {
+  background: linear-gradient(135deg,
+    rgba(255, 46, 136, 0.08),
+    rgba(176, 38, 255, 0.08));
+  border: 1px solid rgba(255, 46, 136, 0.3);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font-family: 'Rajdhani', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: all 0.2s;
+  clip-path: polygon(
+    0 0, calc(100% - 8px) 0, 100% 8px,
+    100% 100%, 8px 100%, 0 calc(100% - 8px)
+  );
+  overflow: hidden;
+}
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+.action-btn:hover:not(:disabled) {
+  border-color: var(--neon-cyan);
+  background: linear-gradient(135deg,
+    rgba(0, 240, 255, 0.1),
+    rgba(255, 46, 136, 0.1));
+  transform: translateX(2px);
+  box-shadow: -3px 0 12px rgba(0, 240, 255, 0.3);
+}
+.action-btn:hover::before { left: 100%; }
+.action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.action-btn.selected {
+  border-color: var(--neon-yellow);
+  background: linear-gradient(135deg,
+    rgba(255, 242, 0, 0.15),
+    rgba(255, 107, 26, 0.1));
+  box-shadow: 0 0 20px rgba(255, 242, 0, 0.4);
+}
+
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.action-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.action-cost {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--neon-cyan);
+  letter-spacing: 1px;
+}
+.action-cd {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--neon-red);
+  letter-spacing: 1px;
+}
+.action-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.action-keyword {
+  display: inline-block;
+  padding: 1px 6px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--neon-cyan);
+  letter-spacing: 1px;
+  margin-right: 4px;
+  margin-top: 4px;
+}
+.action-keyword.fire { color: var(--neon-orange); border-color: rgba(255, 107, 26, 0.4); background: rgba(255, 107, 26, 0.1); }
+.action-keyword.shock { color: var(--neon-yellow); border-color: rgba(255, 242, 0, 0.4); background: rgba(255, 242, 0, 0.1); }
+
+.end-turn {
+  margin-top: 12px;
+  background: linear-gradient(135deg, var(--neon-red), var(--neon-pink));
+  color: white;
+  border: none;
+  padding: 14px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  letter-spacing: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  position: relative;
+  clip-path: polygon(
+    0 0, calc(100% - 10px) 0, 100% 10px,
+    100% 100%, 10px 100%, 0 calc(100% - 10px)
+  );
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(255, 46, 136, 0.4);
+}
+.end-turn:hover {
+  box-shadow: 0 0 30px rgba(255, 46, 136, 0.7);
+  transform: translateY(-2px);
+}
+
+/* Target info panel */
+.target-info {
+  margin-top: 16px;
+  background: rgba(255, 0, 60, 0.05);
+  border: 1px solid rgba(255, 0, 60, 0.3);
+  padding: 14px;
+}
+.target-info .panel-title { color: var(--neon-red); }
+.target-info .panel-title::before { color: var(--neon-red); }
+.target-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  color: var(--neon-red);
+  text-shadow: 0 0 8px rgba(255, 0, 60, 0.5);
+}
+.target-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+}
+.target-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  grid-column: span 2;
+}
+.target-stat .lbl { color: var(--text-secondary); }
+.target-stat .val { color: var(--text-primary); font-weight: 700; }
+
+/* Resistances bars */
+.resist-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+.resist-item {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid;
+}
+.resist-item.weak { color: var(--neon-yellow); border-color: var(--neon-yellow); }
+.resist-item.resist { color: var(--neon-cyan); border-color: var(--neon-cyan); }
+
+/* Floating notifications */
+.notif-stack {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.notif {
+  background: rgba(255, 46, 136, 0.15);
+  border-left: 3px solid var(--neon-pink);
+  padding: 10px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  backdrop-filter: blur(8px);
+  animation: glitch 0.3s;
+}
+
+/* Combat end */
+#combat-end {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 3, 8, 0.9);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.victory-modal {
+  background: var(--bg-panel);
+  border: 2px solid var(--neon-pink);
+  padding: 40px 60px;
+  text-align: center;
+  position: relative;
+  clip-path: polygon(
+    0 0, calc(100% - 20px) 0, 100% 20px,
+    100% 100%, 20px 100%, 0 calc(100% - 20px)
+  );
+  box-shadow: 0 0 60px rgba(255, 46, 136, 0.5);
+  min-width: 400px;
+}
+.victory-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: 12px;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+}
+.loot-section {
+  margin-top: 20px;
+  text-align: left;
+}
+.loot-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--neon-cyan);
+  margin-bottom: 12px;
+}
+.loot-item {
+  background: rgba(0, 240, 255, 0.05);
+  border-left: 3px solid var(--neon-cyan);
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+}
+.loot-item.rare { border-color: var(--neon-yellow); background: rgba(255, 242, 0, 0.05); }
+.loot-item.epic { border-color: var(--neon-purple); background: rgba(176, 38, 255, 0.05); }
+.loot-item .loot-name { color: var(--text-primary); font-weight: 700; }
+.loot-item.rare .loot-name { color: var(--neon-yellow); }
+.loot-item.epic .loot-name { color: var(--neon-purple); }
+.loot-item .loot-desc { color: var(--text-secondary); font-size: 10px; margin-top: 3px; }
+
+.restart-btn {
+  margin-top: 24px;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  letter-spacing: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  clip-path: polygon(
+    0 0, calc(100% - 12px) 0, 100% 12px,
+    100% 100%, 12px 100%, 0 calc(100% - 12px)
+  );
+  text-transform: uppercase;
+  box-shadow: 0 0 30px rgba(255, 46, 136, 0.5);
+  transition: all 0.2s;
+}
+.restart-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 50px rgba(255, 46, 136, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .main { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="grid-overlay"></div>
+<div class="data-rain" id="datarain"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    NEXUS<span class="accent">·7</span>
+    <span class="sub">TACTICAL OVERRIDE</span>
+  </div>
+  <div class="system-status">
+    <div class="status-item"><div class="status-dot"></div>UPLINK STABLE</div>
+    <div class="status-item"><div class="status-dot warn"></div>HOSTILES: 3</div>
+    <div class="status-item"><div class="status-dot"></div>SECTOR 02-NX</div>
+  </div>
+</header>
+
+<div class="mission-bar">
+  <div><span class="label">// MISSION:</span> NEUTRALIZE ALL HOSTILES IN SECTOR 02-NX</div>
+  <div class="blink"><span class="label">[ LIVE ]</span> COMBAT_PROTOCOL.exe</div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: Operator -->
+  <aside class="panel">
+    <div class="panel-title">OPERATOR</div>
+    <div class="operator-portrait">
+      <div class="operator-icon" id="op-icon">🤖</div>
+      <div class="operator-corners">
+        <div class="op-tr"></div>
+        <div class="op-bl"></div>
+      </div>
+    </div>
+    <div class="op-name" id="op-name">KAEL-X9</div>
+    <div class="op-callsign">CALLSIGN: GHOSTRUNNER</div>
+
+    <div class="vital-bars">
+      <div class="vital">
+        <div class="vital-label">
+          <span>◣ INTEGRITY</span>
+          <span class="value" id="hp-text">32 / 32</span>
+        </div>
+        <div class="vital-bar"><div class="vital-fill hp" id="hp-fill" style="width:100%"></div></div>
+      </div>
+      <div class="vital">
+        <div class="vital-label">
+          <span>◣ ACTION POINTS</span>
+          <span class="value" id="ap-text">7 / 7</span>
+        </div>
+        <div class="vital-bar"><div class="vital-fill ap" id="ap-fill" style="width:100%"></div></div>
+      </div>
+      <div class="vital">
+        <div class="vital-label">
+          <span>◣ ARMOR PLATING</span>
+          <span class="value" id="armor-text">14</span>
+        </div>
+        <div class="vital-bar"><div class="vital-fill shield" style="width:60%"></div></div>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:20px;">EQUIPPED</div>
+    <div class="equipment-grid">
+      <div class="equip-slot rare" title="Plasma Saber"><span class="icon">🗡️</span>PLASMA SABER</div>
+      <div class="equip-slot" title="Riot Shield"><span class="icon">🛡️</span>RIOT SHIELD</div>
+      <div class="equip-slot" title="Wind Chassis"><span class="icon">👢</span>JET BOOTS</div>
+      <div class="equip-slot legendary" title="Pyro Module"><span class="icon">💍</span>PYRO MOD</div>
+    </div>
+  </aside>
+
+  <!-- CENTER: Combat -->
+  <main class="combat-area">
+    <div class="timeline">
+      <div class="timeline-label">// INITIATIVE</div>
+      <div class="timeline-track" id="timeline"></div>
+    </div>
+
+    <div class="battlefield-frame">
+      <div class="grid-perspective">
+        <div id="grid"></div>
+      </div>
+    </div>
+
+    <div class="combat-log" id="log"></div>
+  </main>
+
+  <!-- RIGHT: Actions -->
+  <aside>
+    <div class="panel">
+      <div class="panel-title">COMBAT ACTIONS</div>
+      <div class="actions-stack" id="actions"></div>
+      <button class="end-turn" id="end-turn-btn">▶ END TURN</button>
+    </div>
+
+    <div class="panel target-info" id="target-info" style="display:none;">
+      <div class="panel-title">TARGET LOCK</div>
+      <div class="target-name" id="target-name">SECURITY DROID</div>
+      <div class="target-stats">
+        <div class="target-stat"><span class="lbl">HP</span><span class="val" id="target-hp">14 / 14</span></div>
+        <div class="target-stat"><span class="lbl">ARMOR</span><span class="val" id="target-armor">4</span></div>
+        <div class="target-stat"><span class="lbl">DAMAGE</span><span class="val" id="target-dmg">6-9</span></div>
+      </div>
+      <div class="resist-grid">
+        <div class="resist-item weak">▲ FIRE +50%</div>
+        <div class="resist-item resist">▼ SLASH -25%</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="combat-end">
+  <div class="victory-modal">
+    <div class="victory-title" id="end-title">VICTORY</div>
+    <div id="end-content"></div>
+    <button class="restart-btn" onclick="restartCombat()">▶ NEW MISSION</button>
+  </div>
+</div>
+
+<div class="notif-stack" id="notifs"></div>
+
+<script>
+// ============ DATA RAIN BACKGROUND ============
+const rain = document.getElementById('datarain');
+for (let i = 0; i < 30; i++) {
+  const s = document.createElement('div');
+  s.className = 'data-stream';
+  s.style.left = (Math.random() * 100) + '%';
+  s.style.animationDuration = (3 + Math.random() * 5) + 's';
+  s.style.animationDelay = (Math.random() * 5) + 's';
+  rain.appendChild(s);
+}
+
+// ============ DATA ============
+const WEAPONS = {
+  plasmaSaber: {
+    name: 'PLASMA SABER', icon: '⚔️', rarity: 'rare',
+    damage: [18, 24], damageType: 'slash', bonusDamage: { fire: [5, 8] },
+    skills: [
+      { id: 'slash', name: 'PLASMA SLASH', cost: 2, type: 'attack', range: 1, targetType: 'enemy', desc: 'Standard plasma melee strike.', keywords: ['SLASH', 'FIRE'] },
+      { id: 'flameStrike', name: 'OVERLOAD STRIKE', cost: 3, cooldown: 2, type: 'attack', range: 1, targetType: 'enemy', damageMult: 1.5, applyStatus: { id: 'burning', duration: 3, power: 4 }, desc: '×1.5 damage. Inflicts BURNING status.', keywords: ['FIRE'] },
+    ],
+  },
+  pyroRing: {
+    name: 'PYRO MOD', rarity: 'legendary',
+    skills: [
+      { id: 'fireball', name: 'IGNITION CHARGE', cost: 4, cooldown: 3, type: 'spell', range: 4, aoe: 1, targetType: 'tile', damage: [12, 16], damageType: 'fire', applyStatus: { id: 'burning', duration: 2, power: 3 }, desc: 'AoE 3×3 plasma blast. Inflicts BURNING.', keywords: ['FIRE', 'AOE'] },
+    ],
+  },
+};
+const ENEMY_TYPES = {
+  droid: { name: 'SECURITY DROID', icon: '🤖', hp: 14, armor: 4, attackPower: [6, 9], damageType: 'slash', range: 1, moveSpeed: 4, initiative: 12, ai: 'aggressive' },
+  spider: { name: 'NETRUNNER SPIDER', icon: '🕷️', hp: 12, armor: 2, attackPower: [10, 14], damageType: 'lightning', range: 4, moveSpeed: 3, initiative: 14, ai: 'caster' },
+};
+
+// ============ STATE ============
+const GW = 8, GH = 6;
+let state = {};
+function initState() {
+  state = {
+    turn: 0, currentIdx: 0,
+    walls: new Set(['3,2', '3,3', '4,2', '4,3']),
+    fireTiles: new Map(),
+    selectedSkill: null, targetingMode: null,
+    validTargets: new Set(), aoePreview: new Set(),
+    log: [], combatOver: false,
+    player: {
+      id: 'p', name: 'KAEL-X9', icon: '🤖', isPlayer: true, x: 1, y: 2,
+      hp: 32, maxHp: 32, ap: 0, maxAp: 6, bonusAp: 1, armor: 14,
+      initiative: 18, statuses: [], cooldowns: {}, isDead: false,
+      equipment: { mainhand: WEAPONS.plasmaSaber, ring: WEAPONS.pyroRing },
+    },
+    enemies: [
+      makeEnemy('e1', 'droid', 6, 2),
+      makeEnemy('e2', 'droid', 6, 3),
+      makeEnemy('e3', 'spider', 6, 5),
+    ],
+  };
+  state.actors = [state.player, ...state.enemies];
+  state.initiative = [...state.actors].sort((a,b) => b.initiative - a.initiative);
+}
+function makeEnemy(id, type, x, y) {
+  const t = ENEMY_TYPES[type];
+  return { id, typeId: type, name: t.name, icon: t.icon, isPlayer: false,
+    x, y, hp: t.hp, maxHp: t.hp, armor: t.armor, attackPower: t.attackPower,
+    damageType: t.damageType, range: t.range, moveSpeed: t.moveSpeed,
+    initiative: t.initiative + Math.floor(Math.random()*5),
+    ai: t.ai, statuses: [], healCD: 0, isDead: false };
+}
+function key(x, y) { return `${x},${y}`; }
+function inBounds(x, y) { return x>=0 && x<GW && y>=0 && y<GH; }
+function isWall(x, y) { return state.walls.has(key(x, y)); }
+function getActorAt(x, y) { return state.actors.find(a => !a.isDead && a.x===x && a.y===y); }
+function distance(a, b) { return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y)); }
+function isPassable(x, y, ignore) {
+  if (!inBounds(x,y) || isWall(x,y)) return false;
+  const a = getActorAt(x, y);
+  return !(a && a !== ignore);
+}
+function getReachable(actor, maxAP) {
+  const r = new Map(); r.set(key(actor.x, actor.y), 0);
+  const q = [{x: actor.x, y: actor.y, c: 0}];
+  while (q.length) {
+    const cur = q.shift();
+    if (cur.c >= maxAP) continue;
+    for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) {
+      if (!dx && !dy) continue;
+      const nx = cur.x+dx, ny = cur.y+dy, k = key(nx, ny);
+      if (!isPassable(nx, ny, actor)) continue;
+      const nc = cur.c + 1;
+      if (!r.has(k) || r.get(k) > nc) {
+        if (nc <= maxAP) { r.set(k, nc); q.push({x: nx, y: ny, c: nc}); }
+      }
+    }
+  }
+  r.delete(key(actor.x, actor.y));
+  return r;
+}
+function getAOE(cx, cy, rad) {
+  const c = [];
+  for (let dx=-rad; dx<=rad; dx++) for (let dy=-rad; dy<=rad; dy++) {
+    const nx = cx+dx, ny = cy+dy;
+    if (inBounds(nx, ny) && !isWall(nx, ny)) c.push({x: nx, y: ny});
+  }
+  return c;
+}
+
+// ============ COMBAT ============
+function rollDmg(r) { return r[0] + Math.floor(Math.random()*(r[1]-r[0]+1)); }
+
+function attack(attacker, target, skill, weapon) {
+  if (target.isDead) return;
+  let dmg, isSpell = skill?.type === 'spell';
+  if (skill?.damage) dmg = rollDmg(skill.damage);
+  else if (weapon?.damage) {
+    dmg = rollDmg(weapon.damage);
+    if (weapon.bonusDamage) for (const t in weapon.bonusDamage) dmg += rollDmg(weapon.bonusDamage[t]);
+  } else dmg = rollDmg(attacker.attackPower);
+
+  if (skill?.damageMult) dmg = Math.floor(dmg * skill.damageMult);
+  const isCrit = Math.random() * 100 < (5 + (skill?.critBonus||0));
+  if (isCrit) dmg *= 2;
+  const effA = isSpell ? Math.floor(target.armor/2) : target.armor;
+  dmg = Math.max(1, dmg - effA);
+  target.hp -= dmg;
+
+  showDamagePopup(target, dmg, isCrit);
+  flashCell(target.x, target.y);
+  log(`${attacker.name} → ${target.name} : ${dmg} DMG${isCrit?' [CRIT]':''}`, isCrit?'crit':'dmg');
+
+  if (skill?.applyStatus) {
+    target.statuses.push({...skill.applyStatus});
+    log(`${target.name} :: ${skill.applyStatus.id.toUpperCase()} APPLIED`, 'status');
+    notify(`STATUS: ${skill.applyStatus.id.toUpperCase()}`);
+  }
+  if (target.hp <= 0) { target.isDead = true; log(`${target.name} :: NEUTRALIZED`, 'kill'); }
+}
+
+function showDamagePopup(target, dmg, isCrit) {
+  const cell = document.querySelector(`[data-x="${target.x}"][data-y="${target.y}"]`);
+  if (!cell) return;
+  const pop = document.createElement('div');
+  pop.className = 'damage-popup' + (isCrit ? ' crit' : '');
+  pop.textContent = isCrit ? `${dmg}!` : dmg;
+  cell.appendChild(pop);
+  setTimeout(() => pop.remove(), 1000);
+}
+
+function flashCell(x, y) {
+  const cell = document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+  if (!cell) return;
+  cell.style.animation = 'damage-flash 0.4s ease-out';
+  setTimeout(() => { cell.style.animation = ''; }, 400);
+}
+
+// ============ TURN MANAGEMENT ============
+function getCurrent() { return state.initiative[state.currentIdx]; }
+
+function startTurn(actor) {
+  actor.ap = (actor.maxAp||0) + (actor.bonusAp||0);
+  // tick DoT
+  for (const s of actor.statuses) {
+    if (s.id === 'burning') {
+      const d = s.power || 3;
+      actor.hp -= d;
+      log(`${actor.name} :: BURNING -${d} HP`, 'dmg');
+      showDamagePopup(actor, d, false);
+    }
+  }
+  if (actor.hp <= 0) { actor.isDead = true; return advance(); }
+  // tick statuses
+  actor.statuses = actor.statuses.filter(s => --s.duration > 0);
+  // cooldowns
+  for (const k in actor.cooldowns) if (actor.cooldowns[k] > 0) actor.cooldowns[k]--;
+  if (actor.healCD > 0) actor.healCD--;
+
+  log(`▶ ${actor.name} :: TURN START`, 'info');
+  if (actor.isPlayer) { state.selectedSkill = null; state.targetingMode = null; render(); }
+  else setTimeout(() => runAI(actor), 700);
+}
+
+function endTurn() {
+  for (const [k, t] of state.fireTiles.entries()) {
+    state.fireTiles.set(k, t-1);
+    if (state.fireTiles.get(k) <= 0) state.fireTiles.delete(k);
+  }
+  advance();
+}
+
+function advance() {
+  if (checkEnd()) return;
+  state.currentIdx = (state.currentIdx + 1) % state.initiative.length;
+  if (state.currentIdx === 0) state.turn++;
+  const next = getCurrent();
+  if (next.isDead) return advance();
+  startTurn(next);
+}
+
+function checkEnd() {
+  if (state.player.isDead) { state.combatOver = true; showEnd(false); return true; }
+  if (state.enemies.every(e => e.isDead)) { state.combatOver = true; showEnd(true); return true; }
+  return false;
+}
+
+// ============ AI ============
+function runAI(enemy) {
+  if (enemy.isDead) return endTurn();
+  const target = state.player;
+  if (target.isDead) return endTurn();
+
+  if (enemy.ai === 'caster' && enemy.healCD === 0) {
+    const wounded = state.enemies.find(e => !e.isDead && e !== enemy && e.hp < e.maxHp*0.5 && distance(enemy, e) <= 4);
+    if (wounded) {
+      wounded.hp = Math.min(wounded.maxHp, wounded.hp + 8);
+      enemy.healCD = 3;
+      log(`${enemy.name} :: REPAIR PROTOCOL → ${wounded.name} +8 HP`, 'heal');
+      return setTimeout(() => endTurn(), 700);
+    }
+  }
+
+  if (distance(enemy, target) <= enemy.range) {
+    attack(enemy, target, { type: enemy.ai==='caster'?'spell':'attack', range: enemy.range }, null);
+    if (checkEnd()) return;
+    return setTimeout(() => endTurn(), 700);
+  }
+
+  const r = getReachable(enemy, enemy.moveSpeed);
+  let best = null, bd = distance(enemy, target);
+  for (const [k] of r.entries()) {
+    const [x, y] = k.split(',').map(Number);
+    const d = Math.max(Math.abs(x-target.x), Math.abs(y-target.y));
+    if (d < bd) { bd = d; best = {x, y}; }
+  }
+  if (best) {
+    enemy.x = best.x; enemy.y = best.y;
+    log(`${enemy.name} :: REPOSITION`, 'info');
+    if (distance(enemy, target) <= enemy.range) {
+      attack(enemy, target, { type: enemy.ai==='caster'?'spell':'attack', range: enemy.range }, null);
+      if (checkEnd()) return;
+    }
+  }
+  setTimeout(() => endTurn(), 700);
+}
+
+// ============ PLAYER ACTIONS ============
+function getSkills() {
+  const out = [];
+  for (const slot in state.player.equipment) {
+    const it = state.player.equipment[slot];
+    if (it?.skills) for (const sk of it.skills) out.push({...sk, source: it});
+  }
+  return out;
+}
+function selectSkill(sk) {
+  if (state.player.ap < sk.cost) return;
+  if (sk.cooldown && state.player.cooldowns[sk.id] > 0) return;
+  state.selectedSkill = sk;
+  state.targetingMode = sk.aoe ? 'aoe' : 'attack';
+  state.validTargets = new Set();
+  for (let x=0; x<GW; x++) for (let y=0; y<GH; y++) {
+    if (!inBounds(x,y) || isWall(x,y)) continue;
+    const dist = Math.max(Math.abs(x-state.player.x), Math.abs(y-state.player.y));
+    if (dist === 0 || dist > sk.range) continue;
+    if (sk.targetType === 'enemy') {
+      const a = getActorAt(x, y);
+      if (a && !a.isDead && !a.isPlayer) state.validTargets.add(key(x, y));
+    } else state.validTargets.add(key(x, y));
+  }
+  render();
+}
+function selectMove() {
+  state.selectedSkill = { id: 'move', name: 'MOVE' };
+  state.targetingMode = 'move';
+  state.validTargets = new Set();
+  const r = getReachable(state.player, state.player.ap);
+  for (const k of r.keys()) state.validTargets.add(k);
+  render();
+}
+function executeAction(tx, ty) {
+  const sk = state.selectedSkill;
+  if (!sk) return;
+  if (sk.id === 'move') {
+    const r = getReachable(state.player, state.player.ap);
+    const c = r.get(key(tx, ty));
+    if (c === undefined) return;
+    state.player.x = tx; state.player.y = ty; state.player.ap -= c;
+    log(`KAEL-X9 :: MOVE (${c} AP)`, 'info');
+  } else {
+    if (!state.validTargets.has(key(tx, ty))) return;
+    state.player.ap -= sk.cost;
+    if (sk.cooldown) state.player.cooldowns[sk.id] = sk.cooldown + 1;
+    if (sk.aoe) {
+      for (const c of getAOE(tx, ty, sk.aoe)) {
+        const a = getActorAt(c.x, c.y);
+        if (a && !a.isDead && !a.isPlayer) attack(state.player, a, sk, sk.source);
+        if (sk.damageType === 'fire') state.fireTiles.set(key(c.x, c.y), 2);
+      }
+      log(`KAEL-X9 :: ${sk.name} [AOE]`, 'info');
+      notify(sk.name);
+    } else {
+      const t = getActorAt(tx, ty);
+      if (t) attack(state.player, t, sk, sk.source);
+    }
+  }
+  state.selectedSkill = null;
+  state.targetingMode = null;
+  state.validTargets = new Set();
+  state.aoePreview = new Set();
+  if (checkEnd()) return;
+  render();
+}
+
+// ============ RENDER ============
+function render() {
+  renderGrid();
+  renderTimeline();
+  renderVitals();
+  renderActions();
+  renderTargetInfo();
+  renderLog();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for (let y=0; y<GH; y++) {
+    for (let x=0; x<GW; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.x = x;
+      cell.dataset.y = y;
+      if (isWall(x, y)) cell.classList.add('wall');
+      const k = key(x, y);
+      if (state.targetingMode === 'move' && state.validTargets.has(k)) cell.classList.add('move-range');
+      if ((state.targetingMode === 'attack' || state.targetingMode === 'aoe') && state.validTargets.has(k)) {
+        cell.classList.add(state.selectedSkill?.type === 'spell' ? 'spell-range' : 'attack-range');
+      }
+      if (state.aoePreview.has(k)) cell.classList.add('spell-aoe');
+      if (state.fireTiles.has(k)) cell.classList.add('fire');
+      const a = getActorAt(x, y);
+      if (a) {
+        const isCurrent = a === getCurrent();
+        const actorEl = document.createElement('div');
+        actorEl.className = 'actor ' + (a.isPlayer ? 'player' : 'enemy') + (isCurrent ? ' current-turn' : '');
+        actorEl.textContent = a.icon;
+        cell.appendChild(actorEl);
+        const hp = document.createElement('div');
+        hp.className = 'cell-hp';
+        const hpf = document.createElement('div');
+        hpf.className = 'cell-hp-fill ' + (a.isPlayer ? 'player-hp' : 'enemy-hp');
+        hpf.style.width = (a.hp/a.maxHp*100) + '%';
+        hp.appendChild(hpf);
+        cell.appendChild(hp);
+        if (a.statuses.length) {
+          const si = document.createElement('div');
+          si.className = 'status-icons';
+          si.textContent = a.statuses.map(s => s.id==='burning' ? '🔥' : '❄').join('');
+          cell.appendChild(si);
+        }
+      } else if (state.fireTiles.has(k)) {
+        cell.innerHTML = '<div class="actor">🔥</div>';
+      }
+      cell.addEventListener('click', () => onCellClick(x, y));
+      cell.addEventListener('mouseenter', () => onCellHover(x, y));
+      cell.addEventListener('mouseleave', () => { state.aoePreview = new Set(); renderGrid(); });
+      grid.appendChild(cell);
+    }
+  }
+}
+function onCellHover(x, y) {
+  const sk = state.selectedSkill;
+  if (sk?.aoe && state.validTargets.has(key(x, y))) {
+    state.aoePreview = new Set();
+    getAOE(x, y, sk.aoe).forEach(c => state.aoePreview.add(key(c.x, c.y)));
+    renderGrid();
+  }
+}
+function onCellClick(x, y) {
+  if (state.combatOver) return;
+  if (!getCurrent()?.isPlayer) return;
+  if (state.targetingMode) executeAction(x, y);
+}
+
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+  state.initiative.forEach((a, i) => {
+    const el = document.createElement('div');
+    el.className = 'tl-actor' + (i===state.currentIdx && !a.isDead ? ' current' : '') + (a.isDead ? ' dead' : '');
+    el.innerHTML = `<span class="ico">${a.icon}</span>${a.name.split(' ')[0]}`;
+    tl.appendChild(el);
+    if (i < state.initiative.length-1) {
+      const arr = document.createElement('span');
+      arr.className = 'tl-arrow';
+      arr.textContent = '◢';
+      tl.appendChild(arr);
+    }
+  });
+}
+
+function renderVitals() {
+  const p = state.player;
+  document.getElementById('hp-text').textContent = `${Math.max(0,p.hp)} / ${p.maxHp}`;
+  document.getElementById('hp-fill').style.width = (Math.max(0,p.hp)/p.maxHp*100) + '%';
+  const maxAp = p.maxAp + (p.bonusAp||0);
+  document.getElementById('ap-text').textContent = `${p.ap} / ${maxAp}`;
+  document.getElementById('ap-fill').style.width = (p.ap/maxAp*100) + '%';
+  document.getElementById('armor-text').textContent = p.armor;
+}
+
+function renderActions() {
+  const cont = document.getElementById('actions');
+  cont.innerHTML = '';
+  const cur = getCurrent();
+  const isPlayerTurn = cur?.isPlayer && !state.combatOver;
+
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'action-btn' + (state.selectedSkill?.id === 'move' ? ' selected' : '');
+  moveBtn.innerHTML = `
+    <div class="action-row">
+      <span class="action-name">▲ MOVE</span>
+      <span class="action-cost">1 AP/CELL</span>
+    </div>
+    <div class="action-desc">Tactical reposition</div>`;
+  moveBtn.disabled = !isPlayerTurn || state.player.ap < 1;
+  moveBtn.onclick = () => selectMove();
+  cont.appendChild(moveBtn);
+
+  for (const sk of getSkills()) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn' + (state.selectedSkill?.id === sk.id ? ' selected' : '');
+    const cd = state.player.cooldowns[sk.id] || 0;
+    let costHtml = `<span class="action-cost">${sk.cost} AP</span>`;
+    if (cd > 0) costHtml = `<span class="action-cd">CD: ${cd}</span> ` + costHtml;
+    const kw = (sk.keywords||[]).map(k => `<span class="action-keyword ${k.toLowerCase()}">${k}</span>`).join('');
+    btn.innerHTML = `
+      <div class="action-row">
+        <span class="action-name">◣ ${sk.name}</span>
+        ${costHtml}
+      </div>
+      <div class="action-desc">${sk.desc}</div>
+      <div>${kw}</div>`;
+    btn.disabled = !isPlayerTurn || state.player.ap < sk.cost || cd > 0;
+    btn.onclick = () => selectSkill(sk);
+    cont.appendChild(btn);
+  }
+}
+
+function renderTargetInfo() {
+  // Show first alive enemy as "target lock" demo
+  const enemy = state.enemies.find(e => !e.isDead);
+  if (!enemy) { document.getElementById('target-info').style.display = 'none'; return; }
+  document.getElementById('target-info').style.display = 'block';
+  document.getElementById('target-name').textContent = enemy.name;
+  document.getElementById('target-hp').textContent = `${Math.max(0, enemy.hp)} / ${enemy.maxHp}`;
+  document.getElementById('target-armor').textContent = enemy.armor;
+  document.getElementById('target-dmg').textContent = `${enemy.attackPower[0]}-${enemy.attackPower[1]}`;
+}
+
+function renderLog() {
+  const el = document.getElementById('log');
+  el.innerHTML = state.log.slice(-30).map(l =>
+    `<div class="log-line ${l.type}"><span class="ts">[T${l.t}]</span>${l.msg}</div>`
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+function log(msg, type='info') {
+  state.log.push({msg, type, t: state.turn+1});
+  renderLog();
+}
+
+function notify(msg) {
+  const stack = document.getElementById('notifs');
+  const n = document.createElement('div');
+  n.className = 'notif';
+  n.textContent = '◣ ' + msg;
+  stack.appendChild(n);
+  setTimeout(() => { n.style.transition = 'opacity 0.5s'; n.style.opacity = '0'; }, 1500);
+  setTimeout(() => n.remove(), 2000);
+}
+
+// ============ END SCREEN ============
+function showEnd(victory) {
+  const end = document.getElementById('combat-end');
+  const title = document.getElementById('end-title');
+  const content = document.getElementById('end-content');
+  if (victory) {
+    title.textContent = 'VICTORY';
+    title.style.background = 'linear-gradient(135deg, var(--neon-pink), var(--neon-cyan))';
+    title.style.webkitBackgroundClip = 'text';
+    title.style.webkitTextFillColor = 'transparent';
+    const loots = [
+      { name: 'NEURAL CHIP', desc: '+5 INT // SLOT: HEAD', rarity: 'rare' },
+      { name: 'KEVLAR PLATE', desc: '+8 ARMOR // SLOT: CHEST', rarity: 'common' },
+      { name: 'CHRONO BOOSTER', desc: '+1 AP // EXTRA ACTION ON KILL', rarity: 'epic' },
+    ];
+    content.innerHTML = `
+      <div style="font-family:'Share Tech Mono';color:var(--text-secondary);margin-bottom:8px;letter-spacing:2px;">// SECTOR CLEARED</div>
+      <div class="loot-section">
+        <div class="loot-title">▶ SALVAGED LOOT (${loots.length})</div>
+        ${loots.map(l => `<div class="loot-item ${l.rarity}"><div class="loot-name">${l.name}</div><div class="loot-desc">${l.desc}</div></div>`).join('')}
+      </div>`;
+  } else {
+    title.textContent = 'TERMINATED';
+    title.style.background = 'linear-gradient(135deg, var(--neon-red), var(--neon-purple))';
+    title.style.webkitBackgroundClip = 'text';
+    title.style.webkitTextFillColor = 'transparent';
+    content.innerHTML = `<div style="font-family:'Share Tech Mono';color:var(--text-secondary);">// CONNECTION LOST<br>// OPERATOR OFFLINE</div>`;
+  }
+  end.style.display = 'flex';
+}
+function restartCombat() {
+  document.getElementById('combat-end').style.display = 'none';
+  initState();
+  log('▶ MISSION INITIATED :: COMBAT PROTOCOL ACTIVE', 'info');
+  startTurn(getCurrent());
+  render();
+}
+window.restartCombat = restartCombat;
+
+// ============ INIT ============
+document.getElementById('end-turn-btn').onclick = () => {
+  const cur = getCurrent();
+  if (cur?.isPlayer && !state.combatOver) {
+    log('KAEL-X9 :: TURN ENDED', 'info');
+    endTurn();
+  }
+};
+
+initState();
+log('▶ NEXUS-7 ONLINE :: TACTICAL OVERRIDE ENGAGED', 'info');
+log('▶ MISSION :: NEUTRALIZE ALL HOSTILES', 'info');
+startTurn(getCurrent());
+render();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,245 @@
+{
+  "_meta": {
+    "description": "Tous les statuts du jeu : DoT, CC, debuffs, buffs.",
+    "rules": {
+      "stack": "refresh = la nouvelle application reset durée + valeur max. countN = stack jusqu'à N fois (additif)",
+      "tickTiming": "DoT tick au début du tour de la cible avant ses actions"
+    }
+  },
+  "burning": {
+    "id": "burning",
+    "name": "Brûlé",
+    "icon": "🔥",
+    "category": "dot",
+    "tag": "Fire",
+    "damageType": "fire",
+    "stack": "refresh",
+    "tickType": "startOfTurn",
+    "description": "Subit des dégâts de feu chaque tour."
+  },
+  "chilled": {
+    "id": "chilled",
+    "name": "Glacé",
+    "icon": "❄️",
+    "category": "dot",
+    "tag": "Ice",
+    "damageType": "ice",
+    "stack": "refresh",
+    "tickType": "startOfTurn",
+    "secondaryEffect": { "stat": "ap", "modifier": -1 },
+    "description": "Dégâts de glace + perd 1 AP par tour."
+  },
+  "poisoned": {
+    "id": "poisoned",
+    "name": "Empoisonné",
+    "icon": "☠️",
+    "category": "dot",
+    "tag": "Poison",
+    "damageType": "poison",
+    "stack": "count5",
+    "tickType": "startOfTurn",
+    "description": "Dégâts de poison chaque tour. Se cumule jusqu'à 5×."
+  },
+  "shocked": {
+    "id": "shocked",
+    "name": "Électrocuté",
+    "icon": "⚡",
+    "category": "dot",
+    "tag": "Shock",
+    "damageType": "shock",
+    "stack": "refresh",
+    "tickType": "startOfTurn",
+    "secondaryEffect": { "type": "chainAdjacent", "fraction": 0.5 },
+    "description": "Dégâts de foudre + 50% des dégâts sautent aux ennemis adjacents."
+  },
+  "bleeding": {
+    "id": "bleeding",
+    "name": "Saignement",
+    "icon": "🩸",
+    "category": "dot",
+    "tag": "Bleed",
+    "damageType": "physical",
+    "ignoreArmor": true,
+    "stack": "count5",
+    "tickType": "startOfTurn",
+    "description": "Dégâts physiques chaque tour, ignore l'armure. Stack 5×."
+  },
+  "corrupted": {
+    "id": "corrupted",
+    "name": "Corrompu",
+    "icon": "🌑",
+    "category": "dot",
+    "tag": "Corruption",
+    "damageType": "shadow",
+    "stack": "refresh",
+    "tickType": "startOfTurn",
+    "secondaryEffect": { "stat": "healingReceived", "modifier": -50, "type": "percent" },
+    "description": "Dégâts d'ombre + soins reçus -50%."
+  },
+  "stunned": {
+    "id": "stunned",
+    "name": "Étourdi",
+    "icon": "💫",
+    "category": "cc",
+    "tag": "Stun",
+    "stack": "noStack",
+    "skipTurn": true,
+    "description": "Saute son prochain tour."
+  },
+  "frozen": {
+    "id": "frozen",
+    "name": "Gelé",
+    "icon": "🥶",
+    "category": "cc",
+    "tag": "Freeze",
+    "stack": "noStack",
+    "skipTurn": true,
+    "secondaryEffect": { "type": "vulnerable", "damageType": "blunt", "multiplier": 2 },
+    "description": "Saute son prochain tour. ×2 dégâts contondants reçus."
+  },
+  "blinded": {
+    "id": "blinded",
+    "name": "Aveuglé",
+    "icon": "🌫️",
+    "category": "cc",
+    "tag": "Blind",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "accuracy", "modifier": -50, "type": "percent" },
+    "description": "-50% précision (peut rater ses attaques)."
+  },
+  "slowed": {
+    "id": "slowed",
+    "name": "Ralenti",
+    "icon": "🦶",
+    "category": "cc",
+    "tag": "Slow",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "ap", "modifier": -1 },
+    "description": "-1 AP par tour."
+  },
+  "marked": {
+    "id": "marked",
+    "name": "Marqué",
+    "icon": "🎯",
+    "category": "debuff",
+    "tag": "Mark",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "incomingDamage", "modifier": 25, "type": "percent" },
+    "description": "Subit +25% dégâts de toutes sources."
+  },
+  "oiled": {
+    "id": "oiled",
+    "name": "Huilé",
+    "icon": "🛢️",
+    "category": "debuff",
+    "tag": "Oil",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "fireDamageTaken", "modifier": 50, "type": "percent" },
+    "description": "+50% dégâts feu reçus. Combo Brûlé+Huilé = Explosion."
+  },
+  "rooted": {
+    "id": "rooted",
+    "name": "Enraciné",
+    "icon": "🔗",
+    "category": "cc",
+    "tag": "Root",
+    "stack": "refresh",
+    "preventMovement": true,
+    "description": "Ne peut pas se déplacer (peut attaquer)."
+  },
+  "silenced": {
+    "id": "silenced",
+    "name": "Silencé",
+    "icon": "🔇",
+    "category": "cc",
+    "tag": "Silence",
+    "stack": "refresh",
+    "preventSpells": true,
+    "description": "Ne peut pas lancer de sorts (juste attaque basique)."
+  },
+  "wet": {
+    "id": "wet",
+    "name": "Mouillé",
+    "icon": "💧",
+    "category": "debuff",
+    "tag": "Wet",
+    "stack": "refresh",
+    "secondaryEffect": [
+      { "stat": "fireDamageTaken", "modifier": -50, "type": "percent" },
+      { "stat": "shockDamageTaken", "modifier": 50, "type": "percent" },
+      { "type": "removeStatus", "statusId": "burning" }
+    ],
+    "description": "Annule Brûlé. -50% feu reçu, +50% foudre reçu."
+  },
+  "rage": {
+    "id": "rage",
+    "name": "Rage",
+    "icon": "🔱",
+    "category": "buff",
+    "tag": "Rage",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "meleeDamage", "modifier": 30, "type": "percent" },
+    "description": "+30% dégâts mêlée."
+  },
+  "guard": {
+    "id": "guard",
+    "name": "Garde",
+    "icon": "🛡️",
+    "category": "buff",
+    "tag": "Guard",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "incomingDamage", "modifier": -30, "type": "percent" },
+    "description": "-30% dégâts reçus."
+  },
+  "energyShield": {
+    "id": "energyShield",
+    "name": "Bouclier d'énergie",
+    "icon": "💎",
+    "category": "buff",
+    "tag": "Shield",
+    "stack": "refresh",
+    "shieldPool": true,
+    "description": "Pool de PV temporaires absorbés avant les vrais PV."
+  },
+  "precision": {
+    "id": "precision",
+    "name": "Précision",
+    "icon": "🎯",
+    "category": "buff",
+    "tag": "Precision",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "critChance", "modifier": 25, "type": "percent" },
+    "description": "+25% chance critique."
+  },
+  "concentration": {
+    "id": "concentration",
+    "name": "Concentration",
+    "icon": "🌟",
+    "category": "buff",
+    "tag": "Concentration",
+    "stack": "noStack",
+    "secondaryEffect": { "stat": "ap", "modifier": 1 },
+    "description": "+1 AP au prochain tour."
+  },
+  "regenerating": {
+    "id": "regenerating",
+    "name": "Régénération",
+    "icon": "💚",
+    "category": "buff",
+    "tag": "Heal",
+    "stack": "refresh",
+    "tickType": "startOfTurn",
+    "healPerTurn": true,
+    "description": "Restaure des PV chaque tour."
+  },
+  "haste": {
+    "id": "haste",
+    "name": "Hâte",
+    "icon": "💨",
+    "category": "buff",
+    "tag": "Haste",
+    "stack": "refresh",
+    "secondaryEffect": { "stat": "freeMovement", "modifier": 2 },
+    "description": "+2 cases de mouvement gratuit."
+  }
+}

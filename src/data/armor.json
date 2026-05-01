@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "description": "Armures du jeu. Chaque slot a un implicit garanti unique au type.",
+    "implicitNote": "L'implicit est toujours présent et n'est PAS rollé (contrairement aux armes). Les valeurs montent juste avec iLvl."
+  },
+  "head": {
+    "id": "head",
+    "name": "Casque",
+    "icon": "⛑️",
+    "slot": "head",
+    "implicit": { "id": "armor", "valueRange": [4, 8], "label": "+X armure" },
+    "tags": ["Defense"]
+  },
+  "chest": {
+    "id": "chest",
+    "name": "Veste",
+    "icon": "🦺",
+    "slot": "chest",
+    "implicit": { "id": "maxHP", "valueRange": [12, 25], "label": "+X PV max" },
+    "tags": ["Defense"]
+  },
+  "legs": {
+    "id": "legs",
+    "name": "Pantalon",
+    "icon": "👖",
+    "slot": "legs",
+    "implicit": { "id": "armor", "valueRange": [3, 7], "label": "+X armure" },
+    "tags": ["Defense"]
+  },
+  "gloves": {
+    "id": "gloves",
+    "name": "Gants",
+    "icon": "🧤",
+    "slot": "gloves",
+    "implicit": { "id": "critChance", "valueRange": [3, 7], "label": "+X% chance crit" },
+    "tags": ["Offense"]
+  },
+  "boots": {
+    "id": "boots",
+    "name": "Bottes",
+    "icon": "👢",
+    "slot": "boots",
+    "implicit": { "id": "freeMovement", "valueRange": [1, 1], "label": "+X case mouvement gratuit/tour" },
+    "tags": ["Mobility"]
+  }
+}

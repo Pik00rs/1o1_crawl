@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Crawler — Prototype</title>
+
+<link rel="stylesheet" href="src/css/base/variables.css">
+<link rel="stylesheet" href="src/css/base/layout.css">
+<link rel="stylesheet" href="src/css/components/grid.css">
+<link rel="stylesheet" href="src/css/components/panels.css">
+<link rel="stylesheet" href="src/css/components/buttons.css">
+</head>
+<body>
+
+<h1>⚔️ Dungeon Crawler — Prototype v0.2</h1>
+
+<div id="timeline"></div>
+
+<div class="layout">
+  <div class="left-panel">
+    <div id="grid"></div>
+    <div class="panel">
+      <h2>📜 Journal de combat</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="panel">
+      <h2 id="player-name">🧙 Kael</h2>
+      <div class="stat-line"><span>PV</span><span id="hp-text">32/32</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="hp-fill" style="background:#4a8;width:100%"></div></div>
+      <div class="stat-line"><span>AP</span><span id="ap-text">7/7</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="ap-fill" style="background:#48f;width:100%"></div></div>
+      <div class="stat-line"><span>Armure</span><span id="armor-text">14</span></div>
+      <div class="stat-line"><span>Statuts</span><span id="status-text">Aucun</span></div>
+    </div>
+
+    <div class="panel">
+      <h2>⚔️ Actions</h2>
+      <div class="actions" id="actions"></div>
+      <button id="end-turn-btn">▶ Fin du tour</button>
+    </div>
+
+    <div class="panel">
+      <h2>🎒 Équipement</h2>
+      <div id="equipment"></div>
+    </div>
+  </div>
+</div>
+
+<div id="combat-end">
+  <h2 id="end-title">Victoire !</h2>
+  <div id="end-content"></div>
+  <button onclick="restartCombat()">Recommencer</button>
+</div>
+
+<script type="module">
+  import { startGame } from './src/js/core/game.js';
+  startGame().catch(err => {
+    console.error('Erreur de démarrage :', err);
+    document.body.innerHTML = `<div style="padding:40px;color:#fff;">
+      <h2 style="color:#f44;">Erreur de chargement</h2>
+      <p>${err.message}</p>
+      <p style="color:#aaa;margin-top:20px;">Le jeu nécessite un serveur HTTP. Voir le README.md.</p>
+      <pre style="background:#222;padding:10px;margin-top:20px;color:#8af;">python3 -m http.server 8000</pre>
+    </div>`;
+  });
+</script>
+
+</body>
+</html>

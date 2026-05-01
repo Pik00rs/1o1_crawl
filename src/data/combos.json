@@ -1,0 +1,101 @@
+{
+  "_meta": {
+    "description": "Règles des combos élémentaires. Quand 2 statuts s'additionnent sur une cible, un 3e effet émerge.",
+    "evaluationTiming": "Vérifié à chaque application de statut. Si conditions remplies, déclenche l'effet et applique l'aftermath."
+  },
+  "explosion": {
+    "id": "explosion",
+    "name": "Explosion",
+    "icon": "💥",
+    "trigger": {
+      "type": "statusOnStatus",
+      "applied": "burning",
+      "existing": "oiled"
+    },
+    "effect": {
+      "type": "aoeDamage",
+      "radius": 1,
+      "damage": [25, 35],
+      "damageType": "fire"
+    },
+    "aftermath": [
+      { "action": "removeStatus", "statusId": "burning" },
+      { "action": "removeStatus", "statusId": "oiled" }
+    ],
+    "description": "Brûlé sur cible Huilée → Explosion zone 3×3."
+  },
+  "shatter": {
+    "id": "shatter",
+    "name": "Brise",
+    "icon": "🧊",
+    "trigger": {
+      "type": "damageTypeOnStatus",
+      "incomingDamageType": "blunt",
+      "existing": "frozen"
+    },
+    "effect": {
+      "type": "damageMultiplier",
+      "multiplier": 3
+    },
+    "aftermath": [
+      { "action": "removeStatus", "statusId": "frozen" }
+    ],
+    "description": "Coup contondant sur cible Gelée → ×3 dégâts."
+  },
+  "overload": {
+    "id": "overload",
+    "name": "Surcharge",
+    "icon": "⚡",
+    "trigger": {
+      "type": "statusOnStatus",
+      "applied": "shocked",
+      "existing": "shocked"
+    },
+    "effect": {
+      "type": "aoeDamage",
+      "radius": 1,
+      "damage": [20, 30],
+      "damageType": "shock"
+    },
+    "aftermath": [
+      { "action": "removeStatus", "statusId": "shocked" }
+    ],
+    "description": "2 Électrocutions sur même cible → Surcharge zone."
+  },
+  "toxicGas": {
+    "id": "toxicGas",
+    "name": "Gaz Toxique",
+    "icon": "☣️",
+    "trigger": {
+      "type": "statusOnStatus",
+      "applied": "burning",
+      "existing": "poisoned"
+    },
+    "effect": {
+      "type": "aoeStatusField",
+      "radius": 1,
+      "duration": 3,
+      "applyStatus": { "id": "poisoned", "duration": 2, "power": 3 }
+    },
+    "aftermath": [],
+    "description": "Brûlé sur Empoisonné → Nuage toxique 3×3 sur 3 tours."
+  },
+  "hemorrhage": {
+    "id": "hemorrhage",
+    "name": "Hémorragie",
+    "icon": "🩸",
+    "trigger": {
+      "type": "statusStackThreshold",
+      "statusId": "bleeding",
+      "stackThreshold": 3
+    },
+    "effect": {
+      "type": "percentMaxHpDamage",
+      "percent": 50
+    },
+    "aftermath": [
+      { "action": "clearStacks", "statusId": "bleeding" }
+    ],
+    "description": "3+ stacks Saignement → 50% PV max en dégâts instantanés."
+  }
+}

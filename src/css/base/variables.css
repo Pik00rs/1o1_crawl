@@ -1,0 +1,35 @@
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --bg-tertiary: #3a3a3a;
+  --bg-cell: #2d2d2d;
+  --bg-cell-hover: #3d3d3d;
+  --border-default: #444;
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaa;
+  --text-muted: #888;
+  --accent: #f0c060;
+  --rarity-common: #ccc;
+  --rarity-magic: #6af;
+  --rarity-rare: #fc4;
+  --rarity-epic: #c4f;
+  --rarity-legendary: #f80;
+  --rarity-set: #6f6;
+  --hp-color: #4a8;
+  --hp-enemy: #c44;
+  --ap-color: #48f;
+  --move-range: #2a4a2a;
+  --move-range-hover: #3a6a3a;
+  --attack-range: #4a2a2a;
+  --attack-range-hover: #6a3a3a;
+  --spell-range: #2a2a4a;
+  --spell-range-hover: #3a3a6a;
+  --spell-aoe: #4a4a2a;
+  --fire-tile: #4a2a1a;
+  --cell-size: 60px;
+  --grid-cols: 8;
+  --grid-rows: 6;
+  --right-panel-width: 320px;
+  --gap: 12px;
+  --font-mono: 'Courier New', monospace;
+}

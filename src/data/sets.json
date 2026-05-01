@@ -1,0 +1,136 @@
+{
+  "_meta": {
+    "description": "Sets d'armure. Bonus 2/3/5 pièces. Applicable uniquement sur les 5 slots d'armure (head, chest, legs, gloves, boots).",
+    "rule": "Tu peux mixer plusieurs sets : 3 pièces d'un set + 2 pièces d'un autre = bonus 3 du premier + bonus 2 du second."
+  },
+  "ashShroud": {
+    "id": "ashShroud",
+    "name": "Linceul des Cendres",
+    "biome": "inferno",
+    "tags": ["Fire", "Pyromage"],
+    "pieces": ["ashHelm", "ashChest", "ashLegs", "ashGloves", "ashBoots"],
+    "bonuses": {
+      "2": {
+        "stat": "fireDamageBonus",
+        "value": 20,
+        "type": "percent",
+        "label": "+20% dégâts Feu"
+      },
+      "3": {
+        "type": "passive",
+        "passiveId": "burnOnHit",
+        "value": 30,
+        "label": "Tes attaques ont 30% chance d'appliquer Brûlé"
+      },
+      "5": {
+        "type": "passive",
+        "passiveId": "burnExplodeOnDeath",
+        "label": "Tes ennemis Brûlés explosent à la mort, propageant Brûlé en zone 3×3"
+      }
+    }
+  },
+  "frozenMantle": {
+    "id": "frozenMantle",
+    "name": "Manteau Glacé",
+    "biome": "cryo",
+    "tags": ["Ice", "Tank"],
+    "pieces": ["frozenHelm", "frozenChest", "frozenLegs", "frozenGloves", "frozenBoots"],
+    "bonuses": {
+      "2": {
+        "stat": "iceDamageBonus",
+        "value": 20,
+        "type": "percent",
+        "label": "+20% dégâts Glace"
+      },
+      "3": {
+        "type": "passive",
+        "passiveId": "critAppliesChilled",
+        "label": "Tes critiques appliquent Glacé"
+      },
+      "5": {
+        "type": "passive",
+        "passiveId": "retaliateChill",
+        "label": "Quand tu reçois un coup, applique Glacé à l'attaquant"
+      }
+    }
+  },
+  "bloodPath": {
+    "id": "bloodPath",
+    "name": "Voie du Sang",
+    "biome": "crimson",
+    "tags": ["Bleed", "Brute"],
+    "pieces": ["bloodHelm", "bloodChest", "bloodLegs", "bloodGloves", "bloodBoots"],
+    "bonuses": {
+      "2": {
+        "stat": "bleedChance",
+        "value": 25,
+        "type": "percent",
+        "label": "+25% chance Saignement"
+      },
+      "3": {
+        "type": "passive",
+        "passiveId": "extendBleedDuration",
+        "value": 2,
+        "label": "Saignements durent +2 tours"
+      },
+      "5": {
+        "type": "passive",
+        "passiveId": "lifestealFromBleed",
+        "value": 30,
+        "label": "Tu te soignes de 30% des dégâts de Saignement infligés"
+      }
+    }
+  },
+  "toxicRobes": {
+    "id": "toxicRobes",
+    "name": "Robe Toxique",
+    "biome": "toxic",
+    "tags": ["Poison", "Decay"],
+    "pieces": ["toxicHelm", "toxicChest", "toxicLegs", "toxicGloves", "toxicBoots"],
+    "bonuses": {
+      "2": {
+        "stat": "poisonDamageBonus",
+        "value": 20,
+        "type": "percent",
+        "label": "+20% dégâts Poison"
+      },
+      "3": {
+        "type": "passive",
+        "passiveId": "extendPoisonStack",
+        "value": 8,
+        "label": "Empoisonnement stack jusqu'à 8 (au lieu de 5)"
+      },
+      "5": {
+        "type": "passive",
+        "passiveId": "deathToxicCloud",
+        "label": "Quand un Empoisonné meurt, gaz toxique zone 3×3 pendant 3 tours"
+      }
+    }
+  },
+  "voidWeave": {
+    "id": "voidWeave",
+    "name": "Trame du Vide",
+    "biome": "voidnet",
+    "tags": ["Shock", "Caster"],
+    "pieces": ["voidHelm", "voidChest", "voidLegs", "voidGloves", "voidBoots"],
+    "bonuses": {
+      "2": {
+        "stat": "shockDamageBonus",
+        "value": 20,
+        "type": "percent",
+        "label": "+20% dégâts Foudre"
+      },
+      "3": {
+        "type": "passive",
+        "passiveId": "critAppliesShock",
+        "label": "Tes critiques appliquent Électrocuté"
+      },
+      "5": {
+        "type": "passive",
+        "passiveId": "extendShockChain",
+        "value": 2,
+        "label": "Tes Électrocutions sautent à 2 ennemis supplémentaires"
+      }
+    }
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "_meta": {
+    "description": "Légendaires nommés. Chacun ouvre un build via son modificateur unique. 15 au lancement.",
+    "rule": "Chaque Légendaire est unique en son nom. Drop rate ~0.9% global, bonus selon biome."
+  },
+  "phoenixBlade": {
+    "id": "phoenixBlade",
+    "name": "Lame du Phénix",
+    "icon": "🔥",
+    "type": "weapon",
+    "subtype": "sword",
+    "category": "oneHand",
+    "tags": ["Fire", "Pyromage"],
+    "biome": "inferno",
+    "uniqueModifier": "Quand tu tues un ennemi, propage Brûlé à tous les ennemis adjacents.",
+    "modifierId": "phoenixSpread",
+    "guaranteedAffixes": ["flaming"]
+  },
+  "voidScythe": {
+    "id": "voidScythe",
+    "name": "Faux du Néant",
+    "icon": "🌑",
+    "type": "weapon",
+    "subtype": "halberd",
+    "category": "twoHand",
+    "tags": ["Shadow", "Crit"],
+    "biome": "voidnet",
+    "uniqueModifier": "Tes critiques infligent +50% en dégâts d'Ombre supplémentaires.",
+    "modifierId": "voidCritBonus"
+  },
+  "sevenFangs": {
+    "id": "sevenFangs",
+    "name": "Crocs des Sept Veines",
+    "icon": "🩸",
+    "type": "weapon",
+    "subtype": "dagger",
+    "category": "oneHand",
+    "tags": ["Bleed", "Assassin"],
+    "biome": "crimson",
+    "uniqueModifier": "Tes attaques basiques appliquent toujours 1 stack de Saignement.",
+    "modifierId": "guaranteedBleed"
+  },
+  "stormBow": {
+    "id": "stormBow",
+    "name": "Arc des Tempêtes",
+    "icon": "⚡",
+    "type": "weapon",
+    "subtype": "bow",
+    "category": "twoHand",
+    "tags": ["Shock", "Pierce"],
+    "biome": "voidnet",
+    "uniqueModifier": "Tes tirs traversent les ennemis et appliquent Électrocuté.",
+    "modifierId": "piercingShock"
+  },
+  "deadSunStaff": {
+    "id": "deadSunStaff",
+    "name": "Bâton du Soleil Mort",
+    "icon": "☄️",
+    "type": "weapon",
+    "subtype": "staff",
+    "category": "twoHand",
+    "tags": ["Caster", "Echo"],
+    "biome": "inferno",
+    "uniqueModifier": "Tes sorts ont 25% chance de se relancer gratuitement.",
+    "modifierId": "spellEcho25"
+  },
+  "oracleHelm": {
+    "id": "oracleHelm",
+    "name": "Heaume de l'Oracle",
+    "icon": "👁️",
+    "type": "armor",
+    "slot": "head",
+    "tags": ["Caster", "Vision"],
+    "uniqueModifier": "Tu vois les actions ennemies du prochain tour.",
+    "modifierId": "foresight"
+  },
+  "millenniumPlate": {
+    "id": "millenniumPlate",
+    "name": "Plastron des Mille Ans",
+    "icon": "🛡️",
+    "type": "armor",
+    "slot": "chest",
+    "tags": ["Tank", "Defense"],
+    "uniqueModifier": "+50% PV max mais -2 AP par tour.",
+    "modifierId": "hpForAp"
+  },
+  "executionerGloves": {
+    "id": "executionerGloves",
+    "name": "Gants du Bourreau",
+    "icon": "⚰️",
+    "type": "armor",
+    "slot": "gloves",
+    "tags": ["Execute", "Crit"],
+    "uniqueModifier": "+100% chance crit sur cibles <30% PV.",
+    "modifierId": "executeCrit"
+  },
+  "stormBoots": {
+    "id": "stormBoots",
+    "name": "Bottes de la Tempête",
+    "icon": "👢",
+    "type": "armor",
+    "slot": "boots",
+    "tags": ["Shock", "Mobility"],
+    "biome": "voidnet",
+    "uniqueModifier": "Te déplacer applique Foudre sur les ennemis adjacents à chaque case parcourue.",
+    "modifierId": "movementShock"
+  },
+  "volcanoHeart": {
+    "id": "volcanoHeart",
+    "name": "Cœur de Volcan",
+    "icon": "🌋",
+    "type": "amulet",
+    "slot": "amulet",
+    "tags": ["Fire", "AOE"],
+    "biome": "inferno",
+    "grantedSpell": "eruption",
+    "spellDescription": "Éruption — zone 5×5, gros dégâts feu, 5 AP, CD 4 tours",
+    "uniqueModifier": "Le sort de cette amulette n'a pas de cooldown si tu es <30% PV.",
+    "modifierId": "lowHpNoCD"
+  },
+  "cryoQueenTear": {
+    "id": "cryoQueenTear",
+    "name": "Larme de Cryo-Reine",
+    "icon": "❄️",
+    "type": "amulet",
+    "slot": "amulet",
+    "tags": ["Ice", "AOE"],
+    "biome": "cryo",
+    "grantedSpell": "blizzard",
+    "spellDescription": "Blizzard — zone 3×3 sur 3 tours, applique Glacé chaque tick",
+    "uniqueModifier": "Le sort blizzard dure 5 tours au lieu de 3.",
+    "modifierId": "extendedBlizzard"
+  },
+  "hackerEye": {
+    "id": "hackerEye",
+    "name": "Œil du Hacker",
+    "icon": "👁️‍🗨️",
+    "type": "amulet",
+    "slot": "amulet",
+    "tags": ["Shock", "Caster"],
+    "biome": "voidnet",
+    "grantedSpell": "stealSpell",
+    "spellDescription": "Surcharge — vole un sort d'un ennemi adjacent et le lance immédiatement",
+    "uniqueModifier": "Quand tu voles un sort, tu peux le réutiliser une fois ce combat.",
+    "modifierId": "doubleStolenSpell"
+  },
+  "vampireRing": {
+    "id": "vampireRing",
+    "name": "Anneau du Vampire",
+    "icon": "💉",
+    "type": "ring",
+    "slot": "ring",
+    "tags": ["Lifesteal", "Vampire"],
+    "biome": "crimson",
+    "uniqueModifier": "Tes attaques mêlée te soignent de 25% des dégâts infligés.",
+    "modifierId": "vampireHeal25"
+  },
+  "timelessRing": {
+    "id": "timelessRing",
+    "name": "Anneau du Temps Suspendu",
+    "icon": "⏳",
+    "type": "ring",
+    "slot": "ring",
+    "tags": ["Caster", "AP"],
+    "uniqueModifier": "Si tu ne te déplaces pas durant ton tour, +2 AP au tour suivant.",
+    "modifierId": "stillBonus"
+  },
+  "conversionRing": {
+    "id": "conversionRing",
+    "name": "Anneau de Conversion",
+    "icon": "🔄",
+    "type": "ring",
+    "slot": "ring",
+    "tags": ["Fire", "Conversion"],
+    "biome": "inferno",
+    "uniqueModifier": "30% de tes dégâts physiques sont convertis en dégâts Feu.",
+    "modifierId": "phys30ToFire"
+  }
+}

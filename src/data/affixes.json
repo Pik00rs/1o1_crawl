@@ -1,0 +1,316 @@
+{
+  "_meta": {
+    "description": "Pool d'affixes (préfixes et suffixes) qui peuvent être rollés sur les items.",
+    "rules": {
+      "ranges": "Les valueRange définies sont les BASES (à iLvl 5). Le générateur applique ensuite multiplicateur d'iLvl.",
+      "tierRanges": {
+        "magic": "60-100% du base",
+        "rare": "80-130% du base",
+        "epic": "100-160% du base",
+        "legendary": "130-200% du base",
+        "set": "90-140% du base"
+      },
+      "validSlots": "Liste de slots où l'affixe peut apparaître. Vide = tous slots.",
+      "tags": "Tags servent aux synergies (Resonance, sets, biomes)."
+    }
+  },
+  "prefixes": {
+    "flaming": {
+      "id": "flaming",
+      "name": "Enflammée",
+      "type": "prefix",
+      "stat": "bonusFireDamage",
+      "label": "+X dégâts Feu",
+      "valueRange": [3, 8],
+      "tags": ["Fire"],
+      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
+      "biome": "inferno"
+    },
+    "freezing": {
+      "id": "freezing",
+      "name": "Glaciale",
+      "type": "prefix",
+      "stat": "bonusIceDamage",
+      "label": "+X dégâts Glace",
+      "valueRange": [3, 8],
+      "tags": ["Ice"],
+      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
+      "biome": "cryo"
+    },
+    "venomous": {
+      "id": "venomous",
+      "name": "Venimeuse",
+      "type": "prefix",
+      "stat": "bonusPoisonDamage",
+      "label": "+X dégâts Poison",
+      "valueRange": [3, 7],
+      "tags": ["Poison"],
+      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
+      "biome": "toxic"
+    },
+    "shocking": {
+      "id": "shocking",
+      "name": "Foudroyante",
+      "type": "prefix",
+      "stat": "bonusShockDamage",
+      "label": "+X dégâts Foudre",
+      "valueRange": [3, 8],
+      "tags": ["Shock"],
+      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
+      "biome": "voidnet"
+    },
+    "bloody": {
+      "id": "bloody",
+      "name": "Sanglante",
+      "type": "prefix",
+      "stat": "bleedChance",
+      "label": "+X% chance Saignement",
+      "valueRange": [8, 18],
+      "tags": ["Bleed"],
+      "validSlots": ["mainhand"],
+      "biome": "crimson"
+    },
+    "sharp": {
+      "id": "sharp",
+      "name": "Tranchante",
+      "type": "prefix",
+      "stat": "bonusSlashDamage",
+      "label": "+X dégâts Tranchants",
+      "valueRange": [3, 7],
+      "tags": ["Slash"],
+      "validSlots": ["mainhand", "gloves"]
+    },
+    "piercing": {
+      "id": "piercing",
+      "name": "Perçante",
+      "type": "prefix",
+      "stat": "bonusPierceDamage",
+      "label": "+X dégâts Perforants",
+      "valueRange": [3, 7],
+      "tags": ["Pierce"],
+      "validSlots": ["mainhand", "gloves"]
+    },
+    "crushing": {
+      "id": "crushing",
+      "name": "Écrasante",
+      "type": "prefix",
+      "stat": "bonusBluntDamage",
+      "label": "+X dégâts Contondants",
+      "valueRange": [3, 7],
+      "tags": ["Blunt"],
+      "validSlots": ["mainhand", "gloves"]
+    },
+    "vicious": {
+      "id": "vicious",
+      "name": "Vicieuse",
+      "type": "prefix",
+      "stat": "critChance",
+      "label": "+X% chance crit",
+      "valueRange": [3, 8],
+      "tags": ["Crit"],
+      "validSlots": ["mainhand", "offhand", "gloves", "ring", "amulet"]
+    },
+    "deadly": {
+      "id": "deadly",
+      "name": "Mortelle",
+      "type": "prefix",
+      "stat": "critMultiplier",
+      "label": "+X% multiplicateur crit",
+      "valueRange": [10, 25],
+      "tags": ["Crit"],
+      "validSlots": ["mainhand", "offhand", "gloves", "ring", "amulet"]
+    },
+    "swift": {
+      "id": "swift",
+      "name": "Rapide",
+      "type": "prefix",
+      "stat": "bonusAP",
+      "label": "+X AP par tour",
+      "valueRange": [1, 1],
+      "tags": ["Mobility"],
+      "validSlots": ["boots", "amulet", "ring"]
+    },
+    "reinforced": {
+      "id": "reinforced",
+      "name": "Renforcée",
+      "type": "prefix",
+      "stat": "armor",
+      "label": "+X armure",
+      "valueRange": [3, 8],
+      "tags": ["Defense"],
+      "validSlots": ["head", "chest", "legs", "gloves", "boots", "offhand"]
+    },
+    "vital": {
+      "id": "vital",
+      "name": "Vitale",
+      "type": "prefix",
+      "stat": "maxHP",
+      "label": "+X PV max",
+      "valueRange": [8, 18],
+      "tags": ["Defense"],
+      "validSlots": ["chest", "legs", "amulet", "ring"]
+    },
+    "regenerating": {
+      "id": "regenerating",
+      "name": "Régénérante",
+      "type": "prefix",
+      "stat": "hpRegen",
+      "label": "+X PV/tour",
+      "valueRange": [1, 3],
+      "tags": ["Heal"],
+      "validSlots": ["chest", "amulet", "ring"]
+    },
+    "lifestealing": {
+      "id": "lifestealing",
+      "name": "Vampirique",
+      "type": "prefix",
+      "stat": "lifesteal",
+      "label": "+X% lifesteal",
+      "valueRange": [3, 8],
+      "tags": ["Lifesteal"],
+      "validSlots": ["mainhand", "ring", "amulet"]
+    },
+    "magicFinder": {
+      "id": "magicFinder",
+      "name": "du Découvreur",
+      "type": "prefix",
+      "stat": "magicFind",
+      "label": "+X% Magic Find",
+      "valueRange": [5, 15],
+      "tags": ["Loot"],
+      "validSlots": ["head", "chest", "boots", "ring", "amulet"]
+    }
+  },
+  "suffixes": {
+    "ofTheWind": {
+      "id": "ofTheWind",
+      "name": "du Vent",
+      "type": "suffix",
+      "stat": "freeMovement",
+      "label": "+X case mouvement gratuit",
+      "valueRange": [1, 2],
+      "tags": ["Mobility"],
+      "validSlots": ["boots", "amulet"]
+    },
+    "ofVigor": {
+      "id": "ofVigor",
+      "name": "de Vigueur",
+      "type": "suffix",
+      "stat": "maxHP",
+      "label": "+X PV max",
+      "valueRange": [10, 20],
+      "tags": ["Defense"],
+      "validSlots": ["chest", "amulet", "ring"]
+    },
+    "ofShadow": {
+      "id": "ofShadow",
+      "name": "des Ombres",
+      "type": "suffix",
+      "stat": "dodgeChance",
+      "label": "+X% esquive",
+      "valueRange": [3, 10],
+      "tags": ["Defense", "Shadow"],
+      "validSlots": ["boots", "gloves", "ring"]
+    },
+    "ofFortitude": {
+      "id": "ofFortitude",
+      "name": "de Robustesse",
+      "type": "suffix",
+      "stat": "armor",
+      "label": "+X armure",
+      "valueRange": [3, 7],
+      "tags": ["Defense"],
+      "validSlots": ["head", "chest", "legs", "gloves", "boots"]
+    },
+    "ofFireResist": {
+      "id": "ofFireResist",
+      "name": "Pyro-Résistante",
+      "type": "suffix",
+      "stat": "fireResist",
+      "label": "+X% résistance Feu",
+      "valueRange": [10, 25],
+      "tags": ["Defense"],
+      "validSlots": ["head", "chest", "legs", "gloves", "boots", "ring", "amulet"]
+    },
+    "ofFrostResist": {
+      "id": "ofFrostResist",
+      "name": "Cryo-Résistante",
+      "type": "suffix",
+      "stat": "iceResist",
+      "label": "+X% résistance Glace",
+      "valueRange": [10, 25],
+      "tags": ["Defense"],
+      "validSlots": ["head", "chest", "legs", "gloves", "boots", "ring", "amulet"]
+    },
+    "ofShockResist": {
+      "id": "ofShockResist",
+      "name": "Anti-Foudre",
+      "type": "suffix",
+      "stat": "shockResist",
+      "label": "+X% résistance Foudre",
+      "valueRange": [10, 25],
+      "tags": ["Defense"],
+      "validSlots": ["head", "chest", "legs", "gloves", "boots", "ring", "amulet"]
+    },
+    "ofPenetration": {
+      "id": "ofPenetration",
+      "name": "Perforante",
+      "type": "suffix",
+      "stat": "armorPenetration",
+      "label": "+X pénétration armure",
+      "valueRange": [2, 6],
+      "tags": ["Offense"],
+      "validSlots": ["mainhand", "gloves", "ring"]
+    },
+    "ofTheBeast": {
+      "id": "ofTheBeast",
+      "name": "de la Bête",
+      "type": "suffix",
+      "stat": "rageOnHit",
+      "label": "+X% chance Rage en attaquant",
+      "valueRange": [5, 15],
+      "tags": ["Rage", "Buff"],
+      "validSlots": ["mainhand", "amulet"]
+    },
+    "ofExecution": {
+      "id": "ofExecution",
+      "name": "d'Exécution",
+      "type": "suffix",
+      "stat": "executeBonus",
+      "label": "+X% dégâts sur cibles <30% PV",
+      "valueRange": [10, 25],
+      "tags": ["Execute"],
+      "validSlots": ["mainhand", "ring", "amulet"]
+    },
+    "ofConcentration": {
+      "id": "ofConcentration",
+      "name": "de Concentration",
+      "type": "suffix",
+      "stat": "cooldownReduction",
+      "label": "-X% cooldowns",
+      "valueRange": [5, 12],
+      "tags": ["Caster"],
+      "validSlots": ["amulet", "ring", "offhand"]
+    },
+    "ofTheStudent": {
+      "id": "ofTheStudent",
+      "name": "de l'Érudit",
+      "type": "suffix",
+      "stat": "spellCritChance",
+      "label": "+X% crit sorts",
+      "valueRange": [4, 10],
+      "tags": ["Caster", "Crit"],
+      "validSlots": ["amulet", "ring", "offhand"]
+    },
+    "ofResonance": {
+      "id": "ofResonance",
+      "name": "de Résonance",
+      "type": "suffix",
+      "stat": "tagResonance",
+      "label": "+X% dégâts par item au même tag équipé",
+      "valueRange": [3, 7],
+      "tags": ["Resonance"],
+      "validSlots": ["amulet", "ring"]
+    }
+  }
+}

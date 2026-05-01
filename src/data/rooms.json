@@ -1,0 +1,25 @@
+{
+  "tutorial": {
+    "id": "tutorial", "name": "Salle d'entrée",
+    "width": 8, "height": 6,
+    "walls": ["3,2", "3,3", "4,2", "4,3"],
+    "playerStart": { "x": 1, "y": 2 },
+    "enemies": [
+      { "type": "goblinWarrior", "x": 6, "y": 2 },
+      { "type": "goblinWarrior", "x": 6, "y": 3 },
+      { "type": "goblinShaman", "x": 6, "y": 5 }
+    ]
+  },
+  "ratNest": {
+    "id": "ratNest", "name": "Nid de Rats",
+    "width": 8, "height": 6,
+    "walls": ["2,1", "5,4"],
+    "playerStart": { "x": 0, "y": 3 },
+    "enemies": [
+      { "type": "giantRat", "x": 4, "y": 1 },
+      { "type": "giantRat", "x": 5, "y": 2 },
+      { "type": "giantRat", "x": 6, "y": 4 },
+      { "type": "giantRat", "x": 7, "y": 5 }
+    ]
+  }
+}

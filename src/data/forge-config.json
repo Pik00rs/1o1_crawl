@@ -1,0 +1,111 @@
+{
+  "_meta": {
+    "description": "Configuration de toutes les opérations de la forge : burn, reroll, transfer, upgrade."
+  },
+  "tierConfig": {
+    "common": { "color": "#cccccc", "label": "Commun", "affixCount": [0, 0], "dropRate": 0.60 },
+    "magic": { "color": "#6aaaff", "label": "Magique", "affixCount": [1, 2], "dropRate": 0.25 },
+    "rare": { "color": "#ffcc44", "label": "Rare", "affixCount": [2, 3], "dropRate": 0.10 },
+    "epic": { "color": "#cc44ff", "label": "Épique", "affixCount": [3, 4], "dropRate": 0.04 },
+    "legendary": { "color": "#ff8800", "label": "Légendaire", "affixCount": [4, 4], "dropRate": 0.009, "hasUniqueModifier": true },
+    "set": { "color": "#66ff66", "label": "Set", "affixCount": [2, 3], "dropRate": 0.001, "isSetPiece": true }
+  },
+  "tierRangeMultipliers": {
+    "magic": [0.6, 1.0],
+    "rare": [0.8, 1.3],
+    "epic": [1.0, 1.6],
+    "legendary": [1.3, 2.0],
+    "set": [0.9, 1.4]
+  },
+  "ilvlMultipliers": {
+    "1": 0.50,
+    "2": 0.65,
+    "3": 0.80,
+    "4": 0.95,
+    "5": 1.00,
+    "6": 1.15,
+    "7": 1.30,
+    "8": 1.50,
+    "9": 1.75,
+    "10": 2.10
+  },
+  "burnEssences": {
+    "_description": "Essences récupérées en brûlant un item. Formule: baseTier × iLvl",
+    "common": 1,
+    "magic": 2,
+    "rare": 5,
+    "epic": 12,
+    "legendary": 30,
+    "set": 25
+  },
+  "rerollValueCost": {
+    "_description": "Coût de re-roll de la VALEUR d'un affixe. Augmente exponentiellement (×1.5 chaque fois) sur le même affixe.",
+    "baseEssences": [5, 15],
+    "baseGold": [50, 150],
+    "exponentialMultiplier": 1.5
+  },
+  "rerollAffixCost": {
+    "_description": "Coût de re-roll de l'AFFIXE (change le type de stat).",
+    "baseEssences": [25, 50],
+    "baseGold": [200, 500],
+    "exponentialMultiplier": 1.5
+  },
+  "transferAffixCost": {
+    "_description": "Transfert d'un affixe d'un item émetteur à un receveur. Émetteur détruit.",
+    "baseEssences": [30, 60],
+    "baseGold": [400, 800],
+    "rules": {
+      "sameItemType": true,
+      "sameSlotCategory": "Required (mainhand to mainhand, etc.)",
+      "ilvlMatchPenalty": "If emitter ilvl > receiver ilvl, value rolls towards min. If lower, towards max."
+    }
+  },
+  "upgradeIlvlCost": {
+    "_description": "Coût en essences pour upgrade iLvl d'un item.",
+    "1to2": 5,
+    "2to3": 10,
+    "3to4": 20,
+    "4to5": 35,
+    "5to6": 60,
+    "6to7": 100,
+    "7to8": 175,
+    "8to9": 300,
+    "9to10": 500,
+    "totalCost": 1205
+  },
+  "rollQualityThresholds": {
+    "_description": "Seuils pour la mini-bar de qualité affichée à côté de chaque affixe.",
+    "terrible": [0, 30],
+    "decent": [30, 60],
+    "good": [60, 85],
+    "excellent": [85, 99],
+    "perfect": [100, 100]
+  },
+  "rollQualityColors": {
+    "terrible": "#ff003c",
+    "decent": "#fff200",
+    "good": "#39ff14",
+    "excellent": "#00f0ff",
+    "perfect": "#ffd700"
+  },
+  "biomeDropMultipliers": {
+    "_description": "Multiplicateurs de drop selon difficulté du biome (T1 à T10).",
+    "T1": { "ilvl": 1, "legendaryRate": 0.001, "setRate": 0 },
+    "T2": { "ilvl": 2, "legendaryRate": 0.001, "setRate": 0 },
+    "T3": { "ilvl": 3, "legendaryRate": 0.001, "setRate": 0 },
+    "T4": { "ilvl": 4, "legendaryRate": 0.005, "setRate": 0.0005 },
+    "T5": { "ilvl": 5, "legendaryRate": 0.005, "setRate": 0.0005 },
+    "T6": { "ilvl": 6, "legendaryRate": 0.005, "setRate": 0.0005 },
+    "T7": { "ilvl": 7, "legendaryRate": 0.01, "setRate": 0.002 },
+    "T8": { "ilvl": 8, "legendaryRate": 0.01, "setRate": 0.002 },
+    "T9": { "ilvl": 9, "legendaryRate": 0.01, "setRate": 0.002 },
+    "T10": { "ilvl": 10, "legendaryRate": 0.02, "setRate": 0.005 }
+  },
+  "stash": {
+    "_description": "Configuration du stash partagé entre runs.",
+    "startingSlots": 50,
+    "expansionSlotIncrement": 20,
+    "expansionBaseCost": 5000,
+    "expansionCostMultiplier": 2.0
+  }
+}

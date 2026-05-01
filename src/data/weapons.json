@@ -1,0 +1,228 @@
+{
+  "_meta": {
+    "description": "Types d'armes du jeu. Chaque type a 2-3 implicits possibles dont 1 est rollé au drop.",
+    "implicitRollNote": "Au drop, le générateur choisit 1 implicit dans 'possibleImplicits' avec valeur dans la range."
+  },
+  "oneHand": {
+    "sword": {
+      "id": "sword",
+      "name": "Épée",
+      "icon": "🗡️",
+      "category": "oneHand",
+      "subtype": "sword",
+      "primaryStat": "strength",
+      "baseDamage": [12, 18],
+      "baseDamageType": "slash",
+      "tags": ["Slash", "Melee"],
+      "possibleImplicits": [
+        { "id": "bonusSlashDamage", "valueRange": [3, 8], "label": "+X dégâts Tranchants" },
+        { "id": "critChance", "valueRange": [3, 8], "label": "+X% chance crit" },
+        { "id": "attackSpeed", "valueRange": [5, 12], "label": "+X% vitesse attaque" }
+      ]
+    },
+    "dagger": {
+      "id": "dagger",
+      "name": "Dague",
+      "icon": "🔪",
+      "category": "oneHand",
+      "subtype": "dagger",
+      "primaryStat": "dexterity",
+      "baseDamage": [8, 14],
+      "baseDamageType": "pierce",
+      "tags": ["Pierce", "Melee", "Light"],
+      "possibleImplicits": [
+        { "id": "critChance", "valueRange": [5, 12], "label": "+X% chance crit" },
+        { "id": "critMultiplier", "valueRange": [10, 25], "label": "+X% multiplicateur crit" },
+        { "id": "bleedChance", "valueRange": [10, 25], "label": "+X% chance Saignement" }
+      ]
+    },
+    "axe": {
+      "id": "axe",
+      "name": "Hache",
+      "icon": "🪓",
+      "category": "oneHand",
+      "subtype": "axe",
+      "primaryStat": "strength",
+      "baseDamage": [14, 20],
+      "baseDamageType": "slash",
+      "tags": ["Slash", "Melee", "Bleed"],
+      "possibleImplicits": [
+        { "id": "bleedChance", "valueRange": [15, 30], "label": "+X% chance Saignement" },
+        { "id": "bonusSlashDamage", "valueRange": [4, 10], "label": "+X dégâts Tranchants" },
+        { "id": "executeBonus", "valueRange": [15, 30], "label": "+X% dégâts sur cibles <30% PV" }
+      ]
+    },
+    "mace": {
+      "id": "mace",
+      "name": "Masse",
+      "icon": "🔨",
+      "category": "oneHand",
+      "subtype": "mace",
+      "primaryStat": "strength",
+      "baseDamage": [13, 19],
+      "baseDamageType": "blunt",
+      "tags": ["Blunt", "Melee"],
+      "possibleImplicits": [
+        { "id": "bonusBluntDamage", "valueRange": [4, 10], "label": "+X dégâts Contondants" },
+        { "id": "armorPenetration", "valueRange": [3, 8], "label": "+X pénétration armure" },
+        { "id": "stunChance", "valueRange": [10, 20], "label": "+X% chance Étourdir" }
+      ]
+    },
+    "wand": {
+      "id": "wand",
+      "name": "Wand",
+      "icon": "🪄",
+      "category": "oneHand",
+      "subtype": "wand",
+      "primaryStat": "intelligence",
+      "baseDamage": [8, 12],
+      "baseDamageType": "magic",
+      "tags": ["Magic", "Caster"],
+      "possibleImplicits": [
+        { "id": "spellCostReduction", "valueRange": [1, 1], "label": "-X AP coût des sorts" },
+        { "id": "bonusMagicDamage", "valueRange": [10, 20], "label": "+X% dégâts magiques" },
+        { "id": "cooldownReduction", "valueRange": [10, 20], "label": "-X% cooldowns" }
+      ]
+    },
+    "pistol": {
+      "id": "pistol",
+      "name": "Pistolet",
+      "icon": "🔫",
+      "category": "oneHand",
+      "subtype": "pistol",
+      "primaryStat": "dexterity",
+      "baseDamage": [10, 16],
+      "baseDamageType": "pierce",
+      "tags": ["Pierce", "Ranged"],
+      "possibleImplicits": [
+        { "id": "rangeBonus", "valueRange": [1, 1], "label": "+X portée" },
+        { "id": "critChance", "valueRange": [4, 10], "label": "+X% chance crit" },
+        { "id": "attackSpeed", "valueRange": [8, 15], "label": "+X% vitesse attaque" }
+      ]
+    }
+  },
+  "twoHand": {
+    "greatsword": {
+      "id": "greatsword",
+      "name": "Épée 2 mains",
+      "icon": "⚔️",
+      "category": "twoHand",
+      "subtype": "greatsword",
+      "primaryStat": "strength",
+      "baseDamage": [22, 32],
+      "baseDamageType": "slash",
+      "tags": ["Slash", "Melee", "Heavy"],
+      "bonusAffixSlot": true,
+      "possibleImplicits": [
+        { "id": "bonusSlashDamage", "valueRange": [6, 14], "label": "+X dégâts Tranchants" },
+        { "id": "cleave", "valueRange": [1, 1], "label": "Frappe 2 cases adjacentes" },
+        { "id": "critChance", "valueRange": [4, 10], "label": "+X% chance crit" }
+      ]
+    },
+    "halberd": {
+      "id": "halberd",
+      "name": "Hallebarde",
+      "icon": "🔱",
+      "category": "twoHand",
+      "subtype": "halberd",
+      "primaryStat": "strength",
+      "baseDamage": [20, 28],
+      "baseDamageType": "pierce",
+      "tags": ["Pierce", "Melee", "Heavy", "Reach"],
+      "bonusAffixSlot": true,
+      "possibleImplicits": [
+        { "id": "meleeRange", "valueRange": [1, 1], "label": "+X portée mêlée" },
+        { "id": "bonusPierceDamage", "valueRange": [5, 12], "label": "+X dégâts Perforants" },
+        { "id": "stunChance", "valueRange": [12, 22], "label": "+X% chance Étourdir" }
+      ]
+    },
+    "bow": {
+      "id": "bow",
+      "name": "Arc",
+      "icon": "🏹",
+      "category": "twoHand",
+      "subtype": "bow",
+      "primaryStat": "dexterity",
+      "baseDamage": [18, 26],
+      "baseDamageType": "pierce",
+      "tags": ["Pierce", "Ranged"],
+      "bonusAffixSlot": true,
+      "possibleImplicits": [
+        { "id": "bonusPierceDamage", "valueRange": [5, 12], "label": "+X dégâts Perforants" },
+        { "id": "rangeBonus", "valueRange": [1, 1], "label": "+X portée" },
+        { "id": "accuracy", "valueRange": [15, 30], "label": "+X% précision" }
+      ]
+    },
+    "staff": {
+      "id": "staff",
+      "name": "Bâton",
+      "icon": "🪄",
+      "category": "twoHand",
+      "subtype": "staff",
+      "primaryStat": "intelligence",
+      "baseDamage": [14, 22],
+      "baseDamageType": "magic",
+      "tags": ["Magic", "Caster", "Heavy"],
+      "bonusAffixSlot": true,
+      "possibleImplicits": [
+        { "id": "bonusMagicDamage", "valueRange": [15, 30], "label": "+X% dégâts magiques" },
+        { "id": "cooldownReduction", "valueRange": [12, 25], "label": "-X% cooldowns" },
+        { "id": "freeSpellPerCombat", "valueRange": [1, 1], "label": "1 sort gratuit par combat" }
+      ]
+    }
+  },
+  "offHand": {
+    "shield": {
+      "id": "shield",
+      "name": "Bouclier",
+      "icon": "🛡️",
+      "category": "offHand",
+      "subtype": "shield",
+      "tags": ["Defense"],
+      "possibleImplicits": [
+        { "id": "armor", "valueRange": [6, 12], "label": "+X armure" },
+        { "id": "riposteChance", "valueRange": [25, 50], "label": "+X% riposte mêlée" },
+        { "id": "energyShield", "valueRange": [8, 15], "label": "+X bouclier d'énergie" }
+      ]
+    },
+    "tome": {
+      "id": "tome",
+      "name": "Tome",
+      "icon": "📕",
+      "category": "offHand",
+      "subtype": "tome",
+      "tags": ["Magic", "Caster"],
+      "possibleImplicits": [
+        { "id": "bonusMagicDamage", "valueRange": [10, 18], "label": "+X% dégâts magiques" },
+        { "id": "cooldownReduction", "valueRange": [8, 15], "label": "-X% cooldowns" },
+        { "id": "spellCostReduction", "valueRange": [1, 1], "label": "-X AP coût des sorts" }
+      ]
+    },
+    "focus": {
+      "id": "focus",
+      "name": "Focus",
+      "icon": "🔮",
+      "category": "offHand",
+      "subtype": "focus",
+      "tags": ["Magic", "Crit"],
+      "possibleImplicits": [
+        { "id": "spellCritChance", "valueRange": [6, 12], "label": "+X% crit sorts" },
+        { "id": "bonusMagicDamage", "valueRange": [12, 20], "label": "+X% dégâts magiques" },
+        { "id": "elementalPenetration", "valueRange": [10, 20], "label": "+X% pénétration élémentaire" }
+      ]
+    },
+    "quiver": {
+      "id": "quiver",
+      "name": "Carquois",
+      "icon": "🎯",
+      "category": "offHand",
+      "subtype": "quiver",
+      "tags": ["Ranged"],
+      "possibleImplicits": [
+        { "id": "rangeBonus", "valueRange": [1, 1], "label": "+X portée" },
+        { "id": "bonusPierceDamage", "valueRange": [4, 10], "label": "+X dégâts Perforants" },
+        { "id": "attackSpeed", "valueRange": [10, 18], "label": "+X% vitesse attaque" }
+      ]
+    }
+  }
+}

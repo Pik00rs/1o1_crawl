@@ -1,0 +1,80 @@
+{
+  "basicMelee": {
+    "id": "basicMelee",
+    "name": "Attaque",
+    "cost": 2,
+    "type": "attack",
+    "range": 1,
+    "targetType": "enemy",
+    "description": "Attaque de mêlée."
+  },
+  "basicRanged": {
+    "id": "basicRanged",
+    "name": "Tir",
+    "cost": 2,
+    "type": "attack",
+    "range": 5,
+    "targetType": "enemy",
+    "description": "Tir à distance."
+  },
+  "flameStrike": {
+    "id": "flameStrike",
+    "name": "Coup Ardent",
+    "cost": 3,
+    "cooldown": 2,
+    "type": "attack",
+    "range": 1,
+    "targetType": "enemy",
+    "damageMult": 1.5,
+    "applyStatus": { "id": "burning", "duration": 3, "power": 4 },
+    "description": "x1.5 dégâts. Brûlé 3 tours."
+  },
+  "precisionShot": {
+    "id": "precisionShot",
+    "name": "Tir Précis",
+    "cost": 4,
+    "cooldown": 3,
+    "type": "attack",
+    "range": 6,
+    "targetType": "enemy",
+    "damageMult": 2,
+    "critBonus": 25,
+    "description": "x2 dégâts, +25% crit."
+  },
+  "quickStab": {
+    "id": "quickStab",
+    "name": "Coup Rapide",
+    "cost": 1,
+    "type": "attack",
+    "range": 1,
+    "targetType": "enemy",
+    "damageMult": 0.7,
+    "description": "1 AP, dégâts réduits."
+  },
+  "frostBolt": {
+    "id": "frostBolt",
+    "name": "Trait de Givre",
+    "cost": 3,
+    "type": "spell",
+    "range": 5,
+    "targetType": "enemy",
+    "damage": [10, 14],
+    "damageType": "ice",
+    "applyStatus": { "id": "frozen", "duration": 1, "chance": 30 },
+    "description": "Glace, 30% Gelé."
+  },
+  "fireball": {
+    "id": "fireball",
+    "name": "Boule de Feu",
+    "cost": 4,
+    "cooldown": 3,
+    "type": "spell",
+    "range": 4,
+    "aoe": 1,
+    "targetType": "tile",
+    "damage": [12, 16],
+    "damageType": "fire",
+    "applyStatus": { "id": "burning", "duration": 2, "power": 3 },
+    "description": "Feu zone 3×3. Brûlé."
+  }
+}

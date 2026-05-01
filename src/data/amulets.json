@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "description": "Amulettes. Chacune porte un sort actif unique. La valeur ajoutée par les affixes random est variable.",
+    "rule": "Au drop, le sort est fixé par l'amulette (pas roll). Les affixes random ajoutent des bonus de stats."
+  },
+  "fireballAmulet": {
+    "id": "fireballAmulet",
+    "name": "Amulette de Pyromancie",
+    "icon": "📿",
+    "slot": "amulet",
+    "tags": ["Fire", "Magic"],
+    "rarity": "magic",
+    "grantedSpell": "fireball",
+    "spellDescription": "Boule de Feu — sort de zone 3×3, dégâts feu, applique Brûlé"
+  },
+  "frostNovaAmulet": {
+    "id": "frostNovaAmulet",
+    "name": "Cœur de Givre",
+    "icon": "❄️",
+    "slot": "amulet",
+    "tags": ["Ice", "Magic"],
+    "rarity": "magic",
+    "grantedSpell": "frostNova",
+    "spellDescription": "Nova Glaciale — explosion 3×3 autour de toi, applique Gelé"
+  },
+  "lightningBoltAmulet": {
+    "id": "lightningBoltAmulet",
+    "name": "Capteur Tempête",
+    "icon": "⚡",
+    "slot": "amulet",
+    "tags": ["Shock", "Magic"],
+    "rarity": "magic",
+    "grantedSpell": "lightningBolt",
+    "spellDescription": "Éclair Chain — touche 3 ennemis en chaîne, applique Électrocuté"
+  },
+  "poisonCloudAmulet": {
+    "id": "poisonCloudAmulet",
+    "name": "Pendentif Toxique",
+    "icon": "☠️",
+    "slot": "amulet",
+    "tags": ["Poison", "Magic"],
+    "rarity": "rare",
+    "grantedSpell": "poisonCloud",
+    "spellDescription": "Nuage Toxique — zone 3×3 sur 3 tours, applique Empoisonné chaque tick"
+  },
+  "healingAmulet": {
+    "id": "healingAmulet",
+    "name": "Larme de Vie",
+    "icon": "💚",
+    "slot": "amulet",
+    "tags": ["Heal"],
+    "rarity": "magic",
+    "grantedSpell": "healingWave",
+    "spellDescription": "Vague de Soin — restaure 30% PV max, applique Régénération 3 tours"
+  },
+  "teleportAmulet": {
+    "id": "teleportAmulet",
+    "name": "Talisman du Vide",
+    "icon": "🌀",
+    "slot": "amulet",
+    "tags": ["Mobility", "Shadow"],
+    "rarity": "rare",
+    "grantedSpell": "teleport",
+    "spellDescription": "Téléport — instant, déplace-toi sur n'importe quelle case visible (5 cases)"
+  },
+  "oilFlaskAmulet": {
+    "id": "oilFlaskAmulet",
+    "name": "Fiole d'Huile",
+    "icon": "🛢️",
+    "slot": "amulet",
+    "tags": ["Fire"],
+    "rarity": "common",
+    "grantedSpell": "oilFlask",
+    "spellDescription": "Fiole d'Huile — applique Huilé en zone 3×3 (combo avec Feu = Explosion)"
+  },
+  "rageAmulet": {
+    "id": "rageAmulet",
+    "name": "Cri de Berserker",
+    "icon": "🔱",
+    "slot": "amulet",
+    "tags": ["Rage", "Buff"],
+    "rarity": "magic",
+    "grantedSpell": "berserkerRage",
+    "spellDescription": "Rage de Berserker — gain Rage 3 tours, applique Marqué à toi-même"
+  }
+}

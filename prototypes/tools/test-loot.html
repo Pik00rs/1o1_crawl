@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test Loot Generator</title>
+<style>
+  body {
+    font-family: 'Courier New', monospace;
+    background: #0a0612;
+    color: #e8d5ff;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { color: #ff2e88; }
+  h2 { color: #00f0ff; margin-top: 24px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+  .controls {
+    background: #1a0d2e;
+    padding: 16px;
+    border: 1px solid #ff2e88;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  select, button {
+    background: #2a1448;
+    color: #e8d5ff;
+    border: 1px solid #ff2e88;
+    padding: 8px 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button { background: #ff2e88; color: #fff; font-weight: bold; }
+  button:hover { background: #ff5599; }
+  .item {
+    background: #1a0d2e;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-left: 4px solid #ccc;
+  }
+  .item.common { border-color: #ccc; }
+  .item.magic { border-color: #6aaaff; }
+  .item.rare { border-color: #ffcc44; }
+  .item.epic { border-color: #cc44ff; }
+  .item.legendary { border-color: #ff8800; box-shadow: 0 0 12px rgba(255, 136, 0, 0.4); }
+  .item.set { border-color: #66ff66; }
+
+  .item-name { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+  .item-name.common { color: #ccc; }
+  .item-name.magic { color: #6aaaff; }
+  .item-name.rare { color: #ffcc44; }
+  .item-name.epic { color: #cc44ff; }
+  .item-name.legendary { color: #ff8800; }
+  .item-name.set { color: #66ff66; }
+
+  .item-meta { font-size: 11px; color: #888; margin-bottom: 8px; }
+  .item-implicit { color: #00f0ff; font-size: 13px; margin-bottom: 4px; }
+  .item-unique { color: #ff8800; font-size: 13px; font-style: italic; margin-bottom: 6px; }
+  .item-spell { color: #cc44ff; font-size: 13px; font-style: italic; margin-bottom: 6px; }
+  .affix {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  .affix-label { color: #aaa; }
+  .quality-bar {
+    width: 60px;
+    height: 4px;
+    background: #333;
+    margin-left: 8px;
+    position: relative;
+    display: inline-block;
+  }
+  .quality-fill { height: 100%; }
+  .quality-fill.terrible { background: #ff003c; }
+  .quality-fill.decent { background: #fff200; }
+  .quality-fill.good { background: #39ff14; }
+  .quality-fill.excellent { background: #00f0ff; }
+  .quality-fill.perfect { background: #ffd700; box-shadow: 0 0 8px #ffd700; }
+
+  .quality-label { font-size: 10px; margin-left: 6px; color: #aaa; }
+  .stats { background: #1a0d2e; padding: 12px; margin-top: 20px; font-size: 12px; }
+  .tag {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid #00f0ff;
+    color: #00f0ff;
+    font-size: 9px;
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎲 Loot Generator — Test</h1>
+<p style="color: #888;">Test rapide du système de loot. Sers ce fichier via HTTP (`python3 -m http.server` dans le dossier).</p>
+
+<div class="controls">
+  <label>Biome:
+    <select id="biome">
+      <option value="inferno">🔥 Inferno</option>
+      <option value="cryo">❄️ Cryo</option>
+      <option value="toxic">☠️ Toxic</option>
+      <option value="voidnet">⚡ Voidnet</option>
+      <option value="crimson">🩸 Crimson</option>
+    </select>
+  </label>
+  <label>Difficulté:
+    <select id="tier">
+      <option value="T1">T1 (iLvl 1)</option>
+      <option value="T5" selected>T5 (iLvl 5)</option>
+      <option value="T7">T7 (iLvl 7)</option>
+      <option value="T10">T10 (iLvl 10)</option>
+    </select>
+  </label>
+  <label>Magic Find:
+    <input type="number" id="mf" value="0" min="0" max="200" style="width: 60px;">%
+  </label>
+  <label>Quantité:
+    <input type="number" id="count" value="10" min="1" max="100" style="width: 60px;">
+  </label>
+  <button onclick="rollDrops()">🎲 ROLL</button>
+</div>
+
+<div id="results"></div>
+<div id="stats" class="stats"></div>
+
+<script type="module">
+import { loadAllData } from './src/js/data/loader.js';
+import { generateLoot } from './src/js/loot/generator.js';
+
+let DATA = null;
+
+// Custom loader pour les nouveaux fichiers
+async function load() {
+  const files = [
+    ['weapons', './src/data/weapons.json'],
+    ['armor', './src/data/armor.json'],
+    ['amulets', './src/data/amulets.json'],
+    ['rings', './src/data/rings.json'],
+    ['affixes', './src/data/affixes.json'],
+    ['statuses', './src/data/statuses.json'],
+    ['combos', './src/data/combos.json'],
+    ['sets', './src/data/sets.json'],
+    ['legendaries', './src/data/legendaries.json'],
+    ['biomes', './src/data/biomes.json'],
+    ['forgeConfig', './src/data/forge-config.json'],
+  ];
+  const data = {};
+  await Promise.all(files.map(async ([k, p]) => {
+    const r = await fetch(p);
+    data[k] = await r.json();
+  }));
+  return data;
+}
+
+async function init() {
+  DATA = await load();
+  console.log('DATA loaded:', DATA);
+  rollDrops();
+}
+
+window.rollDrops = function rollDrops() {
+  if (!DATA) return;
+  const biome = document.getElementById('biome').value;
+  const tier = document.getElementById('tier').value;
+  const mf = parseInt(document.getElementById('mf').value) || 0;
+  const count = parseInt(document.getElementById('count').value) || 10;
+
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+  const stats = { total: 0, common: 0, magic: 0, rare: 0, epic: 0, legendary: 0, set: 0 };
+
+  for (let i = 0; i < count; i++) {
+    const item = generateLoot({ DATA, biomeId: biome, tier, magicFind: mf });
+    if (!item) continue;
+    stats.total++;
+    stats[item.tier]++;
+    results.appendChild(renderItem(item));
+  }
+
+  document.getElementById('stats').innerHTML = `
+    <strong>Stats du roll :</strong> ${stats.total} drops |
+    Common: ${stats.common} (${pct(stats.common, stats.total)}%) |
+    Magic: ${stats.magic} (${pct(stats.magic, stats.total)}%) |
+    Rare: ${stats.rare} (${pct(stats.rare, stats.total)}%) |
+    Epic: ${stats.epic} (${pct(stats.epic, stats.total)}%) |
+    Legendary: ${stats.legendary} (${pct(stats.legendary, stats.total)}%) |
+    Set: ${stats.set} (${pct(stats.set, stats.total)}%)
+  `;
+};
+
+function pct(n, total) {
+  if (!total) return 0;
+  return ((n / total) * 100).toFixed(1);
+}
+
+function renderItem(item) {
+  const div = document.createElement('div');
+  div.className = `item ${item.tier}`;
+
+  let html = `<div class="item-name ${item.tier}">${item.icon || ''} ${item.name}</div>`;
+  html += `<div class="item-meta">${item.tier.toUpperCase()} · iLvl ${item.ilvl} · ${item.type}/${item.subtype}`;
+  if (item.tags?.length) html += ' · ' + item.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  html += `</div>`;
+
+  if (item.uniqueModifier) {
+    html += `<div class="item-unique">⭐ ${item.uniqueModifier}</div>`;
+  }
+  if (item.uniquePassive) {
+    html += `<div class="item-unique">⚡ ${item.uniquePassive}</div>`;
+  }
+  if (item.spellDescription) {
+    html += `<div class="item-spell">🔮 Sort : ${item.spellDescription}</div>`;
+  }
+
+  if (item.implicit) {
+    const v = item.implicit.value;
+    const label = item.implicit.label?.replace('X', v) || `+${v}`;
+    html += `<div class="item-implicit">▸ ${label}</div>`;
+  }
+
+  if (item.baseDamage) {
+    html += `<div class="item-implicit">⚔ Dégâts: ${item.baseDamage[0]}-${item.baseDamage[1]}</div>`;
+  }
+
+  if (item.affixes?.length) {
+    for (const a of item.affixes) {
+      const label = a.label?.replace('X', a.value) || `+${a.value} ${a.stat}`;
+      const qTier = qualityTier(a.quality);
+      html += `
+        <div class="affix">
+          <span class="affix-label">+ ${label}</span>
+          <span>
+            <span class="quality-bar"><span class="quality-fill ${qTier}" style="width:${a.quality}%"></span></span>
+            <span class="quality-label">${a.quality}%</span>
+          </span>
+        </div>`;
+    }
+  }
+
+  if (item.setName) {
+    html += `<div style="color:#66ff66;font-size:12px;margin-top:6px;">⚙ Set : ${item.setName}</div>`;
+  }
+
+  div.innerHTML = html;
+  return div;
+}
+
+function qualityTier(q) {
+  if (q >= 100) return 'perfect';
+  if (q >= 85) return 'excellent';
+  if (q >= 60) return 'good';
+  if (q >= 30) return 'decent';
+  return 'terrible';
+}
+
+init();
+</script>
+
+</body>
+</html>

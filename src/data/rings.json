@@ -1,0 +1,106 @@
+{
+  "_meta": {
+    "description": "Bagues. Chacune porte un effet passif unique. Tu peux porter 2 bagues différentes simultanément.",
+    "rule": "Le passif est fixé par la bague. Les affixes random ajoutent des stats classiques en plus."
+  },
+  "ringOfBlood": {
+    "id": "ringOfBlood",
+    "name": "Anneau de Sang",
+    "icon": "💍",
+    "slot": "ring",
+    "tags": ["Bleed"],
+    "rarity": "magic",
+    "uniquePassive": "Tes attaques mêlée appliquent toujours 1 stack de Saignement.",
+    "passiveId": "alwaysApplyBleed"
+  },
+  "ringOfEmbers": {
+    "id": "ringOfEmbers",
+    "name": "Anneau des Braises",
+    "icon": "🔥",
+    "slot": "ring",
+    "tags": ["Fire"],
+    "rarity": "magic",
+    "uniquePassive": "Tes Brûlures durent +50% plus longtemps.",
+    "passiveId": "extendBurnDuration"
+  },
+  "ringOfFrost": {
+    "id": "ringOfFrost",
+    "name": "Anneau du Givre",
+    "icon": "❄️",
+    "slot": "ring",
+    "tags": ["Ice"],
+    "rarity": "magic",
+    "uniquePassive": "Tes critiques appliquent Glacé.",
+    "passiveId": "critAppliesChilled"
+  },
+  "ringOfStorms": {
+    "id": "ringOfStorms",
+    "name": "Anneau des Tempêtes",
+    "icon": "⚡",
+    "slot": "ring",
+    "tags": ["Shock"],
+    "rarity": "magic",
+    "uniquePassive": "Tes attaques basiques ont 15% chance d'Électrocuter.",
+    "passiveId": "basicShockChance"
+  },
+  "ringOfLifesteal": {
+    "id": "ringOfLifesteal",
+    "name": "Anneau Vampirique",
+    "icon": "💉",
+    "slot": "ring",
+    "tags": ["Lifesteal"],
+    "rarity": "rare",
+    "uniquePassive": "Tu récupères 15% des dégâts mêlée infligés en PV.",
+    "passiveId": "meleeLifesteal"
+  },
+  "ringOfMomentum": {
+    "id": "ringOfMomentum",
+    "name": "Anneau du Souffle",
+    "icon": "💨",
+    "slot": "ring",
+    "tags": ["Mobility"],
+    "rarity": "rare",
+    "uniquePassive": "Te déplacer de 3+ cases dans un tour octroie Hâte au tour suivant.",
+    "passiveId": "movementGrantsHaste"
+  },
+  "ringOfFocus": {
+    "id": "ringOfFocus",
+    "name": "Anneau de Concentration",
+    "icon": "🎯",
+    "slot": "ring",
+    "tags": ["Crit"],
+    "rarity": "magic",
+    "uniquePassive": "+10% chance crit pour chaque tour passé sans bouger (max +30%).",
+    "passiveId": "stillFocusCrit"
+  },
+  "ringOfThorns": {
+    "id": "ringOfThorns",
+    "name": "Anneau d'Épines",
+    "icon": "🌹",
+    "slot": "ring",
+    "tags": ["Defense"],
+    "rarity": "magic",
+    "uniquePassive": "Quand tu es touché en mêlée, l'attaquant subit 8 dégâts physiques.",
+    "passiveId": "thornsRetaliation"
+  },
+  "ringOfEcho": {
+    "id": "ringOfEcho",
+    "name": "Anneau de l'Écho",
+    "icon": "🔁",
+    "slot": "ring",
+    "tags": ["Caster", "Echo"],
+    "rarity": "rare",
+    "uniquePassive": "Tes sorts ont 15% chance de se relancer gratuitement.",
+    "passiveId": "spellEcho"
+  },
+  "ringOfExecute": {
+    "id": "ringOfExecute",
+    "name": "Anneau du Bourreau",
+    "icon": "⚰️",
+    "slot": "ring",
+    "tags": ["Execute"],
+    "rarity": "rare",
+    "uniquePassive": "+30% dégâts contre cibles <30% PV.",
+    "passiveId": "executeBonus"
+  }
+}

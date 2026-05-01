@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS-7 // ISO Combat</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void: #050308;
+  --bg-deep: #0a0612;
+  --bg-panel: rgba(15, 8, 25, 0.85);
+  --neon-pink: #ff2e88;
+  --neon-cyan: #00f0ff;
+  --neon-purple: #b026ff;
+  --neon-yellow: #fff200;
+  --neon-orange: #ff6b1a;
+  --neon-red: #ff003c;
+  --neon-green: #39ff14;
+  --text-primary: #e8d5ff;
+  --text-secondary: #8a7aa8;
+  --text-muted: #524668;
+
+  /* Iso math */
+  --tile-w: 80px;
+  --tile-h: 40px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes scanlines {
+  0% { background-position: 0 0; } 100% { background-position: 0 100vh; }
+}
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.85; filter: brightness(1.3); }
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; } 93% { opacity: 0.4; }
+  94% { opacity: 1; } 96% { opacity: 0.7; } 97% { opacity: 1; }
+}
+@keyframes data-flow {
+  0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); }
+}
+@keyframes bob-iso {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes float-up {
+  0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -60px) scale(1.5); opacity: 0; }
+}
+@keyframes tile-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.4); }
+}
+@keyframes hit-flash {
+  0% { filter: brightness(3) hue-rotate(0deg); }
+  100% { filter: brightness(1) hue-rotate(0deg); }
+}
+@keyframes fire-flicker {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50% { transform: scale(1.15) rotate(2deg); }
+}
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(255, 46, 136, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(0, 240, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(176, 38, 255, 0.1) 0%, transparent 60%),
+    var(--bg-deep);
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 100; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0, 240, 255, 0.025) 2px, rgba(0, 240, 255, 0.025) 4px);
+  animation: scanlines 8s linear infinite;
+}
+.data-rain {
+  position: fixed; inset: 0; z-index: -1; opacity: 0.12; overflow: hidden; pointer-events: none;
+}
+.data-stream {
+  position: absolute; top: 0; width: 1px; height: 100vh;
+  background: linear-gradient(to bottom, transparent 0%, var(--neon-cyan) 50%, transparent 100%);
+  animation: data-flow 4s linear infinite;
+}
+
+/* Header */
+header {
+  padding: 16px 32px;
+  border-bottom: 1px solid rgba(255, 46, 136, 0.3);
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(10, 6, 18, 0.6); backdrop-filter: blur(8px);
+}
+header::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-pink) 20%, var(--neon-cyan) 50%, var(--neon-purple) 80%, transparent);
+}
+.logo {
+  font-family: 'Orbitron', sans-serif; font-weight: 900;
+  font-size: 22px; letter-spacing: 4px;
+  display: flex; align-items: center; gap: 12px;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  border: 2px solid var(--neon-pink); transform: rotate(45deg);
+  position: relative; animation: neon-pulse 2s ease-in-out infinite;
+}
+.logo-mark::before {
+  content: ''; position: absolute; inset: 4px;
+  background: var(--neon-pink); box-shadow: 0 0 15px var(--neon-pink);
+}
+.logo .accent { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+.logo .sub { color: var(--text-secondary); font-size: 11px; letter-spacing: 6px; margin-left: 4px; font-weight: 400; }
+
+.system-status {
+  display: flex; gap: 24px;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-secondary);
+}
+.status-item { display: flex; align-items: center; gap: 6px; }
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);
+  animation: flicker 3s infinite;
+}
+.status-dot.warn { background: var(--neon-yellow); box-shadow: 0 0 8px var(--neon-yellow); }
+
+.mission-bar {
+  padding: 10px 32px;
+  background: rgba(255, 46, 136, 0.05);
+  border-bottom: 1px solid rgba(255, 46, 136, 0.2);
+  font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  color: var(--text-secondary);
+  display: flex; justify-content: space-between;
+}
+.mission-bar .label { color: var(--neon-pink); letter-spacing: 2px; }
+.blink { animation: flicker 1.5s infinite; }
+
+/* Layout */
+.main {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 20px;
+  padding: 20px 32px;
+  max-width: 1700px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 46, 136, 0.2);
+  backdrop-filter: blur(8px);
+  position: relative;
+  padding: 16px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.panel-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px; letter-spacing: 3px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-title::before { content: '◢'; color: var(--neon-pink); }
+
+/* Left panel */
+.operator-portrait {
+  width: 100%; height: 160px;
+  background: radial-gradient(circle at 50% 40%, rgba(0, 240, 255, 0.3), transparent 70%), linear-gradient(135deg, #0d0818 0%, #1a0d2e 100%);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  position: relative; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+.operator-portrait::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(0, 240, 255, 0.04) 3px, rgba(0, 240, 255, 0.04) 4px);
+}
+
+.op-name {
+  font-family: 'Orbitron', sans-serif; font-size: 18px;
+  font-weight: 900; letter-spacing: 3px;
+  color: var(--neon-pink);
+  text-shadow: 0 0 12px var(--neon-pink);
+  margin-bottom: 4px;
+}
+.op-callsign {
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: var(--text-secondary); margin-bottom: 16px; letter-spacing: 2px;
+}
+
+.vital-bars { display: flex; flex-direction: column; gap: 10px; }
+.vital { display: flex; flex-direction: column; gap: 4px; }
+.vital-label {
+  display: flex; justify-content: space-between;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--text-secondary); letter-spacing: 1.5px;
+}
+.vital-label .value { color: var(--text-primary); font-weight: 700; }
+.vital-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  position: relative; overflow: hidden;
+}
+.vital-fill { height: 100%; transition: width 0.4s; }
+.vital-fill.hp { background: linear-gradient(90deg, var(--neon-red), var(--neon-pink)); box-shadow: 0 0 10px var(--neon-pink); }
+.vital-fill.ap { background: linear-gradient(90deg, var(--neon-cyan), #00aaff); box-shadow: 0 0 10px var(--neon-cyan); }
+.vital-fill.shield { background: linear-gradient(90deg, var(--neon-purple), #8000ff); box-shadow: 0 0 10px var(--neon-purple); }
+
+/* Center: ISO BATTLEFIELD */
+.battlefield-frame {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 46, 136, 0.3);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  min-height: 540px;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+.battlefield-frame::before {
+  content: 'GRID-7 // SECTOR 02 // ISO MODE';
+  position: absolute; top: 8px; right: 24px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--neon-cyan);
+  letter-spacing: 2px; opacity: 0.6; z-index: 10;
+}
+
+/* Iso scene */
+.iso-scene {
+  position: relative;
+  width: 100%; height: 480px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.iso-grid {
+  position: relative;
+  width: 720px; height: 420px;
+  /* The grid origin is in the middle */
+}
+
+/* Each tile is positioned absolutely with iso math:
+   screenX = (gridX - gridY) * tile_w/2
+   screenY = (gridX + gridY) * tile_h/2 */
+.iso-tile {
+  position: absolute;
+  width: 80px; height: 40px;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+.iso-tile svg { width: 100%; height: 100%; display: block; }
+
+.iso-tile:hover .tile-top { fill: rgba(0, 240, 255, 0.15); }
+.iso-tile.move-range .tile-top { fill: rgba(0, 240, 255, 0.2); }
+.iso-tile.move-range:hover .tile-top { fill: rgba(0, 240, 255, 0.4); filter: drop-shadow(0 0 12px var(--neon-cyan)); }
+.iso-tile.attack-range .tile-top { fill: rgba(255, 0, 60, 0.2); }
+.iso-tile.attack-range:hover .tile-top { fill: rgba(255, 0, 60, 0.5); filter: drop-shadow(0 0 12px var(--neon-red)); }
+.iso-tile.spell-range .tile-top { fill: rgba(176, 38, 255, 0.2); }
+.iso-tile.spell-range:hover .tile-top { fill: rgba(176, 38, 255, 0.5); filter: drop-shadow(0 0 12px var(--neon-purple)); }
+.iso-tile.spell-aoe .tile-top { fill: rgba(255, 242, 0, 0.45); filter: drop-shadow(0 0 8px var(--neon-yellow)); }
+.iso-tile.fire .tile-top { fill: rgba(255, 107, 26, 0.5); }
+.iso-tile.fire { animation: tile-pulse 0.8s ease-in-out infinite; }
+
+.iso-tile.wall {
+  cursor: not-allowed;
+}
+
+/* Sprites layer */
+.iso-sprite {
+  position: absolute;
+  width: 90px; height: 110px;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+  animation: bob-iso 2.4s ease-in-out infinite;
+}
+.iso-sprite.player { filter: drop-shadow(0 0 8px var(--neon-cyan)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6)); }
+.iso-sprite.enemy { filter: drop-shadow(0 0 6px var(--neon-red)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6)); }
+.iso-sprite.current::after {
+  content: '';
+  position: absolute;
+  bottom: -8px; left: 50%;
+  width: 50px; height: 12px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, var(--neon-pink) 0%, transparent 70%);
+  animation: neon-pulse 1s infinite;
+}
+.iso-sprite.hit { animation: hit-flash 0.3s; }
+
+.sprite-hp {
+  position: absolute;
+  bottom: 95px;
+  left: 50%; transform: translateX(-50%);
+  width: 50px; height: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.sprite-hp-fill {
+  height: 100%;
+  transition: width 0.3s;
+  box-shadow: 0 0 4px currentColor;
+}
+.sprite-hp-fill.player { background: var(--neon-cyan); color: var(--neon-cyan); }
+.sprite-hp-fill.enemy { background: var(--neon-red); color: var(--neon-red); }
+
+.sprite-status {
+  position: absolute;
+  top: 0; right: -4px;
+  font-size: 14px;
+  filter: drop-shadow(0 0 4px black);
+}
+
+.damage-popup {
+  position: absolute;
+  top: -20px; left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900; font-size: 22px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 8px var(--neon-yellow), 0 0 2px black;
+  pointer-events: none; z-index: 50;
+  animation: float-up 1.2s ease-out forwards;
+}
+.damage-popup.crit {
+  color: var(--neon-pink);
+  text-shadow: 0 0 12px var(--neon-pink), 0 0 2px black;
+  font-size: 30px;
+}
+
+/* Fire effect */
+.fire-effect {
+  position: absolute;
+  width: 60px; height: 80px;
+  pointer-events: none;
+  animation: fire-flicker 0.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px var(--neon-orange));
+}
+
+/* Timeline */
+.timeline {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
+.timeline-label {
+  font-family: 'Orbitron', sans-serif; font-size: 10px;
+  letter-spacing: 2px; color: var(--neon-cyan);
+}
+.timeline-track { flex: 1; display: flex; align-items: center; gap: 8px; }
+.tl-actor {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; letter-spacing: 1px;
+}
+.tl-actor.current {
+  border-color: var(--neon-pink);
+  background: rgba(255, 46, 136, 0.15);
+  color: var(--neon-pink);
+  box-shadow: 0 0 15px rgba(255, 46, 136, 0.5);
+}
+.tl-actor.dead { opacity: 0.3; text-decoration: line-through; }
+.tl-arrow { color: var(--text-muted); }
+
+/* Combat log */
+.combat-log {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  height: 130px; overflow-y: auto;
+  padding: 12px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  margin-top: 16px;
+}
+.combat-log::-webkit-scrollbar { width: 4px; }
+.combat-log::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+.combat-log::-webkit-scrollbar-thumb { background: var(--neon-pink); }
+.log-line {
+  padding: 2px 0; display: flex; gap: 8px;
+  border-left: 2px solid transparent; padding-left: 8px;
+  margin-bottom: 1px;
+}
+.log-line .ts { color: var(--text-muted); font-size: 10px; }
+.log-line.dmg { border-left-color: var(--neon-red); color: #ff8aa8; }
+.log-line.crit { border-left-color: var(--neon-pink); color: var(--neon-pink); font-weight: 700; }
+.log-line.heal { border-left-color: var(--neon-green); color: #8aff9c; }
+.log-line.status { border-left-color: var(--neon-yellow); color: #ffec8a; }
+.log-line.info { border-left-color: var(--neon-cyan); color: var(--text-secondary); }
+.log-line.kill { border-left-color: var(--neon-purple); color: var(--neon-purple); font-weight: 700; }
+
+/* Right: actions */
+.actions-stack { display: flex; flex-direction: column; gap: 8px; }
+.action-btn {
+  background: linear-gradient(135deg, rgba(255, 46, 136, 0.08), rgba(176, 38, 255, 0.08));
+  border: 1px solid rgba(255, 46, 136, 0.3);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font-family: 'Rajdhani', sans-serif;
+  cursor: pointer; text-align: left; position: relative;
+  transition: all 0.2s;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  overflow: hidden;
+}
+.action-btn::before {
+  content: ''; position: absolute; top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+.action-btn:hover:not(:disabled) {
+  border-color: var(--neon-cyan);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(255, 46, 136, 0.1));
+  transform: translateX(2px);
+  box-shadow: -3px 0 12px rgba(0, 240, 255, 0.3);
+}
+.action-btn:hover::before { left: 100%; }
+.action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.action-btn.selected {
+  border-color: var(--neon-yellow);
+  background: linear-gradient(135deg, rgba(255, 242, 0, 0.15), rgba(255, 107, 26, 0.1));
+  box-shadow: 0 0 20px rgba(255, 242, 0, 0.4);
+}
+
+.action-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+}
+.action-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+.action-cost {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px;
+}
+.action-cd {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--neon-red); letter-spacing: 1px;
+}
+.action-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+.action-keyword {
+  display: inline-block; padding: 1px 6px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: var(--neon-cyan);
+  letter-spacing: 1px; margin-right: 4px; margin-top: 4px;
+}
+.action-keyword.fire { color: var(--neon-orange); border-color: rgba(255, 107, 26, 0.4); background: rgba(255, 107, 26, 0.1); }
+
+.end-turn {
+  margin-top: 12px;
+  background: linear-gradient(135deg, var(--neon-red), var(--neon-pink));
+  color: white; border: none;
+  padding: 14px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900; letter-spacing: 3px;
+  font-size: 12px; cursor: pointer; text-transform: uppercase;
+  position: relative;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(255, 46, 136, 0.4);
+}
+.end-turn:hover {
+  box-shadow: 0 0 30px rgba(255, 46, 136, 0.7);
+  transform: translateY(-2px);
+}
+
+#combat-end {
+  position: fixed; inset: 0;
+  background: rgba(5, 3, 8, 0.9); backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center; z-index: 200;
+}
+.victory-modal {
+  background: var(--bg-panel);
+  border: 2px solid var(--neon-pink);
+  padding: 40px 60px; text-align: center;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  box-shadow: 0 0 60px rgba(255, 46, 136, 0.5);
+  min-width: 400px;
+}
+.victory-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 48px; font-weight: 900;
+  letter-spacing: 12px;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 24px; text-transform: uppercase;
+}
+.restart-btn {
+  margin-top: 24px;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+  color: white; border: none;
+  padding: 14px 32px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900; letter-spacing: 4px;
+  cursor: pointer; font-size: 13px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  text-transform: uppercase;
+  box-shadow: 0 0 30px rgba(255, 46, 136, 0.5);
+}
+</style>
+</head>
+<body>
+
+<div class="data-rain" id="datarain"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    NEXUS<span class="accent">·7</span>
+    <span class="sub">ISO COMBAT v0.3</span>
+  </div>
+  <div class="system-status">
+    <div class="status-item"><div class="status-dot"></div>UPLINK STABLE</div>
+    <div class="status-item"><div class="status-dot warn"></div>HOSTILES: 3</div>
+    <div class="status-item"><div class="status-dot"></div>ISO RENDERER ACTIVE</div>
+  </div>
+</header>
+
+<div class="mission-bar">
+  <div><span class="label">// MISSION:</span> NEUTRALIZE ALL HOSTILES IN SECTOR 02-NX</div>
+  <div class="blink"><span class="label">[ LIVE ]</span> COMBAT_PROTOCOL.exe</div>
+</div>
+
+<!-- SVG sprite definitions -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="grad-floor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a0d2e"/>
+      <stop offset="100%" stop-color="#0d0818"/>
+    </linearGradient>
+    <linearGradient id="grad-wall-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3a1d5e"/>
+      <stop offset="100%" stop-color="#2a1448"/>
+    </linearGradient>
+    <linearGradient id="grad-wall-left" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a1448"/>
+      <stop offset="100%" stop-color="#180828"/>
+    </linearGradient>
+    <linearGradient id="grad-wall-right" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1f0f38"/>
+      <stop offset="100%" stop-color="#0d0418"/>
+    </linearGradient>
+
+    <!-- Player sprite (cyber operative) -->
+    <symbol id="sprite-player" viewBox="0 0 90 110">
+      <!-- shadow -->
+      <ellipse cx="45" cy="105" rx="22" ry="5" fill="rgba(0,0,0,0.5)"/>
+      <!-- legs -->
+      <rect x="36" y="70" width="8" height="28" fill="#1a1a2e" stroke="#00f0ff" stroke-width="0.8"/>
+      <rect x="46" y="70" width="8" height="28" fill="#1a1a2e" stroke="#00f0ff" stroke-width="0.8"/>
+      <!-- boots -->
+      <rect x="34" y="96" width="12" height="6" fill="#0a0a1a"/>
+      <rect x="44" y="96" width="12" height="6" fill="#0a0a1a"/>
+      <!-- body / armor -->
+      <path d="M30 35 L60 35 L62 72 L28 72 Z" fill="#0d0818" stroke="#00f0ff" stroke-width="1.2"/>
+      <!-- chest plate detail -->
+      <path d="M35 42 L55 42 L56 62 L34 62 Z" fill="#1a0d2e" stroke="#ff2e88" stroke-width="0.8"/>
+      <circle cx="45" cy="50" r="3" fill="#ff2e88"/>
+      <circle cx="45" cy="50" r="2" fill="#ff8acc"/>
+      <!-- arms -->
+      <rect x="20" y="38" width="9" height="32" rx="2" fill="#0d0818" stroke="#00f0ff" stroke-width="0.8"/>
+      <rect x="61" y="38" width="9" height="32" rx="2" fill="#0d0818" stroke="#00f0ff" stroke-width="0.8"/>
+      <!-- gloves -->
+      <rect x="19" y="66" width="11" height="8" fill="#ff2e88"/>
+      <rect x="60" y="66" width="11" height="8" fill="#ff2e88"/>
+      <!-- shoulder pads -->
+      <ellipse cx="25" cy="38" rx="7" ry="4" fill="#2a1448" stroke="#b026ff" stroke-width="0.8"/>
+      <ellipse cx="65" cy="38" rx="7" ry="4" fill="#2a1448" stroke="#b026ff" stroke-width="0.8"/>
+      <!-- helmet/head -->
+      <path d="M32 18 Q32 10 45 10 Q58 10 58 18 L58 36 L32 36 Z" fill="#1a0d2e" stroke="#00f0ff" stroke-width="1.2"/>
+      <!-- visor -->
+      <rect x="33" y="22" width="24" height="6" rx="1" fill="#00f0ff" opacity="0.9"/>
+      <rect x="33" y="22" width="24" height="6" rx="1" fill="url(#visor-glow)"/>
+      <!-- antenna -->
+      <line x1="50" y1="10" x2="54" y2="4" stroke="#ff2e88" stroke-width="1"/>
+      <circle cx="54" cy="4" r="1.5" fill="#ff2e88"/>
+      <!-- weapon in right hand (sword/saber) -->
+      <line x1="68" y1="62" x2="78" y2="35" stroke="#ff2e88" stroke-width="2.5"/>
+      <line x1="68" y1="62" x2="78" y2="35" stroke="#fff" stroke-width="1"/>
+      <rect x="65" y="60" width="8" height="4" fill="#1a0d2e"/>
+    </symbol>
+
+    <linearGradient id="visor-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#fff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Security Droid -->
+    <symbol id="sprite-droid" viewBox="0 0 90 110">
+      <ellipse cx="45" cy="105" rx="20" ry="5" fill="rgba(0,0,0,0.5)"/>
+      <!-- legs / tracks -->
+      <rect x="30" y="78" width="10" height="22" fill="#1a0808" stroke="#ff003c" stroke-width="0.8"/>
+      <rect x="50" y="78" width="10" height="22" fill="#1a0808" stroke="#ff003c" stroke-width="0.8"/>
+      <rect x="28" y="96" width="14" height="5" fill="#3a0a14"/>
+      <rect x="48" y="96" width="14" height="5" fill="#3a0a14"/>
+      <!-- chassis body -->
+      <path d="M25 38 L65 38 L62 80 L28 80 Z" fill="#1a0808" stroke="#ff003c" stroke-width="1.2"/>
+      <!-- chest core (red glowing) -->
+      <circle cx="45" cy="55" r="6" fill="#ff003c" opacity="0.9"/>
+      <circle cx="45" cy="55" r="3.5" fill="#ff8aa8"/>
+      <!-- side panels -->
+      <rect x="28" y="42" width="4" height="35" fill="#2a0a14"/>
+      <rect x="58" y="42" width="4" height="35" fill="#2a0a14"/>
+      <!-- arms -->
+      <rect x="16" y="40" width="10" height="30" rx="2" fill="#1a0808" stroke="#ff003c" stroke-width="0.8"/>
+      <rect x="64" y="40" width="10" height="30" rx="2" fill="#1a0808" stroke="#ff003c" stroke-width="0.8"/>
+      <!-- claws -->
+      <path d="M16 68 L13 76 L19 76 L22 68" fill="#ff003c"/>
+      <path d="M68 68 L65 76 L71 76 L74 68" fill="#ff003c"/>
+      <!-- head -->
+      <rect x="32" y="14" width="26" height="22" fill="#1a0808" stroke="#ff003c" stroke-width="1.2"/>
+      <!-- evil eye -->
+      <circle cx="45" cy="25" r="4" fill="#ff003c"/>
+      <circle cx="45" cy="25" r="2" fill="#fff"/>
+      <circle cx="45" cy="25" r="1" fill="#ff003c"/>
+      <!-- antennae -->
+      <line x1="35" y1="14" x2="32" y2="6" stroke="#ff003c" stroke-width="1"/>
+      <line x1="55" y1="14" x2="58" y2="6" stroke="#ff003c" stroke-width="1"/>
+      <circle cx="32" cy="6" r="1.5" fill="#ff003c"/>
+      <circle cx="58" cy="6" r="1.5" fill="#ff003c"/>
+      <!-- mouth grill -->
+      <line x1="38" y1="32" x2="52" y2="32" stroke="#ff003c" stroke-width="0.8"/>
+      <line x1="40" y1="34" x2="50" y2="34" stroke="#ff003c" stroke-width="0.8"/>
+    </symbol>
+
+    <!-- Netrunner Spider -->
+    <symbol id="sprite-spider" viewBox="0 0 90 110">
+      <ellipse cx="45" cy="105" rx="28" ry="5" fill="rgba(0,0,0,0.5)"/>
+      <!-- legs (4 visible) -->
+      <path d="M30 70 Q15 65 12 90" stroke="#b026ff" stroke-width="2" fill="none"/>
+      <path d="M30 75 Q10 80 8 100" stroke="#b026ff" stroke-width="2" fill="none"/>
+      <path d="M60 70 Q75 65 78 90" stroke="#b026ff" stroke-width="2" fill="none"/>
+      <path d="M60 75 Q80 80 82 100" stroke="#b026ff" stroke-width="2" fill="none"/>
+      <path d="M35 75 Q25 92 28 100" stroke="#b026ff" stroke-width="2" fill="none"/>
+      <path d="M55 75 Q65 92 62 100" stroke="#b026ff" stroke-width="2" fill="none"/>
+      <!-- abdomen -->
+      <ellipse cx="45" cy="70" rx="18" ry="14" fill="#1a0d2e" stroke="#b026ff" stroke-width="1.2"/>
+      <!-- abdomen pattern -->
+      <ellipse cx="45" cy="70" rx="10" ry="6" fill="none" stroke="#b026ff" stroke-width="0.8" opacity="0.7"/>
+      <circle cx="45" cy="70" r="3" fill="#b026ff"/>
+      <!-- thorax/head -->
+      <ellipse cx="45" cy="48" rx="14" ry="10" fill="#2a1448" stroke="#b026ff" stroke-width="1.2"/>
+      <!-- eyes (multiple) -->
+      <circle cx="38" cy="44" r="2" fill="#fff200"/>
+      <circle cx="42" cy="42" r="2" fill="#fff200"/>
+      <circle cx="48" cy="42" r="2" fill="#fff200"/>
+      <circle cx="52" cy="44" r="2" fill="#fff200"/>
+      <circle cx="38" cy="44" r="1" fill="#000"/>
+      <circle cx="42" cy="42" r="1" fill="#000"/>
+      <circle cx="48" cy="42" r="1" fill="#000"/>
+      <circle cx="52" cy="44" r="1" fill="#000"/>
+      <!-- mandibles -->
+      <path d="M40 54 L36 60 L42 58 Z" fill="#b026ff"/>
+      <path d="M50 54 L54 60 L48 58 Z" fill="#b026ff"/>
+    </symbol>
+
+    <!-- Wall block (cyber pillar) -->
+    <symbol id="sprite-wall" viewBox="0 0 90 110">
+      <!-- top face -->
+      <polygon points="45,5 85,25 45,45 5,25" fill="url(#grad-wall-top)" stroke="#b026ff" stroke-width="1"/>
+      <!-- left face -->
+      <polygon points="5,25 45,45 45,95 5,75" fill="url(#grad-wall-left)" stroke="#b026ff" stroke-width="1"/>
+      <!-- right face -->
+      <polygon points="85,25 45,45 45,95 85,75" fill="url(#grad-wall-right)" stroke="#b026ff" stroke-width="1"/>
+      <!-- glow lines on left -->
+      <line x1="15" y1="32" x2="15" y2="80" stroke="#ff2e88" stroke-width="1" opacity="0.7"/>
+      <line x1="25" y1="38" x2="25" y2="86" stroke="#ff2e88" stroke-width="1" opacity="0.5"/>
+      <!-- glow lines on right -->
+      <line x1="65" y1="32" x2="65" y2="80" stroke="#00f0ff" stroke-width="1" opacity="0.7"/>
+      <line x1="75" y1="38" x2="75" y2="86" stroke="#00f0ff" stroke-width="1" opacity="0.5"/>
+      <!-- top accent -->
+      <circle cx="45" cy="25" r="3" fill="#fff200"/>
+      <circle cx="45" cy="25" r="1.5" fill="#fff"/>
+    </symbol>
+
+    <!-- Iso tile (diamond) -->
+    <symbol id="iso-tile" viewBox="0 0 80 40">
+      <polygon class="tile-top" points="40,2 78,20 40,38 2,20" fill="rgba(0, 240, 255, 0.04)" stroke="rgba(0, 240, 255, 0.3)" stroke-width="1"/>
+    </symbol>
+
+    <!-- Wall tile (with depth) -->
+    <symbol id="iso-tile-wall" viewBox="0 0 80 60">
+      <!-- top -->
+      <polygon points="40,2 78,20 40,38 2,20" fill="url(#grad-wall-top)" stroke="#b026ff" stroke-width="1"/>
+    </symbol>
+
+    <!-- Fire effect -->
+    <symbol id="sprite-fire" viewBox="0 0 60 80">
+      <path d="M30 75 Q15 65 18 45 Q22 30 30 35 Q35 25 32 15 Q40 25 42 40 Q48 35 45 50 Q42 65 30 75 Z"
+            fill="#ff6b1a" stroke="#fff200" stroke-width="1"/>
+      <path d="M30 70 Q22 60 24 50 Q28 40 30 45 Q32 35 32 30 Q36 38 38 48 Q40 60 30 70 Z"
+            fill="#fff200"/>
+      <path d="M30 65 Q26 58 28 50 Q30 45 32 50 Q33 45 32 40 Q35 50 30 65 Z"
+            fill="#fff" opacity="0.7"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="main">
+  <!-- LEFT -->
+  <aside class="panel">
+    <div class="panel-title">OPERATOR</div>
+    <div class="operator-portrait">
+      <svg width="120" height="140" viewBox="0 0 90 110">
+        <use href="#sprite-player"/>
+      </svg>
+    </div>
+    <div class="op-name">KAEL-X9</div>
+    <div class="op-callsign">CALLSIGN: GHOSTRUNNER</div>
+
+    <div class="vital-bars">
+      <div class="vital">
+        <div class="vital-label"><span>◣ INTEGRITY</span><span class="value" id="hp-text">32 / 32</span></div>
+        <div class="vital-bar"><div class="vital-fill hp" id="hp-fill" style="width:100%"></div></div>
+      </div>
+      <div class="vital">
+        <div class="vital-label"><span>◣ ACTION POINTS</span><span class="value" id="ap-text">7 / 7</span></div>
+        <div class="vital-bar"><div class="vital-fill ap" id="ap-fill" style="width:100%"></div></div>
+      </div>
+      <div class="vital">
+        <div class="vital-label"><span>◣ ARMOR PLATING</span><span class="value" id="armor-text">14</span></div>
+        <div class="vital-bar"><div class="vital-fill shield" style="width:60%"></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER -->
+  <main>
+    <div class="timeline">
+      <div class="timeline-label">// INITIATIVE</div>
+      <div class="timeline-track" id="timeline"></div>
+    </div>
+
+    <div class="battlefield-frame">
+      <div class="iso-scene">
+        <div class="iso-grid" id="iso-grid"></div>
+      </div>
+    </div>
+
+    <div class="combat-log" id="log"></div>
+  </main>
+
+  <!-- RIGHT -->
+  <aside>
+    <div class="panel">
+      <div class="panel-title">COMBAT ACTIONS</div>
+      <div class="actions-stack" id="actions"></div>
+      <button class="end-turn" id="end-turn-btn">▶ END TURN</button>
+    </div>
+  </aside>
+</div>
+
+<div id="combat-end">
+  <div class="victory-modal">
+    <div class="victory-title" id="end-title">VICTORY</div>
+    <div id="end-content"></div>
+    <button class="restart-btn" onclick="restartCombat()">▶ NEW MISSION</button>
+  </div>
+</div>
+
+<script>
+// Background data rain
+const rain = document.getElementById('datarain');
+for (let i = 0; i < 30; i++) {
+  const s = document.createElement('div');
+  s.className = 'data-stream';
+  s.style.left = (Math.random() * 100) + '%';
+  s.style.animationDuration = (3 + Math.random() * 5) + 's';
+  s.style.animationDelay = (Math.random() * 5) + 's';
+  rain.appendChild(s);
+}
+
+// === ISO PROJECTION ===
+const TILE_W = 80;
+const TILE_H = 40;
+const ORIGIN_X = 280; // center of grid
+const ORIGIN_Y = 50;
+
+function isoX(gx, gy) { return ORIGIN_X + (gx - gy) * TILE_W / 2; }
+function isoY(gx, gy) { return ORIGIN_Y + (gx + gy) * TILE_H / 2; }
+
+// === DATA ===
+const WEAPONS = {
+  plasmaSaber: {
+    name: 'PLASMA SABER',
+    skills: [
+      { id: 'slash', name: 'PLASMA SLASH', cost: 2, type: 'attack', range: 1, targetType: 'enemy', damage: [16, 22], desc: 'Standard plasma melee strike.', keywords: ['SLASH', 'FIRE'] },
+      { id: 'flameStrike', name: 'OVERLOAD STRIKE', cost: 3, cooldown: 2, type: 'attack', range: 1, targetType: 'enemy', damage: [22, 30], damageMult: 1, applyStatus: { id: 'burning', duration: 3, power: 4 }, desc: '+50% damage. Inflicts BURNING.', keywords: ['FIRE'] },
+    ],
+  },
+  pyroRing: {
+    name: 'PYRO MOD',
+    skills: [
+      { id: 'fireball', name: 'IGNITION CHARGE', cost: 4, cooldown: 3, type: 'spell', range: 4, aoe: 1, targetType: 'tile', damage: [12, 16], damageType: 'fire', applyStatus: { id: 'burning', duration: 2, power: 3 }, desc: 'AoE 3×3 plasma blast. Inflicts BURNING.', keywords: ['FIRE', 'AOE'] },
+    ],
+  },
+};
+
+const ENEMY_TYPES = {
+  droid: { name: 'SECURITY DROID', sprite: 'droid', hp: 16, armor: 4, attackPower: [6, 9], range: 1, moveSpeed: 4, initiative: 12, ai: 'aggressive' },
+  spider: { name: 'NETRUNNER', sprite: 'spider', hp: 14, armor: 2, attackPower: [10, 14], range: 4, moveSpeed: 3, initiative: 14, ai: 'caster' },
+};
+
+const GW = 8, GH = 6;
+let state = {};
+
+function initState() {
+  state = {
+    turn: 0, currentIdx: 0,
+    walls: new Set(['3,2', '3,3', '4,2', '4,3']),
+    fireTiles: new Map(),
+    selectedSkill: null, targetingMode: null,
+    validTargets: new Set(), aoePreview: new Set(),
+    log: [], combatOver: false,
+    player: {
+      id: 'p', name: 'KAEL-X9', sprite: 'player', isPlayer: true,
+      x: 1, y: 2,
+      hp: 32, maxHp: 32, ap: 0, maxAp: 6, bonusAp: 1, armor: 14,
+      initiative: 18, statuses: [], cooldowns: {}, isDead: false,
+      equipment: { mainhand: WEAPONS.plasmaSaber, ring: WEAPONS.pyroRing },
+    },
+    enemies: [
+      makeEnemy('e1', 'droid', 6, 2),
+      makeEnemy('e2', 'droid', 6, 3),
+      makeEnemy('e3', 'spider', 6, 5),
+    ],
+  };
+  state.actors = [state.player, ...state.enemies];
+  state.initiative = [...state.actors].sort((a,b) => b.initiative - a.initiative);
+}
+
+function makeEnemy(id, type, x, y) {
+  const t = ENEMY_TYPES[type];
+  return {
+    id, typeId: type, name: t.name, sprite: t.sprite, isPlayer: false,
+    x, y, hp: t.hp, maxHp: t.hp, armor: t.armor,
+    attackPower: t.attackPower, range: t.range, moveSpeed: t.moveSpeed,
+    initiative: t.initiative + Math.floor(Math.random()*5),
+    ai: t.ai, statuses: [], healCD: 0, isDead: false,
+  };
+}
+
+function key(x, y) { return `${x},${y}`; }
+function inBounds(x, y) { return x>=0 && x<GW && y>=0 && y<GH; }
+function isWall(x, y) { return state.walls.has(key(x, y)); }
+function getActorAt(x, y) { return state.actors.find(a => !a.isDead && a.x===x && a.y===y); }
+function distance(a, b) { return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y)); }
+function isPassable(x, y, ignore) {
+  if (!inBounds(x,y) || isWall(x,y)) return false;
+  const a = getActorAt(x, y);
+  return !(a && a !== ignore);
+}
+function getReachable(actor, maxAP) {
+  const r = new Map(); r.set(key(actor.x, actor.y), 0);
+  const q = [{x: actor.x, y: actor.y, c: 0}];
+  while (q.length) {
+    const cur = q.shift();
+    if (cur.c >= maxAP) continue;
+    for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) {
+      if (!dx && !dy) continue;
+      const nx = cur.x+dx, ny = cur.y+dy, k = key(nx, ny);
+      if (!isPassable(nx, ny, actor)) continue;
+      const nc = cur.c + 1;
+      if (!r.has(k) || r.get(k) > nc) {
+        if (nc <= maxAP) { r.set(k, nc); q.push({x: nx, y: ny, c: nc}); }
+      }
+    }
+  }
+  r.delete(key(actor.x, actor.y));
+  return r;
+}
+function getAOE(cx, cy, rad) {
+  const c = [];
+  for (let dx=-rad; dx<=rad; dx++) for (let dy=-rad; dy<=rad; dy++) {
+    const nx = cx+dx, ny = cy+dy;
+    if (inBounds(nx, ny) && !isWall(nx, ny)) c.push({x: nx, y: ny});
+  }
+  return c;
+}
+
+function rollDmg(r) { return r[0] + Math.floor(Math.random()*(r[1]-r[0]+1)); }
+
+function attack(attacker, target, skill) {
+  if (target.isDead) return;
+  let dmg = skill?.damage ? rollDmg(skill.damage) : rollDmg(attacker.attackPower || [5, 10]);
+  if (skill?.damageMult) dmg = Math.floor(dmg * skill.damageMult);
+  const isCrit = Math.random() * 100 < 8;
+  if (isCrit) dmg *= 2;
+  const isSpell = skill?.type === 'spell';
+  const effA = isSpell ? Math.floor(target.armor/2) : target.armor;
+  dmg = Math.max(1, dmg - effA);
+  target.hp -= dmg;
+
+  showDamagePopup(target, dmg, isCrit);
+  flashSprite(target);
+  log(`${attacker.name} → ${target.name} : ${dmg} DMG${isCrit?' [CRIT]':''}`, isCrit?'crit':'dmg');
+
+  if (skill?.applyStatus) {
+    target.statuses.push({...skill.applyStatus});
+    log(`${target.name} :: ${skill.applyStatus.id.toUpperCase()} APPLIED`, 'status');
+  }
+  if (target.hp <= 0) { target.isDead = true; log(`${target.name} :: NEUTRALIZED`, 'kill'); }
+}
+
+function showDamagePopup(target, dmg, isCrit) {
+  const grid = document.getElementById('iso-grid');
+  const pop = document.createElement('div');
+  pop.className = 'damage-popup' + (isCrit ? ' crit' : '');
+  pop.textContent = isCrit ? `${dmg}!` : dmg;
+  pop.style.left = isoX(target.x, target.y) + 40 + 'px';
+  pop.style.top = isoY(target.x, target.y) - 40 + 'px';
+  grid.appendChild(pop);
+  setTimeout(() => pop.remove(), 1200);
+}
+
+function flashSprite(target) {
+  const sprite = document.querySelector(`[data-sprite="${target.id}"]`);
+  if (!sprite) return;
+  sprite.classList.add('hit');
+  setTimeout(() => sprite.classList.remove('hit'), 300);
+}
+
+// === TURN ===
+function getCurrent() { return state.initiative[state.currentIdx]; }
+
+function startTurn(actor) {
+  actor.ap = (actor.maxAp||0) + (actor.bonusAp||0);
+  for (const s of actor.statuses) {
+    if (s.id === 'burning') {
+      const d = s.power || 3;
+      actor.hp -= d;
+      log(`${actor.name} :: BURNING -${d} HP`, 'dmg');
+      showDamagePopup(actor, d, false);
+    }
+  }
+  if (actor.hp <= 0) { actor.isDead = true; return advance(); }
+  actor.statuses = actor.statuses.filter(s => --s.duration > 0);
+  for (const k in actor.cooldowns) if (actor.cooldowns[k] > 0) actor.cooldowns[k]--;
+  if (actor.healCD > 0) actor.healCD--;
+
+  log(`▶ ${actor.name} :: TURN START`, 'info');
+  if (actor.isPlayer) { state.selectedSkill = null; state.targetingMode = null; render(); }
+  else setTimeout(() => runAI(actor), 700);
+}
+
+function endTurn() {
+  for (const [k, t] of state.fireTiles.entries()) {
+    state.fireTiles.set(k, t-1);
+    if (state.fireTiles.get(k) <= 0) state.fireTiles.delete(k);
+  }
+  advance();
+}
+
+function advance() {
+  if (checkEnd()) return;
+  state.currentIdx = (state.currentIdx + 1) % state.initiative.length;
+  if (state.currentIdx === 0) state.turn++;
+  const next = getCurrent();
+  if (next.isDead) return advance();
+  startTurn(next);
+}
+
+function checkEnd() {
+  if (state.player.isDead) { state.combatOver = true; showEnd(false); return true; }
+  if (state.enemies.every(e => e.isDead)) { state.combatOver = true; showEnd(true); return true; }
+  return false;
+}
+
+function runAI(enemy) {
+  if (enemy.isDead) return endTurn();
+  const target = state.player;
+  if (target.isDead) return endTurn();
+
+  if (enemy.ai === 'caster' && enemy.healCD === 0) {
+    const wounded = state.enemies.find(e => !e.isDead && e !== enemy && e.hp < e.maxHp*0.5 && distance(enemy, e) <= 4);
+    if (wounded) {
+      wounded.hp = Math.min(wounded.maxHp, wounded.hp + 8);
+      enemy.healCD = 3;
+      log(`${enemy.name} :: REPAIR PROTOCOL → ${wounded.name} +8 HP`, 'heal');
+      return setTimeout(() => endTurn(), 700);
+    }
+  }
+
+  if (distance(enemy, target) <= enemy.range) {
+    attack(enemy, target, { type: enemy.ai==='caster'?'spell':'attack', range: enemy.range });
+    if (checkEnd()) return;
+    return setTimeout(() => endTurn(), 700);
+  }
+
+  const r = getReachable(enemy, enemy.moveSpeed);
+  let best = null, bd = distance(enemy, target);
+  for (const [k] of r.entries()) {
+    const [x, y] = k.split(',').map(Number);
+    const d = Math.max(Math.abs(x-target.x), Math.abs(y-target.y));
+    if (d < bd) { bd = d; best = {x, y}; }
+  }
+  if (best) {
+    enemy.x = best.x; enemy.y = best.y;
+    log(`${enemy.name} :: REPOSITION`, 'info');
+    if (distance(enemy, target) <= enemy.range) {
+      attack(enemy, target, { type: enemy.ai==='caster'?'spell':'attack', range: enemy.range });
+      if (checkEnd()) return;
+    }
+  }
+  setTimeout(() => endTurn(), 700);
+}
+
+// === PLAYER ACTIONS ===
+function getSkills() {
+  const out = [];
+  for (const slot in state.player.equipment) {
+    const it = state.player.equipment[slot];
+    if (it?.skills) for (const sk of it.skills) out.push({...sk, source: it});
+  }
+  return out;
+}
+
+function selectSkill(sk) {
+  if (state.player.ap < sk.cost) return;
+  if (sk.cooldown && state.player.cooldowns[sk.id] > 0) return;
+  state.selectedSkill = sk;
+  state.targetingMode = sk.aoe ? 'aoe' : 'attack';
+  state.validTargets = new Set();
+  for (let x=0; x<GW; x++) for (let y=0; y<GH; y++) {
+    if (!inBounds(x,y) || isWall(x,y)) continue;
+    const dist = Math.max(Math.abs(x-state.player.x), Math.abs(y-state.player.y));
+    if (dist === 0 || dist > sk.range) continue;
+    if (sk.targetType === 'enemy') {
+      const a = getActorAt(x, y);
+      if (a && !a.isDead && !a.isPlayer) state.validTargets.add(key(x, y));
+    } else state.validTargets.add(key(x, y));
+  }
+  render();
+}
+
+function selectMove() {
+  state.selectedSkill = { id: 'move', name: 'MOVE' };
+  state.targetingMode = 'move';
+  state.validTargets = new Set();
+  const r = getReachable(state.player, state.player.ap);
+  for (const k of r.keys()) state.validTargets.add(k);
+  render();
+}
+
+function executeAction(tx, ty) {
+  const sk = state.selectedSkill;
+  if (!sk) return;
+  if (sk.id === 'move') {
+    const r = getReachable(state.player, state.player.ap);
+    const c = r.get(key(tx, ty));
+    if (c === undefined) return;
+    state.player.x = tx; state.player.y = ty;
+    state.player.ap -= c;
+    log(`KAEL-X9 :: MOVE (${c} AP)`, 'info');
+  } else {
+    if (!state.validTargets.has(key(tx, ty))) return;
+    state.player.ap -= sk.cost;
+    if (sk.cooldown) state.player.cooldowns[sk.id] = sk.cooldown + 1;
+    if (sk.aoe) {
+      for (const c of getAOE(tx, ty, sk.aoe)) {
+        const a = getActorAt(c.x, c.y);
+        if (a && !a.isDead && !a.isPlayer) attack(state.player, a, sk);
+        if (sk.damageType === 'fire') state.fireTiles.set(key(c.x, c.y), 2);
+      }
+      log(`KAEL-X9 :: ${sk.name} [AOE]`, 'info');
+    } else {
+      const t = getActorAt(tx, ty);
+      if (t) attack(state.player, t, sk);
+    }
+  }
+  state.selectedSkill = null;
+  state.targetingMode = null;
+  state.validTargets = new Set();
+  state.aoePreview = new Set();
+  if (checkEnd()) return;
+  render();
+}
+
+// === RENDER ISO ===
+function render() {
+  renderIsoGrid();
+  renderTimeline();
+  renderVitals();
+  renderActions();
+  renderLog();
+}
+
+function renderIsoGrid() {
+  const grid = document.getElementById('iso-grid');
+  grid.innerHTML = '';
+
+  // Render order: y first then x (so back tiles render before front)
+  // For depth: items with higher (x+y) draw on top
+  const renderOrder = [];
+
+  // 1. Floor tiles
+  for (let y=0; y<GH; y++) {
+    for (let x=0; x<GW; x++) {
+      if (isWall(x, y)) continue;
+      renderOrder.push({ type: 'floor', x, y, zIndex: x + y });
+    }
+  }
+
+  // 2. Walls
+  for (let y=0; y<GH; y++) {
+    for (let x=0; x<GW; x++) {
+      if (isWall(x, y)) renderOrder.push({ type: 'wall', x, y, zIndex: (x + y) * 10 + 1 });
+    }
+  }
+
+  // 3. Fire tiles
+  for (const [k] of state.fireTiles.entries()) {
+    const [x, y] = k.split(',').map(Number);
+    renderOrder.push({ type: 'fire', x, y, zIndex: (x + y) * 10 + 5 });
+  }
+
+  // 4. Actors
+  for (const a of state.actors) {
+    if (a.isDead) continue;
+    renderOrder.push({ type: 'actor', actor: a, x: a.x, y: a.y, zIndex: (a.x + a.y) * 10 + 7 });
+  }
+
+  // Sort by zIndex
+  renderOrder.sort((a, b) => a.zIndex - b.zIndex);
+
+  for (const item of renderOrder) {
+    const k = key(item.x, item.y);
+
+    if (item.type === 'floor') {
+      const tile = document.createElement('div');
+      tile.className = 'iso-tile';
+      tile.style.left = isoX(item.x, item.y) + 'px';
+      tile.style.top = isoY(item.x, item.y) + 'px';
+      tile.style.zIndex = item.zIndex;
+
+      if (state.targetingMode === 'move' && state.validTargets.has(k)) tile.classList.add('move-range');
+      if ((state.targetingMode === 'attack' || state.targetingMode === 'aoe') && state.validTargets.has(k)) {
+        tile.classList.add(state.selectedSkill?.type === 'spell' ? 'spell-range' : 'attack-range');
+      }
+      if (state.aoePreview.has(k)) tile.classList.add('spell-aoe');
+      if (state.fireTiles.has(k)) tile.classList.add('fire');
+
+      tile.innerHTML = `<svg viewBox="0 0 80 40"><polygon class="tile-top" points="40,2 78,20 40,38 2,20" fill="rgba(0,240,255,0.04)" stroke="rgba(0,240,255,0.3)" stroke-width="1"/></svg>`;
+      tile.addEventListener('click', () => onTileClick(item.x, item.y));
+      tile.addEventListener('mouseenter', () => onTileHover(item.x, item.y));
+      tile.addEventListener('mouseleave', () => { state.aoePreview = new Set(); renderIsoGrid(); });
+      grid.appendChild(tile);
+    } else if (item.type === 'wall') {
+      const wall = document.createElement('div');
+      wall.style.position = 'absolute';
+      wall.style.left = (isoX(item.x, item.y) - 5) + 'px';
+      wall.style.top = (isoY(item.x, item.y) - 50) + 'px';
+      wall.style.width = '90px';
+      wall.style.height = '110px';
+      wall.style.zIndex = item.zIndex;
+      wall.style.pointerEvents = 'none';
+      wall.innerHTML = `<svg width="90" height="110" viewBox="0 0 90 110"><use href="#sprite-wall"/></svg>`;
+      grid.appendChild(wall);
+    } else if (item.type === 'fire') {
+      const fire = document.createElement('div');
+      fire.className = 'fire-effect';
+      fire.style.left = (isoX(item.x, item.y) + 10) + 'px';
+      fire.style.top = (isoY(item.x, item.y) - 40) + 'px';
+      fire.style.zIndex = item.zIndex;
+      fire.innerHTML = `<svg width="60" height="80" viewBox="0 0 60 80"><use href="#sprite-fire"/></svg>`;
+      grid.appendChild(fire);
+    } else if (item.type === 'actor') {
+      const a = item.actor;
+      const sprite = document.createElement('div');
+      sprite.className = 'iso-sprite ' + (a.isPlayer ? 'player' : 'enemy') + (a === getCurrent() ? ' current' : '');
+      sprite.dataset.sprite = a.id;
+      sprite.style.left = (isoX(a.x, a.y) - 5) + 'px';
+      sprite.style.top = (isoY(a.x, a.y) - 75) + 'px';
+      sprite.style.zIndex = item.zIndex;
+
+      sprite.innerHTML = `<svg width="90" height="110" viewBox="0 0 90 110"><use href="#sprite-${a.sprite}"/></svg>
+        <div class="sprite-hp"><div class="sprite-hp-fill ${a.isPlayer?'player':'enemy'}" style="width:${a.hp/a.maxHp*100}%"></div></div>
+        ${a.statuses.length ? `<div class="sprite-status">🔥</div>` : ''}`;
+      grid.appendChild(sprite);
+    }
+  }
+}
+
+function onTileHover(x, y) {
+  const sk = state.selectedSkill;
+  if (sk?.aoe && state.validTargets.has(key(x, y))) {
+    state.aoePreview = new Set();
+    getAOE(x, y, sk.aoe).forEach(c => state.aoePreview.add(key(c.x, c.y)));
+    renderIsoGrid();
+  }
+}
+
+function onTileClick(x, y) {
+  if (state.combatOver) return;
+  if (!getCurrent()?.isPlayer) return;
+  if (state.targetingMode) executeAction(x, y);
+}
+
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+  state.initiative.forEach((a, i) => {
+    const el = document.createElement('div');
+    el.className = 'tl-actor' + (i===state.currentIdx && !a.isDead ? ' current' : '') + (a.isDead ? ' dead' : '');
+    el.textContent = a.name.split(' ')[0];
+    tl.appendChild(el);
+    if (i < state.initiative.length-1) {
+      const arr = document.createElement('span');
+      arr.className = 'tl-arrow';
+      arr.textContent = '◢';
+      tl.appendChild(arr);
+    }
+  });
+}
+
+function renderVitals() {
+  const p = state.player;
+  document.getElementById('hp-text').textContent = `${Math.max(0,p.hp)} / ${p.maxHp}`;
+  document.getElementById('hp-fill').style.width = (Math.max(0,p.hp)/p.maxHp*100) + '%';
+  const maxAp = p.maxAp + (p.bonusAp||0);
+  document.getElementById('ap-text').textContent = `${p.ap} / ${maxAp}`;
+  document.getElementById('ap-fill').style.width = (p.ap/maxAp*100) + '%';
+  document.getElementById('armor-text').textContent = p.armor;
+}
+
+function renderActions() {
+  const cont = document.getElementById('actions');
+  cont.innerHTML = '';
+  const cur = getCurrent();
+  const isPlayerTurn = cur?.isPlayer && !state.combatOver;
+
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'action-btn' + (state.selectedSkill?.id === 'move' ? ' selected' : '');
+  moveBtn.innerHTML = `
+    <div class="action-row"><span class="action-name">▲ MOVE</span><span class="action-cost">1 AP/CELL</span></div>
+    <div class="action-desc">Tactical reposition</div>`;
+  moveBtn.disabled = !isPlayerTurn || state.player.ap < 1;
+  moveBtn.onclick = () => selectMove();
+  cont.appendChild(moveBtn);
+
+  for (const sk of getSkills()) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn' + (state.selectedSkill?.id === sk.id ? ' selected' : '');
+    const cd = state.player.cooldowns[sk.id] || 0;
+    let costHtml = `<span class="action-cost">${sk.cost} AP</span>`;
+    if (cd > 0) costHtml = `<span class="action-cd">CD: ${cd}</span> ` + costHtml;
+    const kw = (sk.keywords||[]).map(k => `<span class="action-keyword ${k.toLowerCase()}">${k}</span>`).join('');
+    btn.innerHTML = `
+      <div class="action-row"><span class="action-name">◣ ${sk.name}</span>${costHtml}</div>
+      <div class="action-desc">${sk.desc}</div>
+      <div>${kw}</div>`;
+    btn.disabled = !isPlayerTurn || state.player.ap < sk.cost || cd > 0;
+    btn.onclick = () => selectSkill(sk);
+    cont.appendChild(btn);
+  }
+}
+
+function renderLog() {
+  const el = document.getElementById('log');
+  el.innerHTML = state.log.slice(-30).map(l =>
+    `<div class="log-line ${l.type}"><span class="ts">[T${l.t}]</span>${l.msg}</div>`
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function log(msg, type='info') {
+  state.log.push({msg, type, t: state.turn+1});
+  renderLog();
+}
+
+function showEnd(victory) {
+  const end = document.getElementById('combat-end');
+  const title = document.getElementById('end-title');
+  const content = document.getElementById('end-content');
+  if (victory) {
+    title.textContent = 'VICTORY';
+    content.innerHTML = `<div style="font-family:'Share Tech Mono';color:var(--text-secondary);letter-spacing:2px;">// SECTOR CLEARED</div>`;
+  } else {
+    title.textContent = 'TERMINATED';
+    title.style.background = 'linear-gradient(135deg, var(--neon-red), var(--neon-purple))';
+    title.style.webkitBackgroundClip = 'text';
+    title.style.webkitTextFillColor = 'transparent';
+    content.innerHTML = `<div style="font-family:'Share Tech Mono';color:var(--text-secondary);">// CONNECTION LOST<br>// OPERATOR OFFLINE</div>`;
+  }
+  end.style.display = 'flex';
+}
+
+function restartCombat() {
+  document.getElementById('combat-end').style.display = 'none';
+  initState();
+  log('▶ MISSION INITIATED :: COMBAT PROTOCOL ACTIVE', 'info');
+  startTurn(getCurrent());
+  render();
+}
+window.restartCombat = restartCombat;
+
+document.getElementById('end-turn-btn').onclick = () => {
+  const cur = getCurrent();
+  if (cur?.isPlayer && !state.combatOver) {
+    log('KAEL-X9 :: TURN ENDED', 'info');
+    endTurn();
+  }
+};
+
+initState();
+log('▶ NEXUS-7 ONLINE :: ISO MODE ENGAGED', 'info');
+log('▶ MISSION :: NEUTRALIZE ALL HOSTILES', 'info');
+startTurn(getCurrent());
+render();
+</script>
+
+</body>
+</html>
