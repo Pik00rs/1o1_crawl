@@ -1,849 +1,1597 @@
 {
-  "$schema": "Bestiaire du Reactor Hollow — données structurées",
-  "$version": "1.0",
-  "$description": "30 entités réparties sur 5 biomes. 5 mobs + 1 elite + 1 mini-boss + 1 boss par biome.",
-
-  "biomes": {
-    "inferno": {
-      "id": "inferno",
-      "name": "Secteur Inferno",
-      "shortName": "Inferno",
-      "color": "#ff5722",
-      "accentColor": "#ffb300",
-      "description": "Ancienne fonderie d'acier reconvertie en réacteur thermique. Les conduits de magma à ciel ouvert ont fait fondre la structure jusqu'à la rendre méconnaissable. Les habitants de cette zone ont muté autour de la chaleur.",
-      "danger": "high",
-      "primaryDamage": "fire",
-      "primaryStatuses": ["burning", "stunned"],
-      "primaryBuffs": ["rage"],
-      "loot": "Set Linceul des Cendres"
-    },
-    "cryo": {
-      "id": "cryo",
-      "name": "Coffre Cryo",
-      "shortName": "Cryo",
-      "color": "#4fc3f7",
-      "accentColor": "#b3e5fc",
-      "description": "Bunker de stockage cryogénique abandonné. Les cellules de prisonniers congelés ont éclaté il y a des décennies, et leurs occupants déambulent toujours dans les couloirs givrés. Le temps semble ralenti.",
-      "danger": "medium",
-      "primaryDamage": "ice",
-      "primaryStatuses": ["chilled", "slowed", "frozen"],
-      "primaryBuffs": ["energyShield"],
-      "loot": "Set Manteau Glacé"
-    },
-    "toxic": {
-      "id": "toxic",
-      "name": "Friches Toxiques",
-      "shortName": "Toxic",
-      "color": "#8bc34a",
-      "accentColor": "#cddc39",
-      "description": "Décharge biotech à ciel ouvert. Les déchets pharmaceutiques ont créé un écosystème vivant de mutations en chaîne. Tout ce qui rampe ici a été quelque chose d'autre auparavant.",
-      "danger": "high",
-      "primaryDamage": "poison",
-      "primaryStatuses": ["poisoned", "bleeding"],
-      "primaryBuffs": ["regen"],
-      "loot": "Set Robe Toxique"
-    },
-    "voidnet": {
-      "id": "voidnet",
-      "name": "Voidnet",
-      "shortName": "Void",
-      "color": "#9c27b0",
-      "accentColor": "#e040fb",
-      "description": "Cyberespace corrompu, projection physique d'un réseau qui a glitché. Les entités qui le peuplent sont des fragments de code rendus tangibles. Ici, la géométrie ment.",
-      "danger": "very-high",
-      "primaryDamage": "shock",
-      "primaryStatuses": ["shocked", "silenced", "marked"],
-      "primaryBuffs": ["precision", "haste"],
-      "loot": "Set Trame du Vide"
-    },
-    "crimson": {
-      "id": "crimson",
-      "name": "Fosses Cramoisies",
-      "shortName": "Crimson",
-      "color": "#c62828",
-      "accentColor": "#ff8a80",
-      "description": "Arène de combat clandestine creusée sous l'ancien stade. Les survivants se sont organisés en cercles rituels. Le sol n'a jamais séché.",
-      "danger": "medium",
-      "primaryDamage": "slash",
-      "primaryStatuses": ["bleeding"],
-      "primaryBuffs": ["rage", "guard"],
-      "loot": "Set Voie du Sang"
-    }
+  "inferno_brute": {
+    "id": "inferno_brute",
+    "name": "Brûlant",
+    "icon": "🔥",
+    "hp": 27,
+    "armor": 5,
+    "attackPower": [
+      9,
+      15
+    ],
+    "damageType": "blunt",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 8,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "inferno",
+    "baseHP": 38,
+    "baseDmg": [
+      9,
+      15
+    ],
+    "lore": "Ancien ouvrier de la fonderie. Sa peau a fusionné avec sa combinaison ignifugée à des températures qui auraient dû le tuer. Aujourd'hui il marche encore, et la chaleur radie de lui en permanence.",
+    "specialAbilities": [
+      {
+        "id": "heatAura",
+        "description": "Inflige 1 PV/tour aux ennemis adjacents",
+        "passive": true
+      }
+    ],
+    "behavior": "Avance lentement vers le joueur. Frappe au CaC.",
+    "tip": "Ne reste pas adjacent trop longtemps. Une arme à distance le neutralise sans risque."
   },
-
-  "enemies": [
-    {
-      "id": "inferno_brute",
-      "name": "Brûlant",
-      "icon": "🔥",
-      "role": "mob",
-      "biome": "inferno",
-      "lore": "Ancien ouvrier de la fonderie. Sa peau a fusionné avec sa combinaison ignifugée à des températures qui auraient dû le tuer. Aujourd'hui il marche encore, et la chaleur radie de lui en permanence.",
-      "baseHP": 38,
-      "baseDmg": [9, 15],
-      "damageType": "blunt",
-      "armor": 5,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "heatAura", "description": "Inflige 1 PV/tour aux ennemis adjacents", "passive": true }
-      ],
-      "behavior": "Avance lentement vers le joueur. Frappe au CaC.",
-      "tip": "Ne reste pas adjacent trop longtemps. Une arme à distance le neutralise sans risque."
-    },
-    {
-      "id": "inferno_caster",
-      "name": "Pyromancien Mineur",
-      "icon": "🧙‍♂️",
-      "role": "mob",
-      "biome": "inferno",
-      "lore": "Technicien du système de chauffage qui a appris à canaliser le flux thermique avec son cortex implanté. Ses doigts ne sont plus que de la cendre incandescente.",
-      "baseHP": 22,
-      "baseDmg": [11, 18],
-      "damageType": "fire",
-      "armor": 1,
-      "range": 4,
-      "specialAbilities": [
-        { "id": "applyBurn", "description": "30% chance d'appliquer Brûlure (3 tours)", "trigger": "onHit" }
-      ],
-      "behavior": "Reste à distance. Recule si le joueur s'approche. Lance des projectiles de feu.",
-      "tip": "Cible prioritaire à cause des Brûlures cumulables. La résistance Feu réduit ses dégâts ET les DoT."
-    },
-    {
-      "id": "inferno_charger",
-      "name": "Charge Cendreuse",
-      "icon": "💢",
-      "role": "mob",
-      "biome": "inferno",
-      "lore": "Forme dégénérée d'un berserker. Son corps brûle sans douleur. Il fonce, percute, et se relève pour recommencer.",
-      "baseHP": 30,
-      "baseDmg": [12, 18],
-      "damageType": "fire",
-      "armor": 2,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "charge", "description": "Charge sur 3 cases au tour 1 du combat", "trigger": "combatStart" },
-        { "id": "stunOnCharge", "description": "Étourdit 1 tour si la charge touche", "trigger": "onChargeHit" }
-      ],
-      "behavior": "Fonce à l'engagement, puis combat normalement.",
-      "tip": "Esquive sa première charge en bougeant en diagonale. Après ça, c'est un mob standard."
-    },
-    {
-      "id": "inferno_archer",
-      "name": "Tireur de Phosphore",
-      "icon": "🏹",
-      "role": "mob",
-      "biome": "inferno",
-      "lore": "Garde de la périphérie du secteur, équipé d'un arc à munitions au phosphore blanc. Tirer des projectiles enflammés est devenu sa seule fonction.",
-      "baseHP": 24,
-      "baseDmg": [9, 14],
-      "damageType": "fire",
-      "armor": 2,
-      "range": 5,
-      "specialAbilities": [
-        { "id": "applyBurn", "description": "20% chance d'appliquer Brûlure (2 tours)", "trigger": "onHit" }
-      ],
-      "behavior": "Tire à très longue portée. Recule pour maintenir la distance.",
-      "tip": "Closer rapidement ou utiliser une arme ranged contre lui. Il fragile au CaC."
-    },
-    {
-      "id": "inferno_engineer",
-      "name": "Ingénieur Thermique",
-      "icon": "🔧",
-      "role": "mob",
-      "biome": "inferno",
-      "lore": "Survivant du dernier shift. Il déploie encore les tourelles automatiques que personne d'autre ne sait piloter.",
-      "baseHP": 26,
-      "baseDmg": [7, 11],
-      "damageType": "pierce",
-      "armor": 3,
-      "range": 3,
-      "specialAbilities": [
-        { "id": "deployTurret", "description": "Déploie une tourelle (12 PV, 8 dmg, range 4) tous les 5 tours", "trigger": "passive" }
-      ],
-      "behavior": "Déploie une tourelle au début, recule, en redéploie quand celle-ci tombe.",
-      "tip": "Tuer la tourelle avant l'ingénieur sinon dégâts cumulés. Mieux : tuer l'ingénieur pour empêcher le redéploiement."
-    },
-    {
-      "id": "inferno_berserker",
-      "name": "Berserker Carbonisé",
-      "icon": "⚔️",
-      "role": "elite",
-      "biome": "inferno",
-      "lore": "Officier de sécurité dont le module de contrôle de la rage a brûlé. Il ne s'arrête plus avant que tout autour de lui ne soit silencieux.",
-      "baseHP": 65,
-      "baseDmg": [13, 22],
-      "damageType": "slash",
-      "armor": 6,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "rage", "description": "Gagne +30% damage en dessous de 50% HP", "trigger": "lowHp" },
-        { "id": "applyBurn", "description": "20% chance d'appliquer Brûlure", "trigger": "onHit" }
-      ],
-      "behavior": "Fonce au CaC. Devient plus agressif et rapide à mi-vie.",
-      "tip": "Le burst au-dessus de 50% HP est plus safe que de l'achever lentement. Stuns/Frozen le neutralisent bien."
-    },
-    {
-      "id": "inferno_minibossDrone",
-      "name": "Drone-Sentinelle Igni-7",
-      "icon": "🤖",
-      "role": "miniboss",
-      "biome": "inferno",
-      "lore": "Drone de sécurité prototype, jamais déployé officiellement. Il a été oublié au sous-sol après la mise en garde-veille du complexe. Il s'est réactivé seul.",
-      "baseHP": 110,
-      "baseDmg": [15, 22],
-      "damageType": "fire",
-      "armor": 8,
-      "range": 5,
-      "specialAbilities": [
-        { "id": "flameWave", "description": "Cône de feu (3 cases) tous les 4 tours, AOE", "trigger": "everyN" },
-        { "id": "applyBurn", "description": "60% chance d'appliquer Brûlure forte (4 tours, 4 PV)", "trigger": "onHit" },
-        { "id": "shieldRecharge", "description": "Bouclier 30 PV qui régénère hors combat", "passive": true }
-      ],
-      "behavior": "Patrouille à mi-distance. Cônes de feu en alternance. Recharge son bouclier si on le laisse respirer.",
-      "tip": "Burst le rapidement avant le 4e tour pour éviter le cône. Bouclier prio sur HP : tape pour briser le shield d'abord."
-    },
-    {
-      "id": "inferno_boss",
-      "name": "Pyromancien",
-      "icon": "🔥",
-      "role": "boss",
-      "biome": "inferno",
-      "lore": "Le directeur du complexe. Ses implants neuraux sont fusionnés à un noyau thermonucléaire miniature. Il ne se souvient plus de son nom, mais il se souvient du feu.",
-      "baseHP": 170,
-      "baseDmg": [16, 24],
-      "damageType": "fire",
-      "armor": 8,
-      "range": 5,
-      "aoeDamage": true,
-      "specialAbilities": [
-        { "id": "infernoBurst", "description": "AOE feu 3×3 cases tous les 5 tours", "trigger": "everyN" },
-        { "id": "applyBurn", "description": "40% chance d'appliquer Brûlure forte", "trigger": "onHit" },
-        { "id": "secondPhase", "description": "À 30% HP : invoque 2 Pyromanciens Mineurs", "trigger": "lowHp" }
-      ],
-      "behavior": "Reste à 4-5 cases. Téléporte si pris au CaC. Phase 2 active à 30% HP.",
-      "tip": "Build avec fireResist >40% obligatoire. Tuer les adds vite en phase 2 sinon snowball. Stuns interrompent ses cast."
-    },
-
-    {
-      "id": "cryo_brute",
-      "name": "Givre-Marcheur",
-      "icon": "🧟",
-      "role": "mob",
-      "biome": "cryo",
-      "lore": "Prisonnier ressorti de cryostase. Sa chair est un mélange de cristal de glace et de tissu organique mort. Il marche par mémoire musculaire, sans plus aucune cognition.",
-      "baseHP": 35,
-      "baseDmg": [8, 13],
-      "damageType": "ice",
-      "armor": 4,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyChill", "description": "30% chance d'appliquer Chill (-1 PA)", "trigger": "onHit" }
-      ],
-      "behavior": "Avance régulièrement. Frappe lentement mais sûr.",
-      "tip": "Vulnérable au Frozen + dégâts blunt (Shatter combo)."
-    },
-    {
-      "id": "cryo_caster",
-      "name": "Cryomancien",
-      "icon": "❄️",
-      "role": "mob",
-      "biome": "cryo",
-      "lore": "Médecin cryogénique qui s'est injecté son propre sérum de conservation. Il survit en gelant le monde autour de lui pour ralentir sa propre dégradation.",
-      "baseHP": 20,
-      "baseDmg": [10, 16],
-      "damageType": "ice",
-      "armor": 1,
-      "range": 4,
-      "specialAbilities": [
-        { "id": "applyChill", "description": "60% chance d'appliquer Chill prolongé", "trigger": "onHit" },
-        { "id": "applyFrozen", "description": "10% chance de Frozen 1 tour (cumulable)", "trigger": "onHit" }
-      ],
-      "behavior": "Reste à distance. Spam les sorts de glace.",
-      "tip": "Cible prio absolue. Si tu te fais Frozen, c'est très dangereux (perdre un tour). ccReduction utile."
-    },
-    {
-      "id": "cryo_skater",
-      "name": "Patineur Spectral",
-      "icon": "💨",
-      "role": "mob",
-      "biome": "cryo",
-      "lore": "Forme la plus mobile que les Givre-Marcheurs aient développée. Glisse sur la glace plutôt que de marcher.",
-      "baseHP": 18,
-      "baseDmg": [7, 12],
-      "damageType": "pierce",
-      "armor": 1,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "evade", "description": "+25% dodgeChance", "passive": true },
-        { "id": "dash", "description": "Se déplace de 4 cases au lieu de 2", "passive": true }
-      ],
-      "behavior": "Hit and run. Frappe puis recule.",
-      "tip": "Frustrant à attraper. Une attaque ranged ou un AOE le règle vite."
-    },
-    {
-      "id": "cryo_archer",
-      "name": "Lanceur d'Aiguilles",
-      "icon": "🏹",
-      "role": "mob",
-      "biome": "cryo",
-      "lore": "Tire des projectiles de glace cristalline si fins qu'ils traversent l'armure.",
-      "baseHP": 22,
-      "baseDmg": [10, 15],
-      "damageType": "pierce",
-      "armor": 2,
-      "range": 6,
-      "specialAbilities": [
-        { "id": "armorPierce", "description": "Ignore 30% de l'armure cible", "passive": true }
-      ],
-      "behavior": "Tir longue portée. Stationnaire en général.",
-      "tip": "Sa pénétration d'armure le rend dangereux pour les builds tank. Closer ou kill rapide."
-    },
-    {
-      "id": "cryo_shielder",
-      "name": "Glacier Vivant",
-      "icon": "🛡️",
-      "role": "mob",
-      "biome": "cryo",
-      "lore": "Bloc de glace qui a développé une primitive conscience. Bouge à peine, mais protège ce qu'il y a derrière.",
-      "baseHP": 50,
-      "baseDmg": [6, 10],
-      "damageType": "blunt",
-      "armor": 12,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "iceArmor", "description": "Réduit dégâts ice subis de 75%", "passive": true },
-        { "id": "guardAlly", "description": "Adjacent allies prennent -30% damage", "passive": true }
-      ],
-      "behavior": "Reste devant les casters/archers. Très lent.",
-      "tip": "Ignorer pour tuer les casters derrière, ou le briser avec dégâts physiques (vulnérable au Shatter)."
-    },
-    {
-      "id": "cryo_sentinel",
-      "name": "Sentinelle de Glace",
-      "icon": "⚔️",
-      "role": "elite",
-      "biome": "cryo",
-      "lore": "Ancien soldat de garde dont l'armure a fusionné avec une couche permanente de gel. Plus lent, plus dur, et plus pénible.",
-      "baseHP": 85,
-      "baseDmg": [10, 16],
-      "damageType": "blunt",
-      "armor": 14,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyChill", "description": "40% chance Chill", "trigger": "onHit" },
-        { "id": "iceShatter", "description": "Quand tué, AOE dégâts ice 2 cases", "trigger": "onDeath" }
-      ],
-      "behavior": "Tank lourd. Frappe fort mais lentement. Le tuer cause une explosion.",
-      "tip": "Le finir à distance pour éviter le shatter. armorPenetration aide énormément."
-    },
-    {
-      "id": "cryo_minibossWarden",
-      "name": "Gardien des Cellules",
-      "icon": "🗝️",
-      "role": "miniboss",
-      "biome": "cryo",
-      "lore": "Officier de la prison qui a refusé d'évacuer pendant la crise. Il garde encore les cellules vides après tout ce temps.",
-      "baseHP": 130,
-      "baseDmg": [12, 18],
-      "damageType": "ice",
-      "armor": 11,
-      "range": 3,
-      "specialAbilities": [
-        { "id": "summonWalker", "description": "Invoque 1 Givre-Marcheur tous les 4 tours", "trigger": "everyN" },
-        { "id": "applyFrozen", "description": "20% chance Frozen 1 tour", "trigger": "onHit" }
-      ],
-      "behavior": "Mid-range. Invoque des adds régulièrement pour saturer le terrain.",
-      "tip": "Burst l'invocateur en priorité. Garder les AOE pour les vagues de Walkers."
-    },
-    {
-      "id": "cryo_boss",
-      "name": "Cryo-Reine",
-      "icon": "❄️",
-      "role": "boss",
-      "biome": "cryo",
-      "lore": "La directrice du programme cryogénique, première sujet de son propre protocole expérimental. Le froid l'a préservée intacte mais lui a donné un contrôle total sur la glace.",
-      "baseHP": 190,
-      "baseDmg": [14, 22],
-      "damageType": "ice",
-      "armor": 10,
-      "range": 4,
-      "specialAbilities": [
-        { "id": "blizzard", "description": "Tous les 5 tours : -2 PA pour le joueur pendant 1 tour", "trigger": "everyN" },
-        { "id": "applyChill", "description": "50% chance Chill prolongé", "trigger": "onHit" },
-        { "id": "iceWall", "description": "À 50% HP : invoque 2 Glaciers Vivants comme bouclier", "trigger": "lowHp" }
-      ],
-      "behavior": "Distance moyenne. Prive le joueur de PA. Phase 2 défensive avec adds-bouclier.",
-      "tip": "iceResist >40%. ccReduction critique pour gérer les Chill et le -PA. Briser les Glaciers en phase 2 avec dégâts blunt + Frozen."
-    },
-
-    {
-      "id": "toxic_brute",
-      "name": "Mutant Putréfié",
-      "icon": "🦠",
-      "role": "mob",
-      "biome": "toxic",
-      "lore": "Ce qui restait d'un visiteur curieux qui s'est aventuré dans la décharge il y a deux ans. Il en émerge encore, déformé et hostile.",
-      "baseHP": 30,
-      "baseDmg": [6, 10],
-      "damageType": "poison",
-      "armor": 3,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyPoison", "description": "50% chance Poison (4 tours)", "trigger": "onHit" },
-        { "id": "lifesteal", "description": "30% lifesteal sur ses attaques", "passive": true }
-      ],
-      "behavior": "CaC pur. Très tanky avec lifesteal.",
-      "tip": "poisonResist annule le DoT. Lifesteal le rend dur à finir : burst au lieu de DPS lent."
-    },
-    {
-      "id": "toxic_spitter",
-      "name": "Cracheur d'Acide",
-      "icon": "💚",
-      "role": "mob",
-      "biome": "toxic",
-      "lore": "Un humanoïde dont les glandes salivaires ont muté en réservoirs corrosifs.",
-      "baseHP": 22,
-      "baseDmg": [8, 13],
-      "damageType": "poison",
-      "armor": 1,
-      "range": 4,
-      "specialAbilities": [
-        { "id": "armorCorrode", "description": "20% chance de réduire l'armure cible de 5 (perma combat)", "trigger": "onHit" },
-        { "id": "applyPoison", "description": "40% chance Poison", "trigger": "onHit" }
-      ],
-      "behavior": "Distance moyenne. Crache à intervalles réguliers.",
-      "tip": "Si tu joues tank, tue-le en priorité avant qu'il ne corrode tout ton stuff."
-    },
-    {
-      "id": "toxic_swarmer",
-      "name": "Essaim Bourdonnant",
-      "icon": "🪲",
-      "role": "mob",
-      "biome": "toxic",
-      "lore": "Pas un seul ennemi mais une nuée d'insectes mutants se déplaçant en groupe.",
-      "baseHP": 14,
-      "baseDmg": [4, 7],
-      "damageType": "poison",
-      "armor": 0,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyPoison", "description": "70% chance Poison faible", "trigger": "onHit" },
-        { "id": "swarm", "description": "Apparaît en groupes de 3-4", "spawn": true }
-      ],
-      "behavior": "Toujours en groupe. Frappe vite mais peu fort. Cumule les Poison.",
-      "tip": "Cible parfaite pour AOE. Les ignorer = mourir empoisonné."
-    },
-    {
-      "id": "toxic_carrier",
-      "name": "Porteur de Plaies",
-      "icon": "🩸",
-      "role": "mob",
-      "biome": "toxic",
-      "lore": "Vecteur ambulant. Sa peau est une plaque de bactéries hostiles.",
-      "baseHP": 28,
-      "baseDmg": [7, 11],
-      "damageType": "slash",
-      "armor": 2,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyBleed", "description": "60% chance Bleed", "trigger": "onHit" },
-        { "id": "deathCloud", "description": "À sa mort, nuage poison 2x2 pendant 3 tours", "trigger": "onDeath" }
-      ],
-      "behavior": "CaC. Sa mort laisse une zone dangereuse.",
-      "tip": "Le tuer à distance ou s'éloigner avant le coup fatal."
-    },
-    {
-      "id": "toxic_grafted",
-      "name": "Greffé de Chair",
-      "icon": "🧬",
-      "role": "mob",
-      "biome": "toxic",
-      "lore": "Plusieurs corps fusionnés en un seul, avec autant de bras qu'il y avait de victimes initiales.",
-      "baseHP": 40,
-      "baseDmg": [9, 14],
-      "damageType": "blunt",
-      "armor": 4,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "regen", "description": "Régénère 3 PV/tour", "passive": true },
-        { "id": "multiAttack", "description": "Frappe 2 fois par tour", "passive": true }
-      ],
-      "behavior": "CaC tanky avec régénération. Difficile à user.",
-      "tip": "Burst nécessaire. La régen est cassée si tu lui inflige du Bleed (ignore armure ET regen)."
-    },
-    {
-      "id": "toxic_alpha",
-      "name": "Alpha Mutant",
-      "icon": "🦂",
-      "role": "elite",
-      "biome": "toxic",
-      "lore": "Le plus ancien et le plus stable des mutants. Il a appris à diriger les plus jeunes.",
-      "baseHP": 75,
-      "baseDmg": [11, 18],
-      "damageType": "poison",
-      "armor": 5,
-      "range": 2,
-      "specialAbilities": [
-        { "id": "applyPoison", "description": "80% Poison forte (5 tours, 4 PV)", "trigger": "onHit" },
-        { "id": "buffAllies", "description": "Donne +20% damage aux mutants alliés adjacents", "passive": true },
-        { "id": "lifesteal", "description": "40% lifesteal", "passive": true }
-      ],
-      "behavior": "Reste au milieu du groupe pour buff les alliés. Tape à courte portée.",
-      "tip": "Cible prio absolue dans une room mixte. Le tuer affaiblit tout le pack."
-    },
-    {
-      "id": "toxic_minibossSpore",
-      "name": "Mère-Spore",
-      "icon": "🍄",
-      "role": "miniboss",
-      "biome": "toxic",
-      "lore": "Une masse organique semi-immobile qui produit en continu des spores hostiles. Personne ne sait si elle a déjà été humaine.",
-      "baseHP": 140,
-      "baseDmg": [10, 16],
-      "damageType": "poison",
-      "armor": 5,
-      "range": 3,
-      "specialAbilities": [
-        { "id": "summonSwarm", "description": "Invoque 2 Essaims tous les 3 tours", "trigger": "everyN" },
-        { "id": "toxicAura", "description": "1 PV poison/tour aux ennemis dans 3 cases", "passive": true }
-      ],
-      "behavior": "Stationnaire. Aura de poison + invocations en boucle.",
-      "tip": "Ne pas tanker l'aura. Burst pendant les fenêtres entre invocs. AOE pour les Essaims."
-    },
-    {
-      "id": "toxic_boss",
-      "name": "Bête Putréfiée",
-      "icon": "🦠",
-      "role": "boss",
-      "biome": "toxic",
-      "lore": "Le sujet zéro. La première fuite, le premier mutant. Tout ce qui rampe dans les Friches descend de lui d'une manière ou d'une autre.",
-      "baseHP": 200,
-      "baseDmg": [12, 20],
-      "damageType": "poison",
-      "armor": 6,
-      "range": 2,
-      "specialAbilities": [
-        { "id": "applyPoison", "description": "60% Poison forte continue", "trigger": "onHit" },
-        { "id": "lifesteal", "description": "30% lifesteal sur tous les coups", "passive": true },
-        { "id": "regen", "description": "Régénère 5 PV/tour", "passive": true },
-        { "id": "spawnGrafted", "description": "À 50% HP : invoque 2 Greffés", "trigger": "lowHp" }
-      ],
-      "behavior": "Hyper tanky. Trois mécaniques de soin (lifesteal, regen, adds qui font diversion).",
-      "tip": "Le boss le plus difficile à user. poisonResist + DPS très élevé. Bleed très efficace contre lui (ignore armure ET regen). Tuer les adds vite en phase 2."
-    },
-
-    {
-      "id": "voidnet_glitch",
-      "name": "Erreur Persistante",
-      "icon": "⚡",
-      "role": "mob",
-      "biome": "voidnet",
-      "lore": "Un fragment de processus qui n'a jamais terminé son exécution. Apparaît et disparaît selon une logique qui n'est pas la nôtre.",
-      "baseHP": 18,
-      "baseDmg": [9, 14],
-      "damageType": "shock",
-      "armor": 0,
-      "range": 3,
-      "specialAbilities": [
-        { "id": "phaseShift", "description": "30% dodge inhérent (téléporte aléatoirement)", "passive": true },
-        { "id": "applyShock", "description": "40% Shock", "trigger": "onHit" }
-      ],
-      "behavior": "Imprévisible. Téléporte sur la map.",
-      "tip": "Frustrant mais fragile. Un coup sûr le tue. accuracy si dispo."
-    },
-    {
-      "id": "voidnet_daemon",
-      "name": "Daemon Mineur",
-      "icon": "👁️",
-      "role": "mob",
-      "biome": "voidnet",
-      "lore": "Programme système rendu sentient. Il croit accomplir une tâche d'optimisation. Il n'y a plus rien à optimiser.",
-      "baseHP": 24,
-      "baseDmg": [11, 16],
-      "damageType": "shock",
-      "armor": 1,
-      "range": 5,
-      "specialAbilities": [
-        { "id": "chainLightning", "description": "Le shock se propage à 1 ennemi adjacent", "passive": true },
-        { "id": "applySilence", "description": "15% chance de Silence (1 tour)", "trigger": "onHit" }
-      ],
-      "behavior": "Long range. Cibles isolées de préférence pour minimiser le chain.",
-      "tip": "Garder le joueur loin des autres mobs pour éviter le chain lightning."
-    },
-    {
-      "id": "voidnet_executor",
-      "name": "Exécuteur",
-      "icon": "🗡️",
-      "role": "mob",
-      "biome": "voidnet",
-      "lore": "Un processus dédié à terminer toute autre process non autorisée. Toi compris.",
-      "baseHP": 26,
-      "baseDmg": [13, 19],
-      "damageType": "pierce",
-      "armor": 2,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "executeBonus", "description": "+50% damage sur cibles <30% HP", "passive": true },
-        { "id": "blink", "description": "Téléporte adjacent à la cible la plus blessée", "trigger": "everyN" }
-      ],
-      "behavior": "Va finir le joueur si bas HP. Téléporte pour fermer la distance.",
-      "tip": "Très dangereux à low HP. Heal-up avant qu'il blink. lifesteal aide énormément."
-    },
-    {
-      "id": "voidnet_corrupter",
-      "name": "Corrupteur",
-      "icon": "🔮",
-      "role": "mob",
-      "biome": "voidnet",
-      "lore": "Une entité qui altère les statistiques des autres process en temps réel. Y compris toi.",
-      "baseHP": 22,
-      "baseDmg": [8, 13],
-      "damageType": "shock",
-      "armor": 1,
-      "range": 4,
-      "specialAbilities": [
-        { "id": "applyMarked", "description": "30% chance Marked (cible prend +25% damage)", "trigger": "onHit" },
-        { "id": "applyShock", "description": "30% Shock", "trigger": "onHit" }
-      ],
-      "behavior": "Mid-range. Marked stack avec les autres ennemis.",
-      "tip": "Cible prio dans une room mixte : son Marked transforme les autres mobs en menaces majeures."
-    },
-    {
-      "id": "voidnet_replicator",
-      "name": "Réplicateur",
-      "icon": "♾️",
-      "role": "mob",
-      "biome": "voidnet",
-      "lore": "Lui-même n'est rien. Mais il sait se copier.",
-      "baseHP": 20,
-      "baseDmg": [7, 11],
-      "damageType": "shock",
-      "armor": 1,
-      "range": 2,
-      "specialAbilities": [
-        { "id": "replicate", "description": "À 50% HP : se duplique en 2 copies (les copies ne se redupliquent pas)", "trigger": "lowHp" }
-      ],
-      "behavior": "Standard, mais ne pas le laisser à mi-vie.",
-      "tip": "Tue-le en un burst plutôt que de l'amener doucement à 50%."
-    },
-    {
-      "id": "voidnet_overclocked",
-      "name": "Process Overclocké",
-      "icon": "💻",
-      "role": "elite",
-      "biome": "voidnet",
-      "lore": "Une simple boucle while qui s'est exécutée beaucoup trop vite, beaucoup trop longtemps.",
-      "baseHP": 70,
-      "baseDmg": [9, 15],
-      "damageType": "shock",
-      "armor": 4,
-      "range": 4,
-      "specialAbilities": [
-        { "id": "doubleAttack", "description": "Frappe 2 fois par tour", "passive": true },
-        { "id": "applyShock", "description": "50% Shock chain adjacent", "trigger": "onHit" },
-        { "id": "haste", "description": "Se déplace de 4 cases au lieu de 2", "passive": true }
-      ],
-      "behavior": "Hyper mobile et frappe deux fois. Très difficile à kiter.",
-      "tip": "Stuns/Frozen sont vitaux. Sinon il déchire vite."
-    },
-    {
-      "id": "voidnet_minibossKernel",
-      "name": "Sous-Noyau de Trame",
-      "icon": "🌐",
-      "role": "miniboss",
-      "biome": "voidnet",
-      "lore": "Un fragment du noyau central du Voidnet, séparé du reste après une mise à jour cassée. Il essaie depuis de retrouver son tout.",
-      "baseHP": 120,
-      "baseDmg": [14, 22],
-      "damageType": "shock",
-      "armor": 5,
-      "range": 6,
-      "specialAbilities": [
-        { "id": "lightningField", "description": "Tous les 4 tours : 4 cases aléatoires reçoivent dmg shock", "trigger": "everyN" },
-        { "id": "applySilence", "description": "30% Silence sur cible", "trigger": "onHit" },
-        { "id": "applyMarked", "description": "Marked sur tous les hits crit", "trigger": "onCrit" }
-      ],
-      "behavior": "Très longue portée. Force le joueur à bouger constamment.",
-      "tip": "shockResist et mobilité. Anti-CC obligatoire pour ne pas être Silence-locked."
-    },
-    {
-      "id": "voidnet_boss",
-      "name": "Architecte du Vide",
-      "icon": "⚡",
-      "role": "boss",
-      "biome": "voidnet",
-      "lore": "Le créateur du Voidnet, devenu sa propre création. Il n'existe plus en tant qu'entité unique mais comme un patron récurrent dans le réseau.",
-      "baseHP": 160,
-      "baseDmg": [18, 28],
-      "damageType": "shock",
-      "armor": 5,
-      "range": 6,
-      "aoeDamage": true,
-      "specialAbilities": [
-        { "id": "voidStorm", "description": "AOE shock 4×4 cases tous les 5 tours", "trigger": "everyN" },
-        { "id": "applyShock", "description": "50% Shock chain", "trigger": "onHit" },
-        { "id": "phaseShift", "description": "À 50% HP : devient invulnérable 1 tour, téléporte, recommence", "trigger": "lowHp" },
-        { "id": "summonDaemons", "description": "À 30% HP : invoque 3 Daemons", "trigger": "lowHp" }
-      ],
-      "behavior": "Distance maximum, AOE périodique, phases multiples.",
-      "tip": "shockResist >40%. Anti-CC pour les Silence. Burst quand il sort de phase shift (vulnérable). Garder une AOE pour les adds finaux."
-    },
-
-    {
-      "id": "crimson_brawler",
-      "name": "Bagarreur de Fosse",
-      "icon": "👊",
-      "role": "mob",
-      "biome": "crimson",
-      "lore": "Un combattant amateur qui n'a jamais quitté l'arène. Il s'y bat encore par habitude, sans se souvenir pourquoi.",
-      "baseHP": 32,
-      "baseDmg": [10, 16],
-      "damageType": "blunt",
-      "armor": 3,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyBleed", "description": "30% Bleed", "trigger": "onHit" },
-        { "id": "rage", "description": "+20% damage en dessous de 50% HP", "trigger": "lowHp" }
-      ],
-      "behavior": "Fonce, frappe fort. Plus dangereux blessé.",
-      "tip": "Burst above 50% HP plus safe. Bleed contre lui = mauvaise idée s'il a regen."
-    },
-    {
-      "id": "crimson_butcher",
-      "name": "Boucher",
-      "icon": "🔪",
-      "role": "mob",
-      "biome": "crimson",
-      "lore": "Spécialiste du dépeçage qui a élargi son répertoire à tout ce qui bouge.",
-      "baseHP": 36,
-      "baseDmg": [13, 20],
-      "damageType": "slash",
-      "armor": 4,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyBleed", "description": "60% Bleed forte (3 tours, 5 PV)", "trigger": "onHit" },
-        { "id": "executeBonus", "description": "+30% damage sur cibles <30% HP", "passive": true }
-      ],
-      "behavior": "CaC. Bleed pour user le joueur lentement.",
-      "tip": "Ne jamais rester en bas HP à proximité. Heal-up entre coups si nécessaire."
-    },
-    {
-      "id": "crimson_throwblade",
-      "name": "Lanceur de Lames",
-      "icon": "🗡️",
-      "role": "mob",
-      "biome": "crimson",
-      "lore": "Tireur d'élite de la fosse. Il a transformé chaque rebut métallique en arme de jet.",
-      "baseHP": 22,
-      "baseDmg": [11, 17],
-      "damageType": "pierce",
-      "armor": 1,
-      "range": 5,
-      "specialAbilities": [
-        { "id": "applyBleed", "description": "40% Bleed", "trigger": "onHit" }
-      ],
-      "behavior": "Distance pure. Recule constamment.",
-      "tip": "Closer ou ranged kill. Fragile au CaC."
-    },
-    {
-      "id": "crimson_hooked",
-      "name": "Crocheteur",
-      "icon": "🪝",
-      "role": "mob",
-      "biome": "crimson",
-      "lore": "Un maître du grappin. Personne ne s'enfuit.",
-      "baseHP": 28,
-      "baseDmg": [9, 14],
-      "damageType": "pierce",
-      "armor": 2,
-      "range": 4,
-      "specialAbilities": [
-        { "id": "hook", "description": "Tire la cible de 3 cases vers lui (1× par combat)", "trigger": "combatStart" },
-        { "id": "applyBleed", "description": "30% Bleed", "trigger": "onHit" }
-      ],
-      "behavior": "Range moyenne. Pull dès l'engagement.",
-      "tip": "S'attendre au pull au tour 1. Préparer un burst une fois adjacent."
-    },
-    {
-      "id": "crimson_doctor",
-      "name": "Docteur de Sang",
-      "icon": "🩺",
-      "role": "mob",
-      "biome": "crimson",
-      "lore": "Médecin qui a renoncé à soigner pour collecter à la place. Il prend ce qui l'intéresse, vivant ou non.",
-      "baseHP": 20,
-      "baseDmg": [6, 10],
-      "damageType": "pierce",
-      "armor": 1,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "healAllies", "description": "Heal 8 PV à un allié blessé adjacent (au lieu d'attaquer)", "trigger": "lowAlly" },
-        { "id": "lifesteal", "description": "50% lifesteal sur ses attaques (rare)", "passive": true }
-      ],
-      "behavior": "Soutien. Heal les alliés blessés. N'attaque que si seul.",
-      "tip": "Cible prio dans une room. Sans lui, le pack tombe vite."
-    },
-    {
-      "id": "crimson_gladiator",
-      "name": "Gladiateur",
-      "icon": "⚔️",
-      "role": "elite",
-      "biome": "crimson",
-      "lore": "Le champion local. Il a battu tout le monde dans sa catégorie. Le règlement n'existe plus, donc il combat tout le temps.",
-      "baseHP": 80,
-      "baseDmg": [14, 22],
-      "damageType": "slash",
-      "armor": 7,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyBleed", "description": "50% Bleed", "trigger": "onHit" },
-        { "id": "rage", "description": "+30% damage sous 50% HP", "trigger": "lowHp" },
-        { "id": "blockChance", "description": "30% chance de bloquer (réduit dégâts moitié)", "passive": true }
-      ],
-      "behavior": "CaC. Tank ET DPS. Très dangereux à mi-vie.",
-      "tip": "Burst au-dessus de 50% prio. Stuns le neutralisent. Ne pas hésiter à fuir si bas HP."
-    },
-    {
-      "id": "crimson_minibossExecutioner",
-      "name": "Exécuteur de l'Arène",
-      "icon": "🪓",
-      "role": "miniboss",
-      "biome": "crimson",
-      "lore": "Le bourreau officiel des matches à mort. Sa hache est plus vieille que lui.",
-      "baseHP": 130,
-      "baseDmg": [20, 30],
-      "damageType": "slash",
-      "armor": 9,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "executeBonus", "description": "+80% damage sur cibles <40% HP", "passive": true },
-        { "id": "applyBleed", "description": "60% Bleed forte", "trigger": "onHit" },
-        { "id": "armorPiercing", "description": "Ignore 40% de l'armure cible", "passive": true }
-      ],
-      "behavior": "CaC pur. Fait très mal. À fuir si bas HP.",
-      "tip": "Garder >40% HP en permanence. Mobilité critique. Bleed et execute le rendent terrible pour les builds tank."
-    },
-    {
-      "id": "crimson_boss",
-      "name": "Champion du Sang",
-      "icon": "🩸",
-      "role": "boss",
-      "biome": "crimson",
-      "lore": "L'invaincu de la fosse depuis 14 ans. Il a perdu compte de combien il a tué. La foule a disparu, mais il continue à se battre pour elle.",
-      "baseHP": 180,
-      "baseDmg": [20, 30],
-      "damageType": "slash",
-      "armor": 7,
-      "range": 1,
-      "specialAbilities": [
-        { "id": "applyBleed", "description": "50% Bleed très forte (4 tours, 6 PV)", "trigger": "onHit" },
-        { "id": "executeBonus", "description": "+50% damage sur cibles <30% HP", "passive": true },
-        { "id": "armorPiercing", "description": "Ignore 50% de l'armure du joueur", "passive": true },
-        { "id": "rampUpDamage", "description": "+5% damage par tour passé en combat", "passive": true },
-        { "id": "spawnButchers", "description": "À 33% HP : invoque 2 Bouchers", "trigger": "lowHp" }
-      ],
-      "behavior": "Pur DPS physique avec armor pierce. Plus le combat dure, plus il fait mal.",
-      "tip": "Tuer vite obligatoire (rampUp). Armure inutile contre lui. Mobilité + dodge + heals. Bleed reste très efficace contre lui."
-    }
-  ]
+  "inferno_caster": {
+    "id": "inferno_caster",
+    "name": "Pyromancien Mineur",
+    "icon": "🧙‍♂️",
+    "hp": 15,
+    "armor": 1,
+    "attackPower": [
+      11,
+      18
+    ],
+    "damageType": "fire",
+    "range": 4,
+    "moveSpeed": 4,
+    "initiative": 14,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "inferno",
+    "baseHP": 22,
+    "baseDmg": [
+      11,
+      18
+    ],
+    "lore": "Technicien du système de chauffage qui a appris à canaliser le flux thermique avec son cortex implanté. Ses doigts ne sont plus que de la cendre incandescente.",
+    "specialAbilities": [
+      {
+        "id": "applyBurn",
+        "description": "30% chance d'appliquer Brûlure (3 tours)",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Reste à distance. Recule si le joueur s'approche. Lance des projectiles de feu.",
+    "tip": "Cible prioritaire à cause des Brûlures cumulables. La résistance Feu réduit ses dégâts ET les DoT."
+  },
+  "inferno_charger": {
+    "id": "inferno_charger",
+    "name": "Charge Cendreuse",
+    "icon": "💢",
+    "hp": 21,
+    "armor": 2,
+    "attackPower": [
+      12,
+      18
+    ],
+    "damageType": "fire",
+    "range": 1,
+    "moveSpeed": 5,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "inferno",
+    "baseHP": 30,
+    "baseDmg": [
+      12,
+      18
+    ],
+    "lore": "Forme dégénérée d'un berserker. Son corps brûle sans douleur. Il fonce, percute, et se relève pour recommencer.",
+    "specialAbilities": [
+      {
+        "id": "charge",
+        "description": "Charge sur 3 cases au tour 1 du combat",
+        "trigger": "combatStart"
+      },
+      {
+        "id": "stunOnCharge",
+        "description": "Étourdit 1 tour si la charge touche",
+        "trigger": "onChargeHit"
+      }
+    ],
+    "behavior": "Fonce à l'engagement, puis combat normalement.",
+    "tip": "Esquive sa première charge en bougeant en diagonale. Après ça, c'est un mob standard."
+  },
+  "inferno_archer": {
+    "id": "inferno_archer",
+    "name": "Tireur de Phosphore",
+    "icon": "🏹",
+    "hp": 17,
+    "armor": 2,
+    "attackPower": [
+      9,
+      14
+    ],
+    "damageType": "fire",
+    "range": 5,
+    "moveSpeed": 4,
+    "initiative": 14,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "inferno",
+    "baseHP": 24,
+    "baseDmg": [
+      9,
+      14
+    ],
+    "lore": "Garde de la périphérie du secteur, équipé d'un arc à munitions au phosphore blanc. Tirer des projectiles enflammés est devenu sa seule fonction.",
+    "specialAbilities": [
+      {
+        "id": "applyBurn",
+        "description": "20% chance d'appliquer Brûlure (2 tours)",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Tire à très longue portée. Recule pour maintenir la distance.",
+    "tip": "Closer rapidement ou utiliser une arme ranged contre lui. Il fragile au CaC."
+  },
+  "inferno_engineer": {
+    "id": "inferno_engineer",
+    "name": "Ingénieur Thermique",
+    "icon": "🔧",
+    "hp": 18,
+    "armor": 3,
+    "attackPower": [
+      7,
+      11
+    ],
+    "damageType": "pierce",
+    "range": 3,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "inferno",
+    "baseHP": 26,
+    "baseDmg": [
+      7,
+      11
+    ],
+    "lore": "Survivant du dernier shift. Il déploie encore les tourelles automatiques que personne d'autre ne sait piloter.",
+    "specialAbilities": [
+      {
+        "id": "deployTurret",
+        "description": "Déploie une tourelle (12 PV, 8 dmg, range 4) tous les 5 tours",
+        "trigger": "passive"
+      }
+    ],
+    "behavior": "Déploie une tourelle au début, recule, en redéploie quand celle-ci tombe.",
+    "tip": "Tuer la tourelle avant l'ingénieur sinon dégâts cumulés. Mieux : tuer l'ingénieur pour empêcher le redéploiement."
+  },
+  "inferno_berserker": {
+    "id": "inferno_berserker",
+    "name": "Berserker Carbonisé",
+    "icon": "⚔️",
+    "hp": 46,
+    "armor": 6,
+    "attackPower": [
+      13,
+      22
+    ],
+    "damageType": "slash",
+    "range": 1,
+    "moveSpeed": 3,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "elite",
+    "biome": "inferno",
+    "baseHP": 65,
+    "baseDmg": [
+      13,
+      22
+    ],
+    "lore": "Officier de sécurité dont le module de contrôle de la rage a brûlé. Il ne s'arrête plus avant que tout autour de lui ne soit silencieux.",
+    "specialAbilities": [
+      {
+        "id": "rage",
+        "description": "Gagne +30% damage en dessous de 50% HP",
+        "trigger": "lowHp"
+      },
+      {
+        "id": "applyBurn",
+        "description": "20% chance d'appliquer Brûlure",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Fonce au CaC. Devient plus agressif et rapide à mi-vie.",
+    "tip": "Le burst au-dessus de 50% HP est plus safe que de l'achever lentement. Stuns/Frozen le neutralisent bien."
+  },
+  "inferno_minibossDrone": {
+    "id": "inferno_minibossDrone",
+    "name": "Drone-Sentinelle Igni-7",
+    "icon": "🤖",
+    "hp": 77,
+    "armor": 8,
+    "attackPower": [
+      15,
+      22
+    ],
+    "damageType": "fire",
+    "range": 5,
+    "moveSpeed": 3,
+    "initiative": 12,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "miniboss",
+    "biome": "inferno",
+    "baseHP": 110,
+    "baseDmg": [
+      15,
+      22
+    ],
+    "lore": "Drone de sécurité prototype, jamais déployé officiellement. Il a été oublié au sous-sol après la mise en garde-veille du complexe. Il s'est réactivé seul.",
+    "specialAbilities": [
+      {
+        "id": "flameWave",
+        "description": "Cône de feu (3 cases) tous les 4 tours, AOE",
+        "trigger": "everyN"
+      },
+      {
+        "id": "applyBurn",
+        "description": "60% chance d'appliquer Brûlure forte (4 tours, 4 PV)",
+        "trigger": "onHit"
+      },
+      {
+        "id": "shieldRecharge",
+        "description": "Bouclier 30 PV qui régénère hors combat",
+        "passive": true
+      }
+    ],
+    "behavior": "Patrouille à mi-distance. Cônes de feu en alternance. Recharge son bouclier si on le laisse respirer.",
+    "tip": "Burst le rapidement avant le 4e tour pour éviter le cône. Bouclier prio sur HP : tape pour briser le shield d'abord."
+  },
+  "inferno_boss": {
+    "id": "inferno_boss",
+    "name": "Pyromancien",
+    "icon": "🔥",
+    "hp": 119,
+    "armor": 8,
+    "attackPower": [
+      16,
+      24
+    ],
+    "damageType": "fire",
+    "range": 5,
+    "moveSpeed": 3,
+    "initiative": 13,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "boss",
+    "biome": "inferno",
+    "baseHP": 170,
+    "baseDmg": [
+      16,
+      24
+    ],
+    "lore": "Le directeur du complexe. Ses implants neuraux sont fusionnés à un noyau thermonucléaire miniature. Il ne se souvient plus de son nom, mais il se souvient du feu.",
+    "specialAbilities": [
+      {
+        "id": "infernoBurst",
+        "description": "AOE feu 3×3 cases tous les 5 tours",
+        "trigger": "everyN"
+      },
+      {
+        "id": "applyBurn",
+        "description": "40% chance d'appliquer Brûlure forte",
+        "trigger": "onHit"
+      },
+      {
+        "id": "secondPhase",
+        "description": "À 30% HP : invoque 2 Pyromanciens Mineurs",
+        "trigger": "lowHp"
+      }
+    ],
+    "behavior": "Reste à 4-5 cases. Téléporte si pris au CaC. Phase 2 active à 30% HP.",
+    "tip": "Build avec fireResist >40% obligatoire. Tuer les adds vite en phase 2 sinon snowball. Stuns interrompent ses cast."
+  },
+  "cryo_brute": {
+    "id": "cryo_brute",
+    "name": "Givre-Marcheur",
+    "icon": "🧟",
+    "hp": 25,
+    "armor": 4,
+    "attackPower": [
+      8,
+      13
+    ],
+    "damageType": "ice",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 8,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "cryo",
+    "baseHP": 35,
+    "baseDmg": [
+      8,
+      13
+    ],
+    "lore": "Prisonnier ressorti de cryostase. Sa chair est un mélange de cristal de glace et de tissu organique mort. Il marche par mémoire musculaire, sans plus aucune cognition.",
+    "specialAbilities": [
+      {
+        "id": "applyChill",
+        "description": "30% chance d'appliquer Chill (-1 PA)",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Avance régulièrement. Frappe lentement mais sûr.",
+    "tip": "Vulnérable au Frozen + dégâts blunt (Shatter combo)."
+  },
+  "cryo_caster": {
+    "id": "cryo_caster",
+    "name": "Cryomancien",
+    "icon": "❄️",
+    "hp": 14,
+    "armor": 1,
+    "attackPower": [
+      10,
+      16
+    ],
+    "damageType": "ice",
+    "range": 4,
+    "moveSpeed": 4,
+    "initiative": 14,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "cryo",
+    "baseHP": 20,
+    "baseDmg": [
+      10,
+      16
+    ],
+    "lore": "Médecin cryogénique qui s'est injecté son propre sérum de conservation. Il survit en gelant le monde autour de lui pour ralentir sa propre dégradation.",
+    "specialAbilities": [
+      {
+        "id": "applyChill",
+        "description": "60% chance d'appliquer Chill prolongé",
+        "trigger": "onHit"
+      },
+      {
+        "id": "applyFrozen",
+        "description": "10% chance de Frozen 1 tour (cumulable)",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Reste à distance. Spam les sorts de glace.",
+    "tip": "Cible prio absolue. Si tu te fais Frozen, c'est très dangereux (perdre un tour). ccReduction utile."
+  },
+  "cryo_skater": {
+    "id": "cryo_skater",
+    "name": "Patineur Spectral",
+    "icon": "💨",
+    "hp": 13,
+    "armor": 1,
+    "attackPower": [
+      7,
+      12
+    ],
+    "damageType": "pierce",
+    "range": 1,
+    "moveSpeed": 5,
+    "initiative": 16,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "cryo",
+    "baseHP": 18,
+    "baseDmg": [
+      7,
+      12
+    ],
+    "lore": "Forme la plus mobile que les Givre-Marcheurs aient développée. Glisse sur la glace plutôt que de marcher.",
+    "specialAbilities": [
+      {
+        "id": "evade",
+        "description": "+25% dodgeChance",
+        "passive": true
+      },
+      {
+        "id": "dash",
+        "description": "Se déplace de 4 cases au lieu de 2",
+        "passive": true
+      }
+    ],
+    "behavior": "Hit and run. Frappe puis recule.",
+    "tip": "Frustrant à attraper. Une attaque ranged ou un AOE le règle vite."
+  },
+  "cryo_archer": {
+    "id": "cryo_archer",
+    "name": "Lanceur d'Aiguilles",
+    "icon": "🏹",
+    "hp": 15,
+    "armor": 2,
+    "attackPower": [
+      10,
+      15
+    ],
+    "damageType": "pierce",
+    "range": 6,
+    "moveSpeed": 4,
+    "initiative": 14,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "cryo",
+    "baseHP": 22,
+    "baseDmg": [
+      10,
+      15
+    ],
+    "lore": "Tire des projectiles de glace cristalline si fins qu'ils traversent l'armure.",
+    "specialAbilities": [
+      {
+        "id": "armorPierce",
+        "description": "Ignore 30% de l'armure cible",
+        "passive": true
+      }
+    ],
+    "behavior": "Tir longue portée. Stationnaire en général.",
+    "tip": "Sa pénétration d'armure le rend dangereux pour les builds tank. Closer ou kill rapide."
+  },
+  "cryo_shielder": {
+    "id": "cryo_shielder",
+    "name": "Glacier Vivant",
+    "icon": "🛡️",
+    "hp": 35,
+    "armor": 12,
+    "attackPower": [
+      6,
+      10
+    ],
+    "damageType": "blunt",
+    "range": 1,
+    "moveSpeed": 2,
+    "initiative": 8,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "cryo",
+    "baseHP": 50,
+    "baseDmg": [
+      6,
+      10
+    ],
+    "lore": "Bloc de glace qui a développé une primitive conscience. Bouge à peine, mais protège ce qu'il y a derrière.",
+    "specialAbilities": [
+      {
+        "id": "iceArmor",
+        "description": "Réduit dégâts ice subis de 75%",
+        "passive": true
+      },
+      {
+        "id": "guardAlly",
+        "description": "Adjacent allies prennent -30% damage",
+        "passive": true
+      }
+    ],
+    "behavior": "Reste devant les casters/archers. Très lent.",
+    "tip": "Ignorer pour tuer les casters derrière, ou le briser avec dégâts physiques (vulnérable au Shatter)."
+  },
+  "cryo_sentinel": {
+    "id": "cryo_sentinel",
+    "name": "Sentinelle de Glace",
+    "icon": "⚔️",
+    "hp": 59,
+    "armor": 14,
+    "attackPower": [
+      10,
+      16
+    ],
+    "damageType": "blunt",
+    "range": 1,
+    "moveSpeed": 3,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "elite",
+    "biome": "cryo",
+    "baseHP": 85,
+    "baseDmg": [
+      10,
+      16
+    ],
+    "lore": "Ancien soldat de garde dont l'armure a fusionné avec une couche permanente de gel. Plus lent, plus dur, et plus pénible.",
+    "specialAbilities": [
+      {
+        "id": "applyChill",
+        "description": "40% chance Chill",
+        "trigger": "onHit"
+      },
+      {
+        "id": "iceShatter",
+        "description": "Quand tué, AOE dégâts ice 2 cases",
+        "trigger": "onDeath"
+      }
+    ],
+    "behavior": "Tank lourd. Frappe fort mais lentement. Le tuer cause une explosion.",
+    "tip": "Le finir à distance pour éviter le shatter. armorPenetration aide énormément."
+  },
+  "cryo_minibossWarden": {
+    "id": "cryo_minibossWarden",
+    "name": "Gardien des Cellules",
+    "icon": "🗝️",
+    "hp": 91,
+    "armor": 11,
+    "attackPower": [
+      12,
+      18
+    ],
+    "damageType": "ice",
+    "range": 3,
+    "moveSpeed": 3,
+    "initiative": 12,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "miniboss",
+    "biome": "cryo",
+    "baseHP": 130,
+    "baseDmg": [
+      12,
+      18
+    ],
+    "lore": "Officier de la prison qui a refusé d'évacuer pendant la crise. Il garde encore les cellules vides après tout ce temps.",
+    "specialAbilities": [
+      {
+        "id": "summonWalker",
+        "description": "Invoque 1 Givre-Marcheur tous les 4 tours",
+        "trigger": "everyN"
+      },
+      {
+        "id": "applyFrozen",
+        "description": "20% chance Frozen 1 tour",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Mid-range. Invoque des adds régulièrement pour saturer le terrain.",
+    "tip": "Burst l'invocateur en priorité. Garder les AOE pour les vagues de Walkers."
+  },
+  "cryo_boss": {
+    "id": "cryo_boss",
+    "name": "Cryo-Reine",
+    "icon": "❄️",
+    "hp": 133,
+    "armor": 10,
+    "attackPower": [
+      14,
+      22
+    ],
+    "damageType": "ice",
+    "range": 4,
+    "moveSpeed": 3,
+    "initiative": 13,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "boss",
+    "biome": "cryo",
+    "baseHP": 190,
+    "baseDmg": [
+      14,
+      22
+    ],
+    "lore": "La directrice du programme cryogénique, première sujet de son propre protocole expérimental. Le froid l'a préservée intacte mais lui a donné un contrôle total sur la glace.",
+    "specialAbilities": [
+      {
+        "id": "blizzard",
+        "description": "Tous les 5 tours : -2 PA pour le joueur pendant 1 tour",
+        "trigger": "everyN"
+      },
+      {
+        "id": "applyChill",
+        "description": "50% chance Chill prolongé",
+        "trigger": "onHit"
+      },
+      {
+        "id": "iceWall",
+        "description": "À 50% HP : invoque 2 Glaciers Vivants comme bouclier",
+        "trigger": "lowHp"
+      }
+    ],
+    "behavior": "Distance moyenne. Prive le joueur de PA. Phase 2 défensive avec adds-bouclier.",
+    "tip": "iceResist >40%. ccReduction critique pour gérer les Chill et le -PA. Briser les Glaciers en phase 2 avec dégâts blunt + Frozen."
+  },
+  "toxic_brute": {
+    "id": "toxic_brute",
+    "name": "Mutant Putréfié",
+    "icon": "🦠",
+    "hp": 21,
+    "armor": 3,
+    "attackPower": [
+      6,
+      10
+    ],
+    "damageType": "poison",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 8,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "toxic",
+    "baseHP": 30,
+    "baseDmg": [
+      6,
+      10
+    ],
+    "lore": "Ce qui restait d'un visiteur curieux qui s'est aventuré dans la décharge il y a deux ans. Il en émerge encore, déformé et hostile.",
+    "specialAbilities": [
+      {
+        "id": "applyPoison",
+        "description": "50% chance Poison (4 tours)",
+        "trigger": "onHit"
+      },
+      {
+        "id": "lifesteal",
+        "description": "30% lifesteal sur ses attaques",
+        "passive": true
+      }
+    ],
+    "behavior": "CaC pur. Très tanky avec lifesteal.",
+    "tip": "poisonResist annule le DoT. Lifesteal le rend dur à finir : burst au lieu de DPS lent."
+  },
+  "toxic_spitter": {
+    "id": "toxic_spitter",
+    "name": "Cracheur d'Acide",
+    "icon": "💚",
+    "hp": 15,
+    "armor": 1,
+    "attackPower": [
+      8,
+      13
+    ],
+    "damageType": "poison",
+    "range": 4,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "toxic",
+    "baseHP": 22,
+    "baseDmg": [
+      8,
+      13
+    ],
+    "lore": "Un humanoïde dont les glandes salivaires ont muté en réservoirs corrosifs.",
+    "specialAbilities": [
+      {
+        "id": "armorCorrode",
+        "description": "20% chance de réduire l'armure cible de 5 (perma combat)",
+        "trigger": "onHit"
+      },
+      {
+        "id": "applyPoison",
+        "description": "40% chance Poison",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Distance moyenne. Crache à intervalles réguliers.",
+    "tip": "Si tu joues tank, tue-le en priorité avant qu'il ne corrode tout ton stuff."
+  },
+  "toxic_swarmer": {
+    "id": "toxic_swarmer",
+    "name": "Essaim Bourdonnant",
+    "icon": "🪲",
+    "hp": 10,
+    "armor": 0,
+    "attackPower": [
+      4,
+      7
+    ],
+    "damageType": "poison",
+    "range": 1,
+    "moveSpeed": 5,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "toxic",
+    "baseHP": 14,
+    "baseDmg": [
+      4,
+      7
+    ],
+    "lore": "Pas un seul ennemi mais une nuée d'insectes mutants se déplaçant en groupe.",
+    "specialAbilities": [
+      {
+        "id": "applyPoison",
+        "description": "70% chance Poison faible",
+        "trigger": "onHit"
+      },
+      {
+        "id": "swarm",
+        "description": "Apparaît en groupes de 3-4",
+        "spawn": true
+      }
+    ],
+    "behavior": "Toujours en groupe. Frappe vite mais peu fort. Cumule les Poison.",
+    "tip": "Cible parfaite pour AOE. Les ignorer = mourir empoisonné."
+  },
+  "toxic_carrier": {
+    "id": "toxic_carrier",
+    "name": "Porteur de Plaies",
+    "icon": "🩸",
+    "hp": 20,
+    "armor": 2,
+    "attackPower": [
+      7,
+      11
+    ],
+    "damageType": "slash",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "toxic",
+    "baseHP": 28,
+    "baseDmg": [
+      7,
+      11
+    ],
+    "lore": "Vecteur ambulant. Sa peau est une plaque de bactéries hostiles.",
+    "specialAbilities": [
+      {
+        "id": "applyBleed",
+        "description": "60% chance Bleed",
+        "trigger": "onHit"
+      },
+      {
+        "id": "deathCloud",
+        "description": "À sa mort, nuage poison 2x2 pendant 3 tours",
+        "trigger": "onDeath"
+      }
+    ],
+    "behavior": "CaC. Sa mort laisse une zone dangereuse.",
+    "tip": "Le tuer à distance ou s'éloigner avant le coup fatal."
+  },
+  "toxic_grafted": {
+    "id": "toxic_grafted",
+    "name": "Greffé de Chair",
+    "icon": "🧬",
+    "hp": 28,
+    "armor": 4,
+    "attackPower": [
+      9,
+      14
+    ],
+    "damageType": "blunt",
+    "range": 1,
+    "moveSpeed": 2,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": true,
+    "role": "mob",
+    "biome": "toxic",
+    "baseHP": 40,
+    "baseDmg": [
+      9,
+      14
+    ],
+    "lore": "Plusieurs corps fusionnés en un seul, avec autant de bras qu'il y avait de victimes initiales.",
+    "specialAbilities": [
+      {
+        "id": "regen",
+        "description": "Régénère 3 PV/tour",
+        "passive": true
+      },
+      {
+        "id": "multiAttack",
+        "description": "Frappe 2 fois par tour",
+        "passive": true
+      }
+    ],
+    "behavior": "CaC tanky avec régénération. Difficile à user.",
+    "tip": "Burst nécessaire. La régen est cassée si tu lui inflige du Bleed (ignore armure ET regen)."
+  },
+  "toxic_alpha": {
+    "id": "toxic_alpha",
+    "name": "Alpha Mutant",
+    "icon": "🦂",
+    "hp": 53,
+    "armor": 5,
+    "attackPower": [
+      11,
+      18
+    ],
+    "damageType": "poison",
+    "range": 2,
+    "moveSpeed": 3,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "elite",
+    "biome": "toxic",
+    "baseHP": 75,
+    "baseDmg": [
+      11,
+      18
+    ],
+    "lore": "Le plus ancien et le plus stable des mutants. Il a appris à diriger les plus jeunes.",
+    "specialAbilities": [
+      {
+        "id": "applyPoison",
+        "description": "80% Poison forte (5 tours, 4 PV)",
+        "trigger": "onHit"
+      },
+      {
+        "id": "buffAllies",
+        "description": "Donne +20% damage aux mutants alliés adjacents",
+        "passive": true
+      },
+      {
+        "id": "lifesteal",
+        "description": "40% lifesteal",
+        "passive": true
+      }
+    ],
+    "behavior": "Reste au milieu du groupe pour buff les alliés. Tape à courte portée.",
+    "tip": "Cible prio absolue dans une room mixte. Le tuer affaiblit tout le pack."
+  },
+  "toxic_minibossSpore": {
+    "id": "toxic_minibossSpore",
+    "name": "Mère-Spore",
+    "icon": "🍄",
+    "hp": 98,
+    "armor": 5,
+    "attackPower": [
+      10,
+      16
+    ],
+    "damageType": "poison",
+    "range": 3,
+    "moveSpeed": 2,
+    "initiative": 12,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "miniboss",
+    "biome": "toxic",
+    "baseHP": 140,
+    "baseDmg": [
+      10,
+      16
+    ],
+    "lore": "Une masse organique semi-immobile qui produit en continu des spores hostiles. Personne ne sait si elle a déjà été humaine.",
+    "specialAbilities": [
+      {
+        "id": "summonSwarm",
+        "description": "Invoque 2 Essaims tous les 3 tours",
+        "trigger": "everyN"
+      },
+      {
+        "id": "toxicAura",
+        "description": "1 PV poison/tour aux ennemis dans 3 cases",
+        "passive": true
+      }
+    ],
+    "behavior": "Stationnaire. Aura de poison + invocations en boucle.",
+    "tip": "Ne pas tanker l'aura. Burst pendant les fenêtres entre invocs. AOE pour les Essaims."
+  },
+  "toxic_boss": {
+    "id": "toxic_boss",
+    "name": "Bête Putréfiée",
+    "icon": "🦠",
+    "hp": 140,
+    "armor": 6,
+    "attackPower": [
+      12,
+      20
+    ],
+    "damageType": "poison",
+    "range": 2,
+    "moveSpeed": 3,
+    "initiative": 13,
+    "ai": "aggressive",
+    "hasHeal": true,
+    "role": "boss",
+    "biome": "toxic",
+    "baseHP": 200,
+    "baseDmg": [
+      12,
+      20
+    ],
+    "lore": "Le sujet zéro. La première fuite, le premier mutant. Tout ce qui rampe dans les Friches descend de lui d'une manière ou d'une autre.",
+    "specialAbilities": [
+      {
+        "id": "applyPoison",
+        "description": "60% Poison forte continue",
+        "trigger": "onHit"
+      },
+      {
+        "id": "lifesteal",
+        "description": "30% lifesteal sur tous les coups",
+        "passive": true
+      },
+      {
+        "id": "regen",
+        "description": "Régénère 5 PV/tour",
+        "passive": true
+      },
+      {
+        "id": "spawnGrafted",
+        "description": "À 50% HP : invoque 2 Greffés",
+        "trigger": "lowHp"
+      }
+    ],
+    "behavior": "Hyper tanky. Trois mécaniques de soin (lifesteal, regen, adds qui font diversion).",
+    "tip": "Le boss le plus difficile à user. poisonResist + DPS très élevé. Bleed très efficace contre lui (ignore armure ET regen). Tuer les adds vite en phase 2."
+  },
+  "voidnet_glitch": {
+    "id": "voidnet_glitch",
+    "name": "Erreur Persistante",
+    "icon": "⚡",
+    "hp": 13,
+    "armor": 0,
+    "attackPower": [
+      9,
+      14
+    ],
+    "damageType": "shock",
+    "range": 3,
+    "moveSpeed": 5,
+    "initiative": 16,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "voidnet",
+    "baseHP": 18,
+    "baseDmg": [
+      9,
+      14
+    ],
+    "lore": "Un fragment de processus qui n'a jamais terminé son exécution. Apparaît et disparaît selon une logique qui n'est pas la nôtre.",
+    "specialAbilities": [
+      {
+        "id": "phaseShift",
+        "description": "30% dodge inhérent (téléporte aléatoirement)",
+        "passive": true
+      },
+      {
+        "id": "applyShock",
+        "description": "40% Shock",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Imprévisible. Téléporte sur la map.",
+    "tip": "Frustrant mais fragile. Un coup sûr le tue. accuracy si dispo."
+  },
+  "voidnet_daemon": {
+    "id": "voidnet_daemon",
+    "name": "Daemon Mineur",
+    "icon": "👁️",
+    "hp": 17,
+    "armor": 1,
+    "attackPower": [
+      11,
+      16
+    ],
+    "damageType": "shock",
+    "range": 5,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "voidnet",
+    "baseHP": 24,
+    "baseDmg": [
+      11,
+      16
+    ],
+    "lore": "Programme système rendu sentient. Il croit accomplir une tâche d'optimisation. Il n'y a plus rien à optimiser.",
+    "specialAbilities": [
+      {
+        "id": "chainLightning",
+        "description": "Le shock se propage à 1 ennemi adjacent",
+        "passive": true
+      },
+      {
+        "id": "applySilence",
+        "description": "15% chance de Silence (1 tour)",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Long range. Cibles isolées de préférence pour minimiser le chain.",
+    "tip": "Garder le joueur loin des autres mobs pour éviter le chain lightning."
+  },
+  "voidnet_executor": {
+    "id": "voidnet_executor",
+    "name": "Exécuteur",
+    "icon": "🗡️",
+    "hp": 18,
+    "armor": 2,
+    "attackPower": [
+      13,
+      19
+    ],
+    "damageType": "pierce",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "voidnet",
+    "baseHP": 26,
+    "baseDmg": [
+      13,
+      19
+    ],
+    "lore": "Un processus dédié à terminer toute autre process non autorisée. Toi compris.",
+    "specialAbilities": [
+      {
+        "id": "executeBonus",
+        "description": "+50% damage sur cibles <30% HP",
+        "passive": true
+      },
+      {
+        "id": "blink",
+        "description": "Téléporte adjacent à la cible la plus blessée",
+        "trigger": "everyN"
+      }
+    ],
+    "behavior": "Va finir le joueur si bas HP. Téléporte pour fermer la distance.",
+    "tip": "Très dangereux à low HP. Heal-up avant qu'il blink. lifesteal aide énormément."
+  },
+  "voidnet_corrupter": {
+    "id": "voidnet_corrupter",
+    "name": "Corrupteur",
+    "icon": "🔮",
+    "hp": 15,
+    "armor": 1,
+    "attackPower": [
+      8,
+      13
+    ],
+    "damageType": "shock",
+    "range": 4,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "voidnet",
+    "baseHP": 22,
+    "baseDmg": [
+      8,
+      13
+    ],
+    "lore": "Une entité qui altère les statistiques des autres process en temps réel. Y compris toi.",
+    "specialAbilities": [
+      {
+        "id": "applyMarked",
+        "description": "30% chance Marked (cible prend +25% damage)",
+        "trigger": "onHit"
+      },
+      {
+        "id": "applyShock",
+        "description": "30% Shock",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Mid-range. Marked stack avec les autres ennemis.",
+    "tip": "Cible prio dans une room mixte : son Marked transforme les autres mobs en menaces majeures."
+  },
+  "voidnet_replicator": {
+    "id": "voidnet_replicator",
+    "name": "Réplicateur",
+    "icon": "♾️",
+    "hp": 14,
+    "armor": 1,
+    "attackPower": [
+      7,
+      11
+    ],
+    "damageType": "shock",
+    "range": 2,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "voidnet",
+    "baseHP": 20,
+    "baseDmg": [
+      7,
+      11
+    ],
+    "lore": "Lui-même n'est rien. Mais il sait se copier.",
+    "specialAbilities": [
+      {
+        "id": "replicate",
+        "description": "À 50% HP : se duplique en 2 copies (les copies ne se redupliquent pas)",
+        "trigger": "lowHp"
+      }
+    ],
+    "behavior": "Standard, mais ne pas le laisser à mi-vie.",
+    "tip": "Tue-le en un burst plutôt que de l'amener doucement à 50%."
+  },
+  "voidnet_overclocked": {
+    "id": "voidnet_overclocked",
+    "name": "Process Overclocké",
+    "icon": "💻",
+    "hp": 49,
+    "armor": 4,
+    "attackPower": [
+      9,
+      15
+    ],
+    "damageType": "shock",
+    "range": 4,
+    "moveSpeed": 3,
+    "initiative": 11,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "elite",
+    "biome": "voidnet",
+    "baseHP": 70,
+    "baseDmg": [
+      9,
+      15
+    ],
+    "lore": "Une simple boucle while qui s'est exécutée beaucoup trop vite, beaucoup trop longtemps.",
+    "specialAbilities": [
+      {
+        "id": "doubleAttack",
+        "description": "Frappe 2 fois par tour",
+        "passive": true
+      },
+      {
+        "id": "applyShock",
+        "description": "50% Shock chain adjacent",
+        "trigger": "onHit"
+      },
+      {
+        "id": "haste",
+        "description": "Se déplace de 4 cases au lieu de 2",
+        "passive": true
+      }
+    ],
+    "behavior": "Hyper mobile et frappe deux fois. Très difficile à kiter.",
+    "tip": "Stuns/Frozen sont vitaux. Sinon il déchire vite."
+  },
+  "voidnet_minibossKernel": {
+    "id": "voidnet_minibossKernel",
+    "name": "Sous-Noyau de Trame",
+    "icon": "🌐",
+    "hp": 84,
+    "armor": 5,
+    "attackPower": [
+      14,
+      22
+    ],
+    "damageType": "shock",
+    "range": 6,
+    "moveSpeed": 3,
+    "initiative": 12,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "miniboss",
+    "biome": "voidnet",
+    "baseHP": 120,
+    "baseDmg": [
+      14,
+      22
+    ],
+    "lore": "Un fragment du noyau central du Voidnet, séparé du reste après une mise à jour cassée. Il essaie depuis de retrouver son tout.",
+    "specialAbilities": [
+      {
+        "id": "lightningField",
+        "description": "Tous les 4 tours : 4 cases aléatoires reçoivent dmg shock",
+        "trigger": "everyN"
+      },
+      {
+        "id": "applySilence",
+        "description": "30% Silence sur cible",
+        "trigger": "onHit"
+      },
+      {
+        "id": "applyMarked",
+        "description": "Marked sur tous les hits crit",
+        "trigger": "onCrit"
+      }
+    ],
+    "behavior": "Très longue portée. Force le joueur à bouger constamment.",
+    "tip": "shockResist et mobilité. Anti-CC obligatoire pour ne pas être Silence-locked."
+  },
+  "voidnet_boss": {
+    "id": "voidnet_boss",
+    "name": "Architecte du Vide",
+    "icon": "⚡",
+    "hp": 112,
+    "armor": 5,
+    "attackPower": [
+      18,
+      28
+    ],
+    "damageType": "shock",
+    "range": 6,
+    "moveSpeed": 3,
+    "initiative": 13,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "boss",
+    "biome": "voidnet",
+    "baseHP": 160,
+    "baseDmg": [
+      18,
+      28
+    ],
+    "lore": "Le créateur du Voidnet, devenu sa propre création. Il n'existe plus en tant qu'entité unique mais comme un patron récurrent dans le réseau.",
+    "specialAbilities": [
+      {
+        "id": "voidStorm",
+        "description": "AOE shock 4×4 cases tous les 5 tours",
+        "trigger": "everyN"
+      },
+      {
+        "id": "applyShock",
+        "description": "50% Shock chain",
+        "trigger": "onHit"
+      },
+      {
+        "id": "phaseShift",
+        "description": "À 50% HP : devient invulnérable 1 tour, téléporte, recommence",
+        "trigger": "lowHp"
+      },
+      {
+        "id": "summonDaemons",
+        "description": "À 30% HP : invoque 3 Daemons",
+        "trigger": "lowHp"
+      }
+    ],
+    "behavior": "Distance maximum, AOE périodique, phases multiples.",
+    "tip": "shockResist >40%. Anti-CC pour les Silence. Burst quand il sort de phase shift (vulnérable). Garder une AOE pour les adds finaux."
+  },
+  "crimson_brawler": {
+    "id": "crimson_brawler",
+    "name": "Bagarreur de Fosse",
+    "icon": "👊",
+    "hp": 22,
+    "armor": 3,
+    "attackPower": [
+      10,
+      16
+    ],
+    "damageType": "blunt",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "crimson",
+    "baseHP": 32,
+    "baseDmg": [
+      10,
+      16
+    ],
+    "lore": "Un combattant amateur qui n'a jamais quitté l'arène. Il s'y bat encore par habitude, sans se souvenir pourquoi.",
+    "specialAbilities": [
+      {
+        "id": "applyBleed",
+        "description": "30% Bleed",
+        "trigger": "onHit"
+      },
+      {
+        "id": "rage",
+        "description": "+20% damage en dessous de 50% HP",
+        "trigger": "lowHp"
+      }
+    ],
+    "behavior": "Fonce, frappe fort. Plus dangereux blessé.",
+    "tip": "Burst above 50% HP plus safe. Bleed contre lui = mauvaise idée s'il a regen."
+  },
+  "crimson_butcher": {
+    "id": "crimson_butcher",
+    "name": "Boucher",
+    "icon": "🔪",
+    "hp": 25,
+    "armor": 4,
+    "attackPower": [
+      13,
+      20
+    ],
+    "damageType": "slash",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "crimson",
+    "baseHP": 36,
+    "baseDmg": [
+      13,
+      20
+    ],
+    "lore": "Spécialiste du dépeçage qui a élargi son répertoire à tout ce qui bouge.",
+    "specialAbilities": [
+      {
+        "id": "applyBleed",
+        "description": "60% Bleed forte (3 tours, 5 PV)",
+        "trigger": "onHit"
+      },
+      {
+        "id": "executeBonus",
+        "description": "+30% damage sur cibles <30% HP",
+        "passive": true
+      }
+    ],
+    "behavior": "CaC. Bleed pour user le joueur lentement.",
+    "tip": "Ne jamais rester en bas HP à proximité. Heal-up entre coups si nécessaire."
+  },
+  "crimson_throwblade": {
+    "id": "crimson_throwblade",
+    "name": "Lanceur de Lames",
+    "icon": "🗡️",
+    "hp": 15,
+    "armor": 1,
+    "attackPower": [
+      11,
+      17
+    ],
+    "damageType": "pierce",
+    "range": 5,
+    "moveSpeed": 4,
+    "initiative": 14,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "crimson",
+    "baseHP": 22,
+    "baseDmg": [
+      11,
+      17
+    ],
+    "lore": "Tireur d'élite de la fosse. Il a transformé chaque rebut métallique en arme de jet.",
+    "specialAbilities": [
+      {
+        "id": "applyBleed",
+        "description": "40% Bleed",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Distance pure. Recule constamment.",
+    "tip": "Closer ou ranged kill. Fragile au CaC."
+  },
+  "crimson_hooked": {
+    "id": "crimson_hooked",
+    "name": "Crocheteur",
+    "icon": "🪝",
+    "hp": 20,
+    "armor": 2,
+    "attackPower": [
+      9,
+      14
+    ],
+    "damageType": "pierce",
+    "range": 4,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "caster",
+    "hasHeal": false,
+    "role": "mob",
+    "biome": "crimson",
+    "baseHP": 28,
+    "baseDmg": [
+      9,
+      14
+    ],
+    "lore": "Un maître du grappin. Personne ne s'enfuit.",
+    "specialAbilities": [
+      {
+        "id": "hook",
+        "description": "Tire la cible de 3 cases vers lui (1× par combat)",
+        "trigger": "combatStart"
+      },
+      {
+        "id": "applyBleed",
+        "description": "30% Bleed",
+        "trigger": "onHit"
+      }
+    ],
+    "behavior": "Range moyenne. Pull dès l'engagement.",
+    "tip": "S'attendre au pull au tour 1. Préparer un burst une fois adjacent."
+  },
+  "crimson_doctor": {
+    "id": "crimson_doctor",
+    "name": "Docteur de Sang",
+    "icon": "🩺",
+    "hp": 14,
+    "armor": 1,
+    "attackPower": [
+      6,
+      10
+    ],
+    "damageType": "pierce",
+    "range": 1,
+    "moveSpeed": 4,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": true,
+    "role": "mob",
+    "biome": "crimson",
+    "baseHP": 20,
+    "baseDmg": [
+      6,
+      10
+    ],
+    "lore": "Médecin qui a renoncé à soigner pour collecter à la place. Il prend ce qui l'intéresse, vivant ou non.",
+    "specialAbilities": [
+      {
+        "id": "healAllies",
+        "description": "Heal 8 PV à un allié blessé adjacent (au lieu d'attaquer)",
+        "trigger": "lowAlly"
+      },
+      {
+        "id": "lifesteal",
+        "description": "50% lifesteal sur ses attaques (rare)",
+        "passive": true
+      }
+    ],
+    "behavior": "Soutien. Heal les alliés blessés. N'attaque que si seul.",
+    "tip": "Cible prio dans une room. Sans lui, le pack tombe vite."
+  },
+  "crimson_gladiator": {
+    "id": "crimson_gladiator",
+    "name": "Gladiateur",
+    "icon": "⚔️",
+    "hp": 56,
+    "armor": 7,
+    "attackPower": [
+      14,
+      22
+    ],
+    "damageType": "slash",
+    "range": 1,
+    "moveSpeed": 3,
+    "initiative": 11,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "elite",
+    "biome": "crimson",
+    "baseHP": 80,
+    "baseDmg": [
+      14,
+      22
+    ],
+    "lore": "Le champion local. Il a battu tout le monde dans sa catégorie. Le règlement n'existe plus, donc il combat tout le temps.",
+    "specialAbilities": [
+      {
+        "id": "applyBleed",
+        "description": "50% Bleed",
+        "trigger": "onHit"
+      },
+      {
+        "id": "rage",
+        "description": "+30% damage sous 50% HP",
+        "trigger": "lowHp"
+      },
+      {
+        "id": "blockChance",
+        "description": "30% chance de bloquer (réduit dégâts moitié)",
+        "passive": true
+      }
+    ],
+    "behavior": "CaC. Tank ET DPS. Très dangereux à mi-vie.",
+    "tip": "Burst au-dessus de 50% prio. Stuns le neutralisent. Ne pas hésiter à fuir si bas HP."
+  },
+  "crimson_minibossExecutioner": {
+    "id": "crimson_minibossExecutioner",
+    "name": "Exécuteur de l'Arène",
+    "icon": "🪓",
+    "hp": 91,
+    "armor": 9,
+    "attackPower": [
+      20,
+      30
+    ],
+    "damageType": "slash",
+    "range": 1,
+    "moveSpeed": 3,
+    "initiative": 12,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "miniboss",
+    "biome": "crimson",
+    "baseHP": 130,
+    "baseDmg": [
+      20,
+      30
+    ],
+    "lore": "Le bourreau officiel des matches à mort. Sa hache est plus vieille que lui.",
+    "specialAbilities": [
+      {
+        "id": "executeBonus",
+        "description": "+80% damage sur cibles <40% HP",
+        "passive": true
+      },
+      {
+        "id": "applyBleed",
+        "description": "60% Bleed forte",
+        "trigger": "onHit"
+      },
+      {
+        "id": "armorPiercing",
+        "description": "Ignore 40% de l'armure cible",
+        "passive": true
+      }
+    ],
+    "behavior": "CaC pur. Fait très mal. À fuir si bas HP.",
+    "tip": "Garder >40% HP en permanence. Mobilité critique. Bleed et execute le rendent terrible pour les builds tank."
+  },
+  "crimson_boss": {
+    "id": "crimson_boss",
+    "name": "Champion du Sang",
+    "icon": "🩸",
+    "hp": 126,
+    "armor": 7,
+    "attackPower": [
+      20,
+      30
+    ],
+    "damageType": "slash",
+    "range": 1,
+    "moveSpeed": 3,
+    "initiative": 13,
+    "ai": "aggressive",
+    "hasHeal": false,
+    "role": "boss",
+    "biome": "crimson",
+    "baseHP": 180,
+    "baseDmg": [
+      20,
+      30
+    ],
+    "lore": "L'invaincu de la fosse depuis 14 ans. Il a perdu compte de combien il a tué. La foule a disparu, mais il continue à se battre pour elle.",
+    "specialAbilities": [
+      {
+        "id": "applyBleed",
+        "description": "50% Bleed très forte (4 tours, 6 PV)",
+        "trigger": "onHit"
+      },
+      {
+        "id": "executeBonus",
+        "description": "+50% damage sur cibles <30% HP",
+        "passive": true
+      },
+      {
+        "id": "armorPiercing",
+        "description": "Ignore 50% de l'armure du joueur",
+        "passive": true
+      },
+      {
+        "id": "rampUpDamage",
+        "description": "+5% damage par tour passé en combat",
+        "passive": true
+      },
+      {
+        "id": "spawnButchers",
+        "description": "À 33% HP : invoque 2 Bouchers",
+        "trigger": "lowHp"
+      }
+    ],
+    "behavior": "Pur DPS physique avec armor pierce. Plus le combat dure, plus il fait mal.",
+    "tip": "Tuer vite obligatoire (rampUp). Armure inutile contre lui. Mobilité + dodge + heals. Bleed reste très efficace contre lui."
+  }
 }
