@@ -355,6 +355,112 @@
     100% { transform: translateY(-50px); opacity: 0; }
   }
 
+  /* TOUCH RETICLE (mobile) */
+  #touch-reticle {
+    position: fixed;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 2.5px solid;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 28;
+    display: none;
+    transition: border-color 0.1s, box-shadow 0.1s;
+  }
+  #touch-reticle::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+  }
+  #touch-reticle::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 28px; height: 28px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.5;
+  }
+  #touch-reticle.valid {
+    border-color: #4caf50;
+    color: #69f0ae;
+    box-shadow: 0 0 16px rgba(76,175,80,0.6);
+  }
+  #touch-reticle.attack {
+    border-color: #f44336;
+    color: #ff8a80;
+    box-shadow: 0 0 16px rgba(244,67,54,0.6);
+  }
+  #touch-reticle.spell {
+    border-color: #9c27b0;
+    color: #ce93d8;
+    box-shadow: 0 0 16px rgba(156,39,176,0.6);
+  }
+  #touch-reticle.invalid {
+    border-color: #666;
+    color: #888;
+    opacity: 0.5;
+  }
+
+  /* CONFIRM POPUP (mobile, after touchend) */
+  #confirm-popup {
+    position: fixed;
+    background: rgba(0,0,0,0.95);
+    border: 1.5px solid #4fc3f7;
+    backdrop-filter: blur(10px);
+    padding: 8px 10px 10px;
+    z-index: 29;
+    display: none;
+    transform: translate(-50%, 0);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+  #confirm-popup .cp-label {
+    font-size: 9px; letter-spacing: 1.5px;
+    color: #888; margin-bottom: 6px;
+    text-align: center;
+  }
+  #confirm-popup .cp-buttons {
+    display: flex; gap: 6px;
+  }
+  #confirm-popup button {
+    width: 56px; height: 48px;
+    background: rgba(20,20,28,0.85);
+    border: 1.5px solid;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 18px; font-weight: 700;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: transform 0.1s, background 0.15s;
+  }
+  #confirm-popup button:active { transform: scale(0.92); }
+  #confirm-popup .cp-go {
+    border-color: #4caf50; color: #4caf50;
+  }
+  #confirm-popup .cp-go:hover, #confirm-popup .cp-go:active {
+    background: rgba(76,175,80,0.25);
+  }
+  #confirm-popup .cp-go .lab {
+    font-size: 8px; letter-spacing: 1px; color: #69f0ae;
+    margin-top: 2px;
+  }
+  #confirm-popup .cp-cancel {
+    border-color: #f44336; color: #f44336;
+  }
+  #confirm-popup .cp-cancel:hover, #confirm-popup .cp-cancel:active {
+    background: rgba(244,67,54,0.25);
+  }
+  #confirm-popup .cp-cancel .lab {
+    font-size: 8px; letter-spacing: 1px; color: #ff8a80;
+    margin-top: 2px;
+  }
+
   /* ERROR */
   #error-display {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -380,6 +486,22 @@
 <body>
 
 <canvas id="game-canvas"></canvas>
+
+<!-- TOUCH RETICLE (mobile only, follows finger above) -->
+<div id="touch-reticle"></div>
+
+<!-- CONFIRM POPUP (mobile only, after touchend) -->
+<div id="confirm-popup">
+  <div class="cp-label" id="cp-action-label">▸ CONFIRMER</div>
+  <div class="cp-buttons">
+    <button class="cp-cancel" id="cp-cancel-btn">
+      <span>✗</span><span class="lab">CANCEL</span>
+    </button>
+    <button class="cp-go" id="cp-go-btn">
+      <span>✓</span><span class="lab">GO</span>
+    </button>
+  </div>
+</div>
 
 <div id="error-display"></div>
 
@@ -1019,31 +1141,181 @@ window.addEventListener('keyup', e => {
 });
 
 const cam = { dragging:false, sx:0, sy:0, ox:0, oy:0, justDragged:false };
+
+// =============================================================================
+// INPUT MODE DETECTION
+// =============================================================================
+// Mode auto : touch détecté au premier event tactile -> tout passe en mode touch
+let inputMode = 'mouse'; // 'mouse' or 'touch'
+const touchState = {
+  active: false,        // true entre touchstart et touchend
+  startX: 0, startY: 0, // position initiale du doigt
+  fingerX: 0, fingerY: 0, // position courante du doigt
+  pendingTile: null,    // tuile sous le réticule
+  isPan: false,         // true si on est en train de pan caméra (drag long)
+  twoFinger: false,     // true si 2 doigts (pinch / pan)
+  pinchDist: 0,         // distance entre 2 doigts (pour zoom)
+};
+
+const RETICLE_OFFSET_Y = -55; // px au-dessus du doigt
+
 function getEvCoords(e){
   if(e.touches && e.touches[0]) return { x:e.touches[0].clientX, y:e.touches[0].clientY };
   return { x:e.clientX, y:e.clientY };
 }
-canvas.addEventListener('mousedown', startDrag);
-canvas.addEventListener('touchstart', e=>{ e.preventDefault(); startDrag(e); }, { passive:false });
-function startDrag(e){
-  const c = getEvCoords(e);
+
+// =============================================================================
+// MOUSE HANDLERS (desktop)
+// =============================================================================
+canvas.addEventListener('mousedown', e => {
+  if(inputMode === 'touch') return; // ignore mouse if we already saw touch
   cam.dragging = true;
-  cam.sx = c.x; cam.sy = c.y;
+  cam.sx = e.clientX; cam.sy = e.clientY;
   cam.ox = state.view.camX; cam.oy = state.view.camY;
   cam.justDragged = false;
-}
+});
 
-canvas.addEventListener('mousemove', moveDrag);
-canvas.addEventListener('touchmove', e=>{ e.preventDefault(); moveDrag(e); }, { passive:false });
-function moveDrag(e){
-  const c = getEvCoords(e);
+canvas.addEventListener('mousemove', e => {
+  if(inputMode === 'touch') return;
   if(cam.dragging){
-    const dx = c.x-cam.sx, dy = c.y-cam.sy;
+    const dx = e.clientX-cam.sx, dy = e.clientY-cam.sy;
     if(Math.abs(dx)+Math.abs(dy)>4) cam.justDragged = true;
     state.view.camX = cam.ox+dx;
     state.view.camY = cam.oy+dy;
   }
-  state.hover = screenToIso(c.x, c.y, state.gridW, state.gridH, viewport, getElev, state.view);
+  state.hover = screenToIso(e.clientX, e.clientY, state.gridW, state.gridH, viewport, getElev, state.view);
+  updateHoveredEnemy();
+  computeAoePreview();
+});
+
+canvas.addEventListener('mouseup', () => {
+  if(inputMode === 'touch') return;
+  if(cam.dragging && !cam.justDragged){
+    // Click direct desktop : execute action immediately
+    if(state.combatOver) { cam.dragging = false; return; }
+    if(state.hover && state.selectedAction){
+      executePlayerAction(state.hover.gx, state.hover.gy);
+    }
+  }
+  cam.dragging = false;
+});
+canvas.addEventListener('mouseleave', () => {
+  if(inputMode === 'touch') return;
+  cam.dragging = false;
+  state.hover = null;
+  state.hoveredEnemy = null;
+  state.aoePreview.clear();
+  updateEnemyHover();
+});
+
+// =============================================================================
+// TOUCH HANDLERS (mobile)
+// =============================================================================
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  inputMode = 'touch';
+
+  // 2 doigts = pan caméra + pinch zoom
+  if(e.touches.length === 2){
+    touchState.twoFinger = true;
+    touchState.active = false;
+    cam.dragging = true;
+    const t1 = e.touches[0], t2 = e.touches[1];
+    cam.sx = (t1.clientX + t2.clientX) / 2;
+    cam.sy = (t1.clientY + t2.clientY) / 2;
+    cam.ox = state.view.camX; cam.oy = state.view.camY;
+    touchState.pinchDist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    hideReticle();
+    hideConfirmPopup();
+    return;
+  }
+
+  const t = e.touches[0];
+  touchState.twoFinger = false;
+  touchState.active = true;
+  touchState.startX = t.clientX;
+  touchState.startY = t.clientY;
+  touchState.fingerX = t.clientX;
+  touchState.fingerY = t.clientY;
+  touchState.isPan = false;
+
+  // Si une action est sélectionnée, on affiche le réticule
+  if(state.selectedAction && !state.combatOver){
+    hideConfirmPopup();
+    updateReticle(t.clientX, t.clientY);
+  } else {
+    // Pas d'action sélectionnée → on pan caméra avec 1 doigt
+    cam.dragging = true;
+    cam.sx = t.clientX; cam.sy = t.clientY;
+    cam.ox = state.view.camX; cam.oy = state.view.camY;
+    cam.justDragged = false;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if(!touchState.active && !cam.dragging && !touchState.twoFinger) return;
+
+  // 2 doigts = pan + pinch
+  if(touchState.twoFinger && e.touches.length === 2){
+    const t1 = e.touches[0], t2 = e.touches[1];
+    const cx = (t1.clientX + t2.clientX) / 2;
+    const cy = (t1.clientY + t2.clientY) / 2;
+    state.view.camX = cam.ox + (cx - cam.sx);
+    state.view.camY = cam.oy + (cy - cam.sy);
+    // Pinch zoom
+    const newDist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    if(touchState.pinchDist > 0){
+      const factor = newDist / touchState.pinchDist;
+      state.view.zoom = Math.max(0.4, Math.min(2.5, state.view.zoom * factor));
+      updateZoomDisplay();
+    }
+    touchState.pinchDist = newDist;
+    return;
+  }
+
+  if(!e.touches[0]) return;
+  const t = e.touches[0];
+  touchState.fingerX = t.clientX;
+  touchState.fingerY = t.clientY;
+
+  if(state.selectedAction && touchState.active){
+    // Mode ciblage : déplace le réticule
+    updateReticle(t.clientX, t.clientY);
+  } else if(cam.dragging){
+    // Mode pan caméra (1 doigt sans action sélectionnée)
+    const dx = t.clientX - cam.sx, dy = t.clientY - cam.sy;
+    if(Math.abs(dx)+Math.abs(dy) > 4) cam.justDragged = true;
+    state.view.camX = cam.ox + dx;
+    state.view.camY = cam.oy + dy;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+
+  if(touchState.twoFinger){
+    touchState.twoFinger = false;
+    cam.dragging = false;
+    return;
+  }
+
+  if(state.selectedAction && touchState.active && touchState.pendingTile){
+    // Lâcher avec une cible valide → afficher popup CONFIRM/CANCEL
+    showConfirmPopup(touchState.pendingTile);
+    hideReticle();
+  } else {
+    hideReticle();
+  }
+
+  touchState.active = false;
+  cam.dragging = false;
+}, { passive: false });
+
+// =============================================================================
+// HELPER : update hovered enemy
+// =============================================================================
+function updateHoveredEnemy(){
   let foundEnemy = null;
   if(state.hover){
     for(const en of enemies){
@@ -1055,34 +1327,150 @@ function moveDrag(e){
     state.hoveredEnemy = foundEnemy;
     updateEnemyHover();
   }
+}
+
+// =============================================================================
+// TOUCH RETICLE
+// =============================================================================
+const reticleEl = document.getElementById('touch-reticle');
+
+function updateReticle(fingerX, fingerY){
+  // Position du réticule = au-dessus du doigt
+  const rx = fingerX;
+  const ry = fingerY + RETICLE_OFFSET_Y;
+  reticleEl.style.left = rx + 'px';
+  reticleEl.style.top = ry + 'px';
+
+  // Quelle tuile est pointée par le réticule (pas le doigt) ?
+  const tile = screenToIso(rx, ry, state.gridW, state.gridH, viewport, getElev, state.view);
+  state.hover = tile;
+  updateHoveredEnemy();
   computeAoePreview();
+
+  // Détermine si la tuile est valide pour l'action en cours
+  reticleEl.classList.remove('valid', 'attack', 'spell', 'invalid');
+  if(!tile){
+    reticleEl.classList.add('invalid');
+    touchState.pendingTile = null;
+  } else {
+    const k = tile.gx + ',' + tile.gy;
+    const act = state.selectedAction;
+    if(act?.id === 'move'){
+      if(state.reachableSet.has(k)){
+        reticleEl.classList.add('valid');
+        touchState.pendingTile = tile;
+      } else {
+        reticleEl.classList.add('invalid');
+        touchState.pendingTile = null;
+      }
+    } else if(act?.type === 'attack'){
+      if(state.validTargets.has(k)){
+        reticleEl.classList.add('attack');
+        touchState.pendingTile = tile;
+      } else {
+        reticleEl.classList.add('invalid');
+        touchState.pendingTile = null;
+      }
+    } else if(act?.type === 'spell'){
+      if(state.validTargets.has(k)){
+        reticleEl.classList.add('spell');
+        touchState.pendingTile = tile;
+      } else {
+        reticleEl.classList.add('invalid');
+        touchState.pendingTile = null;
+      }
+    }
+  }
+
+  reticleEl.style.display = 'block';
 }
 
-canvas.addEventListener('mouseup', endDrag);
-canvas.addEventListener('touchend', e=>{ e.preventDefault(); endDrag(e); }, { passive:false });
-function endDrag(e){
-  if(cam.dragging && !cam.justDragged){ handleClick(); }
-  cam.dragging = false;
+function hideReticle(){
+  reticleEl.style.display = 'none';
+  touchState.pendingTile = null;
 }
-canvas.addEventListener('mouseleave', () => {
-  cam.dragging = false;
-  state.hover = null; state.hoveredEnemy = null;
-  state.aoePreview.clear();
-  updateEnemyHover();
+
+// =============================================================================
+// CONFIRM POPUP
+// =============================================================================
+const confirmPopup = document.getElementById('confirm-popup');
+const cpLabel = document.getElementById('cp-action-label');
+let confirmingTile = null;
+
+function showConfirmPopup(tile){
+  confirmingTile = { ...tile };
+  // Position : à côté de la tuile, mais pas au même endroit que le doigt qui vient de lâcher
+  const sp = isoToScreen(tile.gx, tile.gy, getElev(tile.gx, tile.gy), viewport, state.view);
+  // On place la popup AU-DESSUS de la tuile, décalée vers le centre haut de l'écran
+  let px = sp.x;
+  let py = sp.y - 90;
+  // S'assurer que la popup est dans l'écran
+  px = Math.max(80, Math.min(viewport.width - 80, px));
+  py = Math.max(60, Math.min(viewport.height - 200, py));
+  confirmPopup.style.left = px + 'px';
+  confirmPopup.style.top = py + 'px';
+
+  // Label selon action
+  const act = state.selectedAction;
+  const actName = act?.name || 'ACTION';
+  if(act?.id === 'move'){
+    cpLabel.textContent = `▸ MOVE → (${tile.gx},${tile.gy})`;
+    cpLabel.style.color = '#69f0ae';
+  } else if(act?.type === 'attack'){
+    const target = enemies.find(e => !e.isDead && e.gx === tile.gx && e.gy === tile.gy);
+    cpLabel.textContent = `▸ ${actName} → ${target?.name || ''}`;
+    cpLabel.style.color = '#ff8a80';
+  } else if(act?.type === 'spell'){
+    cpLabel.textContent = `▸ ${actName} @ (${tile.gx},${tile.gy})`;
+    cpLabel.style.color = '#ce93d8';
+  } else {
+    cpLabel.textContent = `▸ ${actName}`;
+    cpLabel.style.color = '#aaa';
+  }
+
+  confirmPopup.style.display = 'block';
+}
+
+function hideConfirmPopup(){
+  confirmPopup.style.display = 'none';
+  confirmingTile = null;
+}
+
+document.getElementById('cp-go-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  if(confirmingTile && state.selectedAction){
+    executePlayerAction(confirmingTile.gx, confirmingTile.gy);
+  }
+  hideConfirmPopup();
 });
+document.getElementById('cp-go-btn').addEventListener('touchend', e => {
+  e.stopPropagation();
+  e.preventDefault();
+  if(confirmingTile && state.selectedAction){
+    executePlayerAction(confirmingTile.gx, confirmingTile.gy);
+  }
+  hideConfirmPopup();
+}, { passive: false });
 
+document.getElementById('cp-cancel-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  hideConfirmPopup();
+});
+document.getElementById('cp-cancel-btn').addEventListener('touchend', e => {
+  e.stopPropagation();
+  e.preventDefault();
+  hideConfirmPopup();
+}, { passive: false });
+
+// =============================================================================
+// WHEEL ZOOM (desktop)
+// =============================================================================
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   const factor = e.deltaY < 0 ? 1.1 : 0.91;
   state.view.zoom = Math.max(0.4, Math.min(2.5, state.view.zoom*factor));
   updateZoomDisplay();
 }, { passive:false });
-
-function handleClick(){
-  if(state.combatOver) return;
-  if(!state.hover || !state.selectedAction) return;
-  executePlayerAction(state.hover.gx, state.hover.gy);
-}
 
 // ============================================================================
 // UI
@@ -1212,6 +1600,8 @@ function showTargeting(act){
 }
 function hideTargeting(){
   document.getElementById('targeting-hint').style.display = 'none';
+  hideReticle();
+  hideConfirmPopup();
 }
 
 function addLog(html, color){
