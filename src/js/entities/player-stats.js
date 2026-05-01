@@ -60,6 +60,7 @@ export const PLAYER_BASE_STATS = {
   baseIceResist: 0,
   baseShockResist: 0,
   basePoisonResist: 0,
+  baseMagicResist: 0,
 
   // Réduction CC
   baseCcReduction: 0,
@@ -182,11 +183,12 @@ const STAT_TO_BASE = {
   iceResist:       'baseIceResist',
   shockResist:     'baseShockResist',
   poisonResist:    'basePoisonResist',
+  magicResist:     'baseMagicResist',
   ccReduction:     'baseCcReduction',
 };
 
 const PCT_CAPS = {
-  fireResist: 75, iceResist: 75, shockResist: 75, poisonResist: 75,
+  fireResist: 75, iceResist: 75, shockResist: 75, poisonResist: 75, magicResist: 75,
   critChance: 70, dodgeChance: 60, blockChance: 60, ccReduction: 50,
 };
 
@@ -217,6 +219,7 @@ export function applyStuff(level = 1, presetId = 'balanced', customModifiers = [
     iceResist: PLAYER_BASE_STATS.baseIceResist,
     shockResist: PLAYER_BASE_STATS.baseShockResist,
     poisonResist: PLAYER_BASE_STATS.basePoisonResist,
+    magicResist: PLAYER_BASE_STATS.baseMagicResist,
     ccReduction: PLAYER_BASE_STATS.baseCcReduction,
   };
 
