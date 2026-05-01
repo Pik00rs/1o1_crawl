@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loot Lab — Reactor Hollow</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .controls .form-row { margin-bottom: 14px; }
+  .controls input, .controls select { width: 100%; }
+  .controls input[type="number"] { width: 100%; }
+  .gen-btn {
+    width: 100%; padding: 12px; margin-top: 12px;
+    background: var(--accent-amber); color: #000;
+    font-family: var(--font-display); font-weight: 800; font-size: 13px;
+    letter-spacing: 2px; border: 1px solid var(--accent-amber);
+    cursor: pointer; text-transform: uppercase;
+  }
+  .gen-btn:hover { background: #ffc94c; }
+  .gen-btn--secondary {
+    background: transparent; color: var(--text-dim); border-color: var(--border-strong);
+  }
+  .gen-btn--secondary:hover { color: var(--text); border-color: var(--accent-cyan); }
+
+  .stats-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-top: 20px;
+    padding: 14px; border: 1px dashed var(--border-strong);
+  }
+  .stats-summary__cell { text-align: center; }
+  .stats-summary__num { font-family: var(--font-mono); font-size: 18px; color: #fff; font-weight: 700; }
+  .stats-summary__label { font-family: var(--font-mono); font-size: 9px; color: var(--text-faint); letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .item-card {
+    padding: 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--tier-color, var(--border-strong));
+    border-left: 3px solid var(--tier-color, var(--text-dim));
+    position: relative;
+  }
+  .item-card__tier-tag {
+    position: absolute; top: 8px; right: 10px;
+    font-family: var(--font-mono); font-size: 8px; letter-spacing: 2px;
+    color: var(--tier-color); text-transform: uppercase;
+  }
+  .item-card__name {
+    font-family: var(--font-display); font-size: 14px; font-weight: 700;
+    color: var(--tier-color, #fff); letter-spacing: 0.5px;
+    margin-bottom: 4px; padding-right: 70px;
+  }
+  .item-card__type {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .item-card__base {
+    padding: 8px 10px;
+    background: var(--bg-1); border: 1px dashed var(--border-strong);
+    margin-bottom: 8px;
+    font-family: var(--font-mono); font-size: 11px;
+  }
+  .item-card__base-row { display: flex; justify-content: space-between; }
+  .affix-list { font-family: var(--font-mono); font-size: 11px; }
+  .affix-line {
+    padding: 4px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.04);
+    display: flex; justify-content: space-between;
+  }
+  .affix-line:last-child { border: none; }
+  .affix-line__name { color: #ccc; }
+  .affix-line__val { color: var(--accent-cyan); font-weight: 600; }
+  .quality-bar {
+    margin-top: 10px;
+    height: 4px; background: var(--bg-3); position: relative;
+    border-radius: 2px; overflow: hidden;
+  }
+  .quality-bar__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f44336, #ffeb3b, #4caf50, #ffd700);
+    width: 0%; transition: width 0.3s;
+  }
+  .quality-text {
+    margin-top: 4px;
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-faint); letter-spacing: 1px;
+    display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="scanline-overlay"></div>
+
+<header class="app-header">
+  <div class="app-header__crumb">◤ MODULE 02 // LOOT GENERATOR ◢</div>
+  <div class="app-header__title">LOOT LAB</div>
+  <div class="app-header__sub">Génération aléatoire d'équipement // Inspection des affixes et tiers</div>
+  <nav class="app-header__nav">
+    <a href="../../index.html">▸ DASHBOARD</a>
+    <a href="bestiary.html">BESTIAIRE</a>
+    <a href="loot.html" class="active">LOOT</a>
+    <a href="balance.html">BALANCE</a>
+    <a href="playtest.html">PLAYTEST</a>
+    <a href="../../game.html">▸ JEU</a>
+  </nav>
+</header>
+
+<main class="app-main">
+
+  <section class="layout">
+
+    <!-- CONTROLS -->
+    <div class="panel controls">
+      <div class="panel__title">◢ CONFIGURATION</div>
+
+      <div class="form-row">
+        <label>Nb d'items</label>
+        <input id="count" type="number" min="1" max="200" value="20" />
+      </div>
+
+      <div class="form-row">
+        <label>iLvl forcé</label>
+        <select id="ilvl">
+          <option value="-1">Aléatoire (1-10)</option>
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>Slot forcé</label>
+        <select id="slot">
+          <option value="all">Aléatoire</option>
+          <option value="weapon1H">Arme 1H</option>
+          <option value="weapon2H">Arme 2H</option>
+          <option value="offhand">Off-hand</option>
+          <option value="head">Tête</option>
+          <option value="chest">Plastron</option>
+          <option value="legs">Jambes</option>
+          <option value="gloves">Gants</option>
+          <option value="boots">Bottes</option>
+          <option value="amulet">Amulette</option>
+          <option value="ring">Anneau</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>Tier minimum</label>
+        <select id="tier-min">
+          <option value="0">Common+</option>
+          <option value="1">Uncommon+</option>
+          <option value="2">Rare+</option>
+          <option value="3">Epic+</option>
+          <option value="4">Legendary+</option>
+        </select>
+      </div>
+
+      <button class="gen-btn" id="gen-btn">⚡ GÉNÉRER</button>
+      <button class="gen-btn gen-btn--secondary" id="clear-btn">CLEAR</button>
+
+      <div class="stats-summary">
+        <div class="stats-summary__cell"><div class="stats-summary__num" id="stat-total">0</div><div class="stats-summary__label">Total</div></div>
+        <div class="stats-summary__cell"><div class="stats-summary__num" id="stat-rare">0</div><div class="stats-summary__label">Rare+</div></div>
+        <div class="stats-summary__cell"><div class="stats-summary__num" id="stat-leg">0</div><div class="stats-summary__label">Leg+</div></div>
+      </div>
+    </div>
+
+    <!-- ITEMS GRID -->
+    <div>
+      <div class="text-xs uppercase faint mb-3" id="items-header">▸ Aucun item généré pour l'instant</div>
+      <div class="items-grid" id="items-grid"></div>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+// ==========================================
+// LOOT GENERATOR (vanilla)
+// ==========================================
+
+const TIERS = [
+  { id:'common', label:'Common', color:'#bdbdbd', weight:60, multFlat:1.00, multPct:1.00, affixCount:1 },
+  { id:'uncommon', label:'Uncommon', color:'#4caf50', weight:25, multFlat:1.20, multPct:1.10, affixCount:2 },
+  { id:'rare', label:'Rare', color:'#2196f3', weight:10, multFlat:1.45, multPct:1.20, affixCount:3 },
+  { id:'epic', label:'Epic', color:'#9c27b0', weight:4, multFlat:1.75, multPct:1.35, affixCount:4 },
+  { id:'legendary', label:'Legendary', color:'#ff9800', weight:0.9, multFlat:2.30, multPct:1.65, affixCount:5 },
+  { id:'set', label:'Set', color:'#f44336', weight:0.1, multFlat:2.50, multPct:1.75, affixCount:5 },
+];
+
+const ILVL_MULT_FLAT = {1:0.45, 2:0.60, 3:0.78, 4:0.98, 5:1.20, 6:1.50, 7:1.85, 8:2.25, 9:2.80, 10:3.50};
+const ILVL_MULT_PCT  = {1:0.55, 2:0.70, 3:0.85, 4:0.98, 5:1.10, 6:1.25, 7:1.40, 8:1.55, 9:1.65, 10:1.75};
+
+const SLOTS = {
+  weapon1H: { type:'weapon', label:'Arme 1H', baseDmg:[8,14] },
+  weapon2H: { type:'weapon', label:'Arme 2H', baseDmg:[14,22] },
+  offhand:  { type:'offhand', label:'Off-hand', baseArmor:14 },
+  head:     { type:'armor', label:'Tête', baseArmor:10 },
+  chest:    { type:'armor', label:'Plastron', baseArmor:15 },
+  legs:     { type:'armor', label:'Jambes', baseArmor:9 },
+  gloves:   { type:'armor', label:'Gants', baseArmor:6 },
+  boots:    { type:'armor', label:'Bottes', baseArmor:6 },
+  amulet:   { type:'accessory', label:'Amulette' },
+  ring:     { type:'accessory', label:'Anneau' },
+};
+
+// Affix pools - simplifié, matche le système réel
+const WEAPON_AFFIXES = [
+  { stat:'flatDamage', label:'Dégâts +', range:[3,8], type:'flat' },
+  { stat:'percentDamage', label:'Dégâts %', range:[6,15], type:'pct' },
+  { stat:'critChance', label:'Crit Chance', range:[3,9], type:'pct' },
+  { stat:'critMultiplier', label:'Crit Mult', range:[18,40], type:'pct' },
+  { stat:'lifesteal', label:'Vol de vie', range:[2,5], type:'pct' },
+  { stat:'armorPenetration', label:'Pénétration', range:[2,5], type:'flat' },
+  { stat:'bonusFireDamage', label:'Dmg Feu +', range:[3,7], type:'flat' },
+  { stat:'bonusIceDamage', label:'Dmg Glace +', range:[3,7], type:'flat' },
+  { stat:'bonusShockDamage', label:'Dmg Foudre +', range:[3,7], type:'flat' },
+  { stat:'bonusPoisonDamage', label:'Dmg Poison +', range:[3,7], type:'flat' },
+];
+const ARMOR_AFFIXES = [
+  { stat:'armor', label:'Armure', range:[8,18], type:'flat' },
+  { stat:'maxHp', label:'PV max', range:[10,25], type:'flat' },
+  { stat:'hpRegen', label:'PV/tour', range:[1,2], type:'flat' },
+  { stat:'fireResist', label:'Résist Feu', range:[5,15], type:'pct' },
+  { stat:'iceResist', label:'Résist Glace', range:[5,15], type:'pct' },
+  { stat:'shockResist', label:'Résist Foudre', range:[5,15], type:'pct' },
+  { stat:'poisonResist', label:'Résist Poison', range:[5,15], type:'pct' },
+  { stat:'dodgeChance', label:'Esquive', range:[2,7], type:'pct' },
+  { stat:'blockChance', label:'Blocage', range:[2,7], type:'pct' },
+  { stat:'ccReduction', label:'Réduc. CC', range:[5,15], type:'pct' },
+];
+const ACC_AFFIXES = [
+  { stat:'flatDamage', label:'Dégâts +', range:[2,6], type:'flat' },
+  { stat:'critChance', label:'Crit Chance', range:[3,8], type:'pct' },
+  { stat:'critMultiplier', label:'Crit Mult', range:[15,30], type:'pct' },
+  { stat:'lifesteal', label:'Vol de vie', range:[2,5], type:'pct' },
+  { stat:'maxHp', label:'PV max', range:[8,20], type:'flat' },
+  { stat:'hpRegen', label:'PV/tour', range:[1,2], type:'flat' },
+  { stat:'movementBonus', label:'Mouvement', range:[1,2], type:'flat' },
+  { stat:'apBonus', label:'AP +', range:[1,1], type:'flat' },
+];
+
+const NAME_PREFIX = ['Sombre','Brûlante','Glaciale','Toxique','Cendrée','Saignante','Vibrante','Mortelle','Spectrale','Ancienne','Ruinée','Carbonisée','Mutante','Forée','Déchirée'];
+const NAME_SUFFIX = ['du Vide','des Cendres','du Sang','de la Putréfaction','du Néant','de la Forge','de la Trame','de l\'Arène','de la Cellule','du Réacteur','des Friches'];
+
+// ============ HELPERS ============
+
+function rand(min,max){ return min + Math.random()*(max-min); }
+function randInt(min,max){ return Math.floor(rand(min,max+1)); }
+function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function rollTier(minTier=0) {
+  const pool = TIERS.slice(minTier);
+  const total = pool.reduce((s,t)=>s+t.weight,0);
+  let r = Math.random() * total;
+  for (const t of pool) { if ((r -= t.weight) <= 0) return t; }
+  return pool[0];
+}
+
+function rollAffix(pool, ilvl, tier) {
+  const affix = pickRandom(pool);
+  const [lo, hi] = affix.range;
+  const baseRoll = rand(lo, hi);
+  const mult = affix.type === 'flat' ? ILVL_MULT_FLAT[ilvl] * tier.multFlat : ILVL_MULT_PCT[ilvl] * tier.multPct;
+  const value = Math.round(baseRoll * mult * 10) / 10;
+  return { ...affix, rolled: baseRoll, value };
+}
+
+function rollItem(forceSlot='all', forceIlvl=-1, minTier=0) {
+  const slot = forceSlot === 'all' ? pickRandom(Object.keys(SLOTS)) : forceSlot;
+  const ilvl = forceIlvl === -1 ? randInt(1,10) : forceIlvl;
+  const tier = rollTier(minTier);
+  const slotDef = SLOTS[slot];
+
+  // Pool d'affixes selon slot
+  let pool;
+  if (slotDef.type === 'weapon') pool = WEAPON_AFFIXES;
+  else if (slotDef.type === 'armor' || slotDef.type === 'offhand') pool = ARMOR_AFFIXES;
+  else pool = ACC_AFFIXES;
+
+  // Roll les affixes
+  const usedStats = new Set();
+  const affixes = [];
+  let attempts = 0;
+  while (affixes.length < tier.affixCount && attempts++ < 50) {
+    const a = rollAffix(pool, ilvl, tier);
+    if (usedStats.has(a.stat)) continue;
+    usedStats.add(a.stat);
+    affixes.push(a);
+  }
+
+  // Stats de base
+  const base = {};
+  if (slotDef.type === 'weapon') {
+    const m = ILVL_MULT_FLAT[ilvl] * tier.multFlat;
+    base.damage = [Math.round(slotDef.baseDmg[0] * m), Math.round(slotDef.baseDmg[1] * m)];
+  } else if (slotDef.type === 'armor' || slotDef.type === 'offhand') {
+    const m = ILVL_MULT_FLAT[ilvl] * tier.multFlat;
+    base.armor = Math.round(slotDef.baseArmor * m);
+  }
+
+  // Quality (dérivé : ratio des rolls par rapport au max théorique)
+  let quality = 0;
+  for (const a of affixes) {
+    const span = a.range[1] - a.range[0];
+    quality += span > 0 ? (a.rolled - a.range[0]) / span : 0.5;
+  }
+  quality = affixes.length > 0 ? Math.round((quality / affixes.length) * 100) : 50;
+
+  // Nom
+  const name = `${pickRandom(NAME_PREFIX)} ${slotDef.label} ${pickRandom(NAME_SUFFIX)}`;
+
+  return { id:'i_'+Math.random().toString(36).slice(2,8), name, slot, slotDef, ilvl, tier, base, affixes, quality };
+}
+
+// ============ RENDER ============
+
+let currentItems = [];
+
+function statValueText(affix) {
+  const sym = affix.type === 'pct' ? '%' : '';
+  return '+' + affix.value + sym;
+}
+
+function renderItem(item) {
+  const baseHtml = item.slotDef.type === 'weapon'
+    ? `<div class="item-card__base"><div class="item-card__base-row"><span class="muted">Dégâts</span><span>${item.base.damage[0]} - ${item.base.damage[1]}</span></div></div>`
+    : (item.slotDef.type === 'armor' || item.slotDef.type === 'offhand')
+      ? `<div class="item-card__base"><div class="item-card__base-row"><span class="muted">Armure</span><span>${item.base.armor}</span></div></div>`
+      : '';
+
+  const affixHtml = item.affixes.map(a => `
+    <div class="affix-line">
+      <span class="affix-line__name">${a.label}</span>
+      <span class="affix-line__val">${statValueText(a)}</span>
+    </div>
+  `).join('');
+
+  const card = document.createElement('div');
+  card.className = 'item-card';
+  card.style.setProperty('--tier-color', item.tier.color);
+  card.innerHTML = `
+    <div class="item-card__tier-tag">${item.tier.label}</div>
+    <div class="item-card__name">${item.name}</div>
+    <div class="item-card__type">${item.slotDef.label} · iLvl ${item.ilvl}</div>
+    ${baseHtml}
+    <div class="affix-list">${affixHtml}</div>
+    <div class="quality-bar"><div class="quality-bar__fill" style="width:${item.quality}%"></div></div>
+    <div class="quality-text"><span>Qualité</span><span>${item.quality}%</span></div>
+  `;
+  return card;
+}
+
+function renderItems() {
+  const grid = document.getElementById('items-grid');
+  grid.innerHTML = '';
+  for (const it of currentItems) grid.appendChild(renderItem(it));
+
+  document.getElementById('items-header').textContent = currentItems.length === 0
+    ? '▸ Aucun item généré pour l\'instant'
+    : `▸ ${currentItems.length} item${currentItems.length>1?'s':''} générés`;
+
+  const total = currentItems.length;
+  const rarePlus = currentItems.filter(i => ['rare','epic','legendary','set'].includes(i.tier.id)).length;
+  const legPlus = currentItems.filter(i => ['legendary','set'].includes(i.tier.id)).length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-rare').textContent = rarePlus;
+  document.getElementById('stat-leg').textContent = legPlus;
+}
+
+function generate() {
+  const count = parseInt(document.getElementById('count').value, 10) || 1;
+  const ilvl = parseInt(document.getElementById('ilvl').value, 10);
+  const slot = document.getElementById('slot').value;
+  const minTier = parseInt(document.getElementById('tier-min').value, 10);
+
+  currentItems = [];
+  for (let i=0; i<count; i++) {
+    currentItems.push(rollItem(slot, ilvl, minTier));
+  }
+  // Sort by tier (legendary first) for visual
+  const tierOrder = { set:6, legendary:5, epic:4, rare:3, uncommon:2, common:1 };
+  currentItems.sort((a,b) => tierOrder[b.tier.id] - tierOrder[a.tier.id] || b.quality - a.quality);
+  renderItems();
+}
+
+document.getElementById('gen-btn').addEventListener('click', generate);
+document.getElementById('clear-btn').addEventListener('click', () => { currentItems=[]; renderItems(); });
+
+// Auto-generate at load
+generate();
+</script>
+</body>
+</html>

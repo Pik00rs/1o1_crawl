@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Tester — Reactor Hollow</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+  .controls input, .controls select { width: 100%; }
+  .controls input[type="number"] { width: 100%; }
+  .form-row label { min-width: 120px; }
+
+  .room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .room {
+    padding: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-cyan);
+    cursor: pointer;
+    position: relative;
+  }
+  .room.selected { border-color: var(--accent-amber); border-left-color: var(--accent-amber); }
+  .room__head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .room__title {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px;
+    color: #fff; text-transform: uppercase; font-weight: 600;
+  }
+  .room__del {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-faint); padding: 2px 6px;
+    border: 1px solid var(--border-strong); cursor: pointer;
+    background: transparent;
+  }
+  .room__del:hover { color: var(--accent-red); border-color: var(--accent-red); }
+  .room__enemies {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .room__enemy-tag {
+    display: inline-flex; gap: 4px; align-items: center;
+    padding: 2px 6px; background: var(--bg-3);
+  }
+
+  .add-room-btn, .launch-btn {
+    width: 100%; padding: 12px; margin-top: 12px;
+    font-family: var(--font-display); font-weight: 800; font-size: 12px;
+    letter-spacing: 2px; cursor: pointer; text-transform: uppercase;
+  }
+  .add-room-btn {
+    background: transparent; color: var(--accent-cyan);
+    border: 1px dashed var(--accent-cyan);
+  }
+  .add-room-btn:hover { background: rgba(79,195,247,0.08); }
+  .launch-btn {
+    background: var(--accent-pink); color: #fff;
+    border: 1px solid var(--accent-pink);
+    box-shadow: 0 0 24px rgba(255,87,34,0.3);
+  }
+  .launch-btn:hover { background: #ff7043; }
+  .launch-btn[disabled] { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+  /* Editor right side */
+  .editor__head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .enemies-pool {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 4px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+  }
+  .pool-card {
+    padding: 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex; gap: 10px; align-items: flex-start;
+    transition: all 0.15s;
+  }
+  .pool-card:hover { border-color: var(--accent-cyan); background: var(--bg-3); }
+  .pool-card__icon { font-size: 24px; line-height: 1; }
+  .pool-card__name {
+    font-family: var(--font-mono); font-size: 11px; color: #fff;
+    font-weight: 600; margin-bottom: 2px;
+  }
+  .pool-card__meta {
+    font-family: var(--font-mono); font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1px;
+  }
+
+  .selected-enemies {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    min-height: 40px;
+    padding: 10px;
+    background: var(--bg-2); border: 1px dashed var(--border-strong);
+  }
+  .sel-enemy {
+    display: flex; gap: 4px; align-items: center;
+    padding: 4px 8px;
+    background: var(--bg-3);
+    border: 1px solid var(--border-strong);
+    font-family: var(--font-mono); font-size: 10px; color: #fff;
+  }
+  .sel-enemy__x {
+    cursor: pointer; color: var(--text-faint);
+    margin-left: 4px;
+  }
+  .sel-enemy__x:hover { color: var(--accent-red); }
+
+  .filters-mini { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+  .filter-btn-mini {
+    padding: 5px 9px;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border-strong);
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
+  }
+  .filter-btn-mini.active { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
+
+  .preview {
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+  }
+  .preview h4 {
+    margin: 0 0 10px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
+    color: var(--accent-amber); text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="scanline-overlay"></div>
+
+<header class="app-header">
+  <div class="app-header__crumb">◤ MODULE 04 // CUSTOM DUNGEON GENERATOR ◢</div>
+  <div class="app-header__title">DUNGEON TESTER</div>
+  <div class="app-header__sub">Configurer un donjon // Pick ennemis, niveau, stuff // Combat jouable</div>
+  <nav class="app-header__nav">
+    <a href="../../index.html">▸ DASHBOARD</a>
+    <a href="bestiary.html">BESTIAIRE</a>
+    <a href="loot.html">LOOT</a>
+    <a href="balance.html">BALANCE</a>
+    <a href="playtest.html" class="active">PLAYTEST</a>
+    <a href="../../game.html">▸ JEU</a>
+  </nav>
+</header>
+
+<main class="app-main">
+
+  <section class="layout">
+
+    <!-- LEFT : run config + room list -->
+    <div class="panel controls">
+      <div class="panel__title">◢ RUN CONFIGURATION</div>
+
+      <div class="form-row">
+        <label>Niveau joueur</label>
+        <input id="player-level" type="number" min="1" max="10" value="3" />
+      </div>
+
+      <div class="form-row">
+        <label>Stuff</label>
+        <select id="player-stuff">
+          <option value="naked">Sans stuff</option>
+          <option value="poor">Faible (Common)</option>
+          <option value="balanced" selected>Équilibré (Rare)</option>
+          <option value="strong">Fort (Epic)</option>
+          <option value="op">OP (Legendary)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>HP de départ</label>
+        <input id="player-hp" type="number" min="20" max="500" value="100" />
+      </div>
+
+      <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;" />
+
+      <div class="panel__title">◢ SALLES (<span id="room-count">0</span>)</div>
+      <div class="room-list" id="room-list"></div>
+      <button class="add-room-btn" id="add-room-btn">+ AJOUTER UNE SALLE</button>
+
+      <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;" />
+
+      <button class="launch-btn" id="launch-btn">▶ LANCER LE DONJON</button>
+      <div class="text-xs faint mono mt-2" id="launch-warning"></div>
+    </div>
+
+    <!-- RIGHT : room editor -->
+    <div class="panel">
+      <div class="editor__head">
+        <div class="panel__title" style="margin: 0;">◢ ÉDITION SALLE <span id="editor-room-name" style="color: var(--accent-amber)">--</span></div>
+      </div>
+
+      <div id="editor-empty" class="empty-state" style="padding:48px;text-align:center;color:var(--text-faint)">
+        Sélectionne ou crée une salle pour commencer
+      </div>
+
+      <div id="editor-content" class="hidden">
+        <div class="form-row">
+          <label>Nom</label>
+          <input id="room-name" type="text" />
+        </div>
+
+        <div class="text-xs uppercase faint mb-2 mt-4">▸ Ennemis sélectionnés</div>
+        <div class="selected-enemies" id="selected-enemies"></div>
+
+        <div class="text-xs uppercase faint mb-2 mt-4">▸ Pool d'ennemis disponibles</div>
+        <div class="filters-mini" id="biome-filters-mini"></div>
+        <div class="filters-mini" id="role-filters-mini">
+          <button class="filter-btn-mini active" data-role="all">Tous</button>
+          <button class="filter-btn-mini" data-role="mob">Mob</button>
+          <button class="filter-btn-mini" data-role="elite">Elite</button>
+          <button class="filter-btn-mini" data-role="miniboss">Miniboss</button>
+          <button class="filter-btn-mini" data-role="boss">Boss</button>
+        </div>
+        <div class="enemies-pool" id="enemies-pool"></div>
+
+        <div class="preview">
+          <h4>▸ APERÇU</h4>
+          <div id="preview-content" class="text-sm muted">--</div>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+// ==========================================
+// DUNGEON TESTER (vanilla)
+// ==========================================
+
+const BIOMES = {
+  inferno: { color:'#ff5722', shortName:'Inferno' },
+  cryo: { color:'#4fc3f7', shortName:'Cryo' },
+  toxic: { color:'#8bc34a', shortName:'Toxic' },
+  voidnet: { color:'#9c27b0', shortName:'Void' },
+  crimson: { color:'#c62828', shortName:'Crimson' },
+};
+
+let ALL_ENEMIES = [];
+
+let state = {
+  playerLevel: 3,
+  playerStuff: 'balanced',
+  playerHp: 100,
+  rooms: [],            // [{ id, name, enemies: [enemyTypeId, ...] }]
+  selectedRoomId: null,
+  filterBiome: 'all',
+  filterRole: 'all',
+};
+
+// ======= LOAD DATA =======
+
+async function loadEnemies() {
+  try {
+    const res = await fetch('../../src/data/enemies.json');
+    if (!res.ok) throw new Error('Failed enemies.json');
+    const data = await res.json();
+    return Object.values(data);
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+// ======= LOCALSTORAGE =======
+
+const STORAGE_KEY = 'rh_playtest_config';
+function saveConfig() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      playerLevel: state.playerLevel,
+      playerStuff: state.playerStuff,
+      playerHp: state.playerHp,
+      rooms: state.rooms,
+      timestamp: Date.now(),
+    }));
+  } catch (e) { console.warn('Save failed', e); }
+}
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.playerLevel) state.playerLevel = data.playerLevel;
+    if (data.playerStuff) state.playerStuff = data.playerStuff;
+    if (data.playerHp) state.playerHp = data.playerHp;
+    if (Array.isArray(data.rooms)) state.rooms = data.rooms;
+    if (state.rooms.length > 0) state.selectedRoomId = state.rooms[0].id;
+  } catch (e) { console.warn('Load failed', e); }
+}
+
+// ======= ROOMS =======
+
+function makeRoom() {
+  return { id: 'r_'+Math.random().toString(36).slice(2,7), name: `Salle ${state.rooms.length+1}`, enemies: [] };
+}
+function addRoom() {
+  const r = makeRoom();
+  state.rooms.push(r);
+  state.selectedRoomId = r.id;
+  saveConfig();
+  render();
+}
+function deleteRoom(id) {
+  state.rooms = state.rooms.filter(r => r.id !== id);
+  if (state.selectedRoomId === id) state.selectedRoomId = state.rooms[0]?.id || null;
+  saveConfig();
+  render();
+}
+function selectedRoom() {
+  return state.rooms.find(r => r.id === state.selectedRoomId);
+}
+
+// ======= ENEMY POOL =======
+
+function getFilteredPool() {
+  return ALL_ENEMIES.filter(e => {
+    if (state.filterBiome !== 'all' && e.biome !== state.filterBiome) return false;
+    if (state.filterRole !== 'all' && e.role !== state.filterRole) return false;
+    return true;
+  });
+}
+function addEnemyToRoom(typeId) {
+  const r = selectedRoom(); if (!r) return;
+  if (r.enemies.length >= 8) { alert('Max 8 ennemis par salle (grille 8×6).'); return; }
+  r.enemies.push(typeId);
+  saveConfig();
+  render();
+}
+function removeEnemyFromRoom(idx) {
+  const r = selectedRoom(); if (!r) return;
+  r.enemies.splice(idx, 1);
+  saveConfig();
+  render();
+}
+
+// ======= RENDER =======
+
+function renderRoomList() {
+  const host = document.getElementById('room-list');
+  document.getElementById('room-count').textContent = state.rooms.length;
+  host.innerHTML = '';
+  for (const r of state.rooms) {
+    const enemies = r.enemies.map(tid => ALL_ENEMIES.find(e => e.id === tid)).filter(Boolean);
+    const el = document.createElement('div');
+    el.className = 'room' + (state.selectedRoomId === r.id ? ' selected' : '');
+    const tags = enemies.length === 0
+      ? '<span class="faint">vide</span>'
+      : enemies.map(e => `<span class="room__enemy-tag">${e.icon} ${e.name}</span>`).join('');
+    el.innerHTML = `
+      <div class="room__head">
+        <div class="room__title">${r.name}</div>
+        <button class="room__del" data-action="del">×</button>
+      </div>
+      <div class="room__enemies">${tags}</div>
+    `;
+    el.addEventListener('click', (e) => {
+      if (e.target.dataset.action === 'del') { deleteRoom(r.id); return; }
+      state.selectedRoomId = r.id;
+      saveConfig();
+      render();
+    });
+    host.appendChild(el);
+  }
+}
+
+function renderEditor() {
+  const r = selectedRoom();
+  if (!r) {
+    document.getElementById('editor-empty').classList.remove('hidden');
+    document.getElementById('editor-content').classList.add('hidden');
+    document.getElementById('editor-room-name').textContent = '--';
+    return;
+  }
+  document.getElementById('editor-empty').classList.add('hidden');
+  document.getElementById('editor-content').classList.remove('hidden');
+  document.getElementById('editor-room-name').textContent = r.name;
+
+  // Name input
+  const nameInput = document.getElementById('room-name');
+  nameInput.value = r.name;
+
+  // Selected enemies
+  const sel = document.getElementById('selected-enemies');
+  sel.innerHTML = '';
+  if (r.enemies.length === 0) {
+    sel.innerHTML = '<span class="faint mono text-xs">Aucun ennemi. Pick dans la pool ↓</span>';
+  } else {
+    r.enemies.forEach((tid, i) => {
+      const e = ALL_ENEMIES.find(x => x.id === tid);
+      if (!e) return;
+      const tag = document.createElement('div');
+      tag.className = 'sel-enemy';
+      tag.innerHTML = `<span>${e.icon}</span><span>${e.name}</span><span class="sel-enemy__x">×</span>`;
+      tag.querySelector('.sel-enemy__x').addEventListener('click', () => removeEnemyFromRoom(i));
+      sel.appendChild(tag);
+    });
+  }
+
+  // Biome filter
+  const biomeHost = document.getElementById('biome-filters-mini');
+  if (biomeHost.children.length === 0) {
+    const all = document.createElement('button');
+    all.className = 'filter-btn-mini' + (state.filterBiome === 'all' ? ' active' : '');
+    all.dataset.biome = 'all';
+    all.textContent = 'Tous';
+    all.addEventListener('click', () => { state.filterBiome = 'all'; render(); });
+    biomeHost.appendChild(all);
+    for (const [bid, b] of Object.entries(BIOMES)) {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn-mini' + (state.filterBiome === bid ? ' active' : '');
+      btn.dataset.biome = bid;
+      btn.textContent = b.shortName;
+      btn.style.setProperty('--biome-color', b.color);
+      btn.addEventListener('click', () => { state.filterBiome = bid; render(); });
+      biomeHost.appendChild(btn);
+    }
+  } else {
+    biomeHost.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.dataset.biome === state.filterBiome);
+    });
+  }
+  document.querySelectorAll('#role-filters-mini button').forEach(b => {
+    b.classList.toggle('active', b.dataset.role === state.filterRole);
+  });
+
+  // Pool
+  const pool = document.getElementById('enemies-pool');
+  pool.innerHTML = '';
+  const filtered = getFilteredPool();
+  if (filtered.length === 0) {
+    pool.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:24px">Aucun ennemi correspondant</div>';
+  } else {
+    for (const e of filtered) {
+      const card = document.createElement('div');
+      card.className = 'pool-card';
+      const biome = BIOMES[e.biome];
+      if (biome) card.style.borderLeft = `3px solid ${biome.color}`;
+      const dmg = e.attackPower || e.baseDmg || [0,0];
+      card.innerHTML = `
+        <div class="pool-card__icon">${e.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div class="pool-card__name">${e.name}</div>
+          <div class="pool-card__meta">${(e.role||'').toUpperCase()} · HP ${e.hp} · DMG ${dmg[0]}-${dmg[1]}</div>
+        </div>
+      `;
+      card.addEventListener('click', () => addEnemyToRoom(e.id));
+      pool.appendChild(card);
+    }
+  }
+
+  // Preview
+  const prev = document.getElementById('preview-content');
+  if (r.enemies.length === 0) {
+    prev.innerHTML = '<span class="faint">Salle vide</span>';
+  } else {
+    const totalHp = r.enemies.reduce((s, tid) => {
+      const e = ALL_ENEMIES.find(x => x.id === tid); return s + (e?.hp || 0);
+    }, 0);
+    const totalDmg = r.enemies.reduce((s, tid) => {
+      const e = ALL_ENEMIES.find(x => x.id === tid); const d = e?.attackPower || [0,0]; return s + ((d[0]+d[1])/2);
+    }, 0);
+    prev.innerHTML = `
+      <div class="mono text-xs">
+        ▸ ${r.enemies.length} ennemi(s)<br>
+        ▸ HP total : <span style="color:#fff">${totalHp}</span><br>
+        ▸ Dégâts moyens cumulés : <span style="color:#fff">${totalDmg.toFixed(0)}/tour</span><br>
+        ▸ Difficulté estimée : <span style="color:${
+          totalHp + totalDmg*5 < 100 ? '#4caf50' :
+          totalHp + totalDmg*5 < 250 ? '#ffb300' : '#ff5252'
+        }">${
+          totalHp + totalDmg*5 < 100 ? 'FACILE' :
+          totalHp + totalDmg*5 < 250 ? 'MODÉRÉ' : 'DIFFICILE'
+        }</span>
+      </div>
+    `;
+  }
+}
+
+function renderLaunchState() {
+  const btn = document.getElementById('launch-btn');
+  const warn = document.getElementById('launch-warning');
+  const totalEnemies = state.rooms.reduce((s,r) => s + r.enemies.length, 0);
+  if (state.rooms.length === 0 || totalEnemies === 0) {
+    btn.disabled = true;
+    warn.textContent = '⚠ Crée au moins une salle avec des ennemis pour pouvoir lancer.';
+  } else {
+    btn.disabled = false;
+    warn.textContent = `${state.rooms.length} salle(s) // ${totalEnemies} ennemis total`;
+  }
+}
+
+function render() {
+  renderRoomList();
+  renderEditor();
+  renderLaunchState();
+}
+
+// ======= LAUNCH =======
+
+function buildRunPayload() {
+  // Convertit la config en quelque chose que game.html peut consommer
+  // On crée des "rooms" au format attendu par rooms.json
+  const rooms = state.rooms.map((r, idx) => {
+    const enemies = r.enemies.map((typeId, i) => {
+      // Position basique : aligner sur la colonne droite
+      const col = 5 + (i % 3);
+      const row = (i % 6);
+      return { type: typeId, x: col, y: row };
+    });
+    return {
+      id: r.id,
+      name: r.name,
+      width: 8,
+      height: 6,
+      walls: [],
+      playerStart: { x: 1, y: 2 },
+      enemies,
+    };
+  });
+  return {
+    rooms,
+    player: {
+      level: state.playerLevel,
+      stuff: state.playerStuff,
+      hp: state.playerHp,
+    },
+    timestamp: Date.now(),
+  };
+}
+
+function launch() {
+  const payload = buildRunPayload();
+  if (payload.rooms.length === 0) return;
+  // Stocke dans une clé séparée que game.html va lire
+  localStorage.setItem('rh_active_run', JSON.stringify(payload));
+  window.location.href = '../../game.html?run=custom';
+}
+
+// ======= EVENTS =======
+
+document.getElementById('add-room-btn').addEventListener('click', addRoom);
+document.getElementById('launch-btn').addEventListener('click', launch);
+
+document.getElementById('player-level').addEventListener('input', e => {
+  state.playerLevel = parseInt(e.target.value, 10) || 1;
+  saveConfig();
+});
+document.getElementById('player-stuff').addEventListener('change', e => {
+  state.playerStuff = e.target.value;
+  saveConfig();
+});
+document.getElementById('player-hp').addEventListener('input', e => {
+  state.playerHp = parseInt(e.target.value, 10) || 100;
+  saveConfig();
+});
+
+// Room name
+document.addEventListener('input', e => {
+  if (e.target.id === 'room-name') {
+    const r = selectedRoom();
+    if (r) { r.name = e.target.value; saveConfig(); renderRoomList(); document.getElementById('editor-room-name').textContent = r.name; }
+  }
+});
+
+// Role filters
+document.querySelectorAll('#role-filters-mini button').forEach(b => {
+  b.addEventListener('click', () => { state.filterRole = b.dataset.role; render(); });
+});
+
+// ======= INIT =======
+
+(async function init() {
+  ALL_ENEMIES = await loadEnemies();
+  loadConfig();
+
+  // Sync UI inputs with state
+  document.getElementById('player-level').value = state.playerLevel;
+  document.getElementById('player-stuff').value = state.playerStuff;
+  document.getElementById('player-hp').value = state.playerHp;
+
+  // Si pas de room → créer une par défaut
+  if (state.rooms.length === 0) addRoom();
+  else render();
+})();
+</script>
+</body>
+</html>

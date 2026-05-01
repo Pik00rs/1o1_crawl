@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bestiaire — Reactor Hollow</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 24px;
+  }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .filter-group { display: flex; gap: 4px; }
+  .filter-btn {
+    padding: 7px 11px;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border-strong);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .filter-btn.active { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
+  .filter-btn[data-biome].active { background: var(--biome-color, var(--accent-cyan)); border-color: var(--biome-color, var(--accent-cyan)); }
+  #search { flex: 1 1 240px; }
+
+  .biome-banner {
+    margin-top: 12px;
+    padding: 14px 18px;
+    border-left: 3px solid var(--biome-color, var(--accent-cyan));
+    background: var(--biome-bg, rgba(255,255,255,0.02));
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .biome-banner__title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--biome-color, var(--accent-cyan));
+  }
+  .biome-banner__desc { color: var(--text-dim); font-size: 13px; font-style: italic; flex: 1 1 200px; }
+
+  .enemy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .enemy-card {
+    cursor: pointer;
+    padding: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all 0.15s;
+  }
+  .enemy-card:hover { border-color: var(--enemy-color, var(--accent-cyan)); }
+  .enemy-card.selected {
+    border-color: var(--enemy-color, var(--accent-cyan));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--enemy-color, var(--accent-cyan)) 18%, transparent), transparent);
+  }
+  .enemy-card::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 6px; height: 6px;
+    border-top: 2px solid var(--enemy-color, var(--accent-cyan));
+    border-left: 2px solid var(--enemy-color, var(--accent-cyan));
+  }
+  .enemy-card__row { display: flex; gap: 12px; align-items: flex-start; }
+  .enemy-card__icon { font-size: 30px; line-height: 1; }
+  .enemy-card__name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .enemy-card__stats { display: flex; gap: 10px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+
+  .detail {
+    background: var(--bg-1);
+    border: 1px solid var(--biome-color-strong, var(--accent-cyan));
+    padding: 24px;
+    position: relative;
+  }
+  .detail__corner {
+    position: absolute;
+    width: 14px; height: 14px;
+    border-color: var(--biome-color-strong, var(--accent-cyan));
+  }
+  .detail__corner--tl { top:0;left:0;border-top:2px solid;border-left:2px solid; }
+  .detail__corner--tr { top:0;right:0;border-top:2px solid;border-right:2px solid; }
+  .detail__corner--bl { bottom:0;left:0;border-bottom:2px solid;border-left:2px solid; }
+  .detail__corner--br { bottom:0;right:0;border-bottom:2px solid;border-right:2px solid; }
+  .detail__head { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 22px; }
+  .detail__icon-box {
+    font-size: 56px; line-height: 1; padding: 12px;
+    background: var(--biome-bg, rgba(255,255,255,0.04));
+    border: 1px solid var(--biome-border, var(--border-strong));
+  }
+  .detail__title-block { flex: 1; }
+  .detail__file {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
+    color: var(--text-faint); margin-bottom: 6px;
+  }
+  .detail__name {
+    font-family: var(--font-display); font-size: 26px; font-weight: 800;
+    color: #fff; letter-spacing: 1px; margin-bottom: 8px;
+  }
+  .detail__badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .detail__lore {
+    padding: 14px 18px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--biome-color-strong, var(--accent-cyan));
+    margin-bottom: 22px;
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #bbb;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+  .stats-grid h4 {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
+    color: var(--biome-color-strong, var(--accent-cyan)); margin: 0 0 8px;
+  }
+  .ability {
+    padding: 10px 14px; background: var(--bg-2); border: 1px solid var(--border);
+    display: flex; gap: 12px; align-items: flex-start; margin-bottom: 6px;
+  }
+  .ability__id {
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--biome-accent, var(--accent-cyan));
+    letter-spacing: 1.5px; padding-top: 2px; min-width: 100px;
+    text-transform: uppercase;
+  }
+  .ability__desc { flex: 1; font-size: 12px; color: #ddd; line-height: 1.5; }
+  .tip-box {
+    padding: 12px 16px;
+    background: var(--biome-tipbg, rgba(255,255,255,0.04));
+    border: 1px solid var(--biome-border, var(--border-strong));
+    border-left: 3px solid var(--biome-accent, var(--accent-cyan));
+    margin-top: 14px;
+  }
+  .tip-box__head {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
+    color: var(--biome-accent, var(--accent-cyan)); margin-bottom: 4px;
+  }
+  .tip-box__body { font-size: 13px; color: #ddd; line-height: 1.6; }
+
+  .empty-state {
+    padding: 32px; text-align: center;
+    color: var(--text-faint); font-family: var(--font-mono); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="scanline-overlay"></div>
+
+<header class="app-header">
+  <div class="app-header__crumb">◤ DOSSIER CLASSIFIÉ — NIVEAU 4 — REACTOR HOLLOW SECURITY ◢</div>
+  <div class="app-header__title app-header__title--xl">BESTIAIRE</div>
+  <div class="app-header__sub" id="header-sub">--</div>
+  <nav class="app-header__nav">
+    <a href="../../index.html">▸ DASHBOARD</a>
+    <a href="bestiary.html" class="active">BESTIAIRE</a>
+    <a href="loot.html">LOOT</a>
+    <a href="balance.html">BALANCE</a>
+    <a href="playtest.html">PLAYTEST</a>
+    <a href="../../game.html">▸ JEU</a>
+  </nav>
+</header>
+
+<main class="app-main">
+
+  <section class="filters">
+    <input id="search" type="text" placeholder="Recherche par nom ou description..." />
+    <div class="filter-group" id="role-filters">
+      <button class="filter-btn active" data-role="all">Tous</button>
+      <button class="filter-btn" data-role="mob">Standard</button>
+      <button class="filter-btn" data-role="elite">Élite</button>
+      <button class="filter-btn" data-role="miniboss">Miniboss</button>
+      <button class="filter-btn" data-role="boss">Boss</button>
+    </div>
+  </section>
+
+  <section class="filters" id="biome-filters"></section>
+
+  <div id="biome-banner-host"></div>
+
+  <section class="layout mt-4">
+    <div>
+      <div class="text-xs uppercase faint mb-3" id="entries-count">▸ Chargement...</div>
+      <div class="enemy-grid" id="enemy-grid"></div>
+    </div>
+    <div id="detail-host"></div>
+  </section>
+
+</main>
+
+<script>
+// ==========================================
+// BESTIARY DATA + RENDER (vanilla JS)
+// ==========================================
+
+const BIOMES = {
+  inferno: { id:'inferno', name:'Secteur Inferno', shortName:'Inferno', color:'#ff5722', accentColor:'#ffb300', danger:'high', description:"Ancienne fonderie d'acier reconvertie en réacteur thermique. Les conduits de magma à ciel ouvert ont fait fondre la structure jusqu'à la rendre méconnaissable." },
+  cryo: { id:'cryo', name:'Coffre Cryo', shortName:'Cryo', color:'#4fc3f7', accentColor:'#b3e5fc', danger:'medium', description:"Bunker de stockage cryogénique abandonné. Les cellules de prisonniers congelés ont éclaté il y a des décennies." },
+  toxic: { id:'toxic', name:'Friches Toxiques', shortName:'Toxic', color:'#8bc34a', accentColor:'#cddc39', danger:'high', description:"Décharge biotech à ciel ouvert. Les déchets pharmaceutiques ont créé un écosystème vivant de mutations en chaîne." },
+  voidnet: { id:'voidnet', name:'Voidnet', shortName:'Void', color:'#9c27b0', accentColor:'#e040fb', danger:'very-high', description:"Cyberespace corrompu, projection physique d'un réseau qui a glitché. Les entités qui le peuplent sont des fragments de code rendus tangibles." },
+  crimson: { id:'crimson', name:'Fosses Cramoisies', shortName:'Crimson', color:'#c62828', accentColor:'#ff8a80', danger:'medium', description:"Arène de combat clandestine creusée sous l'ancien stade. Le sol n'a jamais séché." },
+};
+
+const ROLES = {
+  mob: { label:'STANDARD', color:'#888' },
+  elite: { label:'ÉLITE', color:'#ff9800' },
+  miniboss: { label:'MINI-BOSS', color:'#e91e63' },
+  boss: { label:'BOSS', color:'#f44336' },
+};
+
+let ALL_ENEMIES = [];
+let state = {
+  biome: 'all',
+  role: 'all',
+  search: '',
+  selectedId: null,
+};
+
+// ============ FETCH DATA ============
+
+async function loadEnemies() {
+  try {
+    const res = await fetch('../../src/data/enemies.json');
+    if (!res.ok) throw new Error('Impossible de charger enemies.json');
+    const data = await res.json();
+    // data is { id1: {...}, id2: {...} }
+    return Object.values(data);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('entries-count').textContent = '⚠ Erreur de chargement : ' + err.message;
+    document.getElementById('entries-count').style.color = 'var(--accent-red)';
+    return [];
+  }
+}
+
+// ============ RENDER ============
+
+function renderBiomeFilters() {
+  const host = document.getElementById('biome-filters');
+  host.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn' + (state.biome === 'all' ? ' active' : '');
+  allBtn.dataset.biome = 'all';
+  allBtn.textContent = 'TOUS LES BIOMES';
+  allBtn.addEventListener('click', () => { state.biome = 'all'; render(); });
+  host.appendChild(allBtn);
+
+  for (const b of Object.values(BIOMES)) {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (state.biome === b.id ? ' active' : '');
+    btn.dataset.biome = b.id;
+    btn.textContent = b.shortName;
+    btn.style.setProperty('--biome-color', b.color);
+    if (state.biome === b.id) btn.style.color = '#000';
+    btn.addEventListener('click', () => { state.biome = b.id; render(); });
+    host.appendChild(btn);
+  }
+}
+
+function renderBiomeBanner() {
+  const host = document.getElementById('biome-banner-host');
+  host.innerHTML = '';
+  if (state.biome === 'all') return;
+  const b = BIOMES[state.biome];
+  const banner = document.createElement('div');
+  banner.className = 'biome-banner';
+  banner.style.setProperty('--biome-color', b.color);
+  banner.style.setProperty('--biome-bg', `${b.color}10`);
+  const dangerLabel = { 'medium':'MODÉRÉ', 'high':'ÉLEVÉ', 'very-high':'CRITIQUE' }[b.danger] || b.danger;
+  banner.innerHTML = `
+    <div class="biome-banner__title">${b.name}</div>
+    <div class="biome-banner__desc">${b.description}</div>
+    <span class="badge" style="color:${b.color};border-color:${b.color}">${dangerLabel}</span>
+  `;
+  host.appendChild(banner);
+}
+
+function getFiltered() {
+  return ALL_ENEMIES.filter(e => {
+    if (state.biome !== 'all' && e.biome !== state.biome) return false;
+    if (state.role !== 'all' && e.role !== state.role) return false;
+    if (state.search) {
+      const q = state.search.toLowerCase();
+      const hay = (e.name + ' ' + (e.lore || '') + ' ' + (e.behavior || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderEnemyGrid() {
+  const grid = document.getElementById('enemy-grid');
+  const filtered = getFiltered();
+  document.getElementById('entries-count').textContent = `▸ ${filtered.length} entrée${filtered.length>1?'s':''}`;
+  grid.innerHTML = '';
+  if (filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'NO_ENTRIES_FOUND';
+    grid.appendChild(empty);
+    return;
+  }
+  for (const e of filtered) {
+    const card = document.createElement('div');
+    card.className = 'enemy-card' + (state.selectedId === e.id ? ' selected' : '');
+    const biome = BIOMES[e.biome] || {};
+    card.style.setProperty('--enemy-color', biome.color || '#888');
+    const role = ROLES[e.role] || ROLES.mob;
+    const dmg = (e.attackPower || e.baseDmg || [0,0]);
+    card.innerHTML = `
+      <div class="enemy-card__row">
+        <div class="enemy-card__icon">${e.icon || '?'}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="badge badge--${e.role}" style="margin-bottom:4px; font-size:8px;">${role.label}</div>
+          <div class="enemy-card__name">${e.name}</div>
+          <div class="enemy-card__stats">
+            <span>HP <span style="color:#fff">${e.hp || e.baseHP}</span></span>
+            <span>DMG <span class="dmg-${e.damageType}">${dmg[0]}-${dmg[1]}</span></span>
+          </div>
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      state.selectedId = e.id;
+      render();
+    });
+    grid.appendChild(card);
+  }
+}
+
+function renderDetail() {
+  const host = document.getElementById('detail-host');
+  if (!state.selectedId) {
+    host.innerHTML = `<div class="empty-state">Sélectionnez une entité pour voir les détails</div>`;
+    return;
+  }
+  const e = ALL_ENEMIES.find(x => x.id === state.selectedId);
+  if (!e) { host.innerHTML = ''; return; }
+  const biome = BIOMES[e.biome] || { color:'#888', accentColor:'#888', name:'-', shortName:'?' };
+  const role = ROLES[e.role] || ROLES.mob;
+  const baseHP = e.baseHP || e.hp;
+  const baseDmg = e.baseDmg || e.attackPower || [0,0];
+  const avgDmg = (baseDmg[0] + baseDmg[1]) / 2;
+
+  const hpMult = e.role === 'boss' ? 1.35 : e.role === 'elite' ? 1.15 : 1.0;
+  const hpL1 = Math.round(baseHP * 0.45 * hpMult);
+  const hpL5 = Math.round(baseHP * 1.20 * hpMult);
+  const hpL10 = Math.round(baseHP * 3.50 * hpMult);
+  const dmgL5 = `${Math.round(baseDmg[0]*1.20)}-${Math.round(baseDmg[1]*1.20)}`;
+  const dmgL10 = `${Math.round(baseDmg[0]*3.50)}-${Math.round(baseDmg[1]*3.50)}`;
+
+  const abilities = (e.specialAbilities || []).map(a => `
+    <div class="ability">
+      <div class="ability__id">${a.id}</div>
+      <div class="ability__desc">${a.description}</div>
+    </div>
+  `).join('') || '<div class="muted text-sm">Aucune capacité spéciale.</div>';
+
+  const detail = document.createElement('div');
+  detail.className = 'detail';
+  detail.style.setProperty('--biome-color-strong', biome.color);
+  detail.style.setProperty('--biome-bg', `${biome.color}10`);
+  detail.style.setProperty('--biome-border', `${biome.color}40`);
+  detail.style.setProperty('--biome-accent', biome.accentColor);
+  detail.style.setProperty('--biome-tipbg', `${biome.accentColor}10`);
+
+  detail.innerHTML = `
+    <div class="detail__corner detail__corner--tl"></div>
+    <div class="detail__corner detail__corner--tr"></div>
+    <div class="detail__corner detail__corner--bl"></div>
+    <div class="detail__corner detail__corner--br"></div>
+
+    <div class="detail__head">
+      <div class="detail__icon-box">${e.icon || '?'}</div>
+      <div class="detail__title-block">
+        <div class="detail__file">FILE://BESTIARY/${(e.id||'').toUpperCase()}</div>
+        <div class="detail__name">${e.name}</div>
+        <div class="detail__badges">
+          <span class="badge badge--${e.role}">${role.label}</span>
+          <span class="badge" style="color:${biome.color}; border-color:${biome.color}">${(biome.shortName||'').toUpperCase()}</span>
+          <span class="badge dmg-${e.damageType}" style="border-color:currentColor">${(e.damageType||'').toUpperCase()}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail__lore">${e.lore || '<i>Pas de lore enregistré.</i>'}</div>
+
+    <div class="stats-grid">
+      <div>
+        <h4>◢ STATS DE BASE (legacy)</h4>
+        <div class="stat-row"><span class="stat-row__label">HP</span><span class="stat-row__value">${e.hp}</span></div>
+        <div class="stat-row"><span class="stat-row__label">Armure</span><span class="stat-row__value">${e.armor}</span></div>
+        <div class="stat-row"><span class="stat-row__label">Dégâts</span><span class="stat-row__value dmg-${e.damageType}">${baseDmg[0]}-${baseDmg[1]} (avg ${avgDmg.toFixed(0)})</span></div>
+        <div class="stat-row"><span class="stat-row__label">Range</span><span class="stat-row__value">${e.range} ${e.range===1?'case':'cases'}</span></div>
+        <div class="stat-row"><span class="stat-row__label">Move</span><span class="stat-row__value">${e.moveSpeed||'-'}</span></div>
+        <div class="stat-row"><span class="stat-row__label">Init</span><span class="stat-row__value">${e.initiative||'-'}</span></div>
+        <div class="stat-row"><span class="stat-row__label">IA</span><span class="stat-row__value">${e.ai||'-'}</span></div>
+      </div>
+      <div>
+        <h4>◢ SCALING (sim)</h4>
+        <div class="stat-row"><span class="stat-row__label">HP base</span><span class="stat-row__value">${baseHP}</span></div>
+        <div class="stat-row"><span class="stat-row__label">HP lvl 1</span><span class="stat-row__value">${hpL1}</span></div>
+        <div class="stat-row"><span class="stat-row__label">HP lvl 5</span><span class="stat-row__value">${hpL5}</span></div>
+        <div class="stat-row"><span class="stat-row__label">HP lvl 10</span><span class="stat-row__value">${hpL10}</span></div>
+        <div class="stat-row"><span class="stat-row__label">DMG lvl 5</span><span class="stat-row__value dmg-${e.damageType}">${dmgL5}</span></div>
+        <div class="stat-row"><span class="stat-row__label">DMG lvl 10</span><span class="stat-row__value dmg-${e.damageType}">${dmgL10}</span></div>
+      </div>
+    </div>
+
+    <h4 class="text-xs uppercase mb-2" style="color:${biome.color};letter-spacing:2px">◢ CAPACITÉS SPÉCIALES</h4>
+    <div class="mb-4">${abilities}</div>
+
+    ${e.behavior ? `
+      <h4 class="text-xs uppercase mb-2" style="color:${biome.color};letter-spacing:2px">◢ COMPORTEMENT</h4>
+      <div class="mb-3" style="font-size:13px;color:#bbb;line-height:1.6">${e.behavior}</div>
+    ` : ''}
+
+    ${e.tip ? `
+      <div class="tip-box">
+        <div class="tip-box__head">▸ STRATÉGIE</div>
+        <div class="tip-box__body">${e.tip}</div>
+      </div>
+    ` : ''}
+  `;
+  host.innerHTML = '';
+  host.appendChild(detail);
+}
+
+function render() {
+  renderBiomeFilters();
+  renderBiomeBanner();
+  renderEnemyGrid();
+  renderDetail();
+  // Update active classes for role filters
+  document.querySelectorAll('#role-filters .filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.role === state.role);
+  });
+}
+
+// ============ INIT ============
+
+(async function init() {
+  ALL_ENEMIES = await loadEnemies();
+  document.getElementById('header-sub').textContent =
+    `${ALL_ENEMIES.length} ENTITÉS_RÉPERTORIÉES // ${Object.keys(BIOMES).length} BIOMES_ACTIFS`;
+  if (ALL_ENEMIES.length > 0) state.selectedId = ALL_ENEMIES[0].id;
+
+  // Search input
+  document.getElementById('search').addEventListener('input', e => {
+    state.search = e.target.value;
+    render();
+  });
+  // Role filters
+  document.querySelectorAll('#role-filters .filter-btn').forEach(b => {
+    b.addEventListener('click', () => { state.role = b.dataset.role; render(); });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
