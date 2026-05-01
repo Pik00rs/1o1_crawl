@@ -406,6 +406,7 @@
 <!-- LEFT ICON BUTTONS -->
 <div id="side-left">
   <button class="icon-btn" id="btn-map" title="Map &amp; enemies">🗺</button>
+  <button class="icon-btn" id="btn-stuff" title="Stuff &amp; stats">🎒</button>
   <button class="icon-btn" id="btn-log" title="Combat log">📜</button>
   <button class="icon-btn" id="btn-options" title="Options">⚙</button>
 </div>
@@ -512,6 +513,31 @@
     <button class="panel-close" data-close>×</button>
   </div>
   <div id="log-entries"></div>
+</div>
+
+<!-- =============================================================
+   PANEL : STUFF & STATS
+   ============================================================= -->
+<div class="panel" id="panel-stuff">
+  <div class="panel-header">
+    <span class="panel-title">▸ STUFF &amp; STATS</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ EQUIPMENT</div>
+    <div id="equipment-list"></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ FINAL STATS</div>
+    <div id="final-stats"></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">▸ DAMAGE OUTPUT</div>
+    <div id="dmg-summary" style="font-size:10px; line-height:1.7; color:#aaa;"></div>
+  </div>
 </div>
 
 <!-- =============================================================
@@ -638,6 +664,67 @@ const player = makeActor({
   ap:6, maxAp:6,
   cooldowns:{},
   level:3, stuff:'BALANCED',
+  equipment: {
+    mainhand: {
+      id:'sword_iron',
+      name:'Épée de fer',
+      icon:'⚔',
+      slot:'mainhand',
+      tier:'COMMON',
+      tierColor:'#bdbdbd',
+      weaponType:'sword',
+      damage:[8,14],
+      damageType:'tranchant',
+      range:1,
+      attacks:[
+        { name:'SLASH', cost:1, dmg:[8,14], type:'tranchant' },
+        { name:'CRUSHING BLOW', cost:3, cd:2, dmg:[12,22], type:'tranchant', mult:1.6 },
+      ],
+    },
+    amulet: {
+      id:'amulet_pyromancy',
+      name:'Amulette Pyromantique',
+      icon:'🔥',
+      slot:'amulet',
+      tier:'RARE',
+      tierColor:'#2196f3',
+      spell:{ name:'FIREBALL', cost:4, cd:3, dmg:[14,20], type:'magique', range:5, aoe:1 },
+      passive:{ bonusFire:5 },
+    },
+    rings:[
+      {
+        id:'ring_lifesteal',
+        name:'Anneau de Vampire',
+        icon:'💍',
+        slot:'ring',
+        tier:'UNCOMMON',
+        tierColor:'#4caf50',
+        passive:{ lifesteal:6 },
+      },
+      {
+        id:'ring_armor',
+        name:'Anneau de Pierre',
+        icon:'💍',
+        slot:'ring',
+        tier:'COMMON',
+        tierColor:'#bdbdbd',
+        passive:{ armor:8, hpRegen:1 },
+      },
+    ],
+  },
+  finalStats:{
+    maxHp:100,
+    armor:18,
+    damage:[8,14],
+    critChance:11,
+    critMultiplier:65,
+    dodgeChance:9,
+    lifesteal:6,
+    hpRegen:1,
+    bonusFire:5,
+    fireResist:10,
+    iceResist:10,
+  },
 });
 
 const enemies = [
@@ -1162,6 +1249,7 @@ function openPanel(id){
     const btn = document.getElementById('btn-'+id);
     if(btn) btn.classList.add('active');
     if(id === 'map') drawMinimap();
+    if(id === 'stuff') renderStuffPanel();
   }
 }
 function closeAllPanels(){
@@ -1173,12 +1261,171 @@ document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click
 document.getElementById('btn-map').addEventListener('click', () => {
   state.openPanel === 'map' ? closeAllPanels() : openPanel('map');
 });
+document.getElementById('btn-stuff').addEventListener('click', () => {
+  state.openPanel === 'stuff' ? closeAllPanels() : openPanel('stuff');
+});
 document.getElementById('btn-log').addEventListener('click', () => {
   state.openPanel === 'log' ? closeAllPanels() : openPanel('log');
 });
 document.getElementById('btn-options').addEventListener('click', () => {
   state.openPanel === 'options' ? closeAllPanels() : openPanel('options');
 });
+
+// ============================================================================
+// STUFF PANEL RENDERING
+// ============================================================================
+function renderStuffPanel(){
+  const eq = player.equipment || {};
+  const list = document.getElementById('equipment-list');
+  list.innerHTML = '';
+
+  // Helper to render an item card
+  function itemCard(item, slotLabel){
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: rgba(20,20,28,0.6);
+      border: 1px solid #2a2a30;
+      border-left: 3px solid ${item.tierColor || '#4fc3f7'};
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 10px;
+      line-height: 1.5;
+    `;
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span style="font-weight:700; color:#fff; letter-spacing:1px;">
+          ${item.icon||''} ${item.name}
+        </span>
+        <span style="font-size:8px; letter-spacing:1.5px; color:${item.tierColor||'#666'};">
+          ${item.tier||''}
+        </span>
+      </div>
+      <div style="font-size:8px; letter-spacing:1px; color:#666; text-transform:uppercase; margin-bottom:6px;">
+        ${slotLabel}
+      </div>
+    `;
+    // Damage / range
+    if(item.damage){
+      html += `<div style="color:#ff8a4d;">▸ Damage <span style="color:#fff; float:right;">${item.damage[0]}-${item.damage[1]} ${item.damageType||''}</span></div>`;
+    }
+    if(item.range){
+      html += `<div style="color:#888;">▸ Range <span style="color:#fff; float:right;">${item.range}</span></div>`;
+    }
+    // Attacks
+    if(item.attacks){
+      html += `<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #2a2a30;">`;
+      for(const atk of item.attacks){
+        const cdStr = atk.cd ? ` · CD ${atk.cd}` : '';
+        const multStr = atk.mult ? ` ×${atk.mult}` : '';
+        html += `<div style="margin-bottom:3px;"><span style="color:#aee6ff;">⚔ ${atk.name}</span> <span style="color:#888; float:right; font-size:9px;">${atk.cost} AP${cdStr}${multStr}</span></div>`;
+        html += `<div style="font-size:9px; color:#666; margin-bottom:5px;">${atk.dmg[0]}-${atk.dmg[1]} ${atk.type}</div>`;
+      }
+      html += `</div>`;
+    }
+    // Spell (amulet)
+    if(item.spell){
+      const sp = item.spell;
+      const cdStr = sp.cd ? ` · CD ${sp.cd}` : '';
+      const aoeStr = sp.aoe ? ` · AOE ${sp.aoe*2+1}×${sp.aoe*2+1}` : '';
+      html += `<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #2a2a30;">`;
+      html += `<div><span style="color:#ce93d8;">✦ ${sp.name}</span> <span style="color:#888; float:right; font-size:9px;">${sp.cost} AP${cdStr}</span></div>`;
+      html += `<div style="font-size:9px; color:#666;">${sp.dmg[0]}-${sp.dmg[1]} ${sp.type} · Range ${sp.range}${aoeStr}</div>`;
+      html += `</div>`;
+    }
+    // Passives
+    if(item.passive){
+      html += `<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #2a2a30;">`;
+      for(const [k,v] of Object.entries(item.passive)){
+        const isPct = ['lifesteal','critChance','dodgeChance','fireResist','iceResist','shockResist','poisonResist','magicResist'].includes(k);
+        html += `<div style="color:#8bc34a;">+ ${v}${isPct?'%':''} <span style="color:#aaa;">${labelStat(k)}</span></div>`;
+      }
+      html += `</div>`;
+    }
+    card.innerHTML = html;
+    return card;
+  }
+
+  if(eq.mainhand) list.appendChild(itemCard(eq.mainhand, 'MAINHAND · WEAPON'));
+  if(eq.amulet) list.appendChild(itemCard(eq.amulet, 'AMULET · ACTIVE SPELL'));
+  if(eq.rings){
+    eq.rings.forEach((r,i) => list.appendChild(itemCard(r, `RING ${i+1} · PASSIVE`)));
+  }
+
+  // Final stats
+  const fs = player.finalStats || {};
+  const stats = document.getElementById('final-stats');
+  stats.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:6px;';
+  const statRows = [
+    ['HP max', fs.maxHp, ''],
+    ['Damage', fs.damage ? `${fs.damage[0]}-${fs.damage[1]}` : '-', ''],
+    ['Armor', fs.armor, ''],
+    ['Crit %', fs.critChance, '%'],
+    ['Crit Mult', fs.critMultiplier, '%'],
+    ['Dodge', fs.dodgeChance, '%'],
+    ['Lifesteal', fs.lifesteal, '%'],
+    ['HP Regen', fs.hpRegen, '/turn'],
+    ['Bonus Fire', fs.bonusFire, ''],
+    ['Fire Res', fs.fireResist, '%'],
+    ['Ice Res', fs.iceResist, '%'],
+  ];
+  for(const [label, val, suffix] of statRows){
+    if(val === undefined || val === null) continue;
+    const cell = document.createElement('div');
+    cell.style.cssText = `
+      background: rgba(20,20,28,0.6);
+      border: 1px solid #2a2a30;
+      border-left: 2px solid #4fc3f7;
+      padding: 6px 9px;
+      font-size: 10px;
+    `;
+    cell.innerHTML = `
+      <div style="font-size:8px; letter-spacing:1px; color:#666; text-transform:uppercase;">${label}</div>
+      <div style="color:#fff; font-weight:700; font-size:12px; margin-top:2px;">${val}${suffix}</div>
+    `;
+    grid.appendChild(cell);
+  }
+  stats.appendChild(grid);
+
+  // Damage summary
+  const dmgEl = document.getElementById('dmg-summary');
+  let dmgHtml = '';
+  if(eq.mainhand?.attacks){
+    for(const atk of eq.mainhand.attacks){
+      const min = atk.dmg[0], max = atk.dmg[1];
+      const avg = ((min+max)/2).toFixed(1);
+      dmgHtml += `<div>▸ <span style="color:#aee6ff;">${atk.name}</span> avg <span style="color:#fff;">${avg}</span> (${min}-${max} ${atk.type})</div>`;
+    }
+  }
+  if(eq.amulet?.spell){
+    const sp = eq.amulet.spell;
+    const min = sp.dmg[0], max = sp.dmg[1];
+    const avg = ((min+max)/2).toFixed(1);
+    dmgHtml += `<div>▸ <span style="color:#ce93d8;">${sp.name}</span> avg <span style="color:#fff;">${avg}</span> (${min}-${max} ${sp.type})</div>`;
+  }
+  dmgEl.innerHTML = dmgHtml || '<span style="color:#666;">No equipped weapon</span>';
+}
+
+function labelStat(k){
+  const labels = {
+    lifesteal:'lifesteal',
+    armor:'armor',
+    hpRegen:'HP/turn',
+    bonusFire:'fire dmg',
+    bonusIce:'ice dmg',
+    bonusShock:'shock dmg',
+    bonusPoison:'poison dmg',
+    fireResist:'fire res',
+    iceResist:'ice res',
+    shockResist:'shock res',
+    poisonResist:'poison res',
+    critChance:'crit chance',
+    critMultiplier:'crit mult',
+    dodgeChance:'dodge',
+  };
+  return labels[k] || k;
+}
 
 // ============================================================================
 // ACTION BAR
