@@ -123,7 +123,7 @@ export function drawTileOverlay(ctx, sx, sy, color, alpha, mode = 'fill', zoom =
   drawDiamondPath(ctx, corners);
   if(mode === 'stroke'){
     ctx.strokeStyle = hexToRgba(color, alpha);
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5 * zoom;
     ctx.stroke();
   } else {
     ctx.fillStyle = hexToRgba(color, alpha);

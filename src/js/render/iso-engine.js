@@ -112,27 +112,31 @@ function drawTile(ctx, gx, gy, tileGrid, biome, time, hover, reachableSet, valid
     ctx.restore();
   }
 
-  // Reachable overlay
+  // Reachable overlay (MOVE) - vert vif
   if(reachableSet && reachableSet.has(gx+','+gy) && !tile.isWall){
-    const alpha = 0.14 + Math.sin(time*0.08) * 0.04;
-    drawTileOverlay(ctx, sp.x, sp.y, biome.config.accent, alpha, 'fill', zoom);
+    const pulse = 0.30 + Math.sin(time*0.06) * 0.06;
+    drawTileOverlay(ctx, sp.x, sp.y, '#4caf50', pulse, 'fill', zoom);
+    drawTileOverlay(ctx, sp.x, sp.y, '#69f0ae', 0.85, 'stroke', zoom);
   }
 
-  // Valid target overlay (attack/spell)
+  // Valid target overlay (ATTACK or SPELL) - couleur selon type
   if(validTargets && validTargets.has(gx+','+gy)){
     const col = options.targetColor || '#ff5252';
-    const alpha = 0.20 + Math.sin(time*0.15) * 0.08;
-    drawTileOverlay(ctx, sp.x, sp.y, col, alpha, 'fill', zoom);
+    const colStroke = options.targetStroke || '#ff8a80';
+    const pulse = 0.32 + Math.sin(time*0.10) * 0.10;
+    drawTileOverlay(ctx, sp.x, sp.y, col, pulse, 'fill', zoom);
+    drawTileOverlay(ctx, sp.x, sp.y, colStroke, 0.95, 'stroke', zoom);
   }
 
-  // AOE preview
+  // AOE preview (orange vif sous le hover de spell)
   if(aoePreview && aoePreview.has(gx+','+gy)){
-    drawTileOverlay(ctx, sp.x, sp.y, '#ff5722', 0.30, 'fill', zoom);
+    drawTileOverlay(ctx, sp.x, sp.y, '#ff9800', 0.50, 'fill', zoom);
+    drawTileOverlay(ctx, sp.x, sp.y, '#ffc947', 1.0, 'stroke', zoom);
   }
 
-  // Hover stroke
+  // Hover stroke (toujours visible, blanc)
   if(hover && hover.gx === gx && hover.gy === gy && !tile.isWall){
-    drawTileOverlay(ctx, sp.x, sp.y, biome.config.accent, 0.95, 'stroke', zoom);
+    drawTileOverlay(ctx, sp.x, sp.y, '#ffffff', 1.0, 'stroke', zoom);
   }
 }
 
