@@ -1581,10 +1581,19 @@ function tick(){
 setInterval(tick, 16);
 
 function render(){
-  let targetColor = '#ff5252';
+  // Couleurs distinctes : MOVE = vert (via reachableSet, géré dans iso-engine)
+  //                      ATTACK = rouge, SPELL = violet, AOE = orange (auto)
+  let targetColor = '#f44336';   // rouge pour attaque
+  let targetStroke = '#ff8a80';
   if(state.selectedAction){
-    if(state.selectedAction.type === 'spell') targetColor = '#9c27b0';
-    else if(state.selectedAction.id === 'move') targetColor = getBiome(state.biomeId).config.accent;
+    if(state.selectedAction.type === 'spell'){
+      targetColor = '#9c27b0';   // violet pour sort
+      targetStroke = '#ce93d8';
+    } else if(state.selectedAction.id === 'move'){
+      // MOVE est géré par reachableSet (vert vif dans iso-engine)
+      targetColor = '#4caf50';
+      targetStroke = '#69f0ae';
+    }
   }
   renderFrame(ctx, {
     viewport,
@@ -1599,7 +1608,7 @@ function render(){
     particles,
     time: state.time++,
     view: state.view,
-    options: { ...state.options, targetColor },
+    options: { ...state.options, targetColor, targetStroke },
   });
   if(state.openPanel === 'map') drawMinimap();
   requestAnimationFrame(render);
