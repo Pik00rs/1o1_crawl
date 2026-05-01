@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reactor Hollow — Visual Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0a0a0f;
+    color: #aaa;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    overflow: hidden;
+    user-select: none;
+  }
+  body { display: flex; flex-direction: column; }
+
+  #game-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    z-index: 1;
+  }
+
+  /* ================ TOP HUD ================ */
+  #hud-top {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 10px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(180deg, rgba(0,0,0,0.75), transparent);
+    pointer-events: none;
+    font-size: 11px; letter-spacing: 1.5px;
+    z-index: 10;
+  }
+  #hud-top .left { color: #aaa; }
+  #hud-top .left .label { color: #ff5722; font-weight: 700; }
+  #hud-top .right { color: #aaa; }
+  #hud-top a {
+    color: #4fc3f7; text-decoration: none;
+    border: 1px solid #4fc3f7; padding: 3px 8px;
+    font-size: 9px; pointer-events: auto;
+    margin-left: 8px;
+  }
+  #hud-top a:hover { background: #4fc3f7; color: #000; }
+
+  #timeline {
+    position: fixed; top: 38px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; align-items: center;
+    padding: 5px 9px;
+    background: rgba(20,20,28,0.85);
+    border: 1px solid rgba(79,195,247,0.3);
+    backdrop-filter: blur(4px);
+    z-index: 10;
+  }
+  .tl-actor {
+    width: 24px; height: 24px;
+    border: 2px solid; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff;
+    background: rgba(0,0,0,0.4);
+  }
+  .tl-actor.current { transform: scale(1.2); box-shadow: 0 0 8px currentColor; }
+  .tl-actor.dead { opacity: 0.3; filter: grayscale(1); }
+
+  /* ================ ENEMY PANEL (left, hover) ================ */
+  #enemy-panel {
+    position: fixed; top: 90px; left: 16px;
+    width: 220px;
+    background: rgba(20,8,8,0.92);
+    border: 1px solid #ff5252;
+    backdrop-filter: blur(6px);
+    padding: 12px;
+    display: none; pointer-events: none;
+    font-size: 10px; line-height: 1.5;
+    z-index: 10;
+  }
+  #ep-name { color: #ff5252; font-weight: 600; letter-spacing: 1.5px; }
+  #ep-tier { color: #666; font-size: 9px; margin-bottom: 8px; }
+  .ep-bar {
+    height: 5px; background: #1a0808; margin-top: 2px;
+  }
+  .ep-bar-fill { height: 100%; transition: width 0.3s; }
+  #ep-intent {
+    margin: 8px 0; padding: 6px;
+    background: rgba(255,82,82,0.1);
+    border-left: 2px solid #ff5252;
+  }
+  #ep-intent-name { color: #fff; font-size: 11px; font-weight: 600; }
+  #ep-intent-desc { color: #aaa; font-size: 9px; }
+  #ep-statuses { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+  .ep-status {
+    padding: 2px 6px; background: #ff570220;
+    border: 1px solid #ff5722; font-size: 9px; color: #ff8a4d;
+  }
+  #ep-defenses {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid #2a0808;
+    font-size: 9px; color: #888;
+  }
+  .ep-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+  .ep-row span:last-child { color: #fff; }
+
+  /* ================ PLAYER CARD (bottom-left) ================ */
+  #player-card {
+    position: fixed; bottom: 110px; left: 16px;
+    width: 220px;
+    background: rgba(13,26,42,0.92);
+    border: 1px solid #4fc3f7;
+    backdrop-filter: blur(6px);
+    padding: 10px 12px;
+    font-size: 10px; line-height: 1.5;
+    z-index: 10;
+  }
+  #pc-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  #pc-name { color: #aee6ff; font-weight: 600; letter-spacing: 1.5px; }
+  #pc-meta { color: #666; font-size: 9px; }
+  .pc-bar {
+    height: 6px; background: #0a1a25;
+    margin-top: 2px;
+  }
+  #pc-hp-fill {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+    transition: width 0.3s;
+  }
+  #pc-ap-dots {
+    display: flex; gap: 3px; margin-top: 3px;
+  }
+  .ap-dot {
+    width: 11px; height: 11px;
+    border: 1px solid #4fc3f7;
+    background: #0a1a25;
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+  .ap-dot.full { background: #4fc3f7; box-shadow: 0 0 4px #4fc3f7; }
+  .ap-dot.empty { opacity: 0.4; }
+  #pc-statuses { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .pc-status {
+    padding: 2px 6px; background: #4fc3f720;
+    border: 1px solid #4fc3f7;
+    font-size: 9px; color: #aee6ff;
+  }
+
+  /* ================ ACTION BAR (bottom) ================ */
+  #action-bar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; align-items: center;
+    z-index: 10;
+  }
+  .action-btn {
+    background: rgba(20,20,28,0.92);
+    border: 1px solid #2a2a30;
+    color: #aaa;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 8px 12px;
+    text-align: left;
+    min-width: 120px;
+    transition: all 0.15s;
+    backdrop-filter: blur(4px);
+    position: relative;
+  }
+  .action-btn:hover:not(.disabled) {
+    border-color: #4fc3f7; color: #fff; transform: translateY(-2px);
+  }
+  .action-btn.selected {
+    border-color: #4fc3f7; background: rgba(79,195,247,0.15);
+    color: #fff; box-shadow: 0 0 12px rgba(79,195,247,0.4);
+  }
+  .action-btn.disabled { opacity: 0.35; cursor: not-allowed; }
+  .action-btn.primary { border-left: 3px solid #ff5722; }
+  .action-btn.spell { border-left: 3px solid #9c27b0; }
+  .action-btn.move { border-left: 3px solid #4fc3f7; }
+  .action-btn.pass { border-left: 3px solid #888; min-width: 100px; }
+  .ab-icon {
+    font-size: 16px;
+    position: absolute; top: 6px; right: 8px;
+    opacity: 0.7;
+  }
+  .ab-name {
+    font-size: 11px; letter-spacing: 1px; font-weight: 700; color: #fff;
+  }
+  .ab-cost {
+    font-size: 9px; letter-spacing: 1px; margin-top: 2px;
+  }
+  .action-btn.move .ab-cost { color: #4fc3f7; }
+  .action-btn.primary .ab-cost { color: #ff8a4d; }
+  .action-btn.spell .ab-cost { color: #ce93d8; }
+  .ab-type {
+    font-size: 8px; color: #666; margin-top: 2px; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ================ RIGHT HUD: minimap (bottom-right) + zoom + controls ================ */
+  #minimap-wrapper {
+    position: fixed; bottom: 16px; right: 16px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid #2a2a30;
+    padding: 6px;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+  }
+  #minimap-label {
+    font-size: 9px; letter-spacing: 1.5px; color: #666; margin-bottom: 4px;
+  }
+  #minimap {
+    display: block;
+    background: #000;
+    cursor: crosshair;
+  }
+
+  #zoom-controls {
+    position: fixed; bottom: 16px; right: 200px;
+    display: flex; flex-direction: column; gap: 4px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid #2a2a30;
+    padding: 4px; backdrop-filter: blur(4px);
+    z-index: 10;
+  }
+  #zoom-controls button {
+    background: transparent; color: #aaa;
+    border: 1px solid #2a2a30;
+    padding: 4px 8px;
+    font-family: inherit; font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    width: 26px; height: 26px;
+  }
+  #zoom-controls button:hover { background: rgba(79,195,247,0.15); border-color: #4fc3f7; color: #fff; }
+  #zoom-level {
+    font-size: 9px; color: #666; text-align: center;
+    padding: 2px 0; letter-spacing: 1px;
+  }
+
+  /* ================ TOP-RIGHT: option buttons + biome chooser ================ */
+  #top-right {
+    position: fixed; top: 80px; right: 16px;
+    display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+    z-index: 10;
+  }
+  #top-right .row { display: flex; gap: 4px; }
+  .vbtn {
+    background: rgba(20,20,28,0.85);
+    color: #9aa;
+    border: 1px solid rgba(79,195,247,0.3);
+    padding: 5px 9px;
+    font-family: inherit;
+    font-size: 9px; letter-spacing: 1.2px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    text-transform: uppercase;
+  }
+  .vbtn:hover { background: rgba(79,195,247,0.15); color: #fff; border-color: #4fc3f7; }
+  .vbtn.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+
+  /* ================ LOG (above action bar, right) ================ */
+  #log-panel {
+    position: fixed; bottom: 110px; right: 16px;
+    width: 260px; max-height: 160px;
+    background: rgba(20,20,28,0.85);
+    border: 1px solid #2a2a30;
+    backdrop-filter: blur(4px);
+    padding: 8px 10px;
+    font-size: 9px; line-height: 1.5;
+    overflow-y: auto;
+    z-index: 10;
+  }
+  #log-panel-header {
+    font-size: 9px; letter-spacing: 1.5px; color: #666; margin-bottom: 4px;
+  }
+  #log-entries div {
+    margin-bottom: 2px;
+    animation: logIn 0.3s ease-out;
+  }
+  @keyframes logIn {
+    from { opacity: 0; transform: translateX(-4px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ================ TARGETING HINT ================ */
+  #targeting-hint {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    padding: 6px 14px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid #4fc3f7;
+    font-size: 11px; color: #4fc3f7;
+    letter-spacing: 1.5px;
+    display: none;
+    z-index: 10;
+  }
+
+  /* ================ FLOATING DAMAGE ================ */
+  .float-text {
+    position: fixed;
+    font-weight: 700; font-size: 16px;
+    pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+    text-shadow: 0 0 4px currentColor, 0 1px 0 #000;
+    z-index: 20;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-40px); opacity: 0; }
+  }
+
+  /* ================ ERROR ================ */
+  #error-display {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    display: none;
+    background: #2a0808;
+    border: 1px solid #ff5252;
+    padding: 16px 20px;
+    color: #ff8a80;
+    font-size: 12px;
+    max-width: 600px;
+    z-index: 100;
+  }
+  #error-display pre {
+    background: rgba(0,0,0,0.4);
+    padding: 10px;
+    overflow-x: auto;
+    font-size: 11px;
+    color: #ffcdd2;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<div id="error-display"></div>
+
+<!-- TOP HUD -->
+<div id="hud-top">
+  <div class="left">
+    <span class="label">▸ REACTOR_HOLLOW</span>
+    <span style="color:#666; margin-left:8px;">// VISUAL_TEST_v2</span>
+  </div>
+  <div class="right">
+    <span id="turn-text">TURN 1 · KAEL</span>
+    <a href="index.html">DASHBOARD</a>
+    <a href="game.html">JEU</a>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div id="timeline"></div>
+
+<!-- TARGETING HINT -->
+<div id="targeting-hint">
+  <span id="targeting-text">▸ SELECT TARGET</span>
+</div>
+
+<!-- ENEMY HOVER PANEL -->
+<div id="enemy-panel">
+  <div id="ep-name">ENEMY_NAME</div>
+  <div id="ep-tier">TIER · ROLE</div>
+
+  <div style="margin-bottom: 6px;">
+    <div style="display:flex; justify-content:space-between; font-size:9px; color:#666;">
+      <span>HP</span><span id="ep-hp">--</span>
+    </div>
+    <div class="ep-bar"><div id="ep-hp-fill" class="ep-bar-fill" style="background:#4caf50; width:100%;"></div></div>
+  </div>
+
+  <div id="ep-intent">
+    <div style="color:#ff8a80; font-size:9px;">▸ NEXT MOVE</div>
+    <div id="ep-intent-name">--</div>
+    <div id="ep-intent-desc">--</div>
+  </div>
+
+  <div id="ep-statuses"></div>
+
+  <div id="ep-defenses">
+    <div class="ep-row"><span>▸ ARMOR</span><span id="ep-armor">--</span></div>
+    <div class="ep-row"><span>▸ DODGE</span><span id="ep-dodge">--</span></div>
+    <div class="ep-row"><span>▸ FIRE RES</span><span id="ep-fire">--</span></div>
+  </div>
+</div>
+
+<!-- PLAYER CARD -->
+<div id="player-card">
+  <div id="pc-header">
+    <span id="pc-name">▸ KAEL</span>
+    <span id="pc-meta">LVL 3 · BALANCED</span>
+  </div>
+
+  <div style="margin-bottom: 4px;">
+    <div style="display:flex; justify-content:space-between; font-size:9px; color:#666;">
+      <span>HP</span><span id="pc-hp">100 / 100</span>
+    </div>
+    <div class="pc-bar"><div id="pc-hp-fill"></div></div>
+  </div>
+
+  <div style="margin-bottom: 6px;">
+    <div style="display:flex; justify-content:space-between; font-size:9px; color:#666;">
+      <span>AP</span><span id="pc-ap-text">6 / 6</span>
+    </div>
+    <div id="pc-ap-dots"></div>
+  </div>
+
+  <div id="pc-statuses"></div>
+</div>
+
+<!-- ACTION BAR -->
+<div id="action-bar">
+  <button class="action-btn move" data-action="move">
+    <div class="ab-icon">🏃</div>
+    <div class="ab-name">MOVE</div>
+    <div class="ab-cost">1 AP/case</div>
+  </button>
+  <button class="action-btn primary" data-action="slash">
+    <div class="ab-icon">⚔</div>
+    <div class="ab-name">SLASH</div>
+    <div class="ab-cost">1 AP</div>
+    <div class="ab-type">Tranchant</div>
+  </button>
+  <button class="action-btn primary" data-action="heavy">
+    <div class="ab-icon">⚔</div>
+    <div class="ab-name">CRUSHING BLOW</div>
+    <div class="ab-cost">3 AP · CD 2</div>
+    <div class="ab-type">Tranchant ×1.6</div>
+  </button>
+  <button class="action-btn spell" data-action="fireball">
+    <div class="ab-icon">🔥</div>
+    <div class="ab-name">FIREBALL</div>
+    <div class="ab-cost">4 AP · CD 3</div>
+    <div class="ab-type">Magique · AOE 3×3</div>
+  </button>
+  <button class="action-btn pass" data-action="endturn">
+    <div class="ab-icon">▶</div>
+    <div class="ab-name">END TURN</div>
+    <div class="ab-cost">--</div>
+  </button>
+</div>
+
+<!-- LOG (right above minimap) -->
+<div id="log-panel">
+  <div id="log-panel-header">▸ LOG</div>
+  <div id="log-entries"></div>
+</div>
+
+<!-- ZOOM CONTROLS -->
+<div id="zoom-controls">
+  <button id="zoom-in" title="Zoom in">+</button>
+  <div id="zoom-level">100%</div>
+  <button id="zoom-out" title="Zoom out">−</button>
+</div>
+
+<!-- MINIMAP -->
+<div id="minimap-wrapper">
+  <div id="minimap-label">▸ MAP</div>
+  <canvas id="minimap" width="160" height="120"></canvas>
+</div>
+
+<!-- TOP-RIGHT controls -->
+<div id="top-right">
+  <div class="row">
+    <button class="vbtn" id="btn-center">⊙ CENTER</button>
+    <button class="vbtn" id="btn-reroll">RE-ROLL</button>
+    <button class="vbtn" id="btn-grid">GRID</button>
+    <button class="vbtn" id="btn-night">DAY/NIGHT</button>
+  </div>
+  <div class="row" id="biome-buttons"></div>
+  <div style="background:rgba(0,0,0,0.6); padding:6px 10px; font-size:9px; color:#888; border:1px solid #2a2a30; letter-spacing:1px; line-height:1.5;">
+    <div>▸ DRAG: pan camera</div>
+    <div>▸ WASD: move camera</div>
+    <div>▸ WHEEL: zoom</div>
+    <div>▸ HOVER ENEMY: details</div>
+    <div>▸ ESC: cancel action</div>
+  </div>
+</div>
+
+<script type="module">
+import { renderFrame } from './src/js/render/iso-engine.js';
+import { getBiome, listBiomeConfigs } from './src/js/render/biomes/index.js';
+import { ParticleSystem } from './src/js/render/particles.js';
+import { TILE_W, TILE_H, screenToIso, isoToScreen } from './src/js/render/iso-projection.js';
+import { rng, pickWeighted } from './src/js/render/iso-utils.js';
+
+// =========================================================================
+// SETUP CANVAS — fullscreen
+// =========================================================================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const mctx = minimap.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+mctx.imageSmoothingEnabled = false;
+
+const viewport = { width: 0, height: 0 };
+function resize(){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  viewport.width = window.innerWidth;
+  viewport.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// =========================================================================
+// STATE
+// =========================================================================
+const state = {
+  gridW: 14,
+  gridH: 10,
+  biomeId: 'inferno',
+  mapSeed: 7,
+  tileGrid: {},
+  hover: null,
+  hoveredEnemy: null,
+  reachableSet: new Set(),
+  validTargets: new Set(),
+  aoePreview: new Set(),
+  selectedAction: null,
+  view: { camX: 0, camY: 0, zoom: 1 },
+  options: { showGrid: false, bevel: true, night: false, fxLevel: 1 },
+  time: 0,
+  turn: 1,
+  currentTurn: 'player', // or 'enemies'
+  combatOver: false,
+};
+
+const particles = new ParticleSystem();
+
+// =========================================================================
+// ACTIONS DEFINITIONS
+// =========================================================================
+const ACTIONS = {
+  move:     { id:'move',     name:'MOVE',          cost:1, type:'move' },
+  slash:    { id:'slash',    name:'SLASH',         cost:1, range:1, type:'attack', dmgType:'tranchant', baseDmg:[7,12] },
+  heavy:    { id:'heavy',    name:'CRUSHING BLOW', cost:3, range:1, cd:2, type:'attack', dmgType:'tranchant', baseDmg:[12,18] },
+  fireball: { id:'fireball', name:'FIREBALL',      cost:4, range:5, cd:3, type:'spell', aoe:1, dmgType:'magique', baseDmg:[14,20] },
+};
+
+// =========================================================================
+// ACTORS
+// =========================================================================
+function makeActor(opts){
+  return Object.assign({
+    gx: 0, gy: 0, ax: 0, ay: 0,
+    idle: Math.random() * Math.PI * 2,
+    target: null, moveT: 0, moveFrom: null,
+    isPlayer: false, isDead: false,
+    archetype: 'hero',
+    bodyColor: '#3a4a5c', accentColor: '#4fc3f7', glowColor: '#aee6ff',
+    skinColor: '#f4d4a8', hairColor: '#2c3640', capeColor: '#1a2230',
+    hp: 100, maxHp: 100,
+    statuses: [],
+    name: '?',
+  }, opts);
+}
+
+const player = makeActor({
+  gx: 2, gy: 3, ax: 2, ay: 3,
+  isPlayer: true, archetype: 'hero',
+  name: 'KAEL',
+  hp: 100, maxHp: 100,
+  ap: 6, maxAp: 6,
+  cooldowns: {},
+  level: 3, stuff: 'BALANCED',
+  statuses: [],
+});
+
+const enemies = [
+  makeActor({
+    gx: 9, gy: 2, ax: 9, ay: 2,
+    archetype: 'hero',
+    bodyColor: '#8b1f15', accentColor: '#ffb74d', glowColor: '#ff8a4d',
+    skinColor: '#a06850', hairColor: '#1a0a08', capeColor: '#3a0a05',
+    name: 'BRÛLANT',
+    tier: 'RARE · BRUTE', role: 'brute',
+    hp: 60, maxHp: 80,
+    armor: 12, dodge: 5, fireRes: 25,
+    intent: { id: 'slam', name: 'SLAM', desc: 'Blunt 12-18 · Range 1', color: '#ff5722' },
+  }),
+  makeActor({
+    gx: 6, gy: 7, ax: 6, ay: 7,
+    archetype: 'hero',
+    bodyColor: '#5e2c70', accentColor: '#e040fb', glowColor: '#ce93d8',
+    skinColor: '#c0a4d0', hairColor: '#3a1c4c', capeColor: '#2a0a35',
+    name: 'PYROMANCIEN',
+    tier: 'UNCOMMON · CASTER', role: 'caster',
+    hp: 35, maxHp: 50,
+    armor: 4, dodge: 12, fireRes: 50,
+    intent: { id: 'fireball', name: 'FIREBALL', desc: 'Fire 14-20 · Range 5 · AOE', color: '#ff5722' },
+  }),
+  makeActor({
+    gx: 11, gy: 6, ax: 11, ay: 6,
+    archetype: 'hero',
+    bodyColor: '#4a2c30', accentColor: '#ff8080', glowColor: '#ffaaaa',
+    skinColor: '#d4a890', hairColor: '#1a0808',
+    name: 'RAVAGEUR',
+    tier: 'COMMON · MOB', role: 'mob',
+    hp: 25, maxHp: 30,
+    armor: 6, dodge: 8, fireRes: 0,
+    intent: { id: 'slash', name: 'SLASH', desc: 'Tranchant 6-9', color: '#ff5252' },
+  }),
+];
+const allActors = [player, ...enemies];
+
+// =========================================================================
+// MAP
+// =========================================================================
+function genTileMap(){
+  state.tileGrid = {};
+  const biome = getBiome(state.biomeId);
+  const r = rng(state.mapSeed * 7919 + state.biomeId.charCodeAt(0) * 13);
+
+  for(let x = 0; x < state.gridW; x++){
+    for(let y = 0; y < state.gridH; y++){
+      const type = pickWeighted(biome.config.tileWeights, r());
+      state.tileGrid[x+','+y] = {
+        type, seed: (x*101 + y*239 + state.mapSeed*7) % 9999,
+        microElev: (Math.sin(x*1.7+y*2.3)*0.5+Math.cos(x*0.7+y*1.4)*0.5)*0.6,
+        tintShift: (r() - 0.5) * 0.18,
+        noiseSeeds: [r(),r(),r(),r(),r()],
+        isWall: false, prop: null,
+      };
+    }
+  }
+  // Walls + props
+  const wallCount = 10 + (r() * 6)|0;
+  let placed = 0, tries = 0;
+  while(placed < wallCount && tries < 80){
+    tries++;
+    const x = (r() * state.gridW)|0;
+    const y = (r() * state.gridH)|0;
+    if(Math.abs(x - player.gx) + Math.abs(y - player.gy) <= 1) continue;
+    // Don't put walls on enemies
+    if(enemies.some(e => e.gx === x && e.gy === y)) continue;
+    const t = state.tileGrid[x+','+y];
+    if(t.isWall) continue;
+    t.isWall = true;
+    t.prop = biome.config.props[(r() * biome.config.props.length)|0];
+    placed++;
+  }
+  // Force player tile + neighbours free
+  for(let dx = -1; dx <= 1; dx++) for(let dy = -1; dy <= 1; dy++){
+    const k = (player.gx+dx)+','+(player.gy+dy);
+    if(state.tileGrid[k]){ state.tileGrid[k].isWall = false; state.tileGrid[k].prop = null; }
+  }
+}
+genTileMap();
+
+function getElev(gx, gy){
+  const t = state.tileGrid[gx+','+gy];
+  return t ? t.microElev : 0;
+}
+function isWall(gx, gy){
+  const t = state.tileGrid[gx+','+gy];
+  return t ? t.isWall : false;
+}
+function isOccupied(gx, gy, exclude){
+  for(const a of allActors){
+    if(a === exclude || a.isDead) continue;
+    if(a.gx === gx && a.gy === gy) return true;
+  }
+  return false;
+}
+
+// =========================================================================
+// MOVEMENT / ANIMATION
+// =========================================================================
+function moveActor(actor, tx, ty){
+  if(actor.target || isWall(tx, ty) || isOccupied(tx, ty, actor)) return false;
+  if(tx < 0 || ty < 0 || tx >= state.gridW || ty >= state.gridH) return false;
+  actor.moveFrom = { x: actor.ax, y: actor.ay };
+  actor.target = { x: tx, y: ty };
+  actor.moveT = 0;
+  actor.gx = tx; actor.gy = ty;
+  return true;
+}
+function updateActor(actor){
+  actor.idle += 0.06;
+  if(actor.target){
+    actor.moveT += 0.08;
+    if(actor.moveT >= 1){
+      actor.ax = actor.target.x;
+      actor.ay = actor.target.y;
+      actor.target = null; actor.moveT = 0;
+      // Dust at landing
+      const sp = isoToScreen(actor.ax, actor.ay, getElev(actor.ax, actor.ay), viewport, state.view);
+      particles.emitDust(sp.x, sp.y + 4);
+    } else {
+      const t = actor.moveT;
+      const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+      actor.ax = actor.moveFrom.x + (actor.target.x - actor.moveFrom.x) * ease;
+      actor.ay = actor.moveFrom.y + (actor.target.y - actor.moveFrom.y) * ease;
+    }
+  }
+}
+
+// =========================================================================
+// REACHABILITY / TARGETS
+// =========================================================================
+function computeReachable(){
+  state.reachableSet.clear();
+  if(player.ap < 1 || state.combatOver) return;
+  for(let x = 0; x < state.gridW; x++){
+    for(let y = 0; y < state.gridH; y++){
+      if(isWall(x, y) || isOccupied(x, y, player)) continue;
+      const d = Math.max(Math.abs(x - player.gx), Math.abs(y - player.gy));
+      if(d > 0 && d <= player.ap) state.reachableSet.add(x+','+y);
+    }
+  }
+}
+function computeValidTargets(act){
+  state.validTargets.clear();
+  if(!act) return;
+  if(act.id === 'move'){
+    for(const k of state.reachableSet) state.validTargets.add(k);
+    return;
+  }
+  for(let x = 0; x < state.gridW; x++){
+    for(let y = 0; y < state.gridH; y++){
+      const d = Math.max(Math.abs(x - player.gx), Math.abs(y - player.gy));
+      if(d === 0 || d > act.range) continue;
+      if(act.type === 'attack'){
+        const e = enemies.find(en => !en.isDead && en.gx === x && en.gy === y);
+        if(e) state.validTargets.add(x+','+y);
+      } else if(act.type === 'spell'){
+        if(!isWall(x, y)) state.validTargets.add(x+','+y);
+      }
+    }
+  }
+}
+function computeAoePreview(){
+  state.aoePreview.clear();
+  if(!state.selectedAction || !state.selectedAction.aoe || !state.hover) return;
+  const aoe = state.selectedAction.aoe;
+  for(let dx = -aoe; dx <= aoe; dx++) for(let dy = -aoe; dy <= aoe; dy++){
+    const ax = state.hover.gx + dx, ay = state.hover.gy + dy;
+    if(ax < 0 || ay < 0 || ax >= state.gridW || ay >= state.gridH) continue;
+    state.aoePreview.add(ax+','+ay);
+  }
+}
+
+// =========================================================================
+// COMBAT
+// =========================================================================
+function rollDmg(range){ return range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1)); }
+
+function executePlayerAction(targetX, targetY){
+  const act = state.selectedAction;
+  if(!act) return;
+  const k = targetX+','+targetY;
+  if(!state.validTargets.has(k)) return;
+
+  if(act.id === 'move'){
+    const dist = Math.max(Math.abs(targetX - player.gx), Math.abs(targetY - player.gy));
+    if(player.ap < dist) return;
+    moveActor(player, targetX, targetY);
+    player.ap -= dist;
+    addLog(`▸ Kael moves to (${targetX},${targetY}) [${dist} AP]`, '#aaa');
+  } else if(act.type === 'attack'){
+    const target = enemies.find(e => !e.isDead && e.gx === targetX && e.gy === targetY);
+    if(!target) return;
+    const dmg = rollDmg(act.baseDmg);
+    target.hp = Math.max(0, target.hp - dmg);
+    player.ap -= act.cost;
+    if(act.cd) player.cooldowns[act.id] = act.cd + 1;
+    addLog(`▸ Kael uses <span style="color:#fff">${act.name}</span> → ${target.name} <span style="color:#ff5252">${dmg} dmg</span>`, '#aee6ff');
+    floatText(target.gx, target.gy, '-' + dmg, '#ff5252');
+    if(target.hp <= 0){
+      target.isDead = true;
+      addLog(`▸ <span style="color:#fff">${target.name} defeated</span>`, '#ffb300');
+      checkVictory();
+    }
+  } else if(act.type === 'spell'){
+    let hits = 0;
+    const aoe = act.aoe || 0;
+    for(let dx = -aoe; dx <= aoe; dx++) for(let dy = -aoe; dy <= aoe; dy++){
+      const tx = targetX + dx, ty = targetY + dy;
+      const t = enemies.find(e => !e.isDead && e.gx === tx && e.gy === ty);
+      if(t){
+        const dmg = rollDmg(act.baseDmg);
+        t.hp = Math.max(0, t.hp - dmg);
+        floatText(t.gx, t.gy, '-' + dmg, '#ff5722');
+        addLog(`▸ ${t.name} hit for <span style="color:#ff5722">${dmg} fire</span>`, '#aaa');
+        if(t.hp <= 0){
+          t.isDead = true;
+          addLog(`▸ <span style="color:#fff">${t.name} defeated</span>`, '#ffb300');
+        }
+        hits++;
+      }
+    }
+    player.ap -= act.cost;
+    if(act.cd) player.cooldowns[act.id] = act.cd + 1;
+    addLog(`▸ Kael casts <span style="color:#fff">${act.name}</span> (${hits} hit${hits>1?'s':''})`, '#ce93d8');
+    checkVictory();
+  }
+
+  state.selectedAction = null;
+  computeReachable();
+  state.validTargets.clear();
+  state.aoePreview.clear();
+  updatePlayerCard();
+  updateActionButtons();
+  updateEnemyPanel();
+  hideTargeting();
+}
+
+function checkVictory(){
+  if(enemies.every(e => e.isDead)){
+    addLog(`▸ <span style="color:#4caf50; font-weight:700">VICTORY · All enemies defeated</span>`, '#4caf50');
+    state.combatOver = true;
+  }
+}
+
+function endTurn(){
+  if(state.combatOver) return;
+  addLog(`▸ <span style="color:#fff">Turn ${state.turn} ended</span>`, '#666');
+
+  // Decrement player cooldowns & status durations
+  for(const k in player.cooldowns) if(player.cooldowns[k] > 0) player.cooldowns[k]--;
+  player.statuses = player.statuses.filter(s => --s.dur > 0);
+
+  // Enemy turns
+  for(const e of enemies){
+    if(e.isDead) continue;
+    const d = Math.max(Math.abs(e.gx - player.gx), Math.abs(e.gy - player.gy));
+    if(e.intent && e.intent.id === 'slam' && d <= 1){
+      const dmg = 12 + Math.floor(Math.random() * 7);
+      player.hp = Math.max(0, player.hp - dmg);
+      addLog(`▸ ${e.name} uses <span style="color:#ff5252">${e.intent.name}</span> → ${dmg} dmg`, '#ff8a4d');
+      floatText(player.gx, player.gy, '-' + dmg, '#ff5252');
+    } else if(e.intent && e.intent.id === 'fireball' && d <= 5){
+      const dmg = 14 + Math.floor(Math.random() * 7);
+      player.hp = Math.max(0, player.hp - dmg);
+      addLog(`▸ ${e.name} casts <span style="color:#ff5722">${e.intent.name}</span> → ${dmg} fire`, '#ce93d8');
+      floatText(player.gx, player.gy, '-' + dmg, '#ff5722');
+    } else if(e.intent && e.intent.id === 'slash' && d <= 1){
+      const dmg = 6 + Math.floor(Math.random() * 4);
+      player.hp = Math.max(0, player.hp - dmg);
+      addLog(`▸ ${e.name} attacks → ${dmg} dmg`, '#ff8a8a');
+      floatText(player.gx, player.gy, '-' + dmg, '#ff5252');
+    } else {
+      // Move toward player
+      const dx = Math.sign(player.gx - e.gx);
+      const dy = Math.sign(player.gy - e.gy);
+      const nx = e.gx + dx, ny = e.gy + dy;
+      if(!isWall(nx, ny) && !isOccupied(nx, ny, e)){
+        moveActor(e, nx, ny);
+        addLog(`▸ ${e.name} approaches`, '#888');
+      } else {
+        addLog(`▸ ${e.name} waits`, '#666');
+      }
+    }
+  }
+
+  // Player death
+  if(player.hp <= 0){
+    addLog(`▸ <span style="color:#ff5252; font-weight:700">DEFEAT · Kael fell in battle</span>`, '#ff5252');
+    state.combatOver = true;
+    return;
+  }
+
+  // New turn
+  state.turn++;
+  player.ap = player.maxAp;
+  document.getElementById('turn-text').textContent = `TURN ${state.turn} · KAEL`;
+  addLog(`▸ <span style="color:#4fc3f7; font-weight:700">Turn ${state.turn} · AP refilled</span>`, '#4fc3f7');
+
+  state.selectedAction = null;
+  computeReachable();
+  state.validTargets.clear();
+  state.aoePreview.clear();
+  updatePlayerCard();
+  updateActionButtons();
+  hideTargeting();
+}
+
+// =========================================================================
+// INPUT
+// =========================================================================
+const keys = {};
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = true;
+  if(e.key === 'Escape'){
+    state.selectedAction = null;
+    state.validTargets.clear();
+    state.aoePreview.clear();
+    updateActionButtons();
+    hideTargeting();
+  }
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = false;
+});
+
+const cam = { dragging: false, sx: 0, sy: 0, ox: 0, oy: 0, justDragged: false };
+canvas.addEventListener('mousedown', e => {
+  if(e.button === 0){
+    cam.dragging = true;
+    cam.sx = e.clientX; cam.sy = e.clientY;
+    cam.ox = state.view.camX; cam.oy = state.view.camY;
+    cam.justDragged = false;
+  }
+});
+canvas.addEventListener('mousemove', e => {
+  const sx = e.clientX, sy = e.clientY;
+  if(cam.dragging){
+    const dx = e.clientX - cam.sx;
+    const dy = e.clientY - cam.sy;
+    if(Math.abs(dx) + Math.abs(dy) > 4) cam.justDragged = true;
+    state.view.camX = cam.ox + dx;
+    state.view.camY = cam.oy + dy;
+  }
+  state.hover = screenToIso(sx, sy, state.gridW, state.gridH, viewport, getElev, state.view);
+  // Enemy hover detection
+  let foundEnemy = null;
+  if(state.hover){
+    for(const en of enemies){
+      if(en.isDead) continue;
+      if(en.gx === state.hover.gx && en.gy === state.hover.gy){ foundEnemy = en; break; }
+    }
+  }
+  if(foundEnemy !== state.hoveredEnemy){
+    state.hoveredEnemy = foundEnemy;
+    updateEnemyPanel();
+  }
+  computeAoePreview();
+});
+canvas.addEventListener('mouseup', e => {
+  if(cam.dragging && !cam.justDragged){
+    handleClick();
+  }
+  cam.dragging = false;
+});
+canvas.addEventListener('mouseleave', () => {
+  cam.dragging = false;
+  state.hover = null;
+  state.hoveredEnemy = null;
+  state.aoePreview.clear();
+  updateEnemyPanel();
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const oldZoom = state.view.zoom;
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  state.view.zoom = Math.max(0.4, Math.min(2.5, oldZoom * factor));
+  updateZoomDisplay();
+}, { passive: false });
+
+function handleClick(){
+  if(state.combatOver) return;
+  if(!state.hover || !state.selectedAction) return;
+  executePlayerAction(state.hover.gx, state.hover.gy);
+}
+
+// =========================================================================
+// UI : ACTION BAR
+// =========================================================================
+document.querySelectorAll('.action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(state.combatOver) return;
+    const id = btn.dataset.action;
+    if(id === 'endturn'){ endTurn(); return; }
+    if(btn.classList.contains('disabled')) return;
+
+    const act = ACTIONS[id];
+    state.selectedAction = act;
+    computeValidTargets(act);
+    updateActionButtons();
+    showTargeting(act);
+  });
+});
+
+function updateActionButtons(){
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    const id = btn.dataset.action;
+    btn.classList.remove('selected', 'disabled');
+    if(id === 'endturn') return;
+    if(state.combatOver){ btn.classList.add('disabled'); return; }
+    const act = ACTIONS[id];
+    if(!act) return;
+    if(player.ap < act.cost){ btn.classList.add('disabled'); return; }
+    if(act.cd){
+      const cd = player.cooldowns[id] || 0;
+      if(cd > 0){ btn.classList.add('disabled'); }
+    }
+    if(state.selectedAction && state.selectedAction.id === id){
+      btn.classList.add('selected');
+    }
+  });
+}
+
+// =========================================================================
+// UI : PLAYER CARD
+// =========================================================================
+function updatePlayerCard(){
+  document.getElementById('pc-hp').textContent = `${player.hp} / ${player.maxHp}`;
+  document.getElementById('pc-hp-fill').style.width = `${(player.hp/player.maxHp)*100}%`;
+  document.getElementById('pc-ap-text').textContent = `${player.ap} / ${player.maxAp}`;
+  const dots = document.getElementById('pc-ap-dots');
+  dots.innerHTML = '';
+  for(let i = 0; i < player.maxAp; i++){
+    const d = document.createElement('div');
+    d.className = 'ap-dot ' + (i < player.ap ? 'full' : 'empty');
+    dots.appendChild(d);
+  }
+  // Statuses
+  const sh = document.getElementById('pc-statuses');
+  sh.innerHTML = '';
+  for(const s of player.statuses){
+    const span = document.createElement('span');
+    span.className = 'pc-status';
+    span.textContent = `${s.icon || '•'} ${s.name} ${s.dur}t`;
+    sh.appendChild(span);
+  }
+}
+
+// =========================================================================
+// UI : ENEMY PANEL
+// =========================================================================
+function updateEnemyPanel(){
+  const panel = document.getElementById('enemy-panel');
+  if(!state.hoveredEnemy){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  const e = state.hoveredEnemy;
+  document.getElementById('ep-name').textContent = e.name;
+  document.getElementById('ep-tier').textContent = e.tier || '';
+  document.getElementById('ep-hp').textContent = `${e.hp}/${e.maxHp}`;
+  const fill = document.getElementById('ep-hp-fill');
+  const ratio = e.hp / e.maxHp;
+  fill.style.width = `${ratio*100}%`;
+  fill.style.background = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#f44336';
+  document.getElementById('ep-intent-name').textContent = e.intent?.name || '--';
+  document.getElementById('ep-intent-desc').textContent = e.intent?.desc || '';
+  document.getElementById('ep-armor').textContent = e.armor || 0;
+  document.getElementById('ep-dodge').textContent = (e.dodge || 0) + '%';
+  document.getElementById('ep-fire').textContent = (e.fireRes || 0) + '%';
+  const sc = document.getElementById('ep-statuses');
+  sc.innerHTML = '';
+  for(const s of (e.statuses || [])){
+    const span = document.createElement('span');
+    span.className = 'ep-status';
+    span.textContent = `${s.icon || '•'} ${s.name} ${s.dur}t`;
+    sc.appendChild(span);
+  }
+}
+
+// =========================================================================
+// UI : TIMELINE
+// =========================================================================
+function buildTimeline(){
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+  const visualOrder = [
+    { color: '#4fc3f7', label: 'K', current: state.currentTurn === 'player', name: 'Kael' },
+    ...enemies.filter(e => !e.isDead).map(e => ({
+      color: e.bodyColor, label: e.name[0], name: e.name
+    })),
+    { color: '#4fc3f7', label: 'K', name: 'Kael (next)' },
+  ];
+  for(const a of visualOrder){
+    const d = document.createElement('div');
+    d.className = 'tl-actor' + (a.current ? ' current' : '');
+    d.style.borderColor = a.color;
+    d.style.background = a.color + '40';
+    d.style.color = a.color;
+    d.textContent = a.label;
+    d.title = a.name;
+    tl.appendChild(d);
+  }
+}
+
+// =========================================================================
+// UI : LOG + FLOAT TEXT + TARGETING HINT
+// =========================================================================
+function addLog(html, color){
+  const entries = document.getElementById('log-entries');
+  const div = document.createElement('div');
+  div.style.color = color || '#aaa';
+  div.innerHTML = html;
+  entries.appendChild(div);
+  if(entries.children.length > 18) entries.removeChild(entries.firstChild);
+  entries.scrollTop = entries.scrollHeight;
+}
+function floatText(gx, gy, text, color){
+  const sp = isoToScreen(gx, gy, getElev(gx, gy), viewport, state.view);
+  const div = document.createElement('div');
+  div.className = 'float-text';
+  div.style.color = color;
+  div.style.left = sp.x + 'px';
+  div.style.top = (sp.y - 30) + 'px';
+  div.textContent = text;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 1200);
+}
+function showTargeting(act){
+  const t = document.getElementById('targeting-hint');
+  t.style.display = 'block';
+  document.getElementById('targeting-text').textContent = `▸ TARGET FOR ${act.name} · ESC to cancel`;
+}
+function hideTargeting(){
+  document.getElementById('targeting-hint').style.display = 'none';
+}
+
+// =========================================================================
+// MINIMAP
+// =========================================================================
+function drawMinimap(){
+  const w = minimap.width, h = minimap.height;
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0, 0, w, h);
+  const sx = w / state.gridW;
+  const sy = h / state.gridH;
+  const biome = getBiome(state.biomeId);
+  // Tiles
+  for(let x = 0; x < state.gridW; x++){
+    for(let y = 0; y < state.gridH; y++){
+      const t = state.tileGrid[x+','+y];
+      if(!t) continue;
+      mctx.fillStyle = t.isWall ? '#222' : biome.config.base;
+      mctx.fillRect(x * sx, y * sy, sx - 0.3, sy - 0.3);
+    }
+  }
+  // Player
+  mctx.fillStyle = '#4fc3f7';
+  mctx.fillRect(player.gx * sx - 1, player.gy * sy - 1, sx + 2, sy + 2);
+  // Enemies
+  for(const e of enemies){
+    if(e.isDead) continue;
+    mctx.fillStyle = '#ff5252';
+    mctx.fillRect(e.gx * sx - 1, e.gy * sy - 1, sx + 2, sy + 2);
+  }
+}
+
+// Click on minimap to teleport camera
+minimap.addEventListener('click', e => {
+  const r = minimap.getBoundingClientRect();
+  const mx = (e.clientX - r.left) / r.width;
+  const my = (e.clientY - r.top) / r.height;
+  const gx = mx * state.gridW;
+  const gy = my * state.gridH;
+  // Center camera on this tile
+  const sp = isoToScreen(gx, gy, 0, viewport, { camX: 0, camY: 0, zoom: state.view.zoom });
+  state.view.camX = viewport.width/2 - sp.x;
+  state.view.camY = viewport.height/2 - sp.y;
+});
+
+// =========================================================================
+// ZOOM
+// =========================================================================
+document.getElementById('zoom-in').addEventListener('click', () => {
+  state.view.zoom = Math.min(2.5, state.view.zoom * 1.15);
+  updateZoomDisplay();
+});
+document.getElementById('zoom-out').addEventListener('click', () => {
+  state.view.zoom = Math.max(0.4, state.view.zoom / 1.15);
+  updateZoomDisplay();
+});
+function updateZoomDisplay(){
+  document.getElementById('zoom-level').textContent = `${Math.round(state.view.zoom * 100)}%`;
+}
+
+// =========================================================================
+// BIOME BUTTONS
+// =========================================================================
+const biomeRow = document.getElementById('biome-buttons');
+const biomes = listBiomeConfigs();
+for(const cfg of biomes){
+  const btn = document.createElement('button');
+  btn.className = 'vbtn' + (cfg.id === state.biomeId ? ' active' : '');
+  btn.dataset.biome = cfg.id;
+  btn.textContent = cfg.name;
+  btn.addEventListener('click', () => {
+    state.biomeId = cfg.id;
+    genTileMap();
+    document.querySelectorAll('#biome-buttons button').forEach(b => {
+      b.classList.toggle('active', b.dataset.biome === state.biomeId);
+    });
+  });
+  biomeRow.appendChild(btn);
+}
+
+document.getElementById('btn-center').addEventListener('click', () => {
+  state.view.camX = 0; state.view.camY = 0;
+});
+document.getElementById('btn-reroll').addEventListener('click', () => {
+  state.mapSeed = Math.floor(Math.random() * 9999);
+  genTileMap();
+  computeReachable();
+});
+document.getElementById('btn-grid').addEventListener('click', e => {
+  state.options.showGrid = !state.options.showGrid;
+  e.target.classList.toggle('active', state.options.showGrid);
+});
+document.getElementById('btn-night').addEventListener('click', e => {
+  state.options.night = !state.options.night;
+  e.target.classList.toggle('active', state.options.night);
+});
+
+// =========================================================================
+// MAIN LOOP
+// =========================================================================
+function tick(){
+  for(const a of allActors) updateActor(a);
+  particles.update();
+  // WASD camera
+  if(keys.w) state.view.camY += 5;
+  if(keys.s) state.view.camY -= 5;
+  if(keys.a) state.view.camX += 5;
+  if(keys.d) state.view.camX -= 5;
+}
+setInterval(tick, 16);
+
+function render(){
+  // Set target color depending on action type
+  let targetColor = '#ff5252';
+  if(state.selectedAction){
+    if(state.selectedAction.type === 'spell') targetColor = '#9c27b0';
+    else if(state.selectedAction.id === 'move') targetColor = getBiome(state.biomeId).config.accent;
+  }
+
+  renderFrame(ctx, {
+    viewport,
+    tileGrid: state.tileGrid,
+    gridW: state.gridW,
+    gridH: state.gridH,
+    actors: allActors,
+    hover: state.hover,
+    reachableSet: state.selectedAction?.id === 'move' ? state.reachableSet : new Set(),
+    validTargets: state.selectedAction && state.selectedAction.id !== 'move' ? state.validTargets : new Set(),
+    aoePreview: state.aoePreview,
+    biome: getBiome(state.biomeId),
+    particles,
+    time: state.time++,
+    view: state.view,
+    options: { ...state.options, targetColor },
+  });
+
+  drawMinimap();
+  buildTimeline();
+
+  requestAnimationFrame(render);
+}
+
+// =========================================================================
+// INIT
+// =========================================================================
+addLog(`▸ <span style="color:#4fc3f7">Combat start in INFERNO_07</span>`, '#aaa');
+addLog(`▸ Kael enters the arena · <span style="color:#fff">3 enemies detected</span>`, '#aaa');
+addLog(`▸ <span style="color:#ffb300">Brûlant prepares SLAM</span>`, '#aaa');
+addLog(`▸ <span style="color:#ce93d8">Pyromancien charges FIREBALL</span>`, '#aaa');
+addLog(`▸ <span style="color:#4fc3f7; font-weight:700">Turn 1 · Your move</span>`, '#aaa');
+
+computeReachable();
+updatePlayerCard();
+updateActionButtons();
+updateZoomDisplay();
+render();
+
+// =========================================================================
+// ERROR
+// =========================================================================
+window.addEventListener('error', ev => {
+  const display = document.getElementById('error-display');
+  display.style.display = 'block';
+  display.innerHTML = `
+    <strong>⚠ Erreur de chargement :</strong>
+    <pre>${ev.message}\nSource: ${ev.filename}:${ev.lineno}</pre>
+    <p style="margin-top:12px; color:#aaa">
+      Vérifie que tous les fichiers sont à jour dans <code>src/js/render/</code> et que tu accèdes via <code>http://localhost/...</code>
+    </p>
+  `;
+});
+</script>
+</body>
+</html>
