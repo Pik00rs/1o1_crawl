@@ -1,18 +1,12 @@
 // src/js/render/iso-projection.js
 // Conversion entre coordonnées de grille et coordonnées écran.
-// Supporte maintenant : caméra (pan) + zoom.
+// Supporte caméra (pan) + zoom + détection iso précise.
 
 export const TILE_W = 60;
 export const TILE_H = 30;
 
 /**
- * Convertit grille → écran avec une "vue" optionnelle.
- *
- * @param {number} gx - case en x
- * @param {number} gy - case en y
- * @param {number} gz - élévation (optionnel)
- * @param {object} viewport - { width, height } du canvas
- * @param {object} view - { camX, camY, zoom } optionnel (default 0,0,1)
+ * Grille → écran avec vue (camX, camY, zoom).
  */
 export function isoToScreen(gx, gy, gz, viewport, view){
   const camX = view?.camX || 0;
@@ -29,28 +23,68 @@ export function isoToScreen(gx, gy, gz, viewport, view){
 }
 
 /**
- * Renvoie la tuile (gx, gy) sous une coordonnée écran (sx, sy).
+ * Écran → grille : vrai inverse de la projection isométrique.
+ *
+ * Mathématiquement :
+ *   sx = ox + (gx - gy) * tw/2
+ *   sy = oy + (gx + gy) * th/2
+ * Donc :
+ *   gx = ((sx - ox) / (tw/2) + (sy - oy) / (th/2)) / 2
+ *   gy = ((sy - oy) / (th/2) - (sx - ox) / (tw/2)) / 2
+ *
+ * On calcule les coordonnées flottantes pour trouver une cellule de base,
+ * puis on teste les 9 cellules autour avec un VRAI test point-in-diamond
+ * (la formule |dx|/halfW + |dy|/halfH <= 1 est mathématiquement EXACTE
+ * pour un losange aligné). On choisit la tuile la plus "devant" (depth max)
+ * en cas de chevauchement dû à l'élévation.
  */
 export function screenToIso(sx, sy, gridW, gridH, viewport, getElev, view){
+  const camX = view?.camX || 0;
+  const camY = view?.camY || 0;
   const zoom = view?.zoom || 1;
   const tw = TILE_W * zoom;
   const th = TILE_H * zoom;
-  let best = null, bestDist = Infinity;
-  for(let x = 0; x < gridW; x++){
-    for(let y = 0; y < gridH; y++){
-      const gz = getElev ? getElev(x, y) : 0;
-      const sp = isoToScreen(x, y, gz, viewport, view);
-      const dx = sx - sp.x;
-      const dy = sy - sp.y;
-      if(Math.abs(dx)/(tw/2) + Math.abs(dy)/(th/2) <= 1){
-        const d = dx*dx + dy*dy;
-        if(d < bestDist){
-          bestDist = d;
-          best = { gx: x, gy: y };
+  const ox = viewport.width / 2 - tw * 0.5 + camX;
+  const oy = viewport.height / 2 - th * 1.5 + camY;
+
+  // Inverse iso (en ignorant d'abord l'élévation)
+  const dx = (sx - ox) / (tw / 2);
+  const dy = (sy - oy) / (th / 2);
+  const fgx = (dx + dy) / 2;
+  const fgy = (dy - dx) / 2;
+
+  const baseX = Math.floor(fgx);
+  const baseY = Math.floor(fgy);
+
+  let best = null;
+  let bestDepth = -Infinity;
+
+  // Test des 9 cellules autour pour gérer élévation et bords
+  for(let oy2 = -1; oy2 <= 1; oy2++){
+    for(let ox2 = -1; ox2 <= 1; ox2++){
+      const gx = baseX + ox2;
+      const gy = baseY + oy2;
+      if(gx < 0 || gy < 0 || gx >= gridW || gy >= gridH) continue;
+
+      const gz = getElev ? getElev(gx, gy) : 0;
+      const sp = isoToScreen(gx, gy, gz, viewport, view);
+
+      const ddx = Math.abs(sx - sp.x);
+      const ddy = Math.abs(sy - sp.y);
+      // Test exact point-in-diamond
+      const inside = (ddx / (tw / 2)) + (ddy / (th / 2)) <= 1;
+
+      if(inside){
+        // La tuile la plus en avant (plus grand gx+gy) est dessinée par-dessus
+        const depth = gx + gy;
+        if(depth > bestDepth){
+          bestDepth = depth;
+          best = { gx, gy };
         }
       }
     }
   }
+
   return best;
 }
 
