@@ -12,19 +12,21 @@
 <link rel="stylesheet" href="src/css/components/buttons.css">
 
 <style>
-  /* Bandeau supérieur quand on est en mode custom */
   #custom-banner {
     background: linear-gradient(90deg, rgba(255,87,34,0.18), transparent);
     border-bottom: 1px solid rgba(255,87,34,0.4);
     padding: 10px 20px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono', monospace, monospace;
     font-size: 11px;
     letter-spacing: 1.5px;
     color: #ffb300;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
+  #custom-banner span.label { color: #ff5722; }
   #custom-banner a {
     color: #4fc3f7;
     text-decoration: none;
@@ -38,7 +40,7 @@
   .home-link {
     position: fixed; top: 12px; right: 12px;
     z-index: 50;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono', monospace, monospace;
     font-size: 10px;
     letter-spacing: 2px;
     color: #888;
@@ -56,7 +58,7 @@
 <a href="index.html" class="home-link">▸ DASHBOARD</a>
 
 <div id="custom-banner" style="display:none">
-  <span>▸ MODE PLAYTEST CUSTOM // <span id="banner-info">--</span></span>
+  <span><span class="label">▸ MODE PLAYTEST CUSTOM //</span> <span id="banner-info">--</span></span>
   <a href="src/dashboard/playtest.html">↩ ÉDITER</a>
 </div>
 
@@ -76,11 +78,11 @@
   <div class="right-panel">
     <div class="panel">
       <h2 id="player-name">🧙 Kael</h2>
-      <div class="stat-line"><span>PV</span><span id="hp-text">32/32</span></div>
+      <div class="stat-line"><span>PV</span><span id="hp-text">--</span></div>
       <div class="stat-bar"><div class="stat-bar-fill" id="hp-fill" style="background:#4a8;width:100%"></div></div>
-      <div class="stat-line"><span>AP</span><span id="ap-text">7/7</span></div>
+      <div class="stat-line"><span>AP</span><span id="ap-text">--</span></div>
       <div class="stat-bar"><div class="stat-bar-fill" id="ap-fill" style="background:#48f;width:100%"></div></div>
-      <div class="stat-line"><span>Armure</span><span id="armor-text">14</span></div>
+      <div class="stat-line"><span>Armure</span><span id="armor-text">--</span></div>
       <div class="stat-line"><span>Statuts</span><span id="status-text">Aucun</span></div>
     </div>
 
@@ -104,9 +106,7 @@
 </div>
 
 <script type="module">
-  // === Custom run injection ===
-  // Si l'URL contient ?run=custom, on lit localStorage 'rh_active_run'
-  // et on injecte la room dans DATA.rooms après le chargement.
+  // === Lecture du custom run depuis localStorage ===
   const urlParams = new URLSearchParams(window.location.search);
   const isCustomRun = urlParams.get('run') === 'custom';
 
@@ -115,56 +115,56 @@
     try {
       const raw = localStorage.getItem('rh_active_run');
       if (raw) customPayload = JSON.parse(raw);
-    } catch (e) { console.warn('Failed to parse custom run', e); }
+    } catch (e) {
+      console.warn('Failed to parse custom run', e);
+    }
   }
 
-  // On charge le moteur normal
-  import('./src/js/data/loader.js').then(async ({ loadAllData, DATA }) => {
-    await loadAllData();
-
-    // Injection de la room custom AVANT de démarrer le jeu
-    if (customPayload && customPayload.rooms && customPayload.rooms.length > 0) {
-      // On prend la première room comme "tutorial" (le moteur démarre sur tutorial par défaut)
-      // et on injecte les autres avec leur ID original
-      const firstRoom = customPayload.rooms[0];
-      DATA.rooms.tutorial = {
-        ...firstRoom,
-        id: 'tutorial',
-        name: firstRoom.name + ' (Custom)',
-      };
-      // Injecte les autres rooms par leur id propre
-      for (let i = 1; i < customPayload.rooms.length; i++) {
-        const r = customPayload.rooms[i];
-        DATA.rooms[r.id] = r;
-      }
-
-      // Affiche le bandeau d'info
-      const banner = document.getElementById('custom-banner');
-      banner.style.display = 'flex';
-      const totalEnemies = customPayload.rooms.reduce((s,r) => s + r.enemies.length, 0);
-      document.getElementById('banner-info').textContent =
-        `${customPayload.rooms.length} salle(s) // ${totalEnemies} ennemis // Player Lvl ${customPayload.player.level} (${customPayload.player.stuff})`;
-
-      console.log('[Custom Run] Loaded', customPayload);
+  // === Construire les options pour startGame() ===
+  const opts = {};
+  if (customPayload && customPayload.rooms && customPayload.rooms.length > 0) {
+    // On injecte toutes les rooms, en faisant de la première la "tutorial"
+    // (le moteur démarre sur 'tutorial' par défaut)
+    const firstRoom = customPayload.rooms[0];
+    opts.injectRooms = {
+      tutorial: { ...firstRoom, id: 'tutorial', name: firstRoom.name + ' (Custom)' },
+    };
+    for (let i = 1; i < customPayload.rooms.length; i++) {
+      const r = customPayload.rooms[i];
+      opts.injectRooms[r.id] = r;
     }
 
-    // Démarrage du jeu
-    const { startGame } = await import('./src/js/core/game.js');
-    startGame().catch(err => {
-      console.error('Erreur de démarrage :', err);
-      document.body.innerHTML = `<div style="padding:40px;color:#fff;font-family:'JetBrains Mono',monospace;">
-        <h2 style="color:#f44;">Erreur de chargement</h2>
-        <p>${err.message}</p>
-        <p style="color:#aaa;margin-top:20px;">Le jeu nécessite un serveur HTTP. Voir le README.md.</p>
-        <pre style="background:#222;padding:10px;margin-top:20px;color:#8af;">python3 -m http.server 8000</pre>
-        <p style="margin-top:20px;"><a href="index.html" style="color:#4fc3f7">↩ Retour au dashboard</a></p>
-      </div>`;
-    });
+    // Player config : level + stuff preset + modifiers custom
+    if (customPayload.player) {
+      opts.playerConfig = {
+        level: customPayload.player.level || 1,
+        stuff: customPayload.player.stuff || 'balanced',
+        customModifiers: customPayload.player.customModifiers || [],
+      };
+    }
+
+    // Affiche le bandeau
+    const banner = document.getElementById('custom-banner');
+    banner.style.display = 'flex';
+    const totalEnemies = customPayload.rooms.reduce((s,r) => s + r.enemies.length, 0);
+    const lvl = customPayload.player?.level || 1;
+    const stf = customPayload.player?.stuff || 'balanced';
+    document.getElementById('banner-info').textContent =
+      `${customPayload.rooms.length} salle(s) // ${totalEnemies} ennemis // Lvl ${lvl} (${stf})`;
+
+    console.log('[Custom Run]', customPayload);
+  }
+
+  // === Démarrage ===
+  import('./src/js/core/game.js').then(({ startGame }) => {
+    return startGame(opts);
   }).catch(err => {
-    console.error('Loader error:', err);
+    console.error('Erreur de démarrage :', err);
     document.body.innerHTML = `<div style="padding:40px;color:#fff;font-family:'JetBrains Mono',monospace;">
       <h2 style="color:#f44;">Erreur de chargement</h2>
       <p>${err.message}</p>
+      <p style="color:#aaa;margin-top:20px;">Le jeu nécessite un serveur HTTP. Voir le README.md.</p>
+      <pre style="background:#222;padding:10px;margin-top:20px;color:#8af;">python3 -m http.server 8000</pre>
       <p style="margin-top:20px;"><a href="index.html" style="color:#4fc3f7">↩ Retour au dashboard</a></p>
     </div>`;
   });

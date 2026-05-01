@@ -14,9 +14,37 @@
   @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
 
   .controls input, .controls select { width: 100%; }
-  .controls input[type="number"] { width: 100%; }
-  .form-row label { min-width: 120px; }
+  .form-row label { min-width: 110px; font-size: 9px; }
 
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 12px;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .tab.active {
+    background: var(--bg-2);
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan) var(--accent-cyan) transparent;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Rooms */
   .room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
   .room {
     padding: 12px;
@@ -67,7 +95,7 @@
     box-shadow: 0 0 24px rgba(255,87,34,0.3);
   }
   .launch-btn:hover { background: #ff7043; }
-  .launch-btn[disabled] { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+  .launch-btn[disabled] { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
   /* Editor right side */
   .editor__head {
@@ -144,6 +172,85 @@
     font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
     color: var(--accent-amber); text-transform: uppercase;
   }
+
+  /* Player tab */
+  .preset-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .preset-btn {
+    padding: 12px 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--accent-cyan); color: var(--text); }
+  .preset-btn.active {
+    background: rgba(79,195,247,0.12);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+  .preset-btn__label { font-weight: 700; letter-spacing: 1px; }
+  .preset-btn__count {
+    font-size: 9px;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+
+  .stats-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .stat-pill {
+    padding: 8px 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent-cyan);
+  }
+  .stat-pill__label {
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-faint); letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .stat-pill__val {
+    font-family: var(--font-mono); font-size: 14px;
+    color: #fff; font-weight: 700;
+    margin-top: 2px;
+  }
+  .stat-pill__delta {
+    font-size: 10px; color: var(--accent-green); margin-left: 4px;
+  }
+  .stat-pill__delta--neg { color: var(--accent-red); }
+
+  .custom-mod-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr) 32px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .custom-mod-row select, .custom-mod-row input { padding: 6px 8px; font-size: 11px; }
+  .custom-mod-row button {
+    background: transparent; color: var(--accent-red);
+    border: 1px solid var(--border-strong);
+    cursor: pointer; padding: 4px;
+  }
+  .custom-mod-row button:hover { border-color: var(--accent-red); }
+  #add-mod-btn {
+    background: transparent; color: var(--accent-amber);
+    border: 1px dashed var(--accent-amber);
+    width: 100%; padding: 8px; cursor: pointer;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  #add-mod-btn:hover { background: rgba(255,179,0,0.08); }
 </style>
 </head>
 <body>
@@ -167,36 +274,40 @@
 
   <section class="layout">
 
-    <!-- LEFT : run config + room list -->
+    <!-- LEFT : tabs (rooms / player) + launch -->
     <div class="panel controls">
-      <div class="panel__title">◢ RUN CONFIGURATION</div>
 
-      <div class="form-row">
-        <label>Niveau joueur</label>
-        <input id="player-level" type="number" min="1" max="10" value="3" />
+      <div class="tabs">
+        <button class="tab active" data-tab="rooms">▸ Salles</button>
+        <button class="tab" data-tab="player">👤 Joueur</button>
       </div>
 
-      <div class="form-row">
-        <label>Stuff</label>
-        <select id="player-stuff">
-          <option value="naked">Sans stuff</option>
-          <option value="poor">Faible (Common)</option>
-          <option value="balanced" selected>Équilibré (Rare)</option>
-          <option value="strong">Fort (Epic)</option>
-          <option value="op">OP (Legendary)</option>
-        </select>
+      <!-- TAB ROOMS -->
+      <div class="tab-content active" id="tab-rooms">
+        <div class="panel__title">◢ SALLES (<span id="room-count">0</span>)</div>
+        <div class="room-list" id="room-list"></div>
+        <button class="add-room-btn" id="add-room-btn">+ AJOUTER UNE SALLE</button>
       </div>
 
-      <div class="form-row">
-        <label>HP de départ</label>
-        <input id="player-hp" type="number" min="20" max="500" value="100" />
+      <!-- TAB PLAYER -->
+      <div class="tab-content" id="tab-player">
+        <div class="panel__title">◢ JOUEUR · CONFIGURATION</div>
+
+        <div class="form-row">
+          <label>Niveau</label>
+          <input id="player-level" type="number" min="1" max="10" value="3" />
+        </div>
+
+        <div class="text-xs uppercase faint mb-2 mt-4">▸ Preset de stuff</div>
+        <div class="preset-grid" id="preset-grid"></div>
+
+        <div class="text-xs uppercase faint mb-2 mt-4">▸ Modifiers additionnels (optionnel)</div>
+        <div id="custom-mods"></div>
+        <button id="add-mod-btn">+ AJOUTER UN MODIFIER</button>
+
+        <div class="text-xs uppercase faint mb-2 mt-4">▸ Stats finales</div>
+        <div id="stats-preview" class="stats-display"></div>
       </div>
-
-      <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;" />
-
-      <div class="panel__title">◢ SALLES (<span id="room-count">0</span>)</div>
-      <div class="room-list" id="room-list"></div>
-      <button class="add-room-btn" id="add-room-btn">+ AJOUTER UNE SALLE</button>
 
       <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;" />
 
@@ -235,7 +346,7 @@
         <div class="enemies-pool" id="enemies-pool"></div>
 
         <div class="preview">
-          <h4>▸ APERÇU</h4>
+          <h4>▸ APERÇU SALLE</h4>
           <div id="preview-content" class="text-sm muted">--</div>
         </div>
       </div>
@@ -246,10 +357,11 @@
 
 </main>
 
-<script>
+<script type="module">
 // ==========================================
-// DUNGEON TESTER (vanilla)
+// IMPORT player-stats pour calculer le preview
 // ==========================================
+import { PLAYER_BASE_STATS, STUFF_PRESETS, applyStuff, describePreset } from '../js/entities/player-stats.js';
 
 const BIOMES = {
   inferno: { color:'#ff5722', shortName:'Inferno' },
@@ -259,30 +371,55 @@ const BIOMES = {
   crimson: { color:'#c62828', shortName:'Crimson' },
 };
 
+const STATS_LIST = [
+  { key:'maxHp', label:'PV max', op:'flat' },
+  { key:'damage', label:'Dégâts', op:'pct' },
+  { key:'armor', label:'Armure', op:'flat' },
+  { key:'critChance', label:'Crit %', op:'flat' },
+  { key:'critMultiplier', label:'Crit Mult', op:'flat' },
+  { key:'dodgeChance', label:'Esquive %', op:'flat' },
+  { key:'blockChance', label:'Blocage %', op:'flat' },
+  { key:'lifesteal', label:'Vol de vie %', op:'flat' },
+  { key:'armorPen', label:'Pénétration', op:'flat' },
+  { key:'hpRegen', label:'PV/tour', op:'flat' },
+  { key:'bonusFire', label:'Dmg Feu', op:'flat' },
+  { key:'bonusIce', label:'Dmg Glace', op:'flat' },
+  { key:'bonusShock', label:'Dmg Foudre', op:'flat' },
+  { key:'bonusPoison', label:'Dmg Poison', op:'flat' },
+  { key:'fireResist', label:'Résist Feu %', op:'flat' },
+  { key:'iceResist', label:'Résist Glace %', op:'flat' },
+  { key:'shockResist', label:'Résist Foudre %', op:'flat' },
+  { key:'poisonResist', label:'Résist Poison %', op:'flat' },
+  { key:'ccReduction', label:'Réduc CC %', op:'flat' },
+  { key:'moveSpeed', label:'Mouvement', op:'flat' },
+  { key:'range', label:'Portée', op:'flat' },
+  { key:'bonusAp', label:'AP bonus', op:'flat' },
+];
+
 let ALL_ENEMIES = [];
 
 let state = {
+  // tab
+  activeTab: 'rooms',
+  // player config
   playerLevel: 3,
   playerStuff: 'balanced',
-  playerHp: 100,
-  rooms: [],            // [{ id, name, enemies: [enemyTypeId, ...] }]
+  customMods: [],
+  // rooms
+  rooms: [],
   selectedRoomId: null,
   filterBiome: 'all',
   filterRole: 'all',
 };
 
-// ======= LOAD DATA =======
+// ======= LOAD ENEMIES =======
 
 async function loadEnemies() {
   try {
     const res = await fetch('../../src/data/enemies.json');
     if (!res.ok) throw new Error('Failed enemies.json');
-    const data = await res.json();
-    return Object.values(data);
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
+    return Object.values(await res.json());
+  } catch (err) { console.error(err); return []; }
 }
 
 // ======= LOCALSTORAGE =======
@@ -293,7 +430,7 @@ function saveConfig() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       playerLevel: state.playerLevel,
       playerStuff: state.playerStuff,
-      playerHp: state.playerHp,
+      customMods: state.customMods,
       rooms: state.rooms,
       timestamp: Date.now(),
     }));
@@ -306,7 +443,7 @@ function loadConfig() {
     const data = JSON.parse(raw);
     if (data.playerLevel) state.playerLevel = data.playerLevel;
     if (data.playerStuff) state.playerStuff = data.playerStuff;
-    if (data.playerHp) state.playerHp = data.playerHp;
+    if (Array.isArray(data.customMods)) state.customMods = data.customMods;
     if (Array.isArray(data.rooms)) state.rooms = data.rooms;
     if (state.rooms.length > 0) state.selectedRoomId = state.rooms[0].id;
   } catch (e) { console.warn('Load failed', e); }
@@ -321,20 +458,14 @@ function addRoom() {
   const r = makeRoom();
   state.rooms.push(r);
   state.selectedRoomId = r.id;
-  saveConfig();
-  render();
+  saveConfig(); render();
 }
 function deleteRoom(id) {
   state.rooms = state.rooms.filter(r => r.id !== id);
   if (state.selectedRoomId === id) state.selectedRoomId = state.rooms[0]?.id || null;
-  saveConfig();
-  render();
+  saveConfig(); render();
 }
-function selectedRoom() {
-  return state.rooms.find(r => r.id === state.selectedRoomId);
-}
-
-// ======= ENEMY POOL =======
+function selectedRoom() { return state.rooms.find(r => r.id === state.selectedRoomId); }
 
 function getFilteredPool() {
   return ALL_ENEMIES.filter(e => {
@@ -345,19 +476,15 @@ function getFilteredPool() {
 }
 function addEnemyToRoom(typeId) {
   const r = selectedRoom(); if (!r) return;
-  if (r.enemies.length >= 8) { alert('Max 8 ennemis par salle (grille 8×6).'); return; }
-  r.enemies.push(typeId);
-  saveConfig();
-  render();
+  if (r.enemies.length >= 10) { alert('Max 10 ennemis par salle.'); return; }
+  r.enemies.push(typeId); saveConfig(); render();
 }
 function removeEnemyFromRoom(idx) {
   const r = selectedRoom(); if (!r) return;
-  r.enemies.splice(idx, 1);
-  saveConfig();
-  render();
+  r.enemies.splice(idx, 1); saveConfig(); render();
 }
 
-// ======= RENDER =======
+// ======= RENDER : ROOMS TAB =======
 
 function renderRoomList() {
   const host = document.getElementById('room-list');
@@ -379,9 +506,7 @@ function renderRoomList() {
     `;
     el.addEventListener('click', (e) => {
       if (e.target.dataset.action === 'del') { deleteRoom(r.id); return; }
-      state.selectedRoomId = r.id;
-      saveConfig();
-      render();
+      state.selectedRoomId = r.id; saveConfig(); render();
     });
     host.appendChild(el);
   }
@@ -399,9 +524,7 @@ function renderEditor() {
   document.getElementById('editor-content').classList.remove('hidden');
   document.getElementById('editor-room-name').textContent = r.name;
 
-  // Name input
-  const nameInput = document.getElementById('room-name');
-  nameInput.value = r.name;
+  document.getElementById('room-name').value = r.name;
 
   // Selected enemies
   const sel = document.getElementById('selected-enemies');
@@ -420,7 +543,7 @@ function renderEditor() {
     });
   }
 
-  // Biome filter
+  // Biome filters
   const biomeHost = document.getElementById('biome-filters-mini');
   if (biomeHost.children.length === 0) {
     const all = document.createElement('button');
@@ -434,7 +557,6 @@ function renderEditor() {
       btn.className = 'filter-btn-mini' + (state.filterBiome === bid ? ' active' : '');
       btn.dataset.biome = bid;
       btn.textContent = b.shortName;
-      btn.style.setProperty('--biome-color', b.color);
       btn.addEventListener('click', () => { state.filterBiome = bid; render(); });
       biomeHost.appendChild(btn);
     }
@@ -483,22 +605,133 @@ function renderEditor() {
     const totalDmg = r.enemies.reduce((s, tid) => {
       const e = ALL_ENEMIES.find(x => x.id === tid); const d = e?.attackPower || [0,0]; return s + ((d[0]+d[1])/2);
     }, 0);
+    const score = totalHp + totalDmg*5;
+    const diff = score < 100 ? 'FACILE' : score < 250 ? 'MODÉRÉ' : score < 450 ? 'DIFFICILE' : 'EXTRÊME';
+    const color = score < 100 ? '#4caf50' : score < 250 ? '#ffb300' : score < 450 ? '#ff5252' : '#ff1744';
     prev.innerHTML = `
       <div class="mono text-xs">
         ▸ ${r.enemies.length} ennemi(s)<br>
         ▸ HP total : <span style="color:#fff">${totalHp}</span><br>
         ▸ Dégâts moyens cumulés : <span style="color:#fff">${totalDmg.toFixed(0)}/tour</span><br>
-        ▸ Difficulté estimée : <span style="color:${
-          totalHp + totalDmg*5 < 100 ? '#4caf50' :
-          totalHp + totalDmg*5 < 250 ? '#ffb300' : '#ff5252'
-        }">${
-          totalHp + totalDmg*5 < 100 ? 'FACILE' :
-          totalHp + totalDmg*5 < 250 ? 'MODÉRÉ' : 'DIFFICILE'
-        }</span>
+        ▸ Difficulté estimée : <span style="color:${color}">${diff}</span>
       </div>
     `;
   }
 }
+
+// ======= RENDER : PLAYER TAB =======
+
+function renderPresetGrid() {
+  const host = document.getElementById('preset-grid');
+  host.innerHTML = '';
+  for (const [id, preset] of Object.entries(STUFF_PRESETS)) {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (state.playerStuff === id ? ' active' : '');
+    btn.innerHTML = `
+      <div class="preset-btn__label">${preset.label}</div>
+      <div class="preset-btn__count">${preset.modifiers.length} mod${preset.modifiers.length>1?'s':''}</div>
+    `;
+    btn.addEventListener('click', () => {
+      state.playerStuff = id; saveConfig(); render();
+    });
+    host.appendChild(btn);
+  }
+}
+
+function renderCustomMods() {
+  const host = document.getElementById('custom-mods');
+  host.innerHTML = '';
+  if (state.customMods.length === 0) {
+    host.innerHTML = '<div class="faint mono text-xs mb-2">Aucun modifier custom. Utilise le preset uniquement.</div>';
+    return;
+  }
+  state.customMods.forEach((mod, idx) => {
+    const row = document.createElement('div');
+    row.className = 'custom-mod-row';
+    const statOptions = STATS_LIST.map(s =>
+      `<option value="${s.key}" ${s.key === mod.stat ? 'selected' : ''}>${s.label}</option>`
+    ).join('');
+    row.innerHTML = `
+      <select data-field="stat">${statOptions}</select>
+      <select data-field="op">
+        <option value="flat" ${mod.op === 'flat' ? 'selected' : ''}>flat</option>
+        <option value="pct" ${mod.op === 'pct' ? 'selected' : ''}>%</option>
+      </select>
+      <input data-field="value" type="number" value="${mod.value}" />
+      <button data-action="del">×</button>
+    `;
+    row.querySelector('[data-action="del"]').addEventListener('click', () => {
+      state.customMods.splice(idx, 1); saveConfig(); render();
+    });
+    row.querySelectorAll('[data-field]').forEach(el => {
+      el.addEventListener('input', () => {
+        const f = el.dataset.field;
+        if (f === 'value') state.customMods[idx][f] = parseFloat(el.value) || 0;
+        else state.customMods[idx][f] = el.value;
+        saveConfig();
+        renderStatsPreview();
+      });
+    });
+    host.appendChild(row);
+  });
+}
+
+function renderStatsPreview() {
+  const host = document.getElementById('stats-preview');
+  host.innerHTML = '';
+  const finalStats = applyStuff(state.playerLevel, state.playerStuff, state.customMods);
+  const baseStats = applyStuff(state.playerLevel, 'naked');
+
+  const display = [
+    { key:'maxHp', label:'PV max' },
+    { key:'damage', label:'Dégâts', isRange: true },
+    { key:'armor', label:'Armure' },
+    { key:'critChance', label:'Crit %', suffix:'%' },
+    { key:'critMultiplier', label:'Crit Mult', suffix:'%' },
+    { key:'dodgeChance', label:'Esquive %', suffix:'%' },
+    { key:'lifesteal', label:'Vol de vie', suffix:'%' },
+    { key:'armorPen', label:'Pénétration' },
+    { key:'hpRegen', label:'PV/tour' },
+    { key:'fireResist', label:'Rés. Feu', suffix:'%' },
+    { key:'iceResist', label:'Rés. Glace', suffix:'%' },
+    { key:'shockResist', label:'Rés. Foudre', suffix:'%' },
+    { key:'poisonResist', label:'Rés. Poison', suffix:'%' },
+    { key:'ccReduction', label:'Réduc CC', suffix:'%' },
+    { key:'bonusFire', label:'Dmg Feu' },
+    { key:'bonusIce', label:'Dmg Glace' },
+    { key:'bonusAp', label:'AP bonus' },
+  ];
+
+  for (const d of display) {
+    const v = finalStats[d.key];
+    const b = baseStats[d.key];
+    let valStr, deltaStr = '';
+    if (d.isRange) {
+      valStr = `${v[0]}-${v[1]}`;
+      const dlt0 = v[0]-b[0], dlt1 = v[1]-b[1];
+      if (dlt0 || dlt1) deltaStr = ` (+${dlt0}/+${dlt1})`;
+    } else {
+      valStr = v + (d.suffix || '');
+      const dlt = v - b;
+      if (dlt > 0) deltaStr = ` (+${dlt}${d.suffix||''})`;
+      else if (dlt < 0) deltaStr = ` (${dlt}${d.suffix||''})`;
+    }
+    const pill = document.createElement('div');
+    pill.className = 'stat-pill';
+    pill.innerHTML = `
+      <div class="stat-pill__label">${d.label}</div>
+      <div class="stat-pill__val">${valStr}<span class="stat-pill__delta ${deltaStr.startsWith(' (-') ? 'stat-pill__delta--neg' : ''}">${deltaStr}</span></div>
+    `;
+    host.appendChild(pill);
+  }
+}
+
+function addCustomMod() {
+  state.customMods.push({ stat:'maxHp', op:'flat', value: 5 });
+  saveConfig(); render();
+}
+
+// ======= LAUNCH STATE =======
 
 function renderLaunchState() {
   const btn = document.getElementById('launch-btn');
@@ -509,33 +742,38 @@ function renderLaunchState() {
     warn.textContent = '⚠ Crée au moins une salle avec des ennemis pour pouvoir lancer.';
   } else {
     btn.disabled = false;
-    warn.textContent = `${state.rooms.length} salle(s) // ${totalEnemies} ennemis total`;
+    warn.textContent = `${state.rooms.length} salle(s) // ${totalEnemies} ennemis // Lvl ${state.playerLevel} (${state.playerStuff})`;
   }
 }
 
 function render() {
-  renderRoomList();
-  renderEditor();
+  // Tabs visibility
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.activeTab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + state.activeTab));
+
+  if (state.activeTab === 'rooms') {
+    renderRoomList();
+    renderEditor();
+  } else {
+    renderPresetGrid();
+    renderCustomMods();
+    renderStatsPreview();
+  }
   renderLaunchState();
 }
 
 // ======= LAUNCH =======
 
 function buildRunPayload() {
-  // Convertit la config en quelque chose que game.html peut consommer
-  // On crée des "rooms" au format attendu par rooms.json
-  const rooms = state.rooms.map((r, idx) => {
+  const rooms = state.rooms.map((r) => {
     const enemies = r.enemies.map((typeId, i) => {
-      // Position basique : aligner sur la colonne droite
       const col = 5 + (i % 3);
       const row = (i % 6);
       return { type: typeId, x: col, y: row };
     });
     return {
-      id: r.id,
-      name: r.name,
-      width: 8,
-      height: 6,
+      id: r.id, name: r.name,
+      width: 8, height: 6,
       walls: [],
       playerStart: { x: 1, y: 2 },
       enemies,
@@ -546,7 +784,7 @@ function buildRunPayload() {
     player: {
       level: state.playerLevel,
       stuff: state.playerStuff,
-      hp: state.playerHp,
+      customModifiers: state.customMods,
     },
     timestamp: Date.now(),
   };
@@ -555,30 +793,30 @@ function buildRunPayload() {
 function launch() {
   const payload = buildRunPayload();
   if (payload.rooms.length === 0) return;
-  // Stocke dans une clé séparée que game.html va lire
   localStorage.setItem('rh_active_run', JSON.stringify(payload));
   window.location.href = '../../game.html?run=custom';
 }
 
 // ======= EVENTS =======
 
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    state.activeTab = t.dataset.tab;
+    render();
+  });
+});
+
 document.getElementById('add-room-btn').addEventListener('click', addRoom);
 document.getElementById('launch-btn').addEventListener('click', launch);
+document.getElementById('add-mod-btn').addEventListener('click', addCustomMod);
 
 document.getElementById('player-level').addEventListener('input', e => {
   state.playerLevel = parseInt(e.target.value, 10) || 1;
   saveConfig();
-});
-document.getElementById('player-stuff').addEventListener('change', e => {
-  state.playerStuff = e.target.value;
-  saveConfig();
-});
-document.getElementById('player-hp').addEventListener('input', e => {
-  state.playerHp = parseInt(e.target.value, 10) || 100;
-  saveConfig();
+  if (state.activeTab === 'player') renderStatsPreview();
+  renderLaunchState();
 });
 
-// Room name
 document.addEventListener('input', e => {
   if (e.target.id === 'room-name') {
     const r = selectedRoom();
@@ -586,7 +824,6 @@ document.addEventListener('input', e => {
   }
 });
 
-// Role filters
 document.querySelectorAll('#role-filters-mini button').forEach(b => {
   b.addEventListener('click', () => { state.filterRole = b.dataset.role; render(); });
 });
@@ -597,12 +834,8 @@ document.querySelectorAll('#role-filters-mini button').forEach(b => {
   ALL_ENEMIES = await loadEnemies();
   loadConfig();
 
-  // Sync UI inputs with state
   document.getElementById('player-level').value = state.playerLevel;
-  document.getElementById('player-stuff').value = state.playerStuff;
-  document.getElementById('player-hp').value = state.playerHp;
 
-  // Si pas de room → créer une par défaut
   if (state.rooms.length === 0) addRoom();
   else render();
 })();
