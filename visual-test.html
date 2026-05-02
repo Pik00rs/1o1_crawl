@@ -589,6 +589,17 @@
 
 <div id="error-display"></div>
 
+<div id="boot-loader" style="position:fixed; inset:0; background:#08080c; z-index:9999; display:none; align-items:center; justify-content:center; flex-direction:column; gap:14px; font-family:'JetBrains Mono', monospace;">
+  <div style="font-size:14px; letter-spacing:3px; color:#aee6ff;">▸ LOADING TILE LIBRARY</div>
+  <div style="width:200px; height:3px; background:#1a1a24; border-radius:2px; overflow:hidden;">
+    <div style="width:30%; height:100%; background:linear-gradient(90deg, transparent, #aee6ff, transparent); animation: loaderSlide 1.4s linear infinite;"></div>
+  </div>
+  <div style="font-size:9px; color:#666; letter-spacing:1px;">Rasterizing 150 SVG tiles…</div>
+</div>
+<style>
+  @keyframes loaderSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(700%)} }
+</style>
+
 <!-- TOP BAR -->
 <div id="top-bar">
   <div id="top-left">
@@ -807,7 +818,7 @@
 
 <script type="module">
 import { renderFrame } from './src/js/render/iso-engine.js';
-import { getBiome, listBiomeConfigs } from './src/js/render/biomes/index.js';
+import { getBiome, listBiomeConfigs, preloadAllBiomes, listBiomeIds } from './src/js/render/biomes/svg-loader.js';
 import { ParticleSystem } from './src/js/render/particles.js';
 import { TILE_W, TILE_H, screenToIso, isoToScreen } from './src/js/render/iso-projection.js';
 import { rng, pickWeighted } from './src/js/render/iso-utils.js';
@@ -1024,8 +1035,11 @@ function genTileMap(){
   state.tileGrid = {};
   const biome = getBiome(state.biomeId);
   const r = rng(state.mapSeed*7919 + state.biomeId.charCodeAt(0)*13);
+  // Si le biome est encore un stub (pas encore chargé), on génère quand même
+  // une grid basique. Le boot async re-générera les types une fois prêt.
+  const hasTypes = biome.config.tileTypes && biome.config.tileTypes.length > 0;
   for(let x=0;x<state.gridW;x++) for(let y=0;y<state.gridH;y++){
-    const type = pickWeighted(biome.config.tileWeights, r());
+    const type = hasTypes ? pickWeighted(biome.config.tileWeights, r()) : 0;
     state.tileGrid[x+','+y] = {
       type, seed:(x*101+y*239+state.mapSeed*7)%9999,
       microElev:(Math.sin(x*1.7+y*2.3)*0.5+Math.cos(x*0.7+y*1.4)*0.5)*0.6,
@@ -1036,6 +1050,7 @@ function genTileMap(){
   }
   const wallCount = 10+(r()*6)|0;
   let placed=0, tries=0;
+  const propsArr = (biome.config.props && biome.config.props.length > 0) ? biome.config.props : [];
   while(placed<wallCount && tries<80){
     tries++;
     const x=(r()*state.gridW)|0, y=(r()*state.gridH)|0;
@@ -1044,7 +1059,7 @@ function genTileMap(){
     const t = state.tileGrid[x+','+y];
     if(t.isWall) continue;
     t.isWall = true;
-    t.prop = biome.config.props[(r()*biome.config.props.length)|0];
+    t.prop = propsArr.length > 0 ? propsArr[(r()*propsArr.length)|0] : null;
     placed++;
   }
   for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
@@ -1057,11 +1072,9 @@ genTileMap();
 // ============================================================================
 // MAP BUILDER INTEGRATION
 // ============================================================================
-// Bridge entre la nouvelle tile-library (cryo_B1, inf_F7, vnt_P3...) et le
-// moteur existant (type/prop/isWall). Lit localStorage 'reactor_hollow_map'.
-// Si présent, applique la map au tileGrid SANS toucher au reste du moteur.
-// Cross-tab : quand le builder écrit dans localStorage depuis un autre onglet,
-// l'event 'storage' déclenche le reload automatique de la map.
+// Lit localStorage 'reactor_hollow_map' (créé par tile-library/map-builder.html).
+// Si présent, applique la map au tileGrid. Le bridge stocke l'ID exact (builderTileId)
+// pour que le rendu utilise la tile library SVG correspondante au lieu d'un type aléatoire.
 // ============================================================================
 function applyBuilderMapIfAny(){
   let mapData = null;
@@ -1069,23 +1082,12 @@ function applyBuilderMapIfAny(){
     const raw = localStorage.getItem('reactor_hollow_map');
     if(!raw) return false;
     mapData = JSON.parse(raw);
-    localStorage.removeItem('reactor_hollow_map'); // single-use
+    localStorage.removeItem('reactor_hollow_map');
   } catch(e){ return false; }
   if(!mapData || !mapData.tiles || !Array.isArray(mapData.tiles)) return false;
 
-  const idMap = { cryo:'cryo', inferno:'inferno', toxic:'toxic', crimson:'crimson', voidnet:'voidnet' };
-  const targetBiomeId = idMap[mapData.biome] || 'inferno';
-
-  // Si le builder demande un biome qu'on ne supporte pas encore côté moteur,
-  // on log mais on continue avec celui qu'on a.
-  let biome;
-  try { biome = getBiome(targetBiomeId); }
-  catch(e){
-    console.warn('[map-builder] biome', targetBiomeId, 'not registered in engine, falling back to inferno');
-    biome = getBiome('inferno');
-    state.biomeId = 'inferno';
-    return false;
-  }
+  const supported = listBiomeIds();
+  const targetBiomeId = supported.includes(mapData.biome) ? mapData.biome : 'inferno';
   state.biomeId = targetBiomeId;
 
   // Update biome buttons UI selection
@@ -1099,11 +1101,12 @@ function applyBuilderMapIfAny(){
   state.gridH = mapData.height;
   state.tileGrid = {};
   const r = rng(state.mapSeed*7919 + state.biomeId.charCodeAt(0)*13);
+  const biome = getBiome(state.biomeId);
 
   for(let y=0; y<state.gridH; y++){
     for(let x=0; x<state.gridW; x++){
       const tileId = (mapData.tiles[y] && mapData.tiles[y][x]) || null;
-      // category extraction from id format: PREFIX_C# (e.g. cryo_B1, inf_F7, vnt_P3)
+      // Catégorie depuis le suffixe (B/F/P)
       let cat = 'base';
       if(tileId){
         const m = tileId.match(/_([BFP])\d+$/);
@@ -1112,20 +1115,30 @@ function applyBuilderMapIfAny(){
           else if(m[1] === 'P') cat = 'blocking';
         }
       }
-      const baseTile = {
-        type: pickWeighted(biome.config.tileWeights, r()),
+      // L'index dans tileTypes (B et F) pour les walkables. Si tile est un blocker,
+      // on met un type random pour le sol "en-dessous".
+      let typeIdx;
+      if(cat === 'blocking'){
+        typeIdx = pickWeighted(biome.config.tileWeights, r());
+      } else {
+        typeIdx = biome.config.tileTypes.indexOf(tileId);
+        if(typeIdx < 0) typeIdx = pickWeighted(biome.config.tileWeights, r());
+      }
+      const tileObj = {
+        type: typeIdx,
         seed: (x*101+y*239+state.mapSeed*7)%9999,
         microElev: (Math.sin(x*1.7+y*2.3)*0.5+Math.cos(x*0.7+y*1.4)*0.5)*0.6,
         tintShift: (r()-0.5)*0.18,
         noiseSeeds: [r(),r(),r(),r(),r()],
         isWall: false, prop: null,
-        builderTileId: tileId, // keep for future use
+        builderTileId: tileId,
       };
       if(cat === 'blocking'){
-        baseTile.isWall = true;
-        baseTile.prop = biome.config.props[(r()*biome.config.props.length)|0];
+        tileObj.isWall = true;
+        // Le prop affiché est le tileId blocker exact
+        tileObj.prop = tileId;
       }
-      state.tileGrid[x+','+y] = baseTile;
+      state.tileGrid[x+','+y] = tileObj;
     }
   }
   // Sécurise le tile sous le joueur et ses voisins
@@ -1143,11 +1156,9 @@ applyBuilderMapIfAny();
 window.addEventListener('storage', (e) => {
   if(e.key === 'reactor_hollow_map' && e.newValue){
     if(applyBuilderMapIfAny()){
-      // reset combat state to stay coherent
       state.turn = 1;
       state.combatOver = false;
-      // refresh derived data
-      if(typeof updateReachable === 'function') updateReachable();
+      if(typeof computeReachable === 'function') computeReachable();
     }
   }
 });
@@ -2006,10 +2017,7 @@ function closeAllPanels(){
 }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAllPanels));
 document.getElementById('btn-builder').addEventListener('click', () => {
-  // Ouvre le map builder dans un nouvel onglet. Au retour, si la map a été
-  // validée, elle sera dans sessionStorage et reload-ra automatiquement.
-  const url = 'tile-library/map-builder.html';
-  window.open(url, '_blank');
+  window.open('tile-library/map-builder.html', '_blank');
 });
 document.getElementById('btn-map').addEventListener('click', () => {
   state.openPanel === 'map' ? closeAllPanels() : openPanel('map');
@@ -2456,22 +2464,10 @@ function updateZoomDisplay(){
 // ============================================================================
 // OPTIONS PANEL
 // ============================================================================
+// BIOME BUTTONS — built dynamically after preloadAllBiomes() finishes (boot async)
+// ============================================================================
+// (laisser vide ici, l'init se fait dans le boot loader async ci-dessous)
 const biomeButtons = document.getElementById('biome-buttons');
-const biomes = listBiomeConfigs();
-for(const cfg of biomes){
-  const btn = document.createElement('button');
-  btn.className = 'opt-btn' + (cfg.id===state.biomeId ? ' active' : '');
-  btn.dataset.biome = cfg.id;
-  btn.textContent = cfg.name;
-  btn.style.textAlign = 'center';
-  btn.addEventListener('click', () => {
-    state.biomeId = cfg.id;
-    genTileMap();
-    document.querySelectorAll('#biome-buttons button').forEach(b =>
-      b.classList.toggle('active', b.dataset.biome===state.biomeId));
-  });
-  biomeButtons.appendChild(btn);
-}
 document.getElementById('opt-grid').addEventListener('click', e => {
   state.options.showGrid = !state.options.showGrid;
   e.target.classList.toggle('active', state.options.showGrid);
@@ -2690,7 +2686,60 @@ addLog(`▸ <span style="color:#4fc3f7">Turn 1 · Your move</span>`, '#aaa');
 computeReachable();
 updateUI();
 updateZoomDisplay();
-render();
+
+// =============================================================================
+// BOOT : preload all biome rasters before starting the render loop
+// =============================================================================
+(async () => {
+  const loader = document.getElementById('boot-loader');
+  if(loader) loader.style.display = 'flex';
+  try {
+    await preloadAllBiomes();
+    // Rebuild biome buttons with the proper names from loaded biomes
+    const biomeButtons = document.getElementById('biome-buttons');
+    if(biomeButtons){
+      biomeButtons.innerHTML = '';
+      const biomesNow = listBiomeConfigs();
+      for(const cfg of biomesNow){
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn' + (cfg.id===state.biomeId ? ' active' : '');
+        btn.dataset.biome = cfg.id;
+        btn.textContent = cfg.name;
+        btn.style.textAlign = 'center';
+        btn.addEventListener('click', () => {
+          state.biomeId = cfg.id;
+          genTileMap();
+          document.querySelectorAll('#biome-buttons button').forEach(b =>
+            b.classList.toggle('active', b.dataset.biome===state.biomeId));
+        });
+        biomeButtons.appendChild(btn);
+      }
+    }
+    // Re-resolve biome (we had a stub before, now we want the real one)
+    // Re-generate the map with proper tile types
+    if(state.tileGrid && Object.keys(state.tileGrid).length > 0){
+      // Re-genera la map maintenant qu'on a les vraies tileTypes
+      const biome = getBiome(state.biomeId);
+      const r = rng(state.mapSeed*7919 + state.biomeId.charCodeAt(0)*13);
+      for(const k in state.tileGrid){
+        const t = state.tileGrid[k];
+        if(t.builderTileId){
+          // Map an exact tile id from builder
+          const idx = biome.config.tileTypes.indexOf(t.builderTileId);
+          if(idx >= 0) t.type = idx;
+          else t.type = pickWeighted(biome.config.tileWeights, r());
+        } else {
+          t.type = pickWeighted(biome.config.tileWeights, r());
+        }
+      }
+    }
+    if(loader) loader.style.display = 'none';
+    render();
+  } catch(e) {
+    console.error('Failed to preload biomes:', e);
+    if(loader) loader.innerHTML = '<div style="color:#f44336">Failed to load tile library: '+e.message+'</div>';
+  }
+})();
 
 window.addEventListener('error', ev => {
   const display = document.getElementById('error-display');
