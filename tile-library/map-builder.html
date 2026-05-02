@@ -482,7 +482,7 @@ function selectPaletteTile(tile, el) {
 
 function renderTileSVG(biome, tile, size) {
   const bgTopFill = tile.bgTopFill ? '<polygon points="0,-22 60,8 0,8 -60,8" fill="' + tile.bgTopFill + '"/>' : '';
-  return '<svg width="' + size + '" height="' + size + '" viewBox="-60 -55 120 100" xmlns="http://www.w3.org/2000/svg">' +
+  return '<svg width="' + size + '" height="' + size + '" viewBox="-60 -60 120 100" xmlns="http://www.w3.org/2000/svg">' +
     '<defs>' + biome.defs + '</defs>' +
     '<polygon points="0,8 60,8 0,38 -60,8" fill="#000" opacity="0.5" transform="translate(2,2)"/>' +
     '<polygon points="0,-22 60,8 0,38 -60,8" fill="' + tile.bgFill + '"/>' +
@@ -603,8 +603,23 @@ function render() {
   const tw = STATE.TILE_W * STATE.view.zoom;
   const th = STATE.TILE_H * STATE.view.zoom;
   
-  // Tri back-to-front. On dessine d'abord les tiles non-blocker (sol),
-  // puis les blockers (qui ont de la hauteur).
+  // Géométrie du SVG :
+  //   viewBox -60 -60 120 100
+  //   losange SVG : pointes (0,-22) (60,8) (0,38) (-60,8)  → 120 large, 60 haut
+  //   centre du losange à (0, 8) → ratio_y dans viewBox = (8-(-60))/100 = 0.68
+  //
+  // Le losange iso à dessiner doit avoir une largeur de TILE_W = 60 pixels.
+  // Le SVG fait 120 SVG-units de large pour 60 réels → facteur 0.5.
+  // Donc à zoom=1 : drawW = 60, drawH = 50 (= 100*0.5)
+  // À zoom z : drawW = 60*z, drawH = 50*z
+  const drawW_at_zoom1 = 60;   // = TILE_W
+  const drawH_at_zoom1 = 50;   // = (TILE_H * 100/60) car aspect SVG = 100/120
+  const drawW = drawW_at_zoom1 * STATE.view.zoom;
+  const drawH = drawH_at_zoom1 * STATE.view.zoom;
+  // Le centre (0, 8) du losange dans SVG correspond au centre iso (sx, sy)
+  // Position de drawY pour que le centre du SVG (à 0.68 * drawH du top) tombe sur sy :
+  const drawYOffset = 0.68 * drawH;
+  
   for (let pass = 0; pass < 2; pass++) {
     for (let y = 0; y < STATE.height; y++) {
       for (let x = 0; x < STATE.width; x++) {
@@ -619,10 +634,7 @@ function render() {
         }
         const img = getTileImage(tileId);
         if (img && img.complete && img.naturalWidth) {
-          // viewBox -60 -55 120 100 → diamond center (0,8) at ratio_y = (8-(-55))/100 = 0.63
-          const drawW = 120 * STATE.view.zoom;
-          const drawH = 100 * STATE.view.zoom;
-          ctx.drawImage(img, sx - drawW/2, sy - drawH * 0.63, drawW, drawH);
+          ctx.drawImage(img, sx - drawW/2, sy - drawYOffset, drawW, drawH);
         } else if (pass === 0) {
           drawEmptyTile(ctx, sx, sy, tw, th);
         }
