@@ -1,1 +1,265 @@
-
+{
+  "config": {
+    "name": "Cryo",
+    "displayName": "Cryogenic Wastes",
+    "accent": "#aee6ff",
+    "bgColor": "#0a1820",
+    "labelColor": "#aee6ff",
+    "strokeColor": "#5a8a9e"
+  },
+  "defs": "<linearGradient id=\"cryo_b1\" x1=\"0.2\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3a6478\"/><stop offset=\"1\" stop-color=\"#1c3a4e\"/></linearGradient><linearGradient id=\"cryo_b1_top\" x1=\"0\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0\" stop-color=\"#9ed4e8\" stop-opacity=\"0.45\"/><stop offset=\"1\" stop-color=\"#9ed4e8\" stop-opacity=\"0\"/></linearGradient><linearGradient id=\"cryo_b2\" x1=\"0.2\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#42708a\"/><stop offset=\"1\" stop-color=\"#264458\"/></linearGradient><linearGradient id=\"cryo_b2_top\" x1=\"0\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0\" stop-color=\"#bce0f0\" stop-opacity=\"0.45\"/><stop offset=\"1\" stop-color=\"#bce0f0\" stop-opacity=\"0\"/></linearGradient><linearGradient id=\"cryo_b3\" x1=\"0.2\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2e526a\"/><stop offset=\"1\" stop-color=\"#142e44\"/></linearGradient><linearGradient id=\"cryo_b3_top\" x1=\"0\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0\" stop-color=\"#7ec0d8\" stop-opacity=\"0.4\"/><stop offset=\"1\" stop-color=\"#7ec0d8\" stop-opacity=\"0\"/></linearGradient><linearGradient id=\"cryo_b4\" x1=\"0.2\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3a7286\"/><stop offset=\"1\" stop-color=\"#1e445a\"/></linearGradient><linearGradient id=\"cryo_b4_top\" x1=\"0\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0\" stop-color=\"#a8d8e8\" stop-opacity=\"0.5\"/><stop offset=\"1\" stop-color=\"#a8d8e8\" stop-opacity=\"0\"/></linearGradient><linearGradient id=\"cryo_b5\" x1=\"0.2\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#4a82a0\"/><stop offset=\"1\" stop-color=\"#2a526a\"/></linearGradient><linearGradient id=\"cryo_b5_top\" x1=\"0\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0\" stop-color=\"#cae8f4\" stop-opacity=\"0.55\"/><stop offset=\"1\" stop-color=\"#cae8f4\" stop-opacity=\"0\"/></linearGradient><linearGradient id=\"cryo_iceFace\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f4fbff\"/><stop offset=\"0.5\" stop-color=\"#a8d8ec\"/><stop offset=\"1\" stop-color=\"#4a7e98\"/></linearGradient><linearGradient id=\"cryo_iceFaceR\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#7eb4cc\"/><stop offset=\"1\" stop-color=\"#284258\"/></linearGradient><radialGradient id=\"cryo_glowInner\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#cdf6ff\" stop-opacity=\"0.95\"/><stop offset=\"0.5\" stop-color=\"#7ee6ff\" stop-opacity=\"0.55\"/><stop offset=\"1\" stop-color=\"#7ee6ff\" stop-opacity=\"0\"/></radialGradient><radialGradient id=\"cryo_glowCore\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#ffffff\"/><stop offset=\"0.5\" stop-color=\"#bdf2ff\"/><stop offset=\"1\" stop-color=\"#5ec0e0\"/></radialGradient><radialGradient id=\"cryo_deepHole\" cx=\"0.42\" cy=\"0.4\" r=\"0.55\"><stop offset=\"0\" stop-color=\"#000\"/><stop offset=\"0.55\" stop-color=\"#04111e\"/><stop offset=\"1\" stop-color=\"#0e2840\"/></radialGradient><linearGradient id=\"cryo_deepRim\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a3a4e\"/><stop offset=\"1\" stop-color=\"#5a8aa4\"/></linearGradient><radialGradient id=\"cryo_meltedPool\" cx=\"0.4\" cy=\"0.4\" r=\"0.7\"><stop offset=\"0\" stop-color=\"#1c3a50\"/><stop offset=\"0.6\" stop-color=\"#0a1c2a\"/><stop offset=\"1\" stop-color=\"#06121c\"/></radialGradient><radialGradient id=\"cryo_bloodPool\" cx=\"0.4\" cy=\"0.4\" r=\"0.7\"><stop offset=\"0\" stop-color=\"#9c2e2e\"/><stop offset=\"0.65\" stop-color=\"#5a1818\"/><stop offset=\"1\" stop-color=\"#280a0a\"/></radialGradient><radialGradient id=\"cryo_bubblePool\" cx=\"0.4\" cy=\"0.4\" r=\"0.7\"><stop offset=\"0\" stop-color=\"#1a3e5a\"/><stop offset=\"1\" stop-color=\"#0a1c2a\"/></radialGradient><linearGradient id=\"cryo_runicBowl\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a3244\"/><stop offset=\"1\" stop-color=\"#3e6e88\"/></linearGradient><radialGradient id=\"cryo_runicGlow\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#bdf2ff\" stop-opacity=\"0.9\"/><stop offset=\"1\" stop-color=\"#7ee6ff\" stop-opacity=\"0\"/></radialGradient><linearGradient id=\"cryo_shardFace\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#cfeaff\"/><stop offset=\"0.5\" stop-color=\"#7ec0d8\"/><stop offset=\"1\" stop-color=\"#3a6e88\"/></linearGradient><linearGradient id=\"cryo_pebGrad\" x1=\"0.3\" y1=\"0.2\" x2=\"0.7\" y2=\"0.9\"><stop offset=\"0\" stop-color=\"#aebcc8\"/><stop offset=\"0.6\" stop-color=\"#5e7488\"/><stop offset=\"1\" stop-color=\"#243648\"/></linearGradient><linearGradient id=\"cryo_frostBg\" x1=\"0.25\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#dceff9\"/><stop offset=\"1\" stop-color=\"#a8c8d8\"/></linearGradient><linearGradient id=\"cryo_frostShine\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.65\"/><stop offset=\"1\" stop-color=\"#fff\" stop-opacity=\"0\"/></linearGradient><linearGradient id=\"cryo_snowBg\" x1=\"0.25\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#eaf6fb\"/><stop offset=\"1\" stop-color=\"#bdd6e0\"/></linearGradient><linearGradient id=\"cryo_snowShine\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff\" stop-opacity=\"0.85\"/><stop offset=\"1\" stop-color=\"#fff\" stop-opacity=\"0\"/></linearGradient><linearGradient id=\"cryo_driftBg\" x1=\"0.25\" y1=\"0\" x2=\"0.7\" y2=\"1\"><stop offset=\"0\" stop-color=\"#d4e8f4\"/><stop offset=\"1\" stop-color=\"#8aaec0\"/></linearGradient><linearGradient id=\"cryo_driftMound\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fff\"/><stop offset=\"1\" stop-color=\"#a4c2d4\"/></linearGradient><linearGradient id=\"cryo_iceBlockTop\" x1=\"0\" y1=\"0\" x2=\"0.4\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f4fbff\"/><stop offset=\"1\" stop-color=\"#a8d8ec\"/></linearGradient><linearGradient id=\"cryo_iceBlockSide\" x1=\"0\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0\" stop-color=\"#5e8aa4\"/><stop offset=\"1\" stop-color=\"#1c3848\"/></linearGradient><linearGradient id=\"cryo_iceBlockSideR\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#446e88\"/><stop offset=\"1\" stop-color=\"#142838\"/></linearGradient><linearGradient id=\"cryo_rockSide\" x1=\"0\" y1=\"0\" x2=\"0.5\" y2=\"1\"><stop offset=\"0\" stop-color=\"#7e8a98\"/><stop offset=\"1\" stop-color=\"#2a3a48\"/></linearGradient><linearGradient id=\"cryo_rockSideR\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#5a6878\"/><stop offset=\"1\" stop-color=\"#1a2838\"/></linearGradient><linearGradient id=\"cryo_rockTop\" x1=\"0\" y1=\"0\" x2=\"0.4\" y2=\"1\"><stop offset=\"0\" stop-color=\"#aebcc8\"/><stop offset=\"1\" stop-color=\"#5a6878\"/></linearGradient><linearGradient id=\"cryo_pitWall\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a3848\"/><stop offset=\"1\" stop-color=\"#5a8aa4\"/></linearGradient><linearGradient id=\"cryo_stalagmite\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#dceff9\"/><stop offset=\"0.5\" stop-color=\"#6ea8c4\"/><stop offset=\"1\" stop-color=\"#1e3848\"/></linearGradient><linearGradient id=\"cryo_stalagmiteR\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#446e88\"/><stop offset=\"1\" stop-color=\"#0e2030\"/></linearGradient><linearGradient id=\"cryo_altarStone\" x1=\"0\" y1=\"0\" x2=\"0.4\" y2=\"1\"><stop offset=\"0\" stop-color=\"#8a9aa8\"/><stop offset=\"1\" stop-color=\"#3a4858\"/></linearGradient><linearGradient id=\"cryo_altarStoneSide\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#4a586a\"/><stop offset=\"1\" stop-color=\"#1a2434\"/></linearGradient><radialGradient id=\"cryo_altarRune\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#eafaff\"/><stop offset=\"0.5\" stop-color=\"#7ee6ff\"/><stop offset=\"1\" stop-color=\"#7ee6ff\" stop-opacity=\"0\"/></radialGradient><linearGradient id=\"cryo_banner\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#7eb8d0\"/><stop offset=\"1\" stop-color=\"#1e3848\"/></linearGradient><linearGradient id=\"cryo_poleTop\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#cae8f4\"/><stop offset=\"1\" stop-color=\"#3a6680\"/></linearGradient><radialGradient id=\"cryo_orbCore\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#fff\"/><stop offset=\"0.4\" stop-color=\"#bdf2ff\"/><stop offset=\"0.85\" stop-color=\"#5ec0e0\"/><stop offset=\"1\" stop-color=\"#1a4a64\"/></radialGradient><radialGradient id=\"cryo_orbHalo\" cx=\"0.5\" cy=\"0.5\" r=\"0.6\"><stop offset=\"0\" stop-color=\"#7ee6ff\" stop-opacity=\"0.7\"/><stop offset=\"1\" stop-color=\"#7ee6ff\" stop-opacity=\"0\"/></radialGradient><linearGradient id=\"cryo_brazierBowl\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3a4858\"/><stop offset=\"1\" stop-color=\"#0e1a28\"/></linearGradient><linearGradient id=\"cryo_brazierRim\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#7e8a98\"/><stop offset=\"1\" stop-color=\"#2a3a48\"/></linearGradient><radialGradient id=\"cryo_frostFlame\" cx=\"0.5\" cy=\"0.6\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#fff\"/><stop offset=\"0.4\" stop-color=\"#bdf2ff\"/><stop offset=\"1\" stop-color=\"#5ec0e0\" stop-opacity=\"0\"/></radialGradient><linearGradient id=\"cryo_crystalSpire\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f4fbff\"/><stop offset=\"0.4\" stop-color=\"#a8d8ec\"/><stop offset=\"1\" stop-color=\"#1e3848\"/></linearGradient><linearGradient id=\"cryo_crystalSpireR\" x1=\"1\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#446e88\"/><stop offset=\"1\" stop-color=\"#0e2030\"/></linearGradient><linearGradient id=\"cryo_frozenTrunk\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#5e6e58\"/><stop offset=\"0.5\" stop-color=\"#3a463a\"/><stop offset=\"1\" stop-color=\"#1a2424\"/></linearGradient><linearGradient id=\"cryo_iceCoat\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#cee8f4\" stop-opacity=\"0.85\"/><stop offset=\"1\" stop-color=\"#5a8aa4\" stop-opacity=\"0.5\"/></linearGradient>",
+  "base": [
+    {
+      "id": "cryo_B1",
+      "name": "BASE",
+      "category": "base",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "bgTopFill": "url(#cryo_b1_top)",
+      "svg": ""
+    },
+    {
+      "id": "cryo_B2",
+      "name": "+HUE",
+      "category": "base",
+      "walkable": true,
+      "bgFill": "url(#cryo_b2)",
+      "bgTopFill": "url(#cryo_b2_top)",
+      "svg": ""
+    },
+    {
+      "id": "cryo_B3",
+      "name": "DARK",
+      "category": "base",
+      "walkable": true,
+      "bgFill": "url(#cryo_b3)",
+      "bgTopFill": "url(#cryo_b3_top)",
+      "svg": ""
+    },
+    {
+      "id": "cryo_B4",
+      "name": "WARM",
+      "category": "base",
+      "walkable": true,
+      "bgFill": "url(#cryo_b4)",
+      "bgTopFill": "url(#cryo_b4_top)",
+      "svg": ""
+    },
+    {
+      "id": "cryo_B5",
+      "name": "LIGHT",
+      "category": "base",
+      "walkable": true,
+      "bgFill": "url(#cryo_b5)",
+      "bgTopFill": "url(#cryo_b5_top)",
+      "svg": ""
+    }
+  ],
+  "furnished": [
+    {
+      "id": "cryo_F1",
+      "name": "CRACKED",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<path d=\"M-38,2 L-22,-3 L-12,3 L4,-2 L18,5 L34,1\" stroke=\"#0a1a25\" stroke-width=\"1.4\" fill=\"none\" opacity=\"0.8\"/><path d=\"M-38,2 L-22,-3 L-12,3 L4,-2 L18,5 L34,1\" stroke=\"#cfeaff\" stroke-width=\"0.5\" fill=\"none\" opacity=\"0.7\" transform=\"translate(0,-1)\"/><path d=\"M-22,-3 L-19,9 M4,-2 L1,12\" stroke=\"#0a1a25\" stroke-width=\"1\" fill=\"none\" opacity=\"0.7\"/>"
+    },
+    {
+      "id": "cryo_F2",
+      "name": "CHISELED",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<path d=\"M-26,-2 L-12,4 L-26,10 Z\" fill=\"#0a1a25\" opacity=\"0.5\"/><path d=\"M-26,-3 L-12,3 L-26,9 Z\" fill=\"#3a6e88\"/><path d=\"M-26,-3 L-12,3 L-19,3\" fill=\"#9ed4e8\" opacity=\"0.6\"/><path d=\"M2,-10 L18,-2 L2,6 Z\" fill=\"#0a1a25\" opacity=\"0.5\"/><path d=\"M2,-11 L18,-3 L2,5 Z\" fill=\"#3a6e88\"/>"
+    },
+    {
+      "id": "cryo_F3",
+      "name": "SHARDS",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-30,-2 -16,-6 -10,-2 -24,2\" fill=\"#0a1a25\" opacity=\"0.6\"/><polygon points=\"-30,-3 -16,-7 -10,-3 -24,1\" fill=\"url(#cryo_shardFace)\"/><polygon points=\"-30,-3 -16,-7 -22,-5\" fill=\"#fff\" opacity=\"0.95\"/><polygon points=\"-2,4 12,0 18,4 4,8\" fill=\"#0a1a25\" opacity=\"0.6\"/><polygon points=\"-2,3 12,-1 18,3 4,7\" fill=\"url(#cryo_shardFace)\"/><polygon points=\"-2,3 12,-1 6,-1\" fill=\"#fff\" opacity=\"0.95\"/>"
+    },
+    {
+      "id": "cryo_F4",
+      "name": "PEBBLES",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-22\" cy=\"3\" rx=\"8\" ry=\"2.5\" fill=\"#0a1a25\" opacity=\"0.65\"/><ellipse cx=\"-22\" cy=\"-1\" rx=\"8\" ry=\"3.5\" fill=\"url(#cryo_pebGrad)\"/><ellipse cx=\"-23\" cy=\"-2.5\" rx=\"3.5\" ry=\"1.5\" fill=\"#fff\" opacity=\"0.5\"/><ellipse cx=\"8\" cy=\"9\" rx=\"9\" ry=\"3\" fill=\"#0a1a25\" opacity=\"0.65\"/><ellipse cx=\"8\" cy=\"5\" rx=\"9\" ry=\"4\" fill=\"url(#cryo_pebGrad)\"/>"
+    },
+    {
+      "id": "cryo_F5",
+      "name": "COMPACT",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-22\" cy=\"-1\" rx=\"8\" ry=\"2.6\" fill=\"#1a2838\" opacity=\"0.55\"/><ellipse cx=\"-22\" cy=\"-2.5\" rx=\"8\" ry=\"2.6\" fill=\"#5e7488\"/><ellipse cx=\"-22\" cy=\"-3.5\" rx=\"5\" ry=\"1.4\" fill=\"#aebcc8\"/><ellipse cx=\"6\" cy=\"6.5\" rx=\"8\" ry=\"2.4\" fill=\"#1a2838\" opacity=\"0.55\"/><ellipse cx=\"6\" cy=\"5\" rx=\"8\" ry=\"2.4\" fill=\"#5e7488\"/>"
+    },
+    {
+      "id": "cryo_F6",
+      "name": "CRYSTALS",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-12,8 -3,8 -8,-8\" fill=\"#0a1a25\" opacity=\"0.6\"/><polygon points=\"-12,8 -8,-8 -10,-2\" fill=\"url(#cryo_iceFace)\"/><polygon points=\"-8,-8 -3,8 -7,2\" fill=\"url(#cryo_iceFaceR)\"/><line x1=\"-9\" y1=\"-7\" x2=\"-9\" y2=\"7\" stroke=\"#fff\" stroke-width=\"0.5\" opacity=\"0.85\"/>"
+    },
+    {
+      "id": "cryo_F7",
+      "name": "RUNIC",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-6\" cy=\"2\" rx=\"22\" ry=\"9\" fill=\"url(#cryo_runicBowl)\"/><ellipse cx=\"-6\" cy=\"-1\" rx=\"22\" ry=\"9\" fill=\"none\" stroke=\"#7eb0c8\" stroke-width=\"0.5\" opacity=\"0.75\"/><ellipse cx=\"-6\" cy=\"2\" rx=\"18\" ry=\"7\" fill=\"url(#cryo_runicGlow)\" opacity=\"0.65\"/><path d=\"M-20,-2 L-10,2 M-15,-5 L-15,5 M2,-7 L7,-2 L2,3 L-3,-2 Z\" stroke=\"#dcf6ff\" stroke-width=\"0.9\" fill=\"none\"/>"
+    },
+    {
+      "id": "cryo_F8",
+      "name": "GLOW",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-6\" cy=\"2\" rx=\"20\" ry=\"8\" fill=\"url(#cryo_glowInner)\"/><circle cx=\"-6\" cy=\"2\" r=\"6\" fill=\"url(#cryo_glowCore)\"/><circle cx=\"-6\" cy=\"2\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"14\" cy=\"-6\" r=\"2\" fill=\"#7ee6ff\" opacity=\"0.85\"/>"
+    },
+    {
+      "id": "cryo_F9",
+      "name": "MELTED",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-12\" cy=\"3\" rx=\"24\" ry=\"9\" fill=\"url(#cryo_meltedPool)\"/><ellipse cx=\"-12\" cy=\"-1\" rx=\"24\" ry=\"9\" fill=\"none\" stroke=\"#5e9eb8\" stroke-width=\"0.7\" opacity=\"0.85\"/><ellipse cx=\"-18\" cy=\"-3\" rx=\"12\" ry=\"3\" fill=\"#3a7088\" opacity=\"0.6\"/><ellipse cx=\"-22\" cy=\"-4\" rx=\"5\" ry=\"1.2\" fill=\"#fff\" opacity=\"0.6\"/>"
+    },
+    {
+      "id": "cryo_F10",
+      "name": "DEEP",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-8\" cy=\"6\" rx=\"26\" ry=\"10\" fill=\"#0a1a25\" opacity=\"0.7\"/><ellipse cx=\"-8\" cy=\"4\" rx=\"26\" ry=\"10\" fill=\"url(#cryo_deepRim)\"/><ellipse cx=\"-8\" cy=\"3\" rx=\"22\" ry=\"8\" fill=\"url(#cryo_deepHole)\"/><ellipse cx=\"-22\" cy=\"-2\" rx=\"6\" ry=\"1.6\" fill=\"#3a6688\" opacity=\"0.65\"/>"
+    },
+    {
+      "id": "cryo_F11",
+      "name": "BUBBLES",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-8\" cy=\"2\" rx=\"24\" ry=\"9\" fill=\"url(#cryo_bubblePool)\"/><circle cx=\"-14\" cy=\"-1\" r=\"3.5\" fill=\"#0a1a25\" opacity=\"0.5\"/><circle cx=\"-14\" cy=\"-1.5\" r=\"3.5\" fill=\"none\" stroke=\"#bdeaff\" stroke-width=\"0.7\"/><circle cx=\"-15\" cy=\"-2.5\" r=\"1.4\" fill=\"#fff\" opacity=\"0.85\"/>"
+    },
+    {
+      "id": "cryo_F12",
+      "name": "BLOOD",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<ellipse cx=\"-12\" cy=\"3\" rx=\"20\" ry=\"7\" fill=\"url(#cryo_bloodPool)\"/><ellipse cx=\"-12\" cy=\"-1\" rx=\"20\" ry=\"7\" fill=\"none\" stroke=\"#c44848\" stroke-width=\"0.6\" opacity=\"0.75\"/><ellipse cx=\"-16\" cy=\"-2\" rx=\"9\" ry=\"2.5\" fill=\"#c44848\" opacity=\"0.7\"/>"
+    },
+    {
+      "id": "cryo_F13",
+      "name": "FROST",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_frostBg)",
+      "bgTopFill": "url(#cryo_frostShine)",
+      "svg": "<line x1=\"-30\" y1=\"0\" x2=\"0\" y2=\"14\" stroke=\"#7ab8d4\" stroke-width=\"0.5\" opacity=\"0.5\"/><line x1=\"0\" y1=\"-12\" x2=\"22\" y2=\"0\" stroke=\"#7ab8d4\" stroke-width=\"0.5\" opacity=\"0.5\"/><line x1=\"-15\" y1=\"14\" x2=\"14\" y2=\"0\" stroke=\"#7ab8d4\" stroke-width=\"0.4\" opacity=\"0.4\"/>"
+    },
+    {
+      "id": "cryo_F14",
+      "name": "POWDER",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_snowBg)",
+      "bgTopFill": "url(#cryo_snowShine)",
+      "svg": "<circle cx=\"-22\" cy=\"-3\" r=\"1.2\" fill=\"#fff\"/><circle cx=\"-8\" cy=\"6\" r=\"0.9\" fill=\"#fff\"/><circle cx=\"14\" cy=\"-2\" r=\"1\" fill=\"#fff\"/><circle cx=\"22\" cy=\"14\" r=\"0.8\" fill=\"#fff\"/><circle cx=\"-12\" cy=\"18\" r=\"1.1\" fill=\"#fff\"/>"
+    },
+    {
+      "id": "cryo_F15",
+      "name": "DRIFT",
+      "category": "furnished",
+      "walkable": true,
+      "bgFill": "url(#cryo_driftBg)",
+      "svg": "<path d=\"M-50,8 Q-25,-2 -5,5 Q15,12 35,3 L50,5 L50,9 Q15,14 -5,9 Q-25,4 -50,12 Z\" fill=\"url(#cryo_driftMound)\"/><path d=\"M-50,8 Q-25,-2 -5,5 Q15,12 35,3\" stroke=\"#fff\" stroke-width=\"0.7\" fill=\"none\" opacity=\"0.85\"/>"
+    }
+  ],
+  "blocking": [
+    {
+      "id": "cryo_P1",
+      "name": "ICE BLOCK",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-44,-8 0,-30 22,-12 -22,4\" fill=\"url(#cryo_iceBlockTop)\"/><polygon points=\"-44,-8 0,-30 22,-12 -22,4\" fill=\"none\" stroke=\"#7eb8d0\" stroke-width=\"0.5\"/><polygon points=\"-44,-8 -22,4 -22,16 -44,4\" fill=\"url(#cryo_iceBlockSide)\"/><polygon points=\"22,-12 22,-0.5 -22,16 -22,4\" fill=\"url(#cryo_iceBlockSideR)\"/><line x1=\"-30\" y1=\"-12\" x2=\"-22\" y2=\"-7\" stroke=\"#fff\" stroke-width=\"0.6\" opacity=\"0.7\"/>"
+    },
+    {
+      "id": "cryo_P2",
+      "name": "FROZEN ROCK",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-50,-22 -10,-2 50,-32 10,-52\" fill=\"url(#cryo_rockSide)\"/><polygon points=\"-50,-22 -50,2 -10,22 -10,-2\" fill=\"url(#cryo_rockSide)\"/><polygon points=\"-10,-2 -10,22 50,-8 50,-32\" fill=\"url(#cryo_rockSideR)\"/><polygon points=\"-50,-22 10,-52 50,-32 -10,-2\" fill=\"url(#cryo_rockTop)\"/><rect x=\"-20\" y=\"-37\" width=\"6\" height=\"3\" fill=\"#cee8f4\" opacity=\"0.6\"/>"
+    },
+    {
+      "id": "cryo_P3",
+      "name": "CHASM",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-50,4 50,4 50,12 -50,12\" fill=\"url(#cryo_pitWall)\"/><polygon points=\"-50,4 -42,8 42,8 50,4 50,12 -50,12\" fill=\"url(#cryo_deepHole)\"/><line x1=\"-50\" y1=\"4\" x2=\"50\" y2=\"4\" stroke=\"#02080e\" stroke-width=\"1\"/><line x1=\"-30\" y1=\"6\" x2=\"-30\" y2=\"11\" stroke=\"#5e9eb8\" stroke-width=\"0.3\" opacity=\"0.5\"/>"
+    },
+    {
+      "id": "cryo_P4",
+      "name": "STALAGMITE",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-44,4 -22,-30 -8,-50 4,-46 16,-38 28,-22 44,4\" fill=\"url(#cryo_stalagmite)\"/><polygon points=\"-22,-30 -8,-50 4,-46 -8,-30\" fill=\"#fff\" opacity=\"0.6\"/><polygon points=\"4,-46 16,-38 28,-22 8,-30\" fill=\"url(#cryo_stalagmiteR)\"/><polygon points=\"-26,-5 -16,-12 -10,-7\" fill=\"url(#cryo_stalagmite)\"/>"
+    },
+    {
+      "id": "cryo_P5",
+      "name": "RUNE ALTAR",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-30,2 30,2 36,-2 -36,-2\" fill=\"url(#cryo_altarStone)\"/><polygon points=\"-30,2 30,2 30,18 -30,18\" fill=\"url(#cryo_altarStoneSide)\"/><polygon points=\"-30,-12 30,-12 36,-8 -36,-8\" fill=\"url(#cryo_altarStone)\"/><polygon points=\"-30,-2 -30,-12 36,-8 36,2\" fill=\"url(#cryo_altarStoneSide)\"/><polygon points=\"-30,-12 -22,-22 22,-22 30,-12\" fill=\"url(#cryo_altarStone)\"/><ellipse cx=\"0\" cy=\"-15\" rx=\"14\" ry=\"6\" fill=\"url(#cryo_altarRune)\"/><path d=\"M-8,-18 L8,-18 M0,-22 L0,-12 M-6,-22 L-6,-12 M6,-22 L6,-12\" stroke=\"#bdf2ff\" stroke-width=\"0.6\" fill=\"none\"/>"
+    },
+    {
+      "id": "cryo_P6",
+      "name": "BANNER POLE",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<rect x=\"-2\" y=\"-50\" width=\"4\" height=\"68\" fill=\"url(#cryo_poleTop)\"/><polygon points=\"-2,-50 -2,-46 -16,-44 -16,-48\" fill=\"#3a6680\"/><polygon points=\"-16,-44 -2,-46 -2,-22 -16,-20\" fill=\"url(#cryo_banner)\"/><polygon points=\"-16,-44 -16,-20 -22,-26 -22,-50\" fill=\"#142838\"/><polygon points=\"-2,-50 1,-54 1,-50\" fill=\"#cae8f4\"/>"
+    },
+    {
+      "id": "cryo_P7",
+      "name": "FROST ORB",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-12,-2 12,-2 16,8 -16,8\" fill=\"url(#cryo_altarStone)\"/><polygon points=\"-12,-2 -16,8 -8,12 -4,4\" fill=\"url(#cryo_altarStoneSide)\"/><polygon points=\"12,-2 16,8 8,12 4,4\" fill=\"url(#cryo_altarStoneSide)\"/><circle cx=\"0\" cy=\"-15\" r=\"14\" fill=\"url(#cryo_orbHalo)\" opacity=\"0.7\"/><circle cx=\"0\" cy=\"-15\" r=\"9\" fill=\"url(#cryo_orbCore)\"/><circle cx=\"-2\" cy=\"-18\" r=\"3\" fill=\"#fff\" opacity=\"0.8\"/>"
+    },
+    {
+      "id": "cryo_P8",
+      "name": "FROST BRAZIER",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-18,-2 18,-2 22,8 -22,8\" fill=\"url(#cryo_altarStoneSide)\"/><polygon points=\"-18,-2 -22,8 -10,14 -6,4\" fill=\"url(#cryo_brazierBowl)\"/><ellipse cx=\"0\" cy=\"-2\" rx=\"20\" ry=\"6\" fill=\"url(#cryo_brazierRim)\"/><ellipse cx=\"0\" cy=\"-3\" rx=\"16\" ry=\"4.5\" fill=\"url(#cryo_brazierBowl)\"/><ellipse cx=\"0\" cy=\"-12\" rx=\"10\" ry=\"14\" fill=\"url(#cryo_frostFlame)\" opacity=\"0.85\"/><ellipse cx=\"0\" cy=\"-15\" rx=\"6\" ry=\"11\" fill=\"url(#cryo_frostFlame)\"/>"
+    },
+    {
+      "id": "cryo_P9",
+      "name": "SPIRE",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-22,2 -8,-32 -2,-50 4,-44 12,-22 22,2\" fill=\"url(#cryo_crystalSpire)\"/><polygon points=\"-2,-50 4,-44 12,-22 -2,-30\" fill=\"url(#cryo_crystalSpireR)\"/><polygon points=\"-2,-50 -8,-32 -22,2 -10,-10\" fill=\"#fff\" opacity=\"0.55\"/><line x1=\"-2\" y1=\"-50\" x2=\"-22\" y2=\"2\" stroke=\"#fff\" stroke-width=\"0.7\" opacity=\"0.85\"/><polygon points=\"-30,4 -22,-12 -16,-8 -22,4\" fill=\"url(#cryo_crystalSpire)\" opacity=\"0.85\"/><polygon points=\"14,2 22,-12 28,-6 22,4\" fill=\"url(#cryo_crystalSpire)\" opacity=\"0.85\"/>"
+    },
+    {
+      "id": "cryo_P10",
+      "name": "FROZEN TREE",
+      "category": "blocking",
+      "walkable": false,
+      "bgFill": "url(#cryo_b1)",
+      "svg": "<polygon points=\"-4,12 -8,-30 0,-44 8,-30 4,12\" fill=\"url(#cryo_frozenTrunk)\"/><polygon points=\"-8,-30 0,-44 4,-30 -2,-30\" fill=\"#1a2424\"/><polygon points=\"-8,-30 -22,-22 -16,-15 -6,-22\" fill=\"url(#cryo_frozenTrunk)\"/><polygon points=\"8,-30 22,-22 16,-15 6,-22\" fill=\"url(#cryo_frozenTrunk)\"/><polygon points=\"-4,12 -8,-30 0,-44 8,-30 4,12\" fill=\"url(#cryo_iceCoat)\" opacity=\"0.55\"/><polygon points=\"-22,-22 -19,-26 -16,-22\" fill=\"#fff\" opacity=\"0.7\"/>"
+    }
+  ],
+  "name": "cryo"
+}
