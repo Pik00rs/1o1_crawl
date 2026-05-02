@@ -1,1 +1,80 @@
-
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Tile library — all 5 biomes</title>
+<style>
+  body { background:#08080c; color:#fff; font-family:monospace; padding:20px; margin:0; }
+  h1 { font-size:18px; letter-spacing:2px; color:#fff; margin:0 0 24px 0; }
+  h2 { font-size:13px; letter-spacing:2px; margin:24px 0 8px 0; padding-bottom:6px; border-bottom:1px solid #222; }
+  .cat-label { font-size:10px; color:#777; letter-spacing:1px; margin:12px 0 6px 0; }
+  .tile-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:6px; }
+  .tile { background:rgba(255,255,255,0.04); padding:6px; text-align:center; border-radius:4px; transition:background 0.15s; }
+  .tile:hover { background:rgba(255,255,255,0.1); }
+  .tile svg { display:block; margin:0 auto; }
+  .tile-name { font-size:9px; margin-top:2px; color:#bbb; letter-spacing:1px; }
+  .tile-id { font-size:7px; color:#555; margin-top:1px; }
+  #stats { padding:8px 12px; background:#181820; border-radius:4px; margin-bottom:20px; font-size:11px; color:#aaa; }
+  #stats span.ok { color:#5af89e; }
+  #error { color:#ff5050; padding:12px; background:#2a0808; border-radius:4px; }
+</style></head>
+<body>
+<h1>▸ TILE LIBRARY · 5 BIOMES · 150 TILES</h1>
+<div id="stats">Loading...</div>
+<div id="output"></div>
+<script>
+async function render() {
+  const out = document.getElementById('output');
+  const stats = document.getElementById('stats');
+  const biomes = ['cryo', 'inferno', 'toxic', 'crimson', 'voidnet'];
+  let total = 0;
+  const lines = [];
+  
+  for (const name of biomes) {
+    try {
+      const biome = await fetch('biomes/' + name + '.json').then(r => r.json());
+      const all = [...biome.base, ...biome.furnished, ...biome.blocking];
+      total += all.length;
+      lines.push(`<span class="ok">&check;</span> ${name} ${all.length}`);
+      
+      const h = document.createElement('h2');
+      h.textContent = '> ' + biome.config.displayName.toUpperCase() + ' (' + all.length + ' tiles)';
+      h.style.color = biome.config.accent;
+      h.style.borderColor = biome.config.accent + '44';
+      out.appendChild(h);
+      
+      for (const cat of ['base', 'furnished', 'blocking']) {
+        const lbl = document.createElement('div');
+        lbl.className = 'cat-label';
+        lbl.textContent = '> ' + cat.toUpperCase() + ' (' + biome[cat].length + ')';
+        out.appendChild(lbl);
+        
+        const grid = document.createElement('div');
+        grid.className = 'tile-grid';
+        out.appendChild(grid);
+        
+        for (const tile of biome[cat]) {
+          const card = document.createElement('div');
+          card.className = 'tile';
+          const bgTopFill = tile.bgTopFill ? '<polygon points="0,-22 60,8 0,8 -60,8" fill="' + tile.bgTopFill + '"/>' : '';
+          const svgContent = '<svg width="110" height="90" viewBox="-60 -55 120 90" xmlns="http://www.w3.org/2000/svg">' +
+            '<defs>' + biome.defs + '</defs>' +
+            '<polygon points="0,8 60,8 0,38 -60,8" fill="#000" opacity="0.5" transform="translate(2,2)"/>' +
+            '<polygon points="0,-22 60,8 0,38 -60,8" fill="' + tile.bgFill + '"/>' +
+            bgTopFill +
+            '<polygon points="0,-22 60,8 0,38 -60,8" fill="none" stroke="' + biome.config.strokeColor + '" stroke-width="0.5"/>' +
+            tile.svg +
+            '</svg>';
+          card.innerHTML = svgContent + '<div class="tile-name">' + tile.name + '</div><div class="tile-id">' + tile.id + '</div>';
+          grid.appendChild(card);
+        }
+      }
+    } catch (e) {
+      lines.push('<span style="color:#ff5050">x</span> ' + name + ' ERROR: ' + e.message);
+    }
+  }
+  
+  stats.innerHTML = lines.join(' &nbsp;·&nbsp; ') + ' &nbsp;·&nbsp; <span class="ok">' + total + ' TILES TOTAL</span>';
+}
+render().catch(e => {
+  document.getElementById('output').innerHTML = '<div id="error">'+ e.message +'</div>';
+});
+</script>
+</body></html>

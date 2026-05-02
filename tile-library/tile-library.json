@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "format": "iso-tile-svg",
+  "tileSize": { "w": 60, "h": 30 },
+  "biomes": [
+    { "name": "cryo",    "displayName": "Cryogenic Wastes", "accent": "#aee6ff", "file": "biomes/cryo.json"    },
+    { "name": "inferno", "displayName": "Inferno Pits",     "accent": "#ffaa3a", "file": "biomes/inferno.json" },
+    { "name": "toxic",   "displayName": "Toxic Swamps",     "accent": "#7ec828", "file": "biomes/toxic.json"   },
+    { "name": "crimson", "displayName": "Crimson Arena",    "accent": "#e88245", "file": "biomes/crimson.json" },
+    { "name": "voidnet", "displayName": "Voidnet Grid",     "accent": "#5cf8ff", "file": "biomes/voidnet.json" }
+  ],
+  "structure": {
+    "base":      { "count": 5,  "weight": 0.50, "description": "Walkable ground variants - subtle hue shifts" },
+    "furnished": { "count": 15, "weight": 0.40, "description": "Walkable detailed tiles - matter, debris, decorations" },
+    "blocking":  { "count": 10, "weight": 0.10, "description": "Non-walkable obstacles with 3D height (rocks, statues, props)" }
+  },
+  "tileFormat": {
+    "id": "string - unique tile identifier (e.g. cryo_B1, inf_F7, vnt_P3)",
+    "name": "string - display name (e.g. CRACKED, LAVA POOL, FIREWALL)",
+    "category": "base | furnished | blocking",
+    "walkable": "boolean - true for base/furnished, false for blocking",
+    "bgFill": "string - SVG fill (gradient url or solid color) for the base tile diamond",
+    "bgTopFill": "string (optional) - SVG fill for the top half overlay (used by base tiles to add highlight)",
+    "svg": "string - SVG body content rendered ON TOP of the base diamond, centered at (0,0)"
+  },
+  "rendering": {
+    "description": "Tiles are rendered in iso projection. The base diamond goes from (-60,8) to (60,8) horizontally and (0,-22) to (0,38) vertically, centered at (0,8). Origin (0,0) is the top center of the tile face.",
+    "renderOrder": [
+      "1. Drop shadow polygon (offset 2,2)",
+      "2. Base diamond filled with tile.bgFill",
+      "3. Top half overlay if tile.bgTopFill exists",
+      "4. Stroke outline using biome.config.strokeColor",
+      "5. tile.svg body content"
+    ],
+    "assemblyExample": "<svg viewBox='-60 -55 120 90'><defs>${biome.defs}</defs><polygon points='0,8 60,8 0,38 -60,8' fill='#000' opacity='0.5' transform='translate(2,2)'/><polygon points='0,-22 60,8 0,38 -60,8' fill='${tile.bgFill}'/>${tile.bgTopFill ? `<polygon points='0,-22 60,8 0,8 -60,8' fill='${tile.bgTopFill}'/>` : ''}<polygon points='0,-22 60,8 0,38 -60,8' fill='none' stroke='${biome.config.strokeColor}' stroke-width='0.5'/>${tile.svg}</svg>"
+  }
+}
