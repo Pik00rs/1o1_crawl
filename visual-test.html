@@ -611,6 +611,7 @@
 
 <!-- LEFT ICON BUTTONS -->
 <div id="side-left">
+  <button class="icon-btn" id="btn-builder" title="Map Builder" style="background:rgba(40,20,60,0.92); border-color:rgba(174,230,255,0.55);">🛠</button>
   <button class="icon-btn" id="btn-map" title="Map">🗺</button>
   <button class="icon-btn" id="btn-stuff" title="Stuff &amp; stats">🎒</button>
   <button class="icon-btn" id="btn-enemies" title="Enemies info">👹</button>
@@ -1052,6 +1053,104 @@ function genTileMap(){
   }
 }
 genTileMap();
+
+// ============================================================================
+// MAP BUILDER INTEGRATION
+// ============================================================================
+// Bridge entre la nouvelle tile-library (cryo_B1, inf_F7, vnt_P3...) et le
+// moteur existant (type/prop/isWall). Lit localStorage 'reactor_hollow_map'.
+// Si présent, applique la map au tileGrid SANS toucher au reste du moteur.
+// Cross-tab : quand le builder écrit dans localStorage depuis un autre onglet,
+// l'event 'storage' déclenche le reload automatique de la map.
+// ============================================================================
+function applyBuilderMapIfAny(){
+  let mapData = null;
+  try {
+    const raw = localStorage.getItem('reactor_hollow_map');
+    if(!raw) return false;
+    mapData = JSON.parse(raw);
+    localStorage.removeItem('reactor_hollow_map'); // single-use
+  } catch(e){ return false; }
+  if(!mapData || !mapData.tiles || !Array.isArray(mapData.tiles)) return false;
+
+  const idMap = { cryo:'cryo', inferno:'inferno', toxic:'toxic', crimson:'crimson', voidnet:'voidnet' };
+  const targetBiomeId = idMap[mapData.biome] || 'inferno';
+
+  // Si le builder demande un biome qu'on ne supporte pas encore côté moteur,
+  // on log mais on continue avec celui qu'on a.
+  let biome;
+  try { biome = getBiome(targetBiomeId); }
+  catch(e){
+    console.warn('[map-builder] biome', targetBiomeId, 'not registered in engine, falling back to inferno');
+    biome = getBiome('inferno');
+    state.biomeId = 'inferno';
+    return false;
+  }
+  state.biomeId = targetBiomeId;
+
+  // Update biome buttons UI selection
+  setTimeout(() => {
+    document.querySelectorAll('#biome-buttons button').forEach(b =>
+      b.classList.toggle('active', b.dataset.biome === state.biomeId));
+  }, 0);
+
+  // Resize grid & rebuild tileGrid
+  state.gridW = mapData.width;
+  state.gridH = mapData.height;
+  state.tileGrid = {};
+  const r = rng(state.mapSeed*7919 + state.biomeId.charCodeAt(0)*13);
+
+  for(let y=0; y<state.gridH; y++){
+    for(let x=0; x<state.gridW; x++){
+      const tileId = (mapData.tiles[y] && mapData.tiles[y][x]) || null;
+      // category extraction from id format: PREFIX_C# (e.g. cryo_B1, inf_F7, vnt_P3)
+      let cat = 'base';
+      if(tileId){
+        const m = tileId.match(/_([BFP])\d+$/);
+        if(m){
+          if(m[1] === 'F') cat = 'furnished';
+          else if(m[1] === 'P') cat = 'blocking';
+        }
+      }
+      const baseTile = {
+        type: pickWeighted(biome.config.tileWeights, r()),
+        seed: (x*101+y*239+state.mapSeed*7)%9999,
+        microElev: (Math.sin(x*1.7+y*2.3)*0.5+Math.cos(x*0.7+y*1.4)*0.5)*0.6,
+        tintShift: (r()-0.5)*0.18,
+        noiseSeeds: [r(),r(),r(),r(),r()],
+        isWall: false, prop: null,
+        builderTileId: tileId, // keep for future use
+      };
+      if(cat === 'blocking'){
+        baseTile.isWall = true;
+        baseTile.prop = biome.config.props[(r()*biome.config.props.length)|0];
+      }
+      state.tileGrid[x+','+y] = baseTile;
+    }
+  }
+  // Sécurise le tile sous le joueur et ses voisins
+  for(let dx=-1; dx<=1; dx++) for(let dy=-1; dy<=1; dy++){
+    const k = (player.gx+dx)+','+(player.gy+dy);
+    if(state.tileGrid[k]){ state.tileGrid[k].isWall=false; state.tileGrid[k].prop=null; }
+  }
+  console.log('[map-builder] applied custom map:', mapData.width+'x'+mapData.height, mapData.biome);
+  return true;
+}
+applyBuilderMapIfAny();
+
+// Cross-tab: when map-builder.html (in another tab) saves a new map,
+// auto-apply it without page reload.
+window.addEventListener('storage', (e) => {
+  if(e.key === 'reactor_hollow_map' && e.newValue){
+    if(applyBuilderMapIfAny()){
+      // reset combat state to stay coherent
+      state.turn = 1;
+      state.combatOver = false;
+      // refresh derived data
+      if(typeof updateReachable === 'function') updateReachable();
+    }
+  }
+});
 
 function getElev(gx,gy){ const t=state.tileGrid[gx+','+gy]; return t?t.microElev:0; }
 function isWall(gx,gy){ const t=state.tileGrid[gx+','+gy]; return t?t.isWall:false; }
@@ -1906,6 +2005,12 @@ function closeAllPanels(){
   state.openPanel = null;
 }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAllPanels));
+document.getElementById('btn-builder').addEventListener('click', () => {
+  // Ouvre le map builder dans un nouvel onglet. Au retour, si la map a été
+  // validée, elle sera dans sessionStorage et reload-ra automatiquement.
+  const url = 'tile-library/map-builder.html';
+  window.open(url, '_blank');
+});
 document.getElementById('btn-map').addEventListener('click', () => {
   state.openPanel === 'map' ? closeAllPanels() : openPanel('map');
 });
