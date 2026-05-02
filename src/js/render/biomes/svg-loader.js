@@ -185,21 +185,27 @@ async function loadBiome(biomeId){
  * Pour les tiles : signature (ctx, cx, cy, tile, time)
  * Pour les props : signature (ctx, cx, cy, time, seed) — note: cx,cy sont 0,0 dans iso-engine, le translate est déjà fait
  *
- * Le raster est dessiné centré sur (cx, cy) avec offset Y pour aligner
- * le centre du losange du SVG (point (0,8)) sur (cx,cy).
+ * iso-engine applique déjà ctx.translate(sx, sy) puis ctx.scale(zoom, zoom).
+ * Donc on dessine en TAILLE NATURELLE (sans multiplier par zoom).
  *
- * viewBox = -60 -60 120 100 → centre du losange à 50% horizontal, 68% vertical
- * Drawn size = 120x100 (taille natural en zoom 1)
- *   drawX = cx - 60
- *   drawY = cy - 68  (= cy - 0.68 * 100)
+ * Géométrie :
+ *   viewBox SVG = -60 -60 120 100
+ *   Losange SVG : pointes (0,-22) (60,8) (0,38) (-60,8) → 120 SVG-units large pour 60 haut
+ *   Mais en iso, TILE_W = 60, TILE_H = 30 (la moitié) → le losange réel fait 60×30
+ *   Donc le SVG est exactement 2× la taille du losange iso
+ *   → drawW = 60 (= TILE_W), drawH = 50 (= 100 * 60/120)
+ *
+ *   Centre du losange SVG (0, 8) → ratio_y = (8-(-60))/100 = 0.68
+ *   → drawY = cy - 0.68 * drawH = cy - 34
+ *   → drawX = cx - 30
  */
 function makeRendererFn(img, isProp){
   return function(ctx, cx, cy, tile, time){
     if(!img || !img.complete || !img.naturalWidth) return;
-    const drawW = 120;
-    const drawH = 100;
+    const drawW = 60;          // = TILE_W
+    const drawH = 50;          // = 100 * (TILE_W / 120)
     const drawX = cx - drawW/2;
-    const drawY = cy - 68;
+    const drawY = cy - 0.68 * drawH;  // = cy - 34
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
   };
 }
