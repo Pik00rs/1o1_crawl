@@ -2,288 +2,214 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Reactor Hollow — Map Builder</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { width:100%; height:100%; overflow:hidden; user-select:none; touch-action:none; }
   body { 
-    font-family: 'Courier New', monospace; 
-    background:#08080c; 
-    color:#fff; 
-    overflow:hidden;
-    height:100vh;
-    display:flex;
-    flex-direction:column;
+    font-family:'Courier New', monospace; 
+    background:#08080c; color:#fff; 
+    display:flex; flex-direction:column;
   }
   
-  /* ===== HEADER ===== */
   #header {
-    height:48px;
-    background:#0e0e14;
-    border-bottom:1px solid #2a2a36;
-    display:flex;
-    align-items:center;
-    padding:0 16px;
-    gap:16px;
-    flex-shrink:0;
+    height:42px; background:#0e0e14; border-bottom:1px solid #2a2a36;
+    display:flex; align-items:center; padding:0 8px; gap:8px; flex-shrink:0;
   }
-  #header h1 { font-size:13px; letter-spacing:2px; color:#aee6ff; }
-  #header .spacer { flex:1; }
+  #header h1 { font-size:11px; letter-spacing:1.5px; color:#aee6ff; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   
   .btn {
-    background:#1a1a24;
-    border:1px solid #2a2a36;
-    color:#aaa;
-    padding:6px 14px;
-    font-family:inherit;
-    font-size:11px;
-    letter-spacing:1px;
-    cursor:pointer;
-    transition:all 0.15s;
-    border-radius:3px;
+    background:#1a1a24; border:1px solid #2a2a36; color:#bbb;
+    padding:7px 12px; font-family:inherit; font-size:10px; letter-spacing:1px;
+    cursor:pointer; transition:all 0.15s; border-radius:3px;
+    display:inline-flex; align-items:center; gap:5px;
+    min-height:34px;
   }
-  .btn:hover { background:#2a2a36; color:#fff; border-color:#4a4a56; }
+  .btn:hover, .btn:active { background:#2a2a36; color:#fff; border-color:#4a4a56; }
   .btn.primary { background:#1e4a6e; border-color:#5cf8ff; color:#5cf8ff; }
-  .btn.primary:hover { background:#2e6a8e; color:#fff; }
-  .btn.danger { background:#4a1818; border-color:#c44848; color:#ff8a8a; }
-  .btn.danger:hover { background:#6a2828; color:#fff; }
+  .btn.primary:hover, .btn.primary:active { background:#2e6a8e; color:#fff; }
+  .btn.icon-only { padding:7px 9px; font-size:14px; min-width:36px; justify-content:center; }
   
-  /* ===== MODE TABS ===== */
-  #modes {
-    display:flex;
-    gap:2px;
-    background:#0e0e14;
-    border-bottom:1px solid #2a2a36;
-    flex-shrink:0;
-  }
+  #modes { display:flex; background:#0a0a10; border-bottom:1px solid #2a2a36; flex-shrink:0; }
   .mode-tab {
-    padding:10px 20px;
-    background:#0a0a10;
-    border:none;
-    border-right:1px solid #2a2a36;
-    color:#666;
-    font-family:inherit;
-    font-size:11px;
-    letter-spacing:1.5px;
-    cursor:pointer;
-    transition:all 0.15s;
+    flex:1; padding:9px 4px; background:#0a0a10; border:none; border-right:1px solid #2a2a36;
+    color:#666; font-family:inherit; font-size:10px; letter-spacing:1.2px;
+    cursor:pointer; transition:all 0.15s; min-height:36px;
   }
-  .mode-tab:hover { color:#fff; background:#16161e; }
-  .mode-tab.active { color:#5cf8ff; background:#16161e; border-bottom:2px solid #5cf8ff; padding-bottom:8px; }
+  .mode-tab:hover, .mode-tab:active { color:#fff; background:#16161e; }
+  .mode-tab.active { color:#5cf8ff; background:#16161e; box-shadow:inset 0 -2px 0 #5cf8ff; }
   
-  /* ===== MAIN ===== */
-  #main {
-    flex:1;
-    display:flex;
-    overflow:hidden;
-  }
+  #main { flex:1; display:flex; overflow:hidden; position:relative; min-height:0; }
   
-  /* ===== LEFT PANEL (palette in manual mode, settings in others) ===== */
   #left-panel {
-    width:280px;
-    background:#0a0a10;
-    border-right:1px solid #2a2a36;
-    display:flex;
-    flex-direction:column;
-    flex-shrink:0;
+    width:280px; background:#0a0a10; border-right:1px solid #2a2a36;
+    display:flex; flex-direction:column; flex-shrink:0;
+    transition:transform 0.25s ease, margin-left 0.25s ease;
+    overflow:hidden; z-index:50;
+  }
+  #left-panel.collapsed { margin-left:-280px; }
+  
+  #panel-toggle {
+    position:absolute; top:8px; left:8px; z-index:60;
+    width:38px; height:38px;
+    background:rgba(20,20,32,0.92); border:1px solid rgba(174,230,255,0.55);
+    color:#aee6ff; border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:16px;
+    transition:left 0.25s ease;
+    box-shadow:0 2px 8px rgba(0,0,0,0.5);
   }
   
-  .panel-section {
-    padding:12px 16px;
-    border-bottom:1px solid #1a1a24;
-  }
-  .panel-section h3 {
-    font-size:10px;
-    letter-spacing:2px;
-    color:#666;
-    margin-bottom:8px;
-  }
+  .panel-section { padding:10px 12px; border-bottom:1px solid #1a1a24; flex-shrink:0; }
+  .panel-section h3 { font-size:9px; letter-spacing:2px; color:#666; margin-bottom:6px; }
   
-  /* biome selector */
-  .biome-selector { display:flex; flex-wrap:wrap; gap:4px; }
+  .biome-selector { display:flex; flex-wrap:wrap; gap:3px; }
   .biome-btn {
-    flex:1;
-    min-width:calc(50% - 2px);
-    padding:8px;
-    background:#16161e;
-    border:1px solid #2a2a36;
-    color:#888;
-    font-family:inherit;
-    font-size:10px;
-    letter-spacing:1px;
-    cursor:pointer;
-    transition:all 0.15s;
-    border-radius:2px;
-    text-align:center;
+    flex:1 0 calc(50% - 2px); padding:8px 4px;
+    background:#16161e; border:1px solid #2a2a36; color:#888;
+    font-family:inherit; font-size:9px; letter-spacing:1px;
+    cursor:pointer; transition:all 0.15s; border-radius:2px; text-align:center;
+    min-height:32px;
   }
-  .biome-btn:hover { background:#1e1e28; color:#fff; }
+  .biome-btn:hover, .biome-btn:active { background:#1e1e28; color:#fff; }
   .biome-btn.active { color:#fff; }
-  .biome-btn[data-biome="cryo"].active { background:#1e4a6e; border-color:#aee6ff; }
+  .biome-btn[data-biome="cryo"].active    { background:#1e4a6e; border-color:#aee6ff; }
   .biome-btn[data-biome="inferno"].active { background:#5e2418; border-color:#ffaa3a; }
-  .biome-btn[data-biome="toxic"].active { background:#2e3a1c; border-color:#7ec828; }
+  .biome-btn[data-biome="toxic"].active   { background:#2e3a1c; border-color:#7ec828; }
   .biome-btn[data-biome="crimson"].active { background:#9e6238; border-color:#e88245; }
   .biome-btn[data-biome="voidnet"].active { background:#2a1a44; border-color:#5cf8ff; }
   
-  /* size selector */
-  .size-selector { display:flex; gap:4px; }
+  .size-selector { display:flex; gap:3px; }
   .size-btn {
-    flex:1;
-    padding:8px 4px;
-    background:#16161e;
-    border:1px solid #2a2a36;
-    color:#888;
-    font-family:inherit;
-    font-size:10px;
-    cursor:pointer;
-    transition:all 0.15s;
-    border-radius:2px;
+    flex:1; padding:8px 2px; background:#16161e; border:1px solid #2a2a36;
+    color:#888; font-family:inherit; font-size:9px;
+    cursor:pointer; transition:all 0.15s; border-radius:2px; min-height:32px;
   }
-  .size-btn:hover { background:#1e1e28; color:#fff; }
+  .size-btn:hover, .size-btn:active { background:#1e1e28; color:#fff; }
   .size-btn.active { background:#1e4a6e; border-color:#5cf8ff; color:#5cf8ff; }
   
-  /* sliders for random mode */
-  .slider-row { margin-bottom:10px; }
+  .slider-row { margin-bottom:8px; }
   .slider-row label {
-    display:flex;
-    justify-content:space-between;
-    font-size:10px;
-    color:#aaa;
-    margin-bottom:4px;
-    letter-spacing:1px;
+    display:flex; justify-content:space-between;
+    font-size:9px; color:#aaa; margin-bottom:3px; letter-spacing:1px;
   }
   .slider-row label .val { color:#5cf8ff; font-weight:bold; }
-  .slider-row input[type="range"] {
-    width:100%;
-    accent-color:#5cf8ff;
-    cursor:pointer;
-  }
+  .slider-row input[type="range"] { width:100%; accent-color:#5cf8ff; cursor:pointer; height:24px; }
   
-  /* manual palette */
-  #palette-container {
-    flex:1;
-    overflow-y:auto;
-    padding:8px;
-  }
-  .palette-cat { margin-bottom:12px; }
-  .palette-cat-header {
-    font-size:9px;
-    letter-spacing:2px;
-    color:#666;
-    padding:4px 4px;
-    margin-bottom:4px;
-  }
-  .palette-grid {
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:3px;
-  }
+  #palette-container { flex:1; overflow-y:auto; overflow-x:hidden; padding:6px; min-height:0; }
+  .palette-cat { margin-bottom:10px; }
+  .palette-cat-header { font-size:8px; letter-spacing:1.5px; color:#666; padding:3px; margin-bottom:3px; }
+  .palette-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:3px; }
   .palette-tile {
-    aspect-ratio:1;
-    background:#16161e;
-    border:1px solid #2a2a36;
-    border-radius:2px;
-    cursor:pointer;
-    transition:all 0.1s;
-    position:relative;
-    overflow:hidden;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    aspect-ratio:1; background:#16161e; border:1px solid #2a2a36; border-radius:2px;
+    cursor:pointer; transition:all 0.1s; position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
   }
-  .palette-tile:hover { border-color:#666; }
+  .palette-tile:hover, .palette-tile:active { border-color:#666; }
   .palette-tile.selected { border-color:#5cf8ff; box-shadow:0 0 0 1px #5cf8ff inset; }
   .palette-tile svg { width:100%; height:100%; pointer-events:none; }
   .palette-tile-name {
-    position:absolute;
-    bottom:0;
-    left:0;
-    right:0;
-    background:rgba(0,0,0,0.85);
-    color:#fff;
-    font-size:7px;
-    padding:1px 2px;
-    text-align:center;
-    letter-spacing:0.5px;
-    line-height:1;
-    pointer-events:none;
-    text-overflow:ellipsis;
-    overflow:hidden;
-    white-space:nowrap;
+    position:absolute; bottom:0; left:0; right:0;
+    background:rgba(0,0,0,0.85); color:#fff;
+    font-size:7px; padding:1px 2px; text-align:center;
+    letter-spacing:0.5px; line-height:1;
+    pointer-events:none; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;
   }
   .palette-tile.eraser {
-    background:#3a1a1a;
-    border-color:#6a3a3a;
-    color:#ff8a8a;
-    font-size:18px;
+    background:#3a1a1a; border-color:#6a3a3a; color:#ff8a8a; font-size:18px;
   }
   .palette-tile.eraser.selected { border-color:#ff5050; box-shadow:0 0 0 1px #ff5050 inset; }
   
-  /* ===== CANVAS ZONE ===== */
-  #canvas-wrap {
-    flex:1;
-    position:relative;
-    overflow:hidden;
-    background:#020205;
-  }
-  #map-canvas {
-    position:absolute;
-    top:0;
-    left:0;
-    cursor:crosshair;
-  }
+  #canvas-wrap { flex:1; position:relative; overflow:hidden; background:#020205; min-width:0; }
+  #map-canvas { position:absolute; top:0; left:0; cursor:crosshair; touch-action:none; }
+  
   #info-overlay {
-    position:absolute;
-    top:8px;
-    left:8px;
-    background:rgba(0,0,0,0.65);
-    border:1px solid #2a2a36;
-    padding:6px 10px;
-    font-size:10px;
-    color:#aaa;
-    letter-spacing:1px;
-    border-radius:3px;
+    position:absolute; bottom:8px; left:8px;
+    background:rgba(0,0,0,0.7); border:1px solid #2a2a36;
+    padding:5px 9px; font-size:9px; color:#aaa; letter-spacing:1px;
+    border-radius:3px; pointer-events:none;
+    max-width:calc(100% - 90px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   #info-overlay span { color:#5cf8ff; }
   
-  /* ===== ACTIONS BAR ===== */
+  #zoom-ctrl {
+    position:absolute; top:8px; right:8px; z-index:40;
+    display:flex; flex-direction:column; gap:3px;
+    background:rgba(20,20,32,0.92); border:1px solid #2a2a36;
+    border-radius:4px; padding:3px;
+  }
+  .zoom-btn {
+    width:34px; height:34px;
+    background:#16161e; border:1px solid #2a2a36; color:#aee6ff;
+    border-radius:3px; cursor:pointer; font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:inherit;
+  }
+  .zoom-btn:hover, .zoom-btn:active { background:#1e1e28; }
+  #zoom-display { font-size:9px; color:#aaa; text-align:center; padding:3px 0; }
+  
+  /* Selected tile indicator (top right of canvas) */
+  #selected-indicator {
+    position:absolute; top:8px; left:54px; z-index:35;
+    background:rgba(0,0,0,0.75); border:1px solid #2a2a36;
+    padding:5px 8px; font-size:9px; color:#aaa; letter-spacing:1px;
+    border-radius:3px; pointer-events:none;
+    display:none;
+  }
+  #selected-indicator.show { display:flex; align-items:center; gap:6px; }
+  #selected-indicator span { color:#5cf8ff; }
+  
   #actions {
-    height:52px;
-    background:#0e0e14;
-    border-top:1px solid #2a2a36;
-    display:flex;
-    align-items:center;
-    padding:0 16px;
-    gap:8px;
-    flex-shrink:0;
+    height:48px; background:#0e0e14; border-top:1px solid #2a2a36;
+    display:flex; align-items:center; padding:0 8px; gap:6px;
+    flex-shrink:0; overflow-x:auto;
+  }
+  #actions::-webkit-scrollbar { display:none; }
+  
+  @media (max-width: 700px) {
+    #left-panel {
+      position:absolute; left:0; top:0; bottom:0;
+      width:84vw; max-width:280px;
+      box-shadow:4px 0 16px rgba(0,0,0,0.7);
+    }
+    #left-panel.collapsed { transform:translateX(-100%); margin-left:0; }
+    #header h1 { font-size:10px; }
+    .btn { padding:6px 8px; font-size:9px; }
+    .btn.icon-only { padding:6px 7px; }
+    #info-overlay { font-size:8px; }
+    .mode-tab { font-size:9px; letter-spacing:1px; padding:8px 2px; }
+  }
+  @media (max-height: 500px) {
+    #header { height:36px; }
+    #modes .mode-tab { min-height:30px; padding:6px 4px; }
+    #actions { height:42px; }
   }
 </style>
 </head>
 <body>
 
 <div id="header">
-  <h1>▸ MAP BUILDER · REACTOR HOLLOW</h1>
-  <div class="spacer"></div>
-  <button class="btn" id="btn-back">← BACK</button>
+  <h1>▸ MAP BUILDER</h1>
+  <button class="btn icon-only" id="btn-back" title="Back">←</button>
 </div>
 
 <div id="modes">
   <button class="mode-tab active" data-mode="quick">⚡ QUICK</button>
-  <button class="mode-tab" data-mode="random">🎲 RANDOM CONFIG</button>
-  <button class="mode-tab" data-mode="manual">✏️ MANUAL</button>
+  <button class="mode-tab" data-mode="random">🎲 RANDOM</button>
+  <button class="mode-tab" data-mode="manual">✏ MANUAL</button>
 </div>
 
 <div id="main">
   <div id="left-panel">
     
-    <!-- BIOME (always visible) -->
     <div class="panel-section">
       <h3>BIOME</h3>
       <div class="biome-selector" id="biome-selector"></div>
     </div>
     
-    <!-- SIZE (always visible) -->
     <div class="panel-section">
-      <h3>MAP SIZE</h3>
+      <h3>SIZE</h3>
       <div class="size-selector">
         <button class="size-btn" data-w="8" data-h="6">8×6</button>
         <button class="size-btn active" data-w="14" data-h="10">14×10</button>
@@ -291,18 +217,14 @@
       </div>
     </div>
     
-    <!-- QUICK INFO -->
     <div class="panel-section" id="section-quick">
       <h3>QUICK GENERATION</h3>
-      <div style="font-size:10px;color:#888;line-height:1.5;letter-spacing:0.5px;">
-        Click GENERATE to create a random map with default distribution :<br>
-        • 50% base tiles<br>
-        • 35% furnished<br>
-        • 15% blockers
+      <div style="font-size:9px;color:#888;line-height:1.5;letter-spacing:0.5px;">
+        Click GENERATE for a random map :<br>
+        50% base · 35% furnished · 15% blockers
       </div>
     </div>
     
-    <!-- RANDOM CONFIG -->
     <div class="panel-section" id="section-random" style="display:none;">
       <h3>DISTRIBUTION (%)</h3>
       <div class="slider-row">
@@ -317,17 +239,14 @@
         <label>BLOCKERS <span class="val" id="val-blocking">15%</span></label>
         <input type="range" id="slider-blocking" min="0" max="100" value="15">
       </div>
-      <div style="font-size:9px;color:#666;margin-top:8px;letter-spacing:0.5px;">
-        Total normalized to 100% automatically.
-      </div>
+      <div style="font-size:8px;color:#666;margin-top:6px;">Total normalized to 100%.</div>
     </div>
     
-    <!-- MANUAL PALETTE -->
-    <div class="panel-section" id="section-manual" style="display:none;flex:1;display:none;flex-direction:column;padding:0;border:none;">
-      <div style="padding:12px 16px;border-bottom:1px solid #1a1a24;">
-        <h3>TILE PALETTE</h3>
-        <div style="font-size:9px;color:#888;line-height:1.4;letter-spacing:0.5px;">
-          Click a tile, then click on the map to place. Click eraser to clear cells.
+    <div class="panel-section" id="section-manual" style="display:none; flex:1; flex-direction:column; padding:0; border:none; min-height:0;">
+      <div style="padding:8px 12px; border-bottom:1px solid #1a1a24;">
+        <h3 style="font-size:9px; letter-spacing:2px; color:#666; margin-bottom:4px;">TILE PALETTE</h3>
+        <div style="font-size:8px; color:#888; line-height:1.4;">
+          Tap tile then tap map. ✖ to clear.
         </div>
       </div>
       <div id="palette-container"></div>
@@ -336,12 +255,22 @@
   </div>
   
   <div id="canvas-wrap">
+    <button id="panel-toggle" title="Toggle panel">☰</button>
     <canvas id="map-canvas"></canvas>
+    
+    <div id="selected-indicator">
+      Selected: <span id="selected-name">-</span>
+    </div>
+    
+    <div id="zoom-ctrl">
+      <button class="zoom-btn" id="zoom-in">+</button>
+      <div id="zoom-display">100%</div>
+      <button class="zoom-btn" id="zoom-out">−</button>
+      <button class="zoom-btn" id="zoom-fit" title="Fit">⊙</button>
+    </div>
+    
     <div id="info-overlay">
-      Mode: <span id="info-mode">QUICK</span> · 
-      Biome: <span id="info-biome">cryo</span> · 
-      Size: <span id="info-size">14×10</span> · 
-      Hover: <span id="info-hover">-</span>
+      <span id="info-mode">QUICK</span> · <span id="info-biome">cryo</span> · <span id="info-size">14×10</span> · hover: <span id="info-hover">-</span>
     </div>
   </div>
 </div>
@@ -350,30 +279,23 @@
   <button class="btn" id="btn-clear">🗑 CLEAR</button>
   <button class="btn" id="btn-generate">🎲 GENERATE</button>
   <div style="flex:1"></div>
-  <button class="btn primary" id="btn-validate">✓ VALIDATE & PLAY</button>
+  <button class="btn primary" id="btn-validate">✓ APPLY &amp; PLAY</button>
 </div>
 
 <script>
-// ============================================================================
-// STATE
-// ============================================================================
 const STATE = {
-  mode: 'quick',           // 'quick' | 'random' | 'manual'
-  biome: 'cryo',
-  width: 14,
-  height: 10,
+  mode: 'quick', biome: 'cryo',
+  width: 14, height: 10,
   weights: { base: 50, furnished: 35, blocking: 15 },
-  selectedTile: null,      // for manual mode (tile object or 'eraser')
-  map: [],                 // 2D array of tile ids
-  biomes: {},              // loaded biome data
-  TILE_W: 60,
-  TILE_H: 30,
-  view: { offsetX: 0, offsetY: 0, zoom: 1 }
+  selectedTile: null,
+  map: [],
+  biomes: {},
+  TILE_W: 60, TILE_H: 30,
+  view: { offsetX: 0, offsetY: 0, zoom: 1 },
+  panelCollapsed: false,
+  hover: null,
 };
 
-// ============================================================================
-// INIT
-// ============================================================================
 async function init() {
   await loadBiomes();
   buildBiomeSelector();
@@ -381,6 +303,7 @@ async function init() {
   setMode('quick');
   generateMap('quick');
   resizeCanvas();
+  if (window.innerWidth < 600) togglePanel(true);
   render();
 }
 
@@ -388,8 +311,6 @@ async function loadBiomes() {
   const names = ['cryo', 'inferno', 'toxic', 'crimson', 'voidnet'];
   for (const name of names) {
     try {
-      // tries 2 paths : direct "biomes/X.json" if served from tile-library/, 
-      // or "tile-library/biomes/X.json" if served from project root
       let res = await fetch('biomes/' + name + '.json');
       if (!res.ok) res = await fetch('tile-library/biomes/' + name + '.json');
       STATE.biomes[name] = await res.json();
@@ -411,9 +332,6 @@ function buildBiomeSelector() {
   }
 }
 
-// ============================================================================
-// EVENTS
-// ============================================================================
 function attachEvents() {
   document.querySelectorAll('.mode-tab').forEach(t => {
     t.onclick = () => setMode(t.dataset.mode);
@@ -421,17 +339,14 @@ function attachEvents() {
   document.querySelectorAll('.size-btn').forEach(b => {
     b.onclick = () => setSize(parseInt(b.dataset.w), parseInt(b.dataset.h));
   });
-  document.getElementById('btn-clear').onclick = clearMap;
-  document.getElementById('btn-generate').onclick = () => {
-    generateMap(STATE.mode);
-    render();
-  };
+  document.getElementById('btn-clear').onclick = () => { clearMap(); render(); };
+  document.getElementById('btn-generate').onclick = () => { generateMap(STATE.mode); render(); };
   document.getElementById('btn-validate').onclick = validateAndExit;
   document.getElementById('btn-back').onclick = () => {
     if (confirm('Discard map and go back ?')) window.history.back();
   };
+  document.getElementById('panel-toggle').onclick = () => togglePanel();
   
-  // sliders
   ['base', 'furnished', 'blocking'].forEach(cat => {
     const slider = document.getElementById('slider-' + cat);
     const val = document.getElementById('val-' + cat);
@@ -441,14 +356,28 @@ function attachEvents() {
     };
   });
   
-  // canvas events
+  document.getElementById('zoom-in').onclick = () => { setZoom(STATE.view.zoom * 1.2); render(); };
+  document.getElementById('zoom-out').onclick = () => { setZoom(STATE.view.zoom / 1.2); render(); };
+  document.getElementById('zoom-fit').onclick = () => { fitMapToScreen(); render(); };
+  
   const canvas = document.getElementById('map-canvas');
-  canvas.addEventListener('click', onCanvasClick);
-  canvas.addEventListener('mousemove', onCanvasMove);
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', onMouseUp);
   canvas.addEventListener('mouseleave', () => {
     document.getElementById('info-hover').textContent = '-';
+    STATE.hover = null;
+    STATE.panning = false;
+    render();
   });
-  window.addEventListener('resize', () => { resizeCanvas(); render(); });
+  canvas.addEventListener('wheel', onWheel, { passive:false });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  
+  canvas.addEventListener('touchstart', onTouchStart, { passive:false });
+  canvas.addEventListener('touchmove', onTouchMove, { passive:false });
+  canvas.addEventListener('touchend', onTouchEnd, { passive:false });
+  
+  window.addEventListener('resize', () => { resizeCanvas(); fitMapToScreen(); render(); });
 }
 
 function setMode(mode) {
@@ -456,15 +385,14 @@ function setMode(mode) {
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
   document.getElementById('section-quick').style.display = mode === 'quick' ? 'block' : 'none';
   document.getElementById('section-random').style.display = mode === 'random' ? 'block' : 'none';
-  const manualSec = document.getElementById('section-manual');
-  manualSec.style.display = mode === 'manual' ? 'flex' : 'none';
-  document.getElementById('btn-generate').style.display = mode === 'manual' ? 'none' : 'inline-block';
+  document.getElementById('section-manual').style.display = mode === 'manual' ? 'flex' : 'none';
+  document.getElementById('btn-generate').style.display = mode === 'manual' ? 'none' : 'inline-flex';
   document.getElementById('info-mode').textContent = mode.toUpperCase();
   
   if (mode === 'manual') buildPalette();
-  
-  // auto-generate when switching to quick/random
   if (mode !== 'manual') generateMap(mode);
+  // Show selected indicator only in manual mode
+  document.getElementById('selected-indicator').classList.toggle('show', mode === 'manual' && STATE.selectedTile !== null);
   render();
 }
 
@@ -472,42 +400,50 @@ function setBiome(name) {
   STATE.biome = name;
   document.querySelectorAll('.biome-btn').forEach(b => b.classList.toggle('active', b.dataset.biome === name));
   document.getElementById('info-biome').textContent = name;
-  
+  STATE.selectedTile = null;
+  document.getElementById('selected-indicator').classList.remove('show');
   if (STATE.mode === 'manual') buildPalette();
   if (STATE.mode !== 'manual') generateMap(STATE.mode);
   render();
 }
 
 function setSize(w, h) {
-  STATE.width = w;
-  STATE.height = h;
+  STATE.width = w; STATE.height = h;
   document.querySelectorAll('.size-btn').forEach(b => 
     b.classList.toggle('active', parseInt(b.dataset.w) === w && parseInt(b.dataset.h) === h));
   document.getElementById('info-size').textContent = w + '×' + h;
-  
   if (STATE.mode !== 'manual') generateMap(STATE.mode);
   else clearMap();
-  resizeCanvas();
+  fitMapToScreen();
   render();
 }
 
-// ============================================================================
-// PALETTE (manual mode)
-// ============================================================================
+function togglePanel(forceCollapse) {
+  const panel = document.getElementById('left-panel');
+  const toggle = document.getElementById('panel-toggle');
+  if (forceCollapse === true) STATE.panelCollapsed = true;
+  else if (forceCollapse === false) STATE.panelCollapsed = false;
+  else STATE.panelCollapsed = !STATE.panelCollapsed;
+  panel.classList.toggle('collapsed', STATE.panelCollapsed);
+  toggle.textContent = STATE.panelCollapsed ? '☰' : '✕';
+  if (window.innerWidth >= 700) toggle.style.left = STATE.panelCollapsed ? '8px' : '288px';
+  else toggle.style.left = '8px';
+  setTimeout(() => { resizeCanvas(); render(); }, 260);
+}
+
 function buildPalette() {
   const container = document.getElementById('palette-container');
   container.innerHTML = '';
   const biome = STATE.biomes[STATE.biome];
   if (!biome) return;
   
-  // Eraser at top
   const eraserCat = document.createElement('div');
   eraserCat.className = 'palette-cat';
   eraserCat.innerHTML = '<div class="palette-cat-header">▸ ERASER</div><div class="palette-grid"></div>';
   const eraserGrid = eraserCat.querySelector('.palette-grid');
   const eraserTile = document.createElement('div');
   eraserTile.className = 'palette-tile eraser';
-  eraserTile.innerHTML = '✖<div class="palette-tile-name">ERASER</div>';
+  eraserTile.innerHTML = '✖<div class="palette-tile-name">CLEAR</div>';
   eraserTile.onclick = () => selectPaletteTile('eraser', eraserTile);
   eraserGrid.appendChild(eraserTile);
   container.appendChild(eraserCat);
@@ -518,7 +454,6 @@ function buildPalette() {
     catDiv.innerHTML = '<div class="palette-cat-header">▸ ' + cat.toUpperCase() + ' (' + biome[cat].length + ')</div>';
     const grid = document.createElement('div');
     grid.className = 'palette-grid';
-    
     for (const tile of biome[cat]) {
       const cell = document.createElement('div');
       cell.className = 'palette-tile';
@@ -527,7 +462,6 @@ function buildPalette() {
       cell.onclick = () => selectPaletteTile(tile, cell);
       grid.appendChild(cell);
     }
-    
     catDiv.appendChild(grid);
     container.appendChild(catDiv);
   }
@@ -537,6 +471,13 @@ function selectPaletteTile(tile, el) {
   STATE.selectedTile = tile;
   document.querySelectorAll('.palette-tile').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');
+  // Update indicator
+  const ind = document.getElementById('selected-indicator');
+  const name = tile === 'eraser' ? 'ERASER' : tile.name + ' (' + tile.id + ')';
+  document.getElementById('selected-name').textContent = name;
+  ind.classList.add('show');
+  // Auto-collapse on mobile after picking
+  if (window.innerWidth < 700) togglePanel(true);
 }
 
 function renderTileSVG(biome, tile, size) {
@@ -551,9 +492,6 @@ function renderTileSVG(biome, tile, size) {
     '</svg>';
 }
 
-// ============================================================================
-// MAP GENERATION
-// ============================================================================
 function clearMap() {
   STATE.map = [];
   for (let y = 0; y < STATE.height; y++) {
@@ -561,22 +499,17 @@ function clearMap() {
     for (let x = 0; x < STATE.width; x++) row.push(null);
     STATE.map.push(row);
   }
-  render();
 }
 
 function generateMap(mode) {
   clearMap();
   const biome = STATE.biomes[STATE.biome];
   if (!biome) return;
-  
   let weights = STATE.weights;
   if (mode === 'quick') weights = { base: 50, furnished: 35, blocking: 15 };
-  
-  // normalize
   const total = weights.base + weights.furnished + weights.blocking;
   const nBase = weights.base / total;
   const nFurn = weights.furnished / total;
-  
   for (let y = 0; y < STATE.height; y++) {
     for (let x = 0; x < STATE.width; x++) {
       const r = Math.random();
@@ -584,7 +517,6 @@ function generateMap(mode) {
       if (r < nBase) cat = 'base';
       else if (r < nBase + nFurn) cat = 'furnished';
       else cat = 'blocking';
-      
       const tiles = biome[cat];
       const tile = tiles[Math.floor(Math.random() * tiles.length)];
       STATE.map[y][x] = tile.id;
@@ -592,15 +524,9 @@ function generateMap(mode) {
   }
 }
 
-// ============================================================================
-// CANVAS RENDER (Canvas2D from SVG-rendered images)
-// ============================================================================
-const SVG_CACHE = new Map(); // tileId -> Image
-
+const SVG_CACHE = new Map();
 function getTileImage(tileId) {
   if (SVG_CACHE.has(tileId)) return SVG_CACHE.get(tileId);
-  
-  // find tile in biomes
   let biome = null, tile = null;
   for (const bn in STATE.biomes) {
     const b = STATE.biomes[bn];
@@ -609,9 +535,8 @@ function getTileImage(tileId) {
     if (found) { biome = b; tile = found; break; }
   }
   if (!tile) return null;
-  
-  const svgStr = renderTileSVG(biome, tile, 120).replace('width="120"', 'width="120"');
-  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const svgStr = renderTileSVG(biome, tile, 120);
+  const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const img = new Image();
   img.src = url;
@@ -620,100 +545,141 @@ function getTileImage(tileId) {
   return img;
 }
 
+function setZoom(z) {
+  STATE.view.zoom = Math.max(0.3, Math.min(3, z));
+  document.getElementById('zoom-display').textContent = Math.round(STATE.view.zoom * 100) + '%';
+}
+
+function fitMapToScreen() {
+  const canvas = document.getElementById('map-canvas');
+  if (!canvas.width) return;
+  const mapPxW = (STATE.width + STATE.height) * STATE.TILE_W / 2;
+  const mapPxH = (STATE.width + STATE.height) * STATE.TILE_H / 2;
+  const wantZoom = Math.min(
+    (canvas.width - 60) / mapPxW,
+    (canvas.height - 100) / mapPxH,
+    1.4
+  );
+  setZoom(wantZoom);
+  STATE.view.offsetX = canvas.width / 2;
+  STATE.view.offsetY = (canvas.height - mapPxH * STATE.view.zoom) / 2 + 22 * STATE.view.zoom;
+}
+
 function resizeCanvas() {
   const canvas = document.getElementById('map-canvas');
   const wrap = document.getElementById('canvas-wrap');
   canvas.width = wrap.clientWidth;
   canvas.height = wrap.clientHeight;
-  
-  // center map
-  const mapW = (STATE.width + STATE.height) * STATE.TILE_W / 2;
-  const mapH = (STATE.width + STATE.height) * STATE.TILE_H / 2;
-  STATE.view.offsetX = (canvas.width - mapW) / 2 + STATE.height * STATE.TILE_W / 2;
-  STATE.view.offsetY = (canvas.height - mapH) / 2 + 30;
+  canvas.style.width = wrap.clientWidth + 'px';
+  canvas.style.height = wrap.clientHeight + 'px';
 }
 
 function isoToScreen(gx, gy) {
-  const sx = STATE.view.offsetX + (gx - gy) * STATE.TILE_W / 2;
-  const sy = STATE.view.offsetY + (gx + gy) * STATE.TILE_H / 2;
-  return { sx, sy };
+  const tw = STATE.TILE_W * STATE.view.zoom;
+  const th = STATE.TILE_H * STATE.view.zoom;
+  return {
+    sx: STATE.view.offsetX + (gx - gy) * tw / 2,
+    sy: STATE.view.offsetY + (gx + gy) * th / 2
+  };
 }
 
 function screenToIso(sx, sy) {
+  const tw = STATE.TILE_W * STATE.view.zoom;
+  const th = STATE.TILE_H * STATE.view.zoom;
   const dx = sx - STATE.view.offsetX;
   const dy = sy - STATE.view.offsetY;
-  const gx = Math.round(dx / STATE.TILE_W + dy / STATE.TILE_H);
-  const gy = Math.round(dy / STATE.TILE_H - dx / STATE.TILE_W);
-  return { gx, gy };
+  return {
+    gx: Math.round(dx / tw + dy / th),
+    gy: Math.round(dy / th - dx / tw)
+  };
 }
 
 function render() {
   const canvas = document.getElementById('map-canvas');
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // background grid hint
-  ctx.fillStyle = '#04040a';
+  ctx.fillStyle = '#020205';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // render tiles back-to-front
-  for (let y = 0; y < STATE.height; y++) {
-    for (let x = 0; x < STATE.width; x++) {
-      const tileId = STATE.map[y][x];
-      const { sx, sy } = isoToScreen(x, y);
-      
-      if (!tileId) {
-        // empty cell : draw outline
-        drawEmptyTile(ctx, sx, sy);
-        continue;
-      }
-      
-      const img = getTileImage(tileId);
-      if (img && img.complete) {
-        // tile is 120x100 in SVG, drawn with center at sx, sy + 8 (so the diamond center aligns)
-        ctx.drawImage(img, sx - 60, sy - 47, 120, 100);
-      } else {
-        drawEmptyTile(ctx, sx, sy);
+  const tw = STATE.TILE_W * STATE.view.zoom;
+  const th = STATE.TILE_H * STATE.view.zoom;
+  
+  // Tri back-to-front. On dessine d'abord les tiles non-blocker (sol),
+  // puis les blockers (qui ont de la hauteur).
+  for (let pass = 0; pass < 2; pass++) {
+    for (let y = 0; y < STATE.height; y++) {
+      for (let x = 0; x < STATE.width; x++) {
+        const tileId = STATE.map[y][x];
+        const isBlocker = tileId && /_P\d+$/.test(tileId);
+        if (pass === 0 && isBlocker) continue;
+        if (pass === 1 && !isBlocker) continue;
+        const { sx, sy } = isoToScreen(x, y);
+        if (!tileId) {
+          if (pass === 0) drawEmptyTile(ctx, sx, sy, tw, th);
+          continue;
+        }
+        const img = getTileImage(tileId);
+        if (img && img.complete && img.naturalWidth) {
+          // viewBox -60 -55 120 100 → diamond center (0,8) at ratio_y = (8-(-55))/100 = 0.63
+          const drawW = 120 * STATE.view.zoom;
+          const drawH = 100 * STATE.view.zoom;
+          ctx.drawImage(img, sx - drawW/2, sy - drawH * 0.63, drawW, drawH);
+        } else if (pass === 0) {
+          drawEmptyTile(ctx, sx, sy, tw, th);
+        }
       }
     }
   }
   
-  // hover highlight
   if (STATE.hover) {
     const { sx, sy } = isoToScreen(STATE.hover.gx, STATE.hover.gy);
     ctx.strokeStyle = '#5cf8ff';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(sx, sy - 22);
-    ctx.lineTo(sx + 60, sy + 8);
-    ctx.lineTo(sx, sy + 38);
-    ctx.lineTo(sx - 60, sy + 8);
+    ctx.moveTo(sx, sy - th/2);
+    ctx.lineTo(sx + tw/2, sy);
+    ctx.lineTo(sx, sy + th/2);
+    ctx.lineTo(sx - tw/2, sy);
     ctx.closePath();
     ctx.stroke();
   }
 }
 
-function drawEmptyTile(ctx, sx, sy) {
+function drawEmptyTile(ctx, sx, sy, tw, th) {
   ctx.strokeStyle = '#1a1a26';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(sx, sy - 22);
-  ctx.lineTo(sx + 60, sy + 8);
-  ctx.lineTo(sx, sy + 38);
-  ctx.lineTo(sx - 60, sy + 8);
+  ctx.moveTo(sx, sy - th/2);
+  ctx.lineTo(sx + tw/2, sy);
+  ctx.lineTo(sx, sy + th/2);
+  ctx.lineTo(sx - tw/2, sy);
   ctx.closePath();
   ctx.stroke();
 }
 
-// ============================================================================
-// INTERACTION
-// ============================================================================
-function onCanvasMove(e) {
-  const rect = e.target.getBoundingClientRect();
+// ===== Mouse interaction (desktop) =====
+function onMouseDown(e) {
+  if (e.button === 1 || e.button === 2 || e.shiftKey) {
+    STATE.panning = true;
+    STATE.panStart = { x: e.clientX, y: e.clientY, ox: STATE.view.offsetX, oy: STATE.view.offsetY };
+    e.preventDefault();
+    return;
+  }
+  if (STATE.mode === 'manual') {
+    placeAtClient(e.clientX, e.clientY);
+  }
+}
+
+function onMouseMove(e) {
+  if (STATE.panning && STATE.panStart) {
+    STATE.view.offsetX = STATE.panStart.ox + (e.clientX - STATE.panStart.x);
+    STATE.view.offsetY = STATE.panStart.oy + (e.clientY - STATE.panStart.y);
+    render();
+    return;
+  }
+  const rect = e.currentTarget.getBoundingClientRect();
   const sx = e.clientX - rect.left;
   const sy = e.clientY - rect.top;
   const { gx, gy } = screenToIso(sx, sy);
-  
   if (gx >= 0 && gx < STATE.width && gy >= 0 && gy < STATE.height) {
     STATE.hover = { gx, gy };
     document.getElementById('info-hover').textContent = '(' + gx + ',' + gy + ')';
@@ -724,67 +690,103 @@ function onCanvasMove(e) {
   render();
 }
 
-function onCanvasClick(e) {
-  if (STATE.mode !== 'manual') return;
+function onMouseUp(e) { STATE.panning = false; }
+
+function placeAtClient(clientX, clientY) {
+  const rect = document.getElementById('map-canvas').getBoundingClientRect();
+  const sx = clientX - rect.left;
+  const sy = clientY - rect.top;
+  const { gx, gy } = screenToIso(sx, sy);
+  if (gx < 0 || gx >= STATE.width || gy < 0 || gy >= STATE.height) return;
   if (!STATE.selectedTile) {
-    alert('Select a tile from the palette first');
+    if (STATE.panelCollapsed) togglePanel(false);
     return;
   }
-  
-  const rect = e.target.getBoundingClientRect();
-  const sx = e.clientX - rect.left;
-  const sy = e.clientY - rect.top;
-  const { gx, gy } = screenToIso(sx, sy);
-  
-  if (gx < 0 || gx >= STATE.width || gy < 0 || gy >= STATE.height) return;
-  
-  if (STATE.selectedTile === 'eraser') {
-    STATE.map[gy][gx] = null;
-  } else {
-    STATE.map[gy][gx] = STATE.selectedTile.id;
-  }
+  if (STATE.selectedTile === 'eraser') STATE.map[gy][gx] = null;
+  else STATE.map[gy][gx] = STATE.selectedTile.id;
   render();
 }
 
-// ============================================================================
-// VALIDATE & EXIT
-// ============================================================================
-function validateAndExit() {
-  // serialize map
-  const mapData = {
-    width: STATE.width,
-    height: STATE.height,
-    biome: STATE.biome,
-    tiles: STATE.map
-  };
-  
-  // store in localStorage so visual-test.html (in another tab) can pick it up
-  try {
-    localStorage.setItem('reactor_hollow_map', JSON.stringify(mapData));
-  } catch (e) {
-    console.warn('localStorage failed:', e);
+function onWheel(e) {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+  setZoom(STATE.view.zoom * factor);
+  render();
+}
+
+// ===== Touch interaction (mobile) =====
+let touchInitial = null;
+let touchStartTime = 0;
+let touchMoved = false;
+
+function onTouchStart(e) {
+  e.preventDefault();
+  touchMoved = false;
+  touchStartTime = Date.now();
+  if (e.touches.length === 1) {
+    touchInitial = {
+      mode: 'tap-or-pan',
+      x: e.touches[0].clientX, y: e.touches[0].clientY,
+      ox: STATE.view.offsetX, oy: STATE.view.offsetY
+    };
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    touchInitial = { mode: 'pinch', dist: Math.hypot(dx, dy), zoom: STATE.view.zoom };
   }
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (e.touches.length === 1 && touchInitial && touchInitial.mode === 'tap-or-pan') {
+    const dx = e.touches[0].clientX - touchInitial.x;
+    const dy = e.touches[0].clientY - touchInitial.y;
+    if (Math.hypot(dx, dy) > 8) touchMoved = true;
+    if (touchMoved) {
+      STATE.view.offsetX = touchInitial.ox + dx;
+      STATE.view.offsetY = touchInitial.oy + dy;
+      render();
+    }
+  } else if (e.touches.length === 2 && touchInitial && touchInitial.mode === 'pinch') {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    setZoom(touchInitial.zoom * (dist / touchInitial.dist));
+    render();
+    touchMoved = true;
+  }
+}
+
+function onTouchEnd(e) {
+  e.preventDefault();
+  if (!touchMoved && Date.now() - touchStartTime < 350 && touchInitial && touchInitial.mode === 'tap-or-pan') {
+    if (STATE.mode === 'manual') {
+      placeAtClient(touchInitial.x, touchInitial.y);
+    }
+  }
+  touchInitial = null;
+}
+
+function validateAndExit() {
+  const mapData = {
+    width: STATE.width, height: STATE.height,
+    biome: STATE.biome, tiles: STATE.map
+  };
+  try { localStorage.setItem('reactor_hollow_map', JSON.stringify(mapData)); }
+  catch (e) { console.warn('localStorage failed:', e); }
   
-  // also expose to opener if opened in a popup
   if (window.opener && !window.opener.closed) {
     try {
       window.opener.postMessage({ type: 'mapBuilt', map: mapData }, '*');
+      window.opener.focus();
+      window.close();
+      return;
     } catch (e) {}
   }
-  
-  // download as JSON file as backup
-  const blob = new Blob([JSON.stringify(mapData, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'map_' + STATE.biome + '_' + STATE.width + 'x' + STATE.height + '_' + Date.now() + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  
-  alert('Map saved.\n\nDimension: ' + STATE.width + '×' + STATE.height + '\nBiome: ' + STATE.biome + '\n\nGo back to visual-test tab — the map will be applied automatically.');
+  // Fallback: redirect to visual-test (one level up)
+  window.location.href = '../visual-test.html';
 }
 
-// GO
 init();
 </script>
 
