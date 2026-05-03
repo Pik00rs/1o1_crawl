@@ -915,7 +915,6 @@
 import { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, getDungeonStatus } from './ascension-data.js';
 import { getEnemySprite } from '../js/render/enemies/index.js';
 import { generateDungeonRun } from '../js/dungeon/generator.js';
-import { persistRun } from '../js/dungeon/run-state.js';
 
 // === STATE ===
 let currentBiome = null;
@@ -1164,11 +1163,26 @@ function openDungeonPanel(dungeon, cardEl){
 
   document.getElementById('close-panel').addEventListener('click', closeSidePanel);
   document.getElementById('enter-btn').addEventListener('click', () => {
-    // Génère la run, la persiste en sessionStorage, redirige vers run.html
+    // Génère la run et la persiste pour game.html (qui lit localStorage.rh_active_run
+    // quand l'URL contient ?run=custom).
     try {
       const run = generateDungeonRun(currentBiome, dungeon.level);
-      persistRun(run);
-      window.location.href = './run.html';
+      // Format consommé par game.html (readPlaytestRun) :
+      //   { rooms: [{width, height, walls, playerStart, enemies}], player, ...rest }
+      // Notre generator produit déjà des rooms compatibles. On ajoute le bloc player
+      // et les métadonnées dont on a besoin pour gérer la transition multi-room côté game.html.
+      const payload = {
+        ...run,
+        player: {
+          level: 1,
+          stuff: 'balanced',
+          customModifiers: [],
+        },
+      };
+      localStorage.setItem('rh_active_run', JSON.stringify(payload));
+      // Navigue vers le moteur de combat. La page est à la racine du repo
+      // (sur Vercel : 1o1-crawl.vercel.app/game.html). Depuis /src/dashboard/, on remonte 2 niveaux.
+      window.location.href = '../../game.html?run=custom';
     } catch(e){
       console.error('Failed to start run:', e);
       alert('Erreur au lancement du donjon : ' + e.message);
