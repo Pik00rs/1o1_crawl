@@ -873,9 +873,14 @@ async function initCombat(){
   state.player = createPlayer({ ...playerCfg, x: startPos.x, y: startPos.y });
 
   // Crée les ennemis
-  state.enemies = (roomData.enemies || []).map((e, i) =>
-    createEnemy(`${e.type}_${i}`, e.type, e.x, e.y)
-  );
+  state.enemies = (roomData.enemies || []).map((e, i) => {
+    const enemy = createEnemy(`${e.type}_${i}`, e.type, e.x, e.y);
+    // Override le nom avec celui d'Ascension (source de vérité côté UI player-facing)
+    if(e.displayName && enemy){
+      enemy.name = e.displayName;
+    }
+    return enemy;
+  });
   state.actors = [state.player, ...state.enemies];
   computeInitiative();
 
@@ -2025,6 +2030,35 @@ setInterval(tick, 16);
 // ============================================================================
 let _dungeonEndHandled = false;
 let _dungeonEndTriggerTime = 0;
+let _modalObserver = null;
+
+// Setup au boot : observer le modal combat-end et le cacher tant qu'on est
+// dans une run Ascension multi-room (sauf à la défaite ou victoire finale).
+function setupDungeonModalObserver(){
+  if(_modalObserver) return;
+  const modal = document.getElementById('combat-end');
+  if(!modal) return;
+
+  _modalObserver = new MutationObserver(() => {
+    // Si on est dans une run multi-room ET qu'on n'a pas encore montré
+    // notre propre écran final → cacher le modal du moteur externe.
+    if(localStorage.getItem('rh_active_run') && !_dungeonShowingFinalScreen){
+      if(modal.style.display !== 'none'){
+        modal.style.display = 'none';
+      }
+    }
+  });
+  _modalObserver.observe(modal, {
+    attributes: true,
+    attributeFilter: ['style', 'class'],
+    childList: true,
+    subtree: true,
+  });
+}
+
+// Flag : true quand on a explicitement déclenché un écran final (victory/defeat)
+// → laisse le modal s'afficher dans ce cas
+let _dungeonShowingFinalScreen = false;
 
 function detectDungeonRoomEnd(){
   // Skip si pas de run Ascension
@@ -2032,6 +2066,9 @@ function detectDungeonRoomEnd(){
   if(!raw) { _dungeonEndHandled = false; return; }
   if(_dungeonEndHandled) return;
   if(!state.player || !state.enemies) return;
+
+  // Setup observer la première fois qu'on est dans un run
+  setupDungeonModalObserver();
 
   const playerDead = state.player.isDead || state.player.hp <= 0;
   const aliveEnemies = state.enemies.filter(e => !e.isDead && e.hp > 0);
@@ -2045,25 +2082,128 @@ function detectDungeonRoomEnd(){
     return;
   }
 
-  // Délai de 1.2s pour laisser jouer les anims de mort + dernière particule
-  if(performance.now() - _dungeonEndTriggerTime < 1200) return;
+  // Délai de 800ms pour laisser jouer les anims de mort
+  if(performance.now() - _dungeonEndTriggerTime < 800) return;
 
   // Maintenant on déclenche la transition
   _dungeonEndHandled = true;
   _dungeonEndTriggerTime = 0;
 
-  // Cache le modal externe s'il est apparu (le moteur a pu déjà le show)
+  // Cache le modal externe s'il est apparu (au cas où l'observer arrive après)
   const modal = document.getElementById('combat-end');
   if(modal) modal.style.display = 'none';
 
-  // Délègue à window.restartCombat qui gère déjà toute la logique multi-room
-  window.restartCombat();
+  // Joue la transition (fade noir + label) puis charge la suite
+  performRoomTransition();
+}
+
+async function performRoomTransition(){
+  const raw = localStorage.getItem('rh_active_run');
+  if(!raw){ window.restartCombat(); return; }
+  let run;
+  try { run = JSON.parse(raw); } catch(e){ window.restartCombat(); return; }
+
+  // Détecte victoire vs défaite
+  const playerDead = state.player && (state.player.isDead || state.player.hp <= 0);
+  const isFinalRoom = run.rooms.length === 1 && !playerDead; // après le shift il restera 0
+  const isDefeat = playerDead;
+
+  // Si défaite OU victoire finale → on autorise notre écran final, pas de fade
+  if(isDefeat || isFinalRoom){
+    _dungeonShowingFinalScreen = true;
+    window.restartCombat();
+    return;
+  }
+
+  // Sinon : transition mid-dungeon avec fade noir
+  // 1. Fade in noir + label "ROOM X/N"
+  const totalRooms = run.roomCount || run.rooms.length;
+  const remainingAfterShift = run.rooms.length - 1;
+  const nextRoomNum = totalRooms - remainingAfterShift + 1;
+  await showRoomTransitionOverlay(nextRoomNum, totalRooms, run.biomeId);
+
+  // 2. Charge la prochaine room (window.restartCombat va shift et init)
+  await window.restartCombat();
+
+  // 3. Fade out
+  await hideRoomTransitionOverlay();
+}
+
+function ensureRoomTransitionOverlay(){
+  let el = document.getElementById('room-transition');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'room-transition';
+  el.style.cssText = `
+    position: fixed; inset: 0; z-index: 9999;
+    background: #000; opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.32s ease;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    color: #ffd060;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    text-align: center;
+  `;
+  el.innerHTML = `
+    <div id="room-transition-biome" style="
+      font-size: 11px; letter-spacing: 4px; opacity: 0.8;
+      color: var(--rt-biome-color, #ffd060);
+      text-shadow: 0 0 8px var(--rt-biome-glow, rgba(255,208,96,0.4));
+    "></div>
+    <div id="room-transition-label" style="
+      font-size: 48px; font-weight: 800; letter-spacing: 8px;
+      text-shadow: 0 0 24px rgba(255,208,96,0.6);
+    "></div>
+    <div id="room-transition-sub" style="
+      font-size: 11px; letter-spacing: 3px; opacity: 0.5;
+    ">▸ ENTERING ◂</div>
+  `;
+  document.body.appendChild(el);
+  return el;
+}
+
+const RT_BIOME_LABELS = {
+  cryo:    { label: '❄ CRYO',    color: '#aee6ff' },
+  inferno: { label: '🔥 INFERNO', color: '#ff8a4d' },
+  toxic:   { label: '☣ TOXIC',   color: '#a8e065' },
+  voidnet: { label: '⚡ VOIDNET', color: '#3df0ff' },
+  crimson: { label: '🩸 CRIMSON', color: '#ff5252' },
+};
+
+function showRoomTransitionOverlay(roomNum, totalRooms, biomeId){
+  return new Promise(resolve => {
+    const el = ensureRoomTransitionOverlay();
+    const biomeMeta = RT_BIOME_LABELS[biomeId] || { label: '', color: '#ffd060' };
+    el.style.setProperty('--rt-biome-color', biomeMeta.color);
+    el.style.setProperty('--rt-biome-glow', biomeMeta.color + '66');
+    el.querySelector('#room-transition-biome').textContent = biomeMeta.label;
+    el.querySelector('#room-transition-label').textContent = `ROOM ${roomNum} / ${totalRooms}`;
+    // Force reflow then animate
+    el.style.opacity = '0';
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      setTimeout(resolve, 380); // attend que le fade in finisse + un peu de breath
+    });
+  });
+}
+
+function hideRoomTransitionOverlay(){
+  return new Promise(resolve => {
+    const el = document.getElementById('room-transition');
+    if(!el){ resolve(); return; }
+    el.style.opacity = '0';
+    setTimeout(() => { resolve(); }, 340);
+  });
 }
 
 // Reset le flag à chaque init de combat (appelé depuis initCombat plus bas via resetDungeonEndFlags())
 function resetDungeonEndFlags(){
   _dungeonEndHandled = false;
   _dungeonEndTriggerTime = 0;
+  // _dungeonShowingFinalScreen NE doit PAS être reset ici : il bloque
+  // l'observer pendant l'écran final. Il sera reset au retour hub manuel.
 }
 
 function renderLoop(){
