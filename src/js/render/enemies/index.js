@@ -22,6 +22,16 @@ import * as cryo_sentinel from './cryo_sentinel.js';
 import * as cryo_minibossWarden from './cryo_minibossWarden.js';
 import * as cryo_boss from './cryo_boss.js';
 
+// === TOXIC ===
+import * as toxic_brute from './toxic_brute.js';
+import * as toxic_spitter from './toxic_spitter.js';
+import * as toxic_swarmer from './toxic_swarmer.js';
+import * as toxic_carrier from './toxic_carrier.js';
+import * as toxic_grafted from './toxic_grafted.js';
+import * as toxic_alpha from './toxic_alpha.js';
+import * as toxic_minibossSpore from './toxic_minibossSpore.js';
+import * as toxic_boss from './toxic_boss.js';
+
 export const ENEMY_SPRITES = {
   // Inferno
   inferno_brute,
@@ -41,6 +51,15 @@ export const ENEMY_SPRITES = {
   cryo_sentinel,
   cryo_minibossWarden,
   cryo_boss,
+  // Toxic
+  toxic_brute,
+  toxic_spitter,
+  toxic_swarmer,
+  toxic_carrier,
+  toxic_grafted,
+  toxic_alpha,
+  toxic_minibossSpore,
+  toxic_boss,
 };
 
 /**
