@@ -32,6 +32,16 @@ import * as toxic_alpha from './toxic_alpha.js';
 import * as toxic_minibossSpore from './toxic_minibossSpore.js';
 import * as toxic_boss from './toxic_boss.js';
 
+// === VOIDNET ===
+import * as voidnet_glitch from './voidnet_glitch.js';
+import * as voidnet_daemon from './voidnet_daemon.js';
+import * as voidnet_executor from './voidnet_executor.js';
+import * as voidnet_corrupter from './voidnet_corrupter.js';
+import * as voidnet_replicator from './voidnet_replicator.js';
+import * as voidnet_overclocked from './voidnet_overclocked.js';
+import * as voidnet_minibossKernel from './voidnet_minibossKernel.js';
+import * as voidnet_boss from './voidnet_boss.js';
+
 export const ENEMY_SPRITES = {
   // Inferno
   inferno_brute,
@@ -60,6 +70,15 @@ export const ENEMY_SPRITES = {
   toxic_alpha,
   toxic_minibossSpore,
   toxic_boss,
+  // Voidnet
+  voidnet_glitch,
+  voidnet_daemon,
+  voidnet_executor,
+  voidnet_corrupter,
+  voidnet_replicator,
+  voidnet_overclocked,
+  voidnet_minibossKernel,
+  voidnet_boss,
 };
 
 /**
