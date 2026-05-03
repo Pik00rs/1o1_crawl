@@ -12,7 +12,18 @@ import * as inferno_berserker from './inferno_berserker.js';
 import * as inferno_minibossDrone from './inferno_minibossDrone.js';
 import * as inferno_boss from './inferno_boss.js';
 
+// === CRYO ===
+import * as cryo_brute from './cryo_brute.js';
+import * as cryo_caster from './cryo_caster.js';
+import * as cryo_skater from './cryo_skater.js';
+import * as cryo_archer from './cryo_archer.js';
+import * as cryo_shielder from './cryo_shielder.js';
+import * as cryo_sentinel from './cryo_sentinel.js';
+import * as cryo_minibossWarden from './cryo_minibossWarden.js';
+import * as cryo_boss from './cryo_boss.js';
+
 export const ENEMY_SPRITES = {
+  // Inferno
   inferno_brute,
   inferno_caster,
   inferno_charger,
@@ -21,6 +32,15 @@ export const ENEMY_SPRITES = {
   inferno_berserker,
   inferno_minibossDrone,
   inferno_boss,
+  // Cryo
+  cryo_brute,
+  cryo_caster,
+  cryo_skater,
+  cryo_archer,
+  cryo_shielder,
+  cryo_sentinel,
+  cryo_minibossWarden,
+  cryo_boss,
 };
 
 /**
