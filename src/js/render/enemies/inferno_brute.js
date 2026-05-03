@@ -473,18 +473,29 @@ export const attacks = {
     id: 'walk',
     name: 'WALK',
     icon: '🏃',
-    duration: 120,
-    description: 'Démarche lourde et lente. Un pas tous les 15 frames, mini-flash orange au sol à chaque impact des pieds.',
+    duration: 200,
+    looping: true,
+    description: 'Démarche lourde et lente. Avance sur 100 frames, recule sur 100 frames (boucle aller-retour). Mini-flash orange au sol à chaque impact des pieds.',
     phases: [
-      { from: 0, to: 120, label: 'Marche' },
+      { from: 0, to: 100, label: 'Avancée' },
+      { from: 100, to: 200, label: 'Retour' },
     ],
     update(frame, totalFrames, ctx){
       const opts = {};
       const fx = [];
-      opts.bodyShift = Math.sin(frame * 0.2) * 0.6;
-      // Walk progress (ratio 0-1)
-      opts.walkProgress = Math.min(1, frame / 100);
-      if(frame % 15 === 0 && frame > 0 && frame < 100){
+      const half = 100;
+      let p;
+      if(frame < half){
+        p = frame / half;
+        opts.bodyShift = p * 40;
+      } else {
+        p = (frame - half) / half;
+        opts.bodyShift = (1 - p) * 40;
+      }
+      // Petite oscillation
+      opts.bodyShift += Math.sin(frame * 0.2) * 0.5;
+      // Pas tous les 15 frames
+      if(frame % 15 === 0 && frame > 5){
         fx.push({ type: 'ash', dx: -4, dy: 12, count: 3 });
         fx.push({ type: 'ash', dx: 4, dy: 12, count: 3 });
         fx.push({ type: 'sparks', dx: 0, dy: 12, count: 2 });

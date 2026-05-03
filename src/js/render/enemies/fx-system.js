@@ -4,11 +4,15 @@
 // qui retourne un array { type, dx, dy, ... }, et le caller les passe ici.
 //
 // Types supportés :
-//   - 'ash'       : particule de cendre qui monte lentement
-//   - 'sparks'    : étincelles éjectées dans toutes les directions
-//   - 'shockwave' : onde de choc circulaire (anneau iso qui s'élargit)
-//   - 'flash'     : flash blanc/orange à un point (court)
-//   - 'trail'     : traînée derrière un point en mouvement
+//   - 'ash'        : particule de cendre qui monte lentement
+//   - 'sparks'     : étincelles éjectées dans toutes les directions
+//   - 'shockwave'  : onde de choc circulaire (anneau iso qui s'élargit)
+//   - 'flash'      : flash blanc/orange à un point (court)
+//   - 'projectile' : projectile qui voyage du tireur à la cible avec drawFn custom
+//
+// Les projectiles sont réutilisables dans le jeu : chaque sprite expose
+// `attacks[id].projectile = { drawProjectile, travelFrames, spawnOffset, hitsAt }`
+// et le bestiaire (ou le moteur) appelle fx.spawnProjectile(...) au bon frame.
 
 export class FxSystem {
   constructor(){
@@ -16,6 +20,7 @@ export class FxSystem {
     this.sparks = [];
     this.shockwaves = [];
     this.flashes = [];
+    this.projectiles = [];
   }
 
   /**
@@ -30,11 +35,14 @@ export class FxSystem {
     if(cmd.type === 'ash'){
       this.spawnAsh(x, y, cmd.count || 1, cmd.color);
     } else if(cmd.type === 'sparks'){
-      this.spawnSparks(x, y, cmd.count || 4);
+      this.spawnSparks(x, y, cmd.count || 4, cmd.color);
     } else if(cmd.type === 'shockwave'){
       this.spawnShockwave(x, y, cmd.color, cmd.maxRadius);
     } else if(cmd.type === 'flash'){
       this.spawnFlash(x, y, cmd.color, cmd.size);
+    } else if(cmd.type === 'projectile'){
+      // cmd: { type, dx, dy, targetX, targetY, drawProjectile, travelFrames, onHit }
+      this.spawnProjectile(x, y, cmd.targetX, cmd.targetY, cmd);
     }
   }
 
@@ -52,7 +60,7 @@ export class FxSystem {
     }
   }
 
-  spawnSparks(x, y, count){
+  spawnSparks(x, y, count, color){
     for(let i = 0; i < count; i++){
       const a = Math.random() * Math.PI * 2;
       this.sparks.push({
@@ -61,6 +69,7 @@ export class FxSystem {
         vy: Math.sin(a) * (0.3 + Math.random() * 0.6) - 1.5,
         life: 25 + Math.random() * 15,
         maxLife: 40,
+        color: color || '#ffb347',
       });
     }
   }
@@ -83,6 +92,43 @@ export class FxSystem {
       maxLife: 8,
       color: color || '#ffe080',
       size: size || 12,
+    });
+  }
+
+  /**
+   * Lance un projectile qui voyage de (originX,originY) vers (targetX,targetY).
+   * Le drawProjectile reçoit (ctx, x, y, vx, vy, t) où vx/vy sont la direction
+   * unitaire et t est le frame courant — utile pour orientation et anim interne.
+   *
+   * @param {number} originX
+   * @param {number} originY
+   * @param {number} targetX
+   * @param {number} targetY
+   * @param {object} opts - { drawProjectile, travelFrames, onHit, trailColor, arc }
+   *   - travelFrames : nombre de frames pour atteindre la cible (défaut 18)
+   *   - drawProjectile : fn(ctx, x, y, vx, vy, t) — render custom du projectile
+   *   - trailColor : si fourni, dessine une traînée de cette couleur
+   *   - arc : 0 = ligne droite, > 0 = parabole vers le haut (défaut 0)
+   *   - onHit : commandes FX à émettre à l'impact { sparks, flash, shockwave, count, color }
+   */
+  spawnProjectile(originX, originY, targetX, targetY, opts){
+    opts = opts || {};
+    const dx = targetX - originX;
+    const dy = targetY - originY;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    this.projectiles.push({
+      x: originX, y: originY,
+      ox: originX, oy: originY,
+      tx: targetX, ty: targetY,
+      vx: dx / dist, vy: dy / dist,  // direction unitaire (orientation)
+      progress: 0,
+      travelFrames: opts.travelFrames || 18,
+      drawProjectile: opts.drawProjectile || defaultProjectileDraw,
+      trailColor: opts.trailColor || null,
+      arc: opts.arc || 0,
+      onHit: opts.onHit || null,
+      trail: [], // historique des positions pour la traînée
+      t: 0,
     });
   }
 
@@ -117,6 +163,33 @@ export class FxSystem {
       f.life--;
       if(f.life <= 0) this.flashes.splice(l, 1);
     }
+    // Projectiles : avancent du tireur vers la cible avec arc optionnel
+    for(let m = this.projectiles.length - 1; m >= 0; m--){
+      const pr = this.projectiles[m];
+      pr.progress += 1 / pr.travelFrames;
+      pr.t++;
+      const p = Math.min(1, pr.progress);
+      // Ligne droite + arc parabolique
+      pr.x = pr.ox + (pr.tx - pr.ox) * p;
+      pr.y = pr.oy + (pr.ty - pr.oy) * p - Math.sin(p * Math.PI) * pr.arc;
+      // Trail
+      if(pr.trailColor){
+        pr.trail.push({ x: pr.x, y: pr.y, life: 12 });
+        if(pr.trail.length > 12) pr.trail.shift();
+        for(const tr of pr.trail) tr.life--;
+      }
+      // Hit
+      if(pr.progress >= 1){
+        // Émet les fx à l'impact
+        if(pr.onHit){
+          if(pr.onHit.flash) this.spawnFlash(pr.tx, pr.ty, pr.onHit.flash, pr.onHit.flashSize || 14);
+          if(pr.onHit.sparks) this.spawnSparks(pr.tx, pr.ty, pr.onHit.sparks, pr.onHit.color);
+          if(pr.onHit.shockwave) this.spawnShockwave(pr.tx, pr.ty, pr.onHit.shockwave, pr.onHit.shockwaveRadius);
+          if(pr.onHit.ash) this.spawnAsh(pr.tx, pr.ty, pr.onHit.ash, pr.onHit.color);
+        }
+        this.projectiles.splice(m, 1);
+      }
+    }
   }
 
   /**
@@ -149,7 +222,7 @@ export class FxSystem {
     ctx.globalAlpha = 1;
     for(const s of this.sparks){
       const a = s.life / s.maxLife;
-      ctx.fillStyle = '#ffb347';
+      ctx.fillStyle = s.color || '#ffb347';
       ctx.globalAlpha = a;
       ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1);
       ctx.fillStyle = '#fff';
@@ -159,14 +232,33 @@ export class FxSystem {
     ctx.globalAlpha = 1;
     for(const f of this.flashes){
       const a = f.life / f.maxLife;
+      const rgb = hexToRgb(f.color);
       const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.size);
-      grad.addColorStop(0, `${f.color.replace(')', ',' + a + ')').replace('#', 'rgba(').replace(/^rgba\(([0-9a-f]+)/, (m, h) => {
-        // hex to rgba helper inline
-        return 'rgba(' + parseInt(h.substr(0,2),16) + ',' + parseInt(h.substr(2,2),16) + ',' + parseInt(h.substr(4,2),16);
-      })}`);
-      grad.addColorStop(1, 'rgba(255,179,71,0)');
+      grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`);
+      grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
       ctx.fillStyle = grad;
       ctx.fillRect(f.x - f.size, f.y - f.size, f.size * 2, f.size * 2);
+    }
+    // Projectiles : trail puis projectile lui-même
+    for(const pr of this.projectiles){
+      // Trail
+      if(pr.trailColor && pr.trail.length > 1){
+        const rgb = hexToRgb(pr.trailColor);
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        for(let i = 1; i < pr.trail.length; i++){
+          const t1 = pr.trail[i - 1];
+          const t2 = pr.trail[i];
+          const a = (t2.life / 12) * 0.7;
+          ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;
+          ctx.beginPath();
+          ctx.moveTo(t1.x, t1.y);
+          ctx.lineTo(t2.x, t2.y);
+          ctx.stroke();
+        }
+      }
+      // Le projectile dessine lui-même
+      pr.drawProjectile(ctx, pr.x, pr.y, pr.vx, pr.vy, pr.t);
     }
   }
 
@@ -175,5 +267,35 @@ export class FxSystem {
     this.sparks.length = 0;
     this.shockwaves.length = 0;
     this.flashes.length = 0;
+    this.projectiles.length = 0;
   }
+}
+
+// Helpers
+function hexToRgb(hex){
+  if(!hex) return { r: 255, g: 179, b: 71 };
+  if(hex[0] !== '#') hex = '#' + hex;
+  const h = hex.substr(1);
+  return {
+    r: parseInt(h.substr(0, 2), 16) || 0,
+    g: parseInt(h.substr(2, 2), 16) || 0,
+    b: parseInt(h.substr(4, 2), 16) || 0,
+  };
+}
+
+/**
+ * Dessin par défaut d'un projectile : boule orange avec halo.
+ * Les sprites custom remplacent ça via opts.drawProjectile.
+ */
+function defaultProjectileDraw(ctx, x, y, vx, vy, t){
+  const grad = ctx.createRadialGradient(x, y, 0, x, y, 8);
+  grad.addColorStop(0, 'rgba(255,224,128,0.95)');
+  grad.addColorStop(0.4, 'rgba(255,107,26,0.7)');
+  grad.addColorStop(1, 'rgba(255,107,26,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(x - 8, y - 8, 16, 16);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+  ctx.fill();
 }

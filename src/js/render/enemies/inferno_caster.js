@@ -193,12 +193,52 @@ export const attacks = {
   fireball: {
     id: 'fireball', name: 'FIREBALL', icon: '🔥',
     duration: 70,
-    description: 'Concentre les deux orbes en un projectile chargé, puis le lance. Range 4. 30% chance d\'appliquer Brûlure (3 tours).',
+    description: 'Concentre les deux orbes en un projectile chargé, puis le lance vers la cible. Range 4. 30% chance d\'appliquer Brûlure (3 tours).',
     phases: [
       { from: 0, to: 25, label: 'Charge' },
       { from: 25, to: 35, label: 'Cast' },
       { from: 35, to: 70, label: 'Recovery' },
     ],
+    // Spec du projectile (réutilisable jeu + bestiaire)
+    projectile: {
+      // Frame où le projectile est lancé (compté depuis le début de l'attaque)
+      spawnFrame: 25,
+      // Origine relative au sprite (au-dessus des mains qui se rejoignent)
+      spawnOffset: { dx: 0, dy: -10 },
+      // Vitesse de voyage en frames
+      travelFrames: 18,
+      // Render custom : boule de feu avec halo, tourne légèrement
+      drawProjectile(ctx, x, y, vx, vy, t){
+        // Outer halo
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, 12);
+        grad.addColorStop(0, 'rgba(255,224,128,0.95)');
+        grad.addColorStop(0.3, 'rgba(255,179,71,0.85)');
+        grad.addColorStop(0.7, 'rgba(255,107,26,0.5)');
+        grad.addColorStop(1, 'rgba(255,80,20,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - 12, y - 12, 24, 24);
+        // Core fireball
+        ctx.fillStyle = '#ff6f1a';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffb347';
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        // Hot center (offset pour effet de combustion)
+        ctx.fillStyle = '#fff';
+        const wobX = Math.sin(t * 0.4) * 0.7;
+        const wobY = Math.cos(t * 0.4) * 0.7;
+        ctx.fillRect(Math.round(x + wobX), Math.round(y + wobY), 1, 1);
+      },
+      trailColor: '#ff8a4d',
+      onHit: {
+        flash: '#ffe080', flashSize: 16,
+        sparks: 14, color: '#ffb347',
+        shockwave: '#ff6f1a', shockwaveRadius: 28,
+      },
+    },
     update(frame){
       const opts = {};
       const fx = [];
@@ -209,18 +249,23 @@ export const attacks = {
         opts.orbSize = 1 + p * 0.8;
         opts.glowBoost = p * 0.6;
         if(frame % 4 === 0){
-          fx.push({ type: 'sparks', dx: -6, dy: 0, count: 1 });
-          fx.push({ type: 'sparks', dx: 6, dy: 0, count: 1 });
+          fx.push({ type: 'sparks', dx: -6, dy: 0, count: 1, color: '#ffb347' });
+          fx.push({ type: 'sparks', dx: 6, dy: 0, count: 1, color: '#ffb347' });
         }
       } else if(frame < 35){
-        // Cast : flash + projectile
+        // Cast : projectile lancé au frame 25
         opts.armRaise = -1.1;
         opts.orbSize = 0.4;
         opts.glowBoost = 1;
         if(frame === 25){
-          fx.push({ type: 'flash', dx: 0, dy: -10, color: '#ffe080', size: 18 });
-          fx.push({ type: 'sparks', dx: 0, dy: -10, count: 12 });
-          fx.push({ type: 'shockwave', dx: 0, dy: -10, color: '#ff8a4d', maxRadius: 32 });
+          fx.push({ type: 'flash', dx: 0, dy: -10, color: '#ffe080', size: 14 });
+          fx.push({ type: 'sparks', dx: 0, dy: -10, count: 8, color: '#ffd47a' });
+          // Lance le projectile (le bestiaire ajoutera targetX/Y)
+          fx.push({
+            type: 'projectile',
+            dx: 0, dy: -10,
+            useAttackProjectile: 'fireball',
+          });
         }
       } else {
         const p = (frame - 35) / 35;
@@ -234,14 +279,31 @@ export const attacks = {
 
   walk: {
     id: 'walk', name: 'WALK', icon: '🏃',
-    duration: 90,
-    description: 'Recule lentement pour maintenir la distance. Robe qui flotte, légère traînée de cendres.',
-    phases: [{ from: 0, to: 90, label: 'Recul' }],
+    duration: 160,
+    looping: true,
+    description: 'Recule lentement pour maintenir la distance, puis revient (boucle aller-retour). Robe qui flotte, traînée de cendres.',
+    phases: [
+      { from: 0, to: 80, label: 'Recul' },
+      { from: 80, to: 160, label: 'Retour' },
+    ],
     update(frame){
       const opts = {};
       const fx = [];
-      opts.bodyShift = Math.sin(frame * 0.18) * 0.5;
-      if(frame % 18 === 0 && frame < 80){
+      // Aller-retour : 0..80 = avance vers la droite (recul du joueur), 80..160 = retour
+      const half = 80;
+      let p, dir;
+      if(frame < half){
+        p = frame / half;
+        dir = 1;
+        opts.bodyShift = p * 36;
+      } else {
+        p = (frame - half) / half;
+        dir = -1;
+        opts.bodyShift = (1 - p) * 36;
+      }
+      // Petite oscillation respiration
+      opts.bodyShift += Math.sin(frame * 0.18) * 0.3;
+      if(frame % 18 === 0 && frame % half < half - 10){
         fx.push({ type: 'ash', dx: 0, dy: 6, count: 2, color: '#5a3525' });
       }
       return { opts, fx };

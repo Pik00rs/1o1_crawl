@@ -426,14 +426,27 @@ export const attacks = {
 
   walk: {
     id: 'walk', name: 'WALK', icon: '🏃',
-    duration: 110,
-    description: 'Marche pesante d\'élite armuré, plaques qui s\'entrechoquent visuellement (bobbing prononcé).',
-    phases: [{ from: 0, to: 110, label: 'Marche' }],
+    duration: 220,
+    looping: true,
+    description: 'Marche pesante d\'élite armuré sur 110 frames puis retour (boucle aller-retour). Plaques qui s\'entrechoquent visuellement.',
+    phases: [
+      { from: 0, to: 110, label: 'Avancée' },
+      { from: 110, to: 220, label: 'Retour' },
+    ],
     update(frame){
       const opts = { swordRaise: 0, bladeGlow: 0.6 };
       const fx = [];
-      opts.bodyShift = Math.sin(frame * 0.18) * 0.9;
-      if(frame % 14 === 0 && frame < 100){
+      const half = 110;
+      let p;
+      if(frame < half){
+        p = frame / half;
+        opts.bodyShift = p * 38;
+      } else {
+        p = (frame - half) / half;
+        opts.bodyShift = (1 - p) * 38;
+      }
+      opts.bodyShift += Math.sin(frame * 0.18) * 0.7;
+      if(frame % 14 === 0){
         fx.push({ type: 'ash', dx: -5, dy: 13, count: 3, color: '#5a3525' });
         fx.push({ type: 'ash', dx: 5, dy: 13, count: 3, color: '#5a3525' });
         fx.push({ type: 'sparks', dx: 0, dy: 13, count: 1 });

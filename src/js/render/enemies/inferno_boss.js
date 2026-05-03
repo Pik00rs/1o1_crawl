@@ -282,13 +282,60 @@ export const attacks = {
   infernoBurst: {
     id: 'infernoBurst', name: 'INFERNO BURST', icon: '💥',
     duration: 100,
-    description: 'AOE feu 3×3 cases tous les 5 tours. Le boss lève les bras, le cœur charge en blanc-bleu, puis explose en spirale de feu autour de la cible.',
+    description: 'AOE feu 3×3 cases tous les 5 tours. Le boss charge un orbe thermonucléaire dans le cœur, le projette vers la cible où il explose en spirale de feu.',
     phases: [
       { from: 0, to: 35, label: 'Charge' },
-      { from: 35, to: 50, label: 'Cast' },
+      { from: 35, to: 50, label: 'Project' },
       { from: 50, to: 80, label: 'Detonation' },
       { from: 80, to: 100, label: 'Recovery' },
     ],
+    projectile: {
+      spawnFrame: 35,
+      // Origine = centre du cœur thermonucléaire
+      spawnOffset: { dx: 0, dy: -18 },
+      travelFrames: 15,
+      arc: 12, // arc parabolique
+      drawProjectile(ctx, x, y, vx, vy, t){
+        // Halo blanc-bleu très large
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, 18);
+        grad.addColorStop(0, 'rgba(255,255,255,0.95)');
+        grad.addColorStop(0.3, 'rgba(206,240,255,0.85)');
+        grad.addColorStop(0.6, 'rgba(79,195,247,0.5)');
+        grad.addColorStop(1, 'rgba(79,195,247,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - 18, y - 18, 36, 36);
+        // Outer ring (cyan)
+        ctx.fillStyle = '#4fc3f7';
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // Core
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        // White center
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        // Rotating cyan particles
+        for(let i = 0; i < 4; i++){
+          const angle = (i / 4) * Math.PI * 2 + t * 0.25;
+          const px = x + Math.cos(angle) * 4;
+          const py = y + Math.sin(angle) * 4;
+          ctx.fillStyle = '#aee6ff';
+          ctx.fillRect(Math.round(px), Math.round(py), 1, 1);
+        }
+      },
+      trailColor: '#aee6ff',
+      onHit: {
+        flash: '#ffe080', flashSize: 26,
+        sparks: 24, color: '#ffd47a',
+        shockwave: '#ff6f1a', shockwaveRadius: 56,
+        ash: 12, color: '#ffb347',
+      },
+    },
     update(frame){
       const opts = {};
       const fx = [];
@@ -304,40 +351,30 @@ export const attacks = {
           fx.push({ type: 'sparks', dx: 0, dy: -8, count: 1, color: '#ffe080' });
         }
       } else if(frame < 50){
-        // Cast : flash blanc, cœur se vide
+        // Project : projectile lancé au frame 35
         opts.armRaise = -1.5;
         opts.coreFlare = 1 - (frame - 35) / 15;
         if(frame === 35){
-          fx.push({ type: 'flash', dx: 0, dy: -18, color: '#ffffff', size: 30 });
-          fx.push({ type: 'shockwave', dx: 0, dy: -10, color: '#aee6ff', maxRadius: 50 });
-        }
-      } else if(frame < 80){
-        // Detonation : explosion AOE devant le boss
-        opts.armRaise = -1.5 + ((frame - 50) / 30) * 1.0;
-        opts.coreFlare = 0;
-        if(frame === 50){
-          fx.push({ type: 'shockwave', dx: 28, dy: 0, color: '#ff6f1a', maxRadius: 60 });
-          fx.push({ type: 'flash', dx: 28, dy: -8, color: '#ffe080', size: 28 });
-          fx.push({ type: 'sparks', dx: 28, dy: 0, count: 24 });
-        }
-        if(frame === 55){
-          fx.push({ type: 'shockwave', dx: 28, dy: 0, color: '#ffb347', maxRadius: 50 });
-        }
-        if(frame === 60){
-          fx.push({ type: 'shockwave', dx: 28, dy: 0, color: '#ff8a4d', maxRadius: 38 });
-        }
-        if(frame > 50 && frame % 4 === 0){
-          const angle = Math.random() * Math.PI * 2;
+          fx.push({ type: 'flash', dx: 0, dy: -18, color: '#ffffff', size: 24 });
+          fx.push({ type: 'shockwave', dx: 0, dy: -10, color: '#aee6ff', maxRadius: 36 });
           fx.push({
-            type: 'ash',
-            dx: 28 + Math.cos(angle) * 22,
-            dy: Math.sin(angle) * 12,
-            count: 1,
-            color: '#ffb347',
+            type: 'projectile',
+            dx: 0, dy: -18,
+            useAttackProjectile: 'infernoBurst',
           });
         }
+      } else if(frame < 80){
+        // Detonation : on laisse onHit gérer + ondes secondaires
+        opts.armRaise = -1.5 + ((frame - 50) / 30) * 1.0;
+        opts.coreFlare = 0;
+        // Ondes secondaires (le projectile a déjà émis la première)
+        if(frame === 60){
+          fx.push({ type: 'shockwave', dx: 0, dy: 0, color: '#ffb347', maxRadius: 44, useTargetPosition: true });
+        }
+        if(frame === 68){
+          fx.push({ type: 'shockwave', dx: 0, dy: 0, color: '#ff8a4d', maxRadius: 32, useTargetPosition: true });
+        }
       } else {
-        const p = (frame - 80) / 20;
         opts.armRaise = -0.5;
       }
       return { opts, fx };

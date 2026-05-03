@@ -240,14 +240,27 @@ export const attacks = {
 
   walk: {
     id: 'walk', name: 'WALK', icon: '🏃',
-    duration: 100,
-    description: 'Marche lourde, tangage marqué. Cendres soulevées à chaque pas.',
-    phases: [{ from: 0, to: 100, label: 'Marche' }],
+    duration: 200,
+    looping: true,
+    description: 'Marche lourde sur 100 frames, retour 100 frames (boucle aller-retour). Tangage marqué, cendres soulevées à chaque pas.',
+    phases: [
+      { from: 0, to: 100, label: 'Avancée' },
+      { from: 100, to: 200, label: 'Retour' },
+    ],
     update(frame){
       const opts = {};
       const fx = [];
-      opts.bodyShift = Math.sin(frame * 0.22) * 0.8;
-      if(frame % 12 === 0 && frame < 90){
+      const half = 100;
+      let p;
+      if(frame < half){
+        p = frame / half;
+        opts.bodyShift = p * 36;
+      } else {
+        p = (frame - half) / half;
+        opts.bodyShift = (1 - p) * 36;
+      }
+      opts.bodyShift += Math.sin(frame * 0.22) * 0.7;
+      if(frame % 12 === 0){
         fx.push({ type: 'ash', dx: -3, dy: 11, count: 2, color: '#5a3525' });
         fx.push({ type: 'ash', dx: 3, dy: 11, count: 2, color: '#5a3525' });
       }

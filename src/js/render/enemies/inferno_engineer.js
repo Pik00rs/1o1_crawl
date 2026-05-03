@@ -211,12 +211,45 @@ export const attacks = {
   rivetShot: {
     id: 'rivetShot', name: 'RIVET SHOT', icon: '🔧',
     duration: 55,
-    description: 'Tir de rivet enflammé. Range 3. Recul du pistolet, flash au museau, étincelles.',
+    description: 'Tir de rivet enflammé. Range 3. Recul du pistolet, flash au museau, rivet métallique chauffé qui voyage vers la cible.',
     phases: [
       { from: 0, to: 15, label: 'Visée' },
       { from: 15, to: 22, label: 'Tir' },
       { from: 22, to: 55, label: 'Recovery' },
     ],
+    projectile: {
+      spawnFrame: 15,
+      spawnOffset: { dx: 22, dy: -3 },
+      travelFrames: 12,
+      drawProjectile(ctx, x, y, vx, vy, t){
+        const angle = Math.atan2(vy, vx);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        // Halo orange
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 7);
+        grad.addColorStop(0, 'rgba(255,200,100,0.8)');
+        grad.addColorStop(1, 'rgba(255,107,26,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(-7, -7, 14, 14);
+        // Rivet body (cylindre métal chauffé)
+        ctx.fillStyle = '#3a2418';
+        ctx.fillRect(-3, -1, 6, 2);
+        ctx.fillStyle = '#7a5040';
+        ctx.fillRect(-3, -1, 6, 1);
+        // Hot tip
+        ctx.fillStyle = '#ffb347';
+        ctx.fillRect(2, -1, 2, 2);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(3, 0, 1, 1);
+        ctx.restore();
+      },
+      trailColor: '#ffb347',
+      onHit: {
+        flash: '#ffe080', flashSize: 9,
+        sparks: 6, color: '#ffd47a',
+      },
+    },
     update(frame){
       const opts = { lampBlink: 1 };
       const fx = [];
@@ -226,10 +259,15 @@ export const attacks = {
       } else if(frame < 22){
         opts.armRaise = -0.4;
         opts.muzzleFlash = (22 - frame) / 7;
-        opts.bodyShift = -0.8; // recul
+        opts.bodyShift = -0.8;
         if(frame === 15){
           fx.push({ type: 'sparks', dx: 22, dy: -3, count: 6, color: '#ffd47a' });
           fx.push({ type: 'flash', dx: 22, dy: -3, color: '#ffe080', size: 8 });
+          fx.push({
+            type: 'projectile',
+            dx: 22, dy: -3,
+            useAttackProjectile: 'rivetShot',
+          });
         }
       } else {
         const p = (frame - 22) / 33;
@@ -278,14 +316,27 @@ export const attacks = {
 
   walk: {
     id: 'walk', name: 'WALK', icon: '🏃',
-    duration: 100,
-    description: 'Marche en arrière, lampe qui balaie, sac à outils qui ballotte.',
-    phases: [{ from: 0, to: 100, label: 'Marche' }],
+    duration: 180,
+    looping: true,
+    description: 'Marche en arrière puis revient (aller-retour). Lampe qui balaie, sac à outils qui ballotte.',
+    phases: [
+      { from: 0, to: 90, label: 'Recul' },
+      { from: 90, to: 180, label: 'Avancée' },
+    ],
     update(frame){
       const opts = { lampBlink: 1 };
       const fx = [];
-      opts.bodyShift = Math.sin(frame * 0.2) * 0.5;
-      if(frame % 14 === 0 && frame < 90){
+      const half = 90;
+      let p;
+      if(frame < half){
+        p = frame / half;
+        opts.bodyShift = p * 32;
+      } else {
+        p = (frame - half) / half;
+        opts.bodyShift = (1 - p) * 32;
+      }
+      opts.bodyShift += Math.sin(frame * 0.2) * 0.4;
+      if(frame % 14 === 0){
         fx.push({ type: 'ash', dx: 0, dy: 11, count: 1, color: '#5a3525' });
       }
       return { opts, fx };

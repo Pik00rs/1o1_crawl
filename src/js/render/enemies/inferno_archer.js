@@ -219,6 +219,44 @@ export const attacks = {
       { from: 38, to: 55, label: 'Hold' },
       { from: 55, to: 75, label: 'Reload' },
     ],
+    projectile: {
+      spawnFrame: 30,
+      // L'arc est tenu en bas-gauche du sprite, la flèche part de là
+      spawnOffset: { dx: -4, dy: -14 },
+      travelFrames: 14, // rapide, c'est une flèche
+      drawProjectile(ctx, x, y, vx, vy, t){
+        // Flèche : trail blanc-bleu + pointe phosphore
+        const angle = Math.atan2(vy, vx);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        // Shaft
+        ctx.fillStyle = '#5a3a28';
+        ctx.fillRect(-7, 0, 12, 1);
+        // Phosphor head with halo
+        const grad = ctx.createRadialGradient(5, 0, 0, 5, 0, 8);
+        grad.addColorStop(0, 'rgba(255,255,255,0.95)');
+        grad.addColorStop(0.4, 'rgba(206,240,255,0.85)');
+        grad.addColorStop(1, 'rgba(206,240,255,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(-3, -8, 16, 16);
+        // Tip
+        ctx.fillStyle = '#cef0ff';
+        ctx.fillRect(3, -1, 4, 3);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(5, 0, 2, 1);
+        // Fletching
+        ctx.fillStyle = '#cef0ff';
+        ctx.fillRect(-7, -1, 2, 1);
+        ctx.fillRect(-7, 1, 2, 1);
+        ctx.restore();
+      },
+      trailColor: '#cef0ff',
+      onHit: {
+        flash: '#cef0ff', flashSize: 10,
+        sparks: 8, color: '#cef0ff',
+      },
+    },
     update(frame){
       const opts = {};
       const fx = [];
@@ -231,12 +269,18 @@ export const attacks = {
           fx.push({ type: 'sparks', dx: -10, dy: -10, count: 1, color: '#cef0ff' });
         }
       } else if(frame < 38){
-        // Tir
+        // Tir : flèche partie
         opts.drawBack = 0;
         opts.arrowOnString = 0;
         if(frame === 30){
-          fx.push({ type: 'flash', dx: -10, dy: -10, color: '#cef0ff', size: 14 });
-          fx.push({ type: 'sparks', dx: -10, dy: -10, count: 8, color: '#cef0ff' });
+          fx.push({ type: 'flash', dx: -10, dy: -10, color: '#cef0ff', size: 10 });
+          fx.push({ type: 'sparks', dx: -10, dy: -10, count: 6, color: '#cef0ff' });
+          // Lance le projectile flèche
+          fx.push({
+            type: 'projectile',
+            dx: -4, dy: -14,
+            useAttackProjectile: 'phosphorShot',
+          });
         }
       } else if(frame < 55){
         opts.drawBack = 0;
@@ -253,14 +297,27 @@ export const attacks = {
 
   walk: {
     id: 'walk', name: 'WALK', icon: '🏃',
-    duration: 90,
-    description: 'Recule en gardant la cible en visée. Corde maintenue tendue.',
-    phases: [{ from: 0, to: 90, label: 'Recul' }],
+    duration: 160,
+    looping: true,
+    description: 'Recul à droite puis avance à gauche en boucle, gardant la cible en visée. Corde maintenue tendue.',
+    phases: [
+      { from: 0, to: 80, label: 'Recul' },
+      { from: 80, to: 160, label: 'Retour' },
+    ],
     update(frame){
       const opts = { drawBack: 0.3 };
       const fx = [];
-      opts.bodyShift = Math.sin(frame * 0.18) * 0.4;
-      if(frame % 15 === 0 && frame < 80){
+      const half = 80;
+      let p;
+      if(frame < half){
+        p = frame / half;
+        opts.bodyShift = p * 32;
+      } else {
+        p = (frame - half) / half;
+        opts.bodyShift = (1 - p) * 32;
+      }
+      opts.bodyShift += Math.sin(frame * 0.18) * 0.3;
+      if(frame % 16 === 0){
         fx.push({ type: 'ash', dx: 0, dy: 11, count: 1, color: '#5a3525' });
       }
       return { opts, fx };
