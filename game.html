@@ -2178,12 +2178,20 @@ function ensureRoomTransitionOverlay(){
       text-shadow: 0 0 8px var(--rt-biome-glow, rgba(255,208,96,0.4));
     "></div>
     <div id="rt-label" style="
-      font-size: 44px; font-weight: 800; letter-spacing: 7px;
+      font-size: 32px; font-weight: 800; letter-spacing: 4px;
       text-shadow: 0 0 24px rgba(255,208,96,0.6);
       line-height: 1;
+      white-space: nowrap;
+    "></div>
+    <div id="rt-hp" style="
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; letter-spacing: 2px;
+      color: #d8c8a0;
+      margin-top: 2px;
     "></div>
     <div id="rt-sub" style="
       font-size: 10px; letter-spacing: 3px; opacity: 0.55;
+      margin-top: 4px;
     ">▸ NEXT ROOM ◂</div>
 
     <canvas id="rt-corridor" width="320" height="220" style="
@@ -2261,9 +2269,9 @@ function startCorridorAnimation(){
       const yNear = H + 4 - ratio * (H - floorY);
       const ratioNext = 1 - 1 / (1 + (depth + 1) * 0.35);
       const yFar = H + 4 - ratioNext * (H - floorY);
-      // Largeur du sol à cette profondeur
-      const wNear = W * (1 - ratio * 0.85);
-      const wFar = W * (1 - ratioNext * 0.85);
+      // Largeur du sol à cette profondeur (convergence cohérente avec les murs : 0.40)
+      const wNear = W * (1 - ratio * 0.40);
+      const wFar = W * (1 - ratioNext * 0.40);
       const xNearL = (W - wNear) / 2;
       const xNearR = xNearL + wNear;
       const xFarL = (W - wFar) / 2;
@@ -2292,20 +2300,24 @@ function startCorridorAnimation(){
     }
 
     // === MURS : trapèzes latéraux + briques sur les côtés qui défilent ===
+    // Convergence : les murs se rejoignent à vpX * 0.40 (plus serré = couloir plus profond)
+    const wallConvergeL = vpX * 0.40;
+    const wallConvergeR = W - vpX * 0.40;
+
     // Mur gauche
     ctx.fillStyle = '#1a0e14';
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(vpX * 0.7, vpY);
-    ctx.lineTo(vpX * 0.7, floorY);
+    ctx.lineTo(wallConvergeL, vpY);
+    ctx.lineTo(wallConvergeL, floorY);
     ctx.lineTo(0, H);
     ctx.closePath();
     ctx.fill();
     // Mur droit
     ctx.beginPath();
     ctx.moveTo(W, 0);
-    ctx.lineTo(W - vpX * 0.7, vpY);
-    ctx.lineTo(W - vpX * 0.7, floorY);
+    ctx.lineTo(wallConvergeR, vpY);
+    ctx.lineTo(wallConvergeR, floorY);
     ctx.lineTo(W, H);
     ctx.closePath();
     ctx.fill();
@@ -2318,20 +2330,23 @@ function startCorridorAnimation(){
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(W, 0);
-    ctx.lineTo(W - vpX * 0.7, vpY);
-    ctx.lineTo(vpX * 0.7, vpY);
+    ctx.lineTo(wallConvergeR, vpY);
+    ctx.lineTo(wallConvergeL, vpY);
     ctx.closePath();
     ctx.fill();
 
-    // === Atténuation au point de fuite : darken au fond pour effet "infini" ===
-    // Crée un fade radial très sombre autour du vanishing point pour éviter
-    // qu'on voit "le fond" du couloir. C'est ce qui donne l'illusion d'infini.
-    const vpFade = ctx.createRadialGradient(vpX, vpY, 0, vpX, vpY, 110);
-    vpFade.addColorStop(0, 'rgba(0,0,0,0.85)');
-    vpFade.addColorStop(0.5, 'rgba(0,0,0,0.5)');
+    // === Atténuation au point de fuite : noir profond au fond du couloir ===
+    // Le rectangle de fin est entre wallConvergeL/R en X, et entre vpY/floorY en Y.
+    // On dessine un noir presque pur dessus pour qu'on ne voie pas "où ça finit".
+    ctx.fillStyle = '#000';
+    ctx.fillRect(wallConvergeL, vpY, wallConvergeR - wallConvergeL, floorY - vpY);
+    // Petit gradient subtil aux bords pour adoucir
+    const vpFade = ctx.createRadialGradient(vpX, (vpY + floorY) / 2, 0, vpX, (vpY + floorY) / 2, 80);
+    vpFade.addColorStop(0, 'rgba(0,0,0,1)');
+    vpFade.addColorStop(0.7, 'rgba(0,0,0,0.7)');
     vpFade.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = vpFade;
-    ctx.fillRect(vpX - 110, vpY - 110, 220, 220);
+    ctx.fillRect(vpX - 80, (vpY + floorY) / 2 - 80, 160, 160);
 
     // === HERO + TORCHE (la torche est tenue dans la main du hero) ===
     // Ordre de rendu : on dessine d'abord la lueur de la torche (en arrière-plan),
@@ -2368,13 +2383,13 @@ function startCorridorAnimation(){
     ctx.fillStyle = halo;
     ctx.fillRect(torchTipX - haloRadius, torchTipY - haloRadius, haloRadius * 2, haloRadius * 2);
 
-    // Lueur projetée sur le sol près du hero (pool de lumière au sol)
-    const groundGlow = ctx.createRadialGradient(vpX, floorY, 0, vpX, floorY, 80);
-    groundGlow.addColorStop(0, `rgba(255,150,70,${0.22 * torchPulse})`);
+    // Lueur projetée sur le sol près du hero (pool de lumière au sol, subtil)
+    const groundGlow = ctx.createRadialGradient(vpX, floorY, 0, vpX, floorY, 65);
+    groundGlow.addColorStop(0, `rgba(255,150,70,${0.10 * torchPulse})`);
     groundGlow.addColorStop(1, 'rgba(255,140,60,0)');
     ctx.fillStyle = groundGlow;
     ctx.beginPath();
-    ctx.ellipse(vpX, floorY, 60, 18, 0, 0, Math.PI * 2);
+    ctx.ellipse(vpX, floorY, 50, 14, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // === HERO PIXEL ART (vu de dos, cycle de marche 4 frames) ===
@@ -2563,6 +2578,38 @@ function showRoomTransitionOverlay(roomNum, totalRooms, biomeId){
     el.style.setProperty('--rt-biome-glow', biomeMeta.color + '66');
     el.querySelector('#rt-biome').textContent = biomeMeta.label;
     el.querySelector('#rt-label').textContent = `ROOM ${roomNum} / ${totalRooms}`;
+
+    // Affiche les HP du joueur (HP entre les rooms — c'est avec ça qu'il entre dans la prochaine)
+    const hpEl = el.querySelector('#rt-hp');
+    if(hpEl && state.player){
+      const hp = Math.max(0, Math.round(state.player.hp || 0));
+      const maxHp = state.player.maxHp || 100;
+      const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+      // Couleur selon ratio HP : vert > jaune > orange > rouge
+      let hpColor = '#3df068';
+      if(pct < 70) hpColor = '#ffd060';
+      if(pct < 40) hpColor = '#ff8830';
+      if(pct < 20) hpColor = '#ff5252';
+      hpEl.innerHTML = `
+        <span style="opacity:0.6; letter-spacing:1.5px;">▸ HP</span>
+        <span style="
+          position: relative;
+          display: inline-block;
+          width: 80px; height: 8px;
+          background: #1a0a14; border: 1px solid #3a2840;
+        ">
+          <span style="
+            position: absolute; top: 0; left: 0; bottom: 0;
+            width: ${pct}%; background: ${hpColor};
+            box-shadow: 0 0 6px ${hpColor};
+            transition: width 0.3s;
+          "></span>
+        </span>
+        <span style="color: ${hpColor}; font-weight: bold; min-width: 56px;">${hp}/${maxHp}</span>
+      `;
+    } else if(hpEl){
+      hpEl.innerHTML = '';
+    }
 
     // Setup le bouton CONTINUER : il résout la promesse au clic
     const btn = el.querySelector('#rt-continue');
