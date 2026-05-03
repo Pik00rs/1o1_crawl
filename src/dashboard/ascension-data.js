@@ -319,15 +319,40 @@ export const ASCENSION_DATA = Object.fromEntries(
   ])
 );
 
-// === MOCK PLAYER PROGRESS ===
-// Pour la démo : Inferno → dungeons 1, 2 clean, 3 disponible. Autres biomes : seul 1er disponible.
-export const PLAYER_PROGRESS = {
-  inferno: { tier: 1, clearedDungeons: [1, 2] },
-  cryo:    { tier: 1, clearedDungeons: [1] },
+// === PLAYER PROGRESS ===
+// Hydraté depuis localStorage si dispo, sinon valeurs mock pour la démo.
+const DEFAULT_PROGRESS = {
+  inferno: { tier: 1, clearedDungeons: [] },
+  cryo:    { tier: 1, clearedDungeons: [] },
   toxic:   { tier: 1, clearedDungeons: [] },
   voidnet: { tier: 1, clearedDungeons: [] },
   crimson: { tier: 1, clearedDungeons: [] },
 };
+
+function loadPlayerProgress(){
+  try {
+    if(typeof localStorage === 'undefined') return DEFAULT_PROGRESS;
+    const raw = localStorage.getItem('rh_player_progress');
+    if(!raw) return DEFAULT_PROGRESS;
+    const parsed = JSON.parse(raw);
+    // Merge with default to ensure all biomes are present
+    const merged = { ...DEFAULT_PROGRESS };
+    for(const biomeId of Object.keys(DEFAULT_PROGRESS)){
+      if(parsed[biomeId]){
+        merged[biomeId] = {
+          tier: parsed[biomeId].tier || 1,
+          clearedDungeons: Array.isArray(parsed[biomeId].clearedDungeons) ? parsed[biomeId].clearedDungeons : [],
+        };
+      }
+    }
+    return merged;
+  } catch(e){
+    console.error('Failed to load progress, using defaults:', e);
+    return DEFAULT_PROGRESS;
+  }
+}
+
+export const PLAYER_PROGRESS = loadPlayerProgress();
 
 // Helper : statut d'un donjon
 export function getDungeonStatus(biomeId, dungeonLevel){

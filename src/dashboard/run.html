@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Run — Reactor Hollow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0a0510;
+    color: #d8c8a0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    padding: 14px;
+    background:
+      radial-gradient(ellipse at top, var(--biome-bg, #1a0820) 0%, #0a0510 70%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background 0.6s ease;
+  }
+  html { scroll-behavior: smooth; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0510; }
+  ::-webkit-scrollbar-thumb { background: #3a2840; border-radius: 3px; }
+
+  /* === HEADER === */
+  .run-header {
+    background: #14081e;
+    border: 1px solid #3a2840;
+    border-left: 3px solid var(--biome-color, #c8a040);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .run-header__info { min-width: 0; flex: 1; }
+  .run-header__title {
+    font-size: 14px;
+    color: var(--biome-color, #c8a040);
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px var(--biome-glow, rgba(200,160,64,0.4));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .run-header__sub {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1.5px;
+    margin-top: 3px;
+  }
+
+  /* Room counter */
+  .room-counter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .room-counter__label {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1px;
+  }
+  .room-counter__value {
+    font-size: 18px;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+  }
+  .room-counter__value .total { color: #6a5878; font-size: 14px; }
+
+  /* === ROOMS DOTS (visual progress) === */
+  .rooms-dots {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .room-dot {
+    width: 24px; height: 8px;
+    background: #2a1830;
+    border: 1px solid #3a2840;
+    transition: all 0.3s;
+  }
+  .room-dot.cleared { background: #3a5828; border-color: #3df068; }
+  .room-dot.current {
+    background: var(--biome-color, #c8a040);
+    border-color: var(--biome-accent, #ffd060);
+    box-shadow: 0 0 10px var(--biome-glow, rgba(200,160,64,0.5));
+    animation: dotPulse 1.5s ease-in-out infinite;
+  }
+  .room-dot.boss {
+    width: 30px;
+    background: #5a0808;
+  }
+  .room-dot.boss.current {
+    background: #ff5252;
+    box-shadow: 0 0 14px rgba(255,82,82,0.7);
+  }
+  .room-dot.boss.cleared { background: #5a3828; border-color: #ffd060; }
+  .room-dot.miniboss { width: 27px; background: #3a2818; }
+  .room-dot.elite { background: #3a2818; }
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* === HP BAR (player) === */
+  .player-bar {
+    background: #14081e;
+    border: 1px solid #3a2840;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .player-bar__icon {
+    font-size: 22px;
+    width: 36px;
+    text-align: center;
+    filter: drop-shadow(0 0 6px rgba(255,208,96,0.4));
+  }
+  .player-bar__main { min-width: 0; }
+  .player-bar__name {
+    font-size: 11px;
+    color: #ffd060;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .player-bar__hp-track {
+    height: 12px;
+    background: #0a0510;
+    border: 1px solid #2a1830;
+    position: relative;
+    overflow: hidden;
+  }
+  .player-bar__hp-fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: linear-gradient(90deg, #c82828, #e84040);
+    box-shadow: 0 0 8px rgba(232,64,64,0.5);
+    transition: width 0.6s ease-out;
+  }
+  .player-bar__hp-fill.low { animation: hpLowPulse 1s ease-in-out infinite; }
+  @keyframes hpLowPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(232,64,64,0.5); }
+    50% { box-shadow: 0 0 16px rgba(232,64,64,1); }
+  }
+  .player-bar__hp-val {
+    font-size: 12px;
+    color: #d8c8a0;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  /* === ROOM STAGE === */
+  .stage {
+    flex: 1;
+    background: #0a0510;
+    border: 1px solid #3a2840;
+    border-left: 3px solid var(--type-color, #5a4828);
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 320px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, var(--type-glow, transparent) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .stage.combat { --type-color: #5a4828; --type-glow: rgba(168,152,120,0.06); }
+  .stage.elite { --type-color: #c8a040; --type-glow: rgba(200,160,64,0.12); }
+  .stage.miniboss { --type-color: #ff8830; --type-glow: rgba(255,136,48,0.12); }
+  .stage.boss { --type-color: #ff5252; --type-glow: rgba(255,82,82,0.15); }
+  .stage.victory { --type-color: #3df068; --type-glow: rgba(61,240,104,0.15); }
+  .stage.defeat { --type-color: #ff5252; --type-glow: rgba(255,82,82,0.2); }
+
+  .stage__type {
+    font-size: 11px;
+    color: var(--type-color);
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+  .stage__title {
+    font-size: 24px;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px var(--type-color);
+    margin-bottom: 18px;
+    text-align: center;
+    z-index: 1;
+  }
+
+  /* === ENEMIES CANVAS === */
+  .enemies-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    z-index: 1;
+  }
+  .enemy-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  .enemy-slot.dead {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+    pointer-events: none;
+  }
+  .enemy-canvas {
+    background: transparent;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .enemy-name {
+    font-size: 9px;
+    color: #a89878;
+    letter-spacing: 0.5px;
+    text-align: center;
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .enemy-name.elite { color: #ffd060; }
+  .enemy-name.miniboss { color: #ffaa60; font-weight: bold; }
+  .enemy-name.boss { color: #ff8080; font-weight: bold; }
+
+  /* === ACTION BAR === */
+  .action-bar {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    min-height: 52px;
+    padding: 14px 28px;
+    background: var(--type-color, #c8a040);
+    color: #0a0510;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    flex: 1;
+    max-width: 200px;
+  }
+  .action-btn:active:not(:disabled) {
+    transform: scale(0.96);
+    box-shadow: 0 0 20px var(--type-color);
+  }
+  .action-btn:disabled {
+    background: #2a1830;
+    color: #5a4828;
+    cursor: not-allowed;
+  }
+  @media (hover: hover) {
+    .action-btn:hover:not(:disabled) {
+      box-shadow: 0 0 14px var(--type-color);
+      filter: brightness(1.1);
+    }
+  }
+  .action-btn.secondary {
+    background: transparent;
+    border: 1px solid #5a4828;
+    color: #d8c8a0;
+  }
+  .action-btn.secondary:active { border-color: #ffd060; color: #ffd060; }
+  @media (hover: hover) {
+    .action-btn.secondary:hover { border-color: #ffd060; color: #ffd060; box-shadow: none; }
+  }
+
+  /* === COMBAT LOG === */
+  .combat-log {
+    margin-top: 14px;
+    background: #14081e;
+    border: 1px solid #3a2840;
+    padding: 10px 12px;
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: 10px;
+    line-height: 1.5;
+    color: #8a7898;
+    z-index: 1;
+    width: 100%;
+    max-width: 500px;
+  }
+  .combat-log__line {
+    margin-bottom: 3px;
+    opacity: 0;
+    animation: logFadeIn 0.3s ease-out forwards;
+  }
+  .combat-log__line.dmg { color: #ff8080; }
+  .combat-log__line.kill { color: #3df068; }
+  .combat-log__line.hit { color: #ffd060; }
+  @keyframes logFadeIn {
+    from { opacity: 0; transform: translateX(-4px); }
+    to { opacity: 0.85; transform: translateX(0); }
+  }
+
+  /* === LOOT SCREEN === */
+  .loot-screen {
+    text-align: center;
+    z-index: 1;
+    width: 100%;
+    max-width: 500px;
+  }
+  .loot-screen__title {
+    font-size: 28px;
+    color: #ffd060;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(255,208,96,0.6);
+    margin-bottom: 6px;
+    animation: victoryGlow 2s ease-in-out infinite;
+  }
+  @keyframes victoryGlow {
+    0%, 100% { text-shadow: 0 0 20px rgba(255,208,96,0.6); }
+    50% { text-shadow: 0 0 30px rgba(255,208,96,1), 0 0 50px rgba(255,208,96,0.5); }
+  }
+  .loot-screen__sub {
+    font-size: 11px;
+    color: #8a7898;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .loot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .loot-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #14081e;
+    border-left: 3px solid var(--rarity-color, #5a4828);
+    align-items: center;
+    animation: lootDrop 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  .loot-row:nth-child(1) { animation-delay: 0.1s; }
+  .loot-row:nth-child(2) { animation-delay: 0.2s; }
+  .loot-row:nth-child(3) { animation-delay: 0.3s; }
+  .loot-row:nth-child(4) { animation-delay: 0.4s; }
+  .loot-row:nth-child(5) { animation-delay: 0.5s; }
+  .loot-row:nth-child(6) { animation-delay: 0.6s; }
+  .loot-row:nth-child(7) { animation-delay: 0.7s; }
+  @keyframes lootDrop {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .loot-row.boss-drop {
+    background: linear-gradient(90deg, rgba(255,170,32,0.15), transparent);
+    box-shadow: 0 0 14px rgba(255,170,32,0.2);
+  }
+  .loot-row__icon { font-size: 18px; text-align: center; }
+  .loot-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .loot-row__name {
+    color: #fff;
+    font-weight: bold;
+    font-size: 12px;
+  }
+  .loot-row__name .star { color: #ffd060; margin-left: 4px; font-size: 10px; }
+  .loot-row__stats {
+    color: #8a7898;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+  .loot-row__rarity {
+    font-size: 8px;
+    padding: 3px 7px;
+    background: var(--rarity-color);
+    color: #fff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+
+  .resource-gain {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #14081e;
+    border-left: 3px solid var(--biome-color, #c8a040);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+  .resource-gain__icon {
+    font-size: 28px;
+    filter: drop-shadow(0 0 8px var(--biome-color));
+  }
+  .resource-gain__main { flex: 1; }
+  .resource-gain__label {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1px;
+  }
+  .resource-gain__value {
+    font-size: 18px;
+    color: var(--biome-color, #d8c8a0);
+    font-weight: bold;
+  }
+  .resource-gain__value::before { content: '+'; color: #3df068; margin-right: 4px; }
+
+  /* === DEFEAT SCREEN === */
+  .defeat-icon {
+    font-size: 64px;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 16px rgba(255,82,82,0.6));
+  }
+  .defeat-title {
+    font-size: 32px;
+    color: #ff5252;
+    letter-spacing: 6px;
+    text-shadow: 0 0 16px rgba(255,82,82,0.8);
+    margin-bottom: 10px;
+  }
+  .defeat-sub {
+    font-size: 11px;
+    color: #8a7898;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .defeat-msg {
+    color: #a89878;
+    font-size: 13px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  /* === EMPTY STATE === */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+  }
+  .empty-state__icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-state__title { font-size: 16px; color: #d8c8a0; letter-spacing: 2px; margin-bottom: 8px; }
+  .empty-state__sub { color: #6a5878; font-size: 11px; letter-spacing: 1px; margin-bottom: 20px; }
+
+  /* === MOBILE === */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .run-header { padding: 10px; }
+    .run-header__title { font-size: 12px; letter-spacing: 1.5px; }
+    .room-counter__value { font-size: 16px; }
+    .stage { padding: 14px 10px; min-height: 280px; }
+    .stage__title { font-size: 18px; letter-spacing: 1.5px; }
+    .player-bar { padding: 8px 12px; gap: 10px; }
+    .player-bar__icon { font-size: 18px; width: 28px; }
+    .action-btn { padding: 12px 20px; font-size: 12px; letter-spacing: 1.5px; }
+    .loot-screen__title { font-size: 22px; letter-spacing: 3px; }
+    .defeat-title { font-size: 24px; letter-spacing: 4px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="run-header" id="run-header">
+  <div class="run-header__info">
+    <div class="run-header__title" id="run-title">— · D—</div>
+    <div class="run-header__sub" id="run-sub">— rooms</div>
+  </div>
+  <div class="room-counter">
+    <span class="room-counter__label">ROOM</span>
+    <span class="room-counter__value">
+      <span id="room-current">—</span><span class="total">/<span id="room-total">—</span></span>
+    </span>
+  </div>
+</div>
+
+<!-- ROOMS DOTS -->
+<div class="rooms-dots" id="rooms-dots"></div>
+
+<!-- PLAYER HP BAR -->
+<div class="player-bar">
+  <div class="player-bar__icon">⚔</div>
+  <div class="player-bar__main">
+    <div class="player-bar__name" id="player-name">KAEL</div>
+    <div class="player-bar__hp-track">
+      <div class="player-bar__hp-fill" id="player-hp-fill"></div>
+    </div>
+  </div>
+  <div class="player-bar__hp-val" id="player-hp-val">--/--</div>
+</div>
+
+<!-- STAGE (room courante / loot / défaite) -->
+<div class="stage" id="stage"></div>
+
+<script type="module">
+import { loadPersistedRun, persistRun, clearPersistedRun } from '../js/dungeon/run-state.js';
+import { ROOM_TYPE_LABELS } from '../js/dungeon/generator.js';
+import { formatItem } from '../js/dungeon/loot-roller.js';
+import { BIOMES, RARITIES } from './ascension-data.js';
+import { getEnemySprite } from '../js/render/enemies/index.js';
+
+// === ENEMY DISPLAY NAMES ===
+const ENEMY_NAMES = {
+  inferno_brute: 'Mineur Brûlé', inferno_caster: 'Pyromancien', inferno_charger: 'Charge-Brasier',
+  inferno_archer: 'Archer Cendré', inferno_engineer: 'Ingénieur Damné', inferno_berserker: 'Berserker',
+  inferno_minibossDrone: 'Drone d\'Assaut', inferno_boss: 'Pyromancien',
+  cryo_brute: 'Brute Givrée', cryo_caster: 'Cryo-Mancien', cryo_skater: 'Patineur',
+  cryo_archer: 'Archer Glacé', cryo_shielder: 'Bouclier Givré', cryo_sentinel: 'Sentinelle',
+  cryo_minibossWarden: 'Warden de Glace', cryo_boss: 'Cryo-Reine',
+  toxic_brute: 'Brute Putride', toxic_spitter: 'Cracheur', toxic_swarmer: 'Essaim',
+  toxic_carrier: 'Porteur', toxic_grafted: 'Greffé', toxic_alpha: 'Alpha',
+  toxic_minibossSpore: 'Mère-Spore', toxic_boss: 'Bête Putréfiée',
+  voidnet_glitch: 'Erreur', voidnet_daemon: 'Daemon', voidnet_executor: 'Exécuteur',
+  voidnet_corrupter: 'Corrupteur', voidnet_replicator: 'Réplicateur', voidnet_overclocked: 'Overclocked',
+  voidnet_minibossKernel: 'Sous-Noyau', voidnet_boss: 'Architecte du Vide',
+  crimson_brawler: 'Bagarreur', crimson_butcher: 'Boucher', crimson_throwblade: 'Lanceur',
+  crimson_hooked: 'Crocheteur', crimson_doctor: 'Docteur', crimson_gladiator: 'Gladiateur',
+  crimson_minibossExecutioner: 'Exécuteur d\'Arène', crimson_boss: 'Champion du Sang',
+};
+
+// === PLAYER STATE (mock pour l'instant) ===
+const PLAYER = {
+  name: 'KAEL',
+  hp: 95,
+  hpMax: 95,
+};
+
+// === RUN STATE ===
+let run = null;
+
+// === BOOTSTRAP ===
+function boot(){
+  run = loadPersistedRun();
+  if(!run){
+    showEmptyState();
+    return;
+  }
+  // Si la run a un currentRoomIndex, on reprend, sinon on démarre
+  if(typeof run.state?.currentRoomIndex !== 'number'){
+    run.state = run.state || {};
+    run.state.currentRoomIndex = 0;
+    run.state.isComplete = false;
+    run.state.isFailed = false;
+  }
+  // Reset HP du joueur au début (pour cette session)
+  // Si on revient d'un combat, le HP doit être préservé
+  if(run.state.playerHP === undefined){
+    run.state.playerHP = PLAYER.hpMax;
+  }
+  PLAYER.hp = run.state.playerHP;
+
+  setupBiomeStyling();
+  renderHeader();
+  renderRoomsDots();
+  renderPlayerBar();
+  renderCurrentRoom();
+}
+
+function setupBiomeStyling(){
+  const biome = BIOMES[run.biomeId];
+  document.body.style.setProperty('--biome-color', biome.color);
+  document.body.style.setProperty('--biome-accent', biome.accent);
+  document.body.style.setProperty('--biome-glow', biome.color + '80');
+  document.body.style.setProperty('--biome-bg', biome.colorDark);
+}
+
+function renderHeader(){
+  const biome = BIOMES[run.biomeId];
+  document.getElementById('run-title').textContent = `${biome.icon} ${biome.name.toUpperCase()} · D${run.level}`;
+  document.getElementById('run-sub').textContent = `${run.roomCount} ROOMS`;
+  document.getElementById('room-current').textContent = Math.min(run.state.currentRoomIndex + 1, run.roomCount);
+  document.getElementById('room-total').textContent = run.roomCount;
+}
+
+function renderRoomsDots(){
+  const container = document.getElementById('rooms-dots');
+  container.innerHTML = '';
+  run.rooms.forEach((room, idx) => {
+    const dot = document.createElement('div');
+    let cls = 'room-dot';
+    if(room.type === 'boss') cls += ' boss';
+    else if(room.type === 'miniboss') cls += ' miniboss';
+    else if(room.type === 'elite') cls += ' elite';
+    if(room.cleared) cls += ' cleared';
+    if(idx === run.state.currentRoomIndex && !run.state.isComplete && !run.state.isFailed) cls += ' current';
+    dot.className = cls;
+    container.appendChild(dot);
+  });
+}
+
+function renderPlayerBar(){
+  const fill = document.getElementById('player-hp-fill');
+  const val = document.getElementById('player-hp-val');
+  const pct = (PLAYER.hp / PLAYER.hpMax) * 100;
+  fill.style.width = pct + '%';
+  if(pct < 30) fill.classList.add('low');
+  else fill.classList.remove('low');
+  val.textContent = `${Math.max(0, Math.round(PLAYER.hp))}/${PLAYER.hpMax}`;
+}
+
+// =================================================================
+// === ROOM RENDERING + COMBAT
+// =================================================================
+
+const enemyAnimations = []; // [{ canvas, ctx, sprite, frame, dead }]
+let animationFrame = null;
+
+function stopAllAnimations(){
+  if(animationFrame){
+    cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
+  enemyAnimations.length = 0;
+}
+
+function renderCurrentRoom(){
+  stopAllAnimations();
+
+  if(run.state.isFailed){
+    renderDefeat();
+    return;
+  }
+  if(run.state.isComplete){
+    renderVictory();
+    return;
+  }
+
+  const room = run.rooms[run.state.currentRoomIndex];
+  const stage = document.getElementById('stage');
+  stage.className = 'stage ' + room.type;
+
+  const lbl = ROOM_TYPE_LABELS[room.type];
+  const isFinalRoom = run.state.currentRoomIndex === run.roomCount - 1;
+
+  // Title
+  let title = '';
+  if(room.type === 'boss') title = 'BOSS · ' + ENEMY_NAMES[room.enemies[0]];
+  else if(room.type === 'miniboss') title = 'MINIBOSS · ' + ENEMY_NAMES[room.enemies[0]];
+  else if(room.type === 'elite') title = 'CHAMBRE D\'ÉLITE';
+  else title = 'CHAMBRE DE COMBAT';
+
+  stage.innerHTML = `
+    <div class="stage__type">${lbl.icon} ${lbl.label}</div>
+    <div class="stage__title">${title}</div>
+    <div class="enemies-row" id="enemies-row"></div>
+    <div class="action-bar" id="action-bar">
+      <button class="action-btn" id="fight-btn">⚔ FIGHT</button>
+      <button class="action-btn secondary" id="abandon-btn">⌂ ABANDON</button>
+    </div>
+    <div class="combat-log" id="combat-log" style="display: none;"></div>
+  `;
+
+  // Enemies sprites
+  const row = document.getElementById('enemies-row');
+  room.enemies.forEach((enemyId, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'enemy-slot';
+    slot.dataset.idx = i;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'enemy-canvas';
+    // Adaptive size par type
+    const size = (room.type === 'boss') ? { w: 100, h: 130 }
+               : (room.type === 'miniboss') ? { w: 90, h: 110 }
+               : (room.type === 'elite' && i === 0) ? { w: 80, h: 100 }
+               : { w: 60, h: 80 };
+    canvas.width = size.w * (window.devicePixelRatio || 1);
+    canvas.height = size.h * (window.devicePixelRatio || 1);
+    canvas.style.width = size.w + 'px';
+    canvas.style.height = size.h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    ctx.imageSmoothingEnabled = false;
+
+    const sprite = getEnemySprite(enemyId);
+    if(sprite){
+      enemyAnimations.push({
+        canvas, ctx, sprite,
+        frame: 0,
+        dead: false,
+        slot,
+        size,
+      });
+    }
+    slot.appendChild(canvas);
+
+    // Name
+    const name = document.createElement('div');
+    let nameCls = 'enemy-name';
+    if(room.type === 'boss') nameCls += ' boss';
+    else if(room.type === 'miniboss') nameCls += ' miniboss';
+    else if(room.type === 'elite' && i === 0) nameCls += ' elite';
+    name.className = nameCls;
+    name.textContent = ENEMY_NAMES[enemyId] || enemyId;
+    slot.appendChild(name);
+
+    row.appendChild(slot);
+  });
+
+  startAnimationLoop();
+
+  // Wire buttons
+  document.getElementById('fight-btn').addEventListener('click', () => startCombat(room));
+  document.getElementById('abandon-btn').addEventListener('click', confirmAbandon);
+}
+
+function startAnimationLoop(){
+  function tick(){
+    enemyAnimations.forEach(anim => {
+      if(anim.dead) return;
+      const { canvas, ctx, sprite, frame, size } = anim;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      try {
+        const cx = size.w / 2;
+        const cy = size.h - 8;
+        const idleAttack = sprite.attacks?.idle;
+        const opts = idleAttack?.update ? (idleAttack.update(frame, idleAttack.duration).opts || {}) : {};
+        sprite.draw(ctx, cx, cy, frame, opts);
+      } catch(e){
+        // swallow draw errors silently to keep the loop alive
+      }
+      anim.frame++;
+    });
+    animationFrame = requestAnimationFrame(tick);
+  }
+  animationFrame = requestAnimationFrame(tick);
+}
+
+// =================================================================
+// === COMBAT (PLACEHOLDER) ===
+// On fait un combat auto-résolu : 8 ticks, joueur tape, ennemis tapent.
+// Modulé par type de room. Si HP<=0 en cours → défaite.
+// =================================================================
+
+function startCombat(room){
+  // Disable buttons
+  document.getElementById('fight-btn').disabled = true;
+  document.getElementById('abandon-btn').disabled = true;
+
+  // Show log
+  const log = document.getElementById('combat-log');
+  log.style.display = 'block';
+  log.innerHTML = '';
+
+  // Compute combat parameters based on room type and dungeon level
+  const totalEnemyHP = computeRoomDifficulty(room);
+  let playerDmgPerTick = 25 + run.level * 4; // joueur tape de plus en plus
+  let enemyDmgPerTick = computeEnemyDmg(room, run.level);
+  let remainingHP = totalEnemyHP;
+  let aliveEnemies = [...room.enemies];
+
+  let tick = 0;
+  const maxTicks = 12;
+
+  function combatTick(){
+    if(tick >= maxTicks){
+      // Si on n'a pas tué tout après maxTicks → on continue jusqu'à ce que ça finisse
+    }
+
+    // 1. Player attacks first
+    const damage = playerDmgPerTick + Math.floor(Math.random() * 10) - 5;
+    remainingHP -= damage;
+
+    // Mark enemies as dead progressively (visuel)
+    const aliveCount = enemyAnimations.filter(a => !a.dead).length;
+    const aliveTotal = totalEnemyHP / aliveCount;
+    const expectedAlive = Math.ceil(remainingHP / (totalEnemyHP / room.enemies.length));
+    while(enemyAnimations.filter(a => !a.dead).length > Math.max(1, expectedAlive) && remainingHP > 0){
+      killNextEnemy();
+    }
+
+    addLogLine(`Joueur frappe pour ${damage} dégâts`, 'hit');
+
+    if(remainingHP <= 0){
+      // All enemies dead
+      enemyAnimations.forEach(a => { if(!a.dead) markDead(a); });
+      addLogLine(`▸ Tous les ennemis sont éliminés !`, 'kill');
+      setTimeout(onRoomCleared, 900);
+      return;
+    }
+
+    // 2. Enemies retaliate
+    setTimeout(() => {
+      const dmg = enemyDmgPerTick + Math.floor(Math.random() * 8) - 4;
+      PLAYER.hp -= dmg;
+      run.state.playerHP = PLAYER.hp;
+      addLogLine(`Ennemis frappent pour ${dmg} dégâts`, 'dmg');
+      renderPlayerBar();
+
+      if(PLAYER.hp <= 0){
+        PLAYER.hp = 0;
+        renderPlayerBar();
+        run.state.isFailed = true;
+        run.state.playerHP = 0;
+        persistRun(run);
+        addLogLine(`▸ Vous êtes mort.`, 'dmg');
+        setTimeout(onPlayerDied, 1200);
+        return;
+      }
+
+      tick++;
+      setTimeout(combatTick, 600);
+    }, 500);
+  }
+
+  function killNextEnemy(){
+    const next = enemyAnimations.find(a => !a.dead);
+    if(next) markDead(next);
+  }
+
+  function markDead(anim){
+    anim.dead = true;
+    anim.slot.classList.add('dead');
+  }
+
+  // Kick off
+  combatTick();
+}
+
+function computeRoomDifficulty(room){
+  // Total HP des ennemis pour cette room.
+  // PLACEHOLDER : on veut que joueur full HP puisse clean tous les donjons
+  // (même D6) avec un peu de challenge mais sans frustration. Ce sera
+  // re-équilibré quand le vrai système de combat sera en place.
+  const baseLevelMult = 1 + (run.level - 1) * 0.10;
+  const typeMult = {
+    combat:   1.0,
+    elite:    1.4,
+    miniboss: 1.8,
+    boss:     2.2,
+  }[room.type] || 1.0;
+  const enemyCountMult = Math.sqrt(room.enemies.length);
+
+  return Math.round(50 * baseLevelMult * typeMult * enemyCountMult);
+}
+
+function computeEnemyDmg(room, level){
+  const baseLevelMult = 1 + (level - 1) * 0.06;
+  const typeMult = {
+    combat:   1.0,
+    elite:    1.2,
+    miniboss: 1.5,
+    boss:     1.8,
+  }[room.type] || 1.0;
+  return Math.round(2 * baseLevelMult * typeMult);
+}
+
+function addLogLine(text, cls = ''){
+  const log = document.getElementById('combat-log');
+  if(!log) return;
+  const line = document.createElement('div');
+  line.className = 'combat-log__line ' + cls;
+  line.textContent = '▸ ' + text;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+// =================================================================
+// === ROOM TRANSITIONS ===
+// =================================================================
+
+function onRoomCleared(){
+  const room = run.rooms[run.state.currentRoomIndex];
+  room.cleared = true;
+
+  // Effets/buffs dissipés (pas de heal, c'est la spec)
+  // Cooldowns reset (rien à faire visuellement ici, c'est implicite)
+
+  // Next room ou fin
+  if(run.state.currentRoomIndex >= run.roomCount - 1){
+    run.state.isComplete = true;
+    persistRun(run);
+    renderVictory();
+    return;
+  }
+
+  run.state.currentRoomIndex++;
+  persistRun(run);
+
+  // Petit fade-out / fade-in entre rooms
+  const stage = document.getElementById('stage');
+  stage.style.opacity = '0';
+  setTimeout(() => {
+    renderHeader();
+    renderRoomsDots();
+    renderCurrentRoom();
+    stage.style.transition = 'opacity 0.4s';
+    stage.style.opacity = '1';
+  }, 350);
+}
+
+function onPlayerDied(){
+  stopAllAnimations();
+  run.state.isFailed = true;
+  persistRun(run);
+  renderDefeat();
+}
+
+function confirmAbandon(){
+  if(!confirm('Abandonner cette run ? Tu perdras tout le loot.')) return;
+  clearPersistedRun();
+  window.location.href = '../../index.html';
+}
+
+// =================================================================
+// === VICTORY / LOOT SCREEN ===
+// =================================================================
+
+function renderVictory(){
+  stopAllAnimations();
+  const stage = document.getElementById('stage');
+  stage.className = 'stage victory';
+
+  const biome = BIOMES[run.biomeId];
+  const items = run.finalLoot.items.map(rolled => formatItem(rolled)).filter(Boolean);
+
+  const lootRowsHTML = run.finalLoot.items.map((rolled, i) => {
+    const f = formatItem(rolled);
+    if(!f) return '';
+    const star = rolled.isBossDrop ? '<span class="star">★ BOSS</span>' : '';
+    return `
+      <div class="loot-row${rolled.isBossDrop ? ' boss-drop' : ''}" style="--rarity-color: ${f.rarityColor};">
+        <div class="loot-row__icon">${f.icon}</div>
+        <div class="loot-row__main">
+          <div class="loot-row__name">${f.name}${star}</div>
+          <div class="loot-row__stats">${f.statsLine}</div>
+        </div>
+        <div class="loot-row__rarity">${f.rarityLabel}</div>
+      </div>
+    `;
+  }).join('');
+
+  stage.innerHTML = `
+    <div class="loot-screen">
+      <div class="loot-screen__title">▸ DUNGEON CLEAR ◂</div>
+      <div class="loot-screen__sub">${biome.icon} ${biome.name.toUpperCase()} · D${run.level} · ${run.roomCount} rooms</div>
+      <div class="loot-list">${lootRowsHTML}</div>
+      <div class="resource-gain" style="--biome-color: ${biome.color};">
+        <div class="resource-gain__icon">${run.finalLoot.resource.icon}</div>
+        <div class="resource-gain__main">
+          <div class="resource-gain__label">${run.finalLoot.resource.name.toUpperCase()}</div>
+          <div class="resource-gain__value">${run.finalLoot.resource.amount}</div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <button class="action-btn" id="claim-btn">▸ COLLECT &amp; RETURN</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('claim-btn').addEventListener('click', () => {
+    // Marquer le donjon comme clean dans PLAYER_PROGRESS via localStorage
+    saveProgress();
+    clearPersistedRun();
+    window.location.href = '../../index.html';
+  });
+}
+
+function renderDefeat(){
+  stopAllAnimations();
+  const stage = document.getElementById('stage');
+  stage.className = 'stage defeat';
+  const room = run.rooms[run.state.currentRoomIndex];
+  const lbl = ROOM_TYPE_LABELS[room.type];
+
+  stage.innerHTML = `
+    <div class="loot-screen">
+      <div class="defeat-icon">☠</div>
+      <div class="defeat-title">YOU DIED</div>
+      <div class="defeat-sub">ROOM ${run.state.currentRoomIndex + 1}/${run.roomCount} · ${lbl.label}</div>
+      <div class="defeat-msg">
+        Tu es tombé dans la ${lbl.label.toLowerCase()}.<br>
+        Le loot de ce donjon est perdu.
+      </div>
+      <div class="action-bar">
+        <button class="action-btn secondary" id="defeat-back">⌂ RETOUR HUB</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('defeat-back').addEventListener('click', () => {
+    clearPersistedRun();
+    window.location.href = '../../index.html';
+  });
+}
+
+// =================================================================
+// === PROGRESS PERSISTENCE ===
+// On sauvegarde le statut "cleared" dans localStorage pour
+// que la page Ascension reflète la progression.
+// =================================================================
+
+function saveProgress(){
+  try {
+    const KEY = 'rh_player_progress';
+    const raw = localStorage.getItem(KEY);
+    const progress = raw ? JSON.parse(raw) : {};
+    if(!progress[run.biomeId]) progress[run.biomeId] = { tier: 1, clearedDungeons: [] };
+    if(!progress[run.biomeId].clearedDungeons.includes(run.level)){
+      progress[run.biomeId].clearedDungeons.push(run.level);
+    }
+    // TODO : ajouter les items au chest, les ressources au wallet
+    localStorage.setItem(KEY, JSON.stringify(progress));
+  } catch(e){
+    console.error('Failed to save progress:', e);
+  }
+}
+
+// =================================================================
+// === EMPTY STATE (no run found) ===
+// =================================================================
+
+function showEmptyState(){
+  document.body.innerHTML = `
+    <div style="padding: 14px; min-height: 100vh; display: flex; flex-direction: column;">
+      <div class="run-header" style="background: #14081e; border: 1px solid #3a2840; padding: 12px 14px; margin-bottom: 14px;">
+        <div style="font-size: 14px; color: #c8a040; letter-spacing: 2px;">⛧ DUNGEON RUN</div>
+      </div>
+      <div class="empty-state" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;">
+        <div class="empty-state__icon" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">⚠</div>
+        <div class="empty-state__title" style="font-size: 16px; color: #d8c8a0; letter-spacing: 2px; margin-bottom: 8px;">NO ACTIVE RUN</div>
+        <div class="empty-state__sub" style="color: #6a5878; font-size: 11px; margin-bottom: 20px;">Aucune run en cours. Va dans Ascension pour démarrer un donjon.</div>
+        <a href="../../index.html" class="action-btn" style="display: inline-flex; align-items: center; padding: 14px 24px; background: #c8a040; color: #0a0510; text-decoration: none; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: 2px;">⌂ HUB</a>
+      </div>
+    </div>
+  `;
+}
+
+// === GO ===
+boot();
+</script>
+
+</body>
+</html>

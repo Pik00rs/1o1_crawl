@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Generator — Debug</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0a0510;
+    color: #d8c8a0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    padding: 16px;
+    background: radial-gradient(ellipse at top, #1a0820 0%, #0a0510 70%);
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0510; }
+  ::-webkit-scrollbar-thumb { background: #3a2840; border-radius: 3px; }
+
+  /* === HEADER === */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border: 1px solid #3a2840;
+    background: #14081e;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .header-title {
+    font-size: 14px;
+    color: #c8a040;
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(200,160,64,0.4);
+  }
+  .header-sub {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .hub-btn {
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid #5a4828;
+    color: #d8c8a0;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-decoration: none;
+    transition: all 0.15s;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .hub-btn:active { border-color: #ffd060; color: #ffd060; transform: scale(0.96); }
+  @media (hover: hover) {
+    .hub-btn:hover { border-color: #ffd060; color: #ffd060; }
+  }
+
+  /* === CONTROLS === */
+  .controls {
+    background: #14081e;
+    border: 1px solid #3a2840;
+    padding: 14px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .control-group { display: flex; flex-direction: column; gap: 6px; }
+  .control-label {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .control-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .ctrl-btn {
+    flex: 1;
+    min-width: 50px;
+    padding: 8px 6px;
+    background: #0a0510;
+    border: 1px solid #3a2840;
+    color: #8a7898;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-height: 36px;
+  }
+  .ctrl-btn.active {
+    background: var(--ctrl-color, #c8a040);
+    color: #0a0510;
+    border-color: var(--ctrl-color, #c8a040);
+    font-weight: bold;
+    box-shadow: 0 0 10px var(--ctrl-color, rgba(200,160,64,0.5));
+  }
+  .ctrl-btn:active:not(.active) { transform: scale(0.96); }
+  @media (hover: hover) {
+    .ctrl-btn:hover:not(.active) {
+      border-color: var(--ctrl-color, #c8a040);
+      color: #d8c8a0;
+    }
+  }
+
+  .seed-row {
+    display: flex;
+    gap: 8px;
+    grid-column: 1 / -1;
+  }
+  .seed-input {
+    flex: 1;
+    padding: 8px 10px;
+    background: #0a0510;
+    border: 1px solid #3a2840;
+    color: #d8c8a0;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .seed-input:focus {
+    outline: none;
+    border-color: #c8a040;
+  }
+  .roll-btn {
+    padding: 10px 18px;
+    background: #c8a040;
+    color: #0a0510;
+    border: none;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    min-height: 36px;
+    transition: all 0.15s;
+  }
+  .roll-btn:active { background: #ffd060; transform: scale(0.96); }
+  @media (hover: hover) {
+    .roll-btn:hover { background: #ffd060; box-shadow: 0 0 14px rgba(255,208,96,0.5); }
+  }
+
+  /* === RUN OUTPUT === */
+  .run-meta {
+    background: #14081e;
+    border: 1px solid #3a2840;
+    border-left: 3px solid var(--biome-color, #c8a040);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .run-meta__title {
+    font-size: 14px;
+    color: var(--biome-color, #c8a040);
+    letter-spacing: 1.5px;
+    font-weight: bold;
+  }
+  .run-meta__sub {
+    font-size: 10px;
+    color: #6a5878;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .run-meta__seed {
+    font-size: 10px;
+    color: #6a5878;
+    letter-spacing: 0.5px;
+    text-align: right;
+  }
+  .run-meta__seed .v { color: #d8c8a0; }
+
+  /* Section title */
+  .section-title {
+    font-size: 10px;
+    color: #6a5878;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    margin-top: 16px;
+    text-transform: uppercase;
+  }
+
+  /* === ROOMS LIST === */
+  .rooms-list { display: flex; flex-direction: column; gap: 6px; }
+  .room-card {
+    display: grid;
+    grid-template-columns: 36px 60px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: #14081e;
+    border: 1px solid #2a1830;
+    border-left: 3px solid var(--type-color, #5a4828);
+  }
+  .room-card.combat   { --type-color: #5a4828; }
+  .room-card.elite    { --type-color: #c8a040; }
+  .room-card.miniboss { --type-color: #ff8830; }
+  .room-card.boss     { --type-color: #ff5252; box-shadow: 0 0 14px rgba(255,82,82,0.25); }
+  .room-card__index {
+    font-size: 18px;
+    color: #d8c8a0;
+    font-weight: bold;
+    text-align: center;
+  }
+  .room-card__type {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--type-color);
+    font-weight: bold;
+  }
+  .room-card__type-icon { font-size: 14px; display: block; margin-bottom: 2px; }
+  .room-card__enemies {
+    font-size: 11px;
+    color: #a89878;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .room-card__enemy {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #0a0510;
+    border: 1px solid #2a1830;
+    margin: 2px 3px 2px 0;
+    font-size: 10px;
+    color: #d8c8a0;
+  }
+  .room-card.elite .room-card__enemy:first-child {
+    border-color: #c8a040;
+    color: #ffd060;
+  }
+  .room-card.miniboss .room-card__enemy {
+    border-color: #ff8830;
+    color: #ffaa60;
+  }
+  .room-card.boss .room-card__enemy {
+    border-color: #ff5252;
+    color: #ff8080;
+    font-weight: bold;
+  }
+
+  /* === LOOT === */
+  .loot-section {
+    background: #14081e;
+    border: 1px solid #3a2840;
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .loot-list { display: flex; flex-direction: column; gap: 4px; }
+  .loot-row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 10px;
+    background: #0a0510;
+    border-left: 3px solid var(--rarity-color, #5a4828);
+    font-size: 11px;
+  }
+  .loot-row.boss-drop {
+    background: linear-gradient(90deg, rgba(255,170,32,0.12), transparent);
+    box-shadow: 0 0 12px rgba(255,170,32,0.15);
+  }
+  .loot-row__icon { font-size: 16px; text-align: center; }
+  .loot-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .loot-row__name {
+    color: #d8c8a0;
+    font-weight: bold;
+    font-size: 11px;
+  }
+  .loot-row__name .star { color: #ffd060; margin-left: 4px; }
+  .loot-row__stats {
+    color: #6a5878;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+  .loot-row__rarity {
+    font-size: 8px;
+    padding: 2px 6px;
+    background: var(--rarity-color);
+    color: #fff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+
+  .resource-box {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: #0a0510;
+    border-left: 3px solid var(--biome-color, #5a4828);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .resource-box__icon {
+    font-size: 24px;
+    filter: drop-shadow(0 0 6px var(--biome-color));
+  }
+  .resource-box__main { flex: 1; }
+  .resource-box__label {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1px;
+  }
+  .resource-box__value {
+    font-size: 16px;
+    color: var(--biome-color, #d8c8a0);
+    font-weight: bold;
+  }
+
+  /* Empty / error */
+  .empty {
+    padding: 30px;
+    text-align: center;
+    color: #6a5878;
+    font-size: 11px;
+    letter-spacing: 1px;
+    border: 1px dashed #3a2840;
+  }
+
+  /* === MOBILE === */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .controls { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
+    .ctrl-btn { font-size: 10px; min-width: 42px; }
+    .room-card { grid-template-columns: 30px 50px 1fr; gap: 8px; padding: 8px; }
+    .room-card__index { font-size: 16px; }
+    .seed-row { flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="../../index.html" class="hub-btn">◂ HUB</a>
+  <div>
+    <div class="header-title">⚙ DUNGEON GENERATOR</div>
+    <div class="header-sub">DEBUG · ROLL & INSPECT</div>
+  </div>
+  <div style="width: 60px;"></div> <!-- spacer pour équilibrer -->
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="control-group">
+    <div class="control-label">▸ BIOME</div>
+    <div class="control-row" id="biome-row"></div>
+  </div>
+  <div class="control-group">
+    <div class="control-label">▸ DUNGEON LEVEL</div>
+    <div class="control-row" id="level-row"></div>
+  </div>
+  <div class="seed-row">
+    <input type="text" class="seed-input" id="seed-input" placeholder="Seed (vide = aléatoire)" />
+    <button class="roll-btn" id="roll-btn">▸ ROLL</button>
+  </div>
+</div>
+
+<!-- RUN OUTPUT -->
+<div id="run-output">
+  <div class="empty">Sélectionne un biome et un niveau, puis clique ROLL.</div>
+</div>
+
+<script type="module">
+import { generateDungeonRun, ROOM_TYPE_LABELS } from '../js/dungeon/generator.js';
+import { formatItem } from '../js/dungeon/loot-roller.js';
+import { BIOMES, RARITIES } from './ascension-data.js';
+
+// === STATE ===
+let selectedBiome = 'inferno';
+let selectedLevel = 1;
+let lastRun = null;
+
+// === RENDER CONTROLS ===
+function renderBiomeButtons(){
+  const row = document.getElementById('biome-row');
+  row.innerHTML = '';
+  Object.values(BIOMES).forEach(biome => {
+    const btn = document.createElement('button');
+    btn.className = 'ctrl-btn';
+    if(biome.id === selectedBiome) btn.classList.add('active');
+    btn.style.setProperty('--ctrl-color', biome.color);
+    btn.textContent = `${biome.icon} ${biome.name}`;
+    btn.addEventListener('click', () => {
+      selectedBiome = biome.id;
+      renderBiomeButtons();
+      autoRoll();
+    });
+    row.appendChild(btn);
+  });
+}
+
+function renderLevelButtons(){
+  const row = document.getElementById('level-row');
+  row.innerHTML = '';
+  for(let lv = 1; lv <= 6; lv++){
+    const btn = document.createElement('button');
+    btn.className = 'ctrl-btn';
+    if(lv === selectedLevel) btn.classList.add('active');
+    btn.style.setProperty('--ctrl-color', '#c8a040');
+    btn.textContent = `D${lv}`;
+    btn.addEventListener('click', () => {
+      selectedLevel = lv;
+      renderLevelButtons();
+      autoRoll();
+    });
+    row.appendChild(btn);
+  }
+}
+
+// === ROLL ===
+function rollAndRender(){
+  const seedInput = document.getElementById('seed-input').value.trim();
+  const options = {};
+  if(seedInput) options.seed = seedInput;
+  try {
+    lastRun = generateDungeonRun(selectedBiome, selectedLevel, options);
+    renderRun(lastRun);
+  } catch(e){
+    document.getElementById('run-output').innerHTML = `<div class="empty" style="color:#ff5252;">ERROR: ${e.message}</div>`;
+    console.error(e);
+  }
+}
+
+function autoRoll(){
+  // Auto-roll quand on change biome/level (mais on garde la seed si elle est custom)
+  rollAndRender();
+}
+
+// === RENDER RUN ===
+function renderRun(run){
+  const biome = BIOMES[run.biomeId];
+  const out = document.getElementById('run-output');
+  out.innerHTML = '';
+
+  // Meta
+  const meta = document.createElement('div');
+  meta.className = 'run-meta';
+  meta.style.setProperty('--biome-color', biome.color);
+  meta.innerHTML = `
+    <div>
+      <div class="run-meta__title">${biome.icon} ${biome.name.toUpperCase()} · D${run.level}</div>
+      <div class="run-meta__sub">${run.roomCount} rooms · ${biome.subtitle}</div>
+    </div>
+    <div class="run-meta__seed">
+      seed: <span class="v">${run.seed}</span>
+    </div>
+  `;
+  out.appendChild(meta);
+
+  // Section : ROOMS
+  const roomsTitle = document.createElement('div');
+  roomsTitle.className = 'section-title';
+  roomsTitle.textContent = '▸ ROOM SEQUENCE';
+  out.appendChild(roomsTitle);
+
+  const roomsList = document.createElement('div');
+  roomsList.className = 'rooms-list';
+  run.rooms.forEach(room => {
+    const lbl = ROOM_TYPE_LABELS[room.type];
+    const card = document.createElement('div');
+    card.className = `room-card ${room.type}`;
+    const enemiesHTML = room.enemies.map(e => `<span class="room-card__enemy">${e}</span>`).join('');
+    card.innerHTML = `
+      <div class="room-card__index">${room.index + 1}</div>
+      <div class="room-card__type">
+        <span class="room-card__type-icon">${lbl.icon}</span>
+        ${lbl.label}
+      </div>
+      <div class="room-card__enemies">${enemiesHTML}</div>
+    `;
+    roomsList.appendChild(card);
+  });
+  out.appendChild(roomsList);
+
+  // Section : LOOT
+  const lootTitle = document.createElement('div');
+  lootTitle.className = 'section-title';
+  lootTitle.textContent = '▸ FINAL LOOT (rolled at generation)';
+  out.appendChild(lootTitle);
+
+  const lootSection = document.createElement('div');
+  lootSection.className = 'loot-section';
+  lootSection.style.setProperty('--biome-color', biome.color);
+
+  const lootList = document.createElement('div');
+  lootList.className = 'loot-list';
+  run.finalLoot.items.forEach(rolled => {
+    const f = formatItem(rolled);
+    if(!f) return;
+    const row = document.createElement('div');
+    row.className = 'loot-row' + (rolled.isBossDrop ? ' boss-drop' : '');
+    row.style.setProperty('--rarity-color', f.rarityColor);
+    const star = rolled.isBossDrop ? '<span class="star">★ BOSS</span>' : '';
+    row.innerHTML = `
+      <div class="loot-row__icon">${f.icon}</div>
+      <div class="loot-row__main">
+        <div class="loot-row__name">${f.name}${star}</div>
+        <div class="loot-row__stats">${f.statsLine}</div>
+      </div>
+      <div class="loot-row__rarity">${f.rarityLabel}</div>
+    `;
+    lootList.appendChild(row);
+  });
+  lootSection.appendChild(lootList);
+
+  // Resource
+  const resBox = document.createElement('div');
+  resBox.className = 'resource-box';
+  resBox.style.setProperty('--biome-color', biome.color);
+  resBox.innerHTML = `
+    <div class="resource-box__icon">${run.finalLoot.resource.icon}</div>
+    <div class="resource-box__main">
+      <div class="resource-box__label">${run.finalLoot.resource.name.toUpperCase()}</div>
+      <div class="resource-box__value">+${run.finalLoot.resource.amount}</div>
+    </div>
+  `;
+  lootSection.appendChild(resBox);
+
+  out.appendChild(lootSection);
+}
+
+// === INIT ===
+renderBiomeButtons();
+renderLevelButtons();
+document.getElementById('roll-btn').addEventListener('click', rollAndRender);
+document.getElementById('seed-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter') rollAndRender();
+});
+
+// Roll initial
+rollAndRender();
+</script>
+
+</body>
+</html>

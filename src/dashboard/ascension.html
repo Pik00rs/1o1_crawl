@@ -914,6 +914,8 @@
 <script type="module">
 import { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, getDungeonStatus } from './ascension-data.js';
 import { getEnemySprite } from '../js/render/enemies/index.js';
+import { generateDungeonRun } from '../js/dungeon/generator.js';
+import { persistRun } from '../js/dungeon/run-state.js';
 
 // === STATE ===
 let currentBiome = null;
@@ -1162,7 +1164,15 @@ function openDungeonPanel(dungeon, cardEl){
 
   document.getElementById('close-panel').addEventListener('click', closeSidePanel);
   document.getElementById('enter-btn').addEventListener('click', () => {
-    alert(`Lancement de "${dungeon.name}" (level ${dungeon.level} ${ASCENSION_DATA[currentBiome].name})`);
+    // Génère la run, la persiste en sessionStorage, redirige vers run.html
+    try {
+      const run = generateDungeonRun(currentBiome, dungeon.level);
+      persistRun(run);
+      window.location.href = './run.html';
+    } catch(e){
+      console.error('Failed to start run:', e);
+      alert('Erreur au lancement du donjon : ' + e.message);
+    }
   });
 
   panel.classList.add('active');
