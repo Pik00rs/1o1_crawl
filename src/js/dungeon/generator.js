@@ -202,41 +202,49 @@ export function generateDungeonRun(biomeId, level, options = {}){
     // Si pas de candidats valides (improbable dans nos configs), on skip silencieusement.
   }
 
-  // 3) Pour chaque room, déterminer les ennemis présents.
+  // 3) Pour chaque room, déterminer les ennemis présents et générer la map tile.
   const rooms = roomTypes.map((type, index) => {
-    let enemies;
+    // Liste d'enemy IDs selon le type de room
+    let enemyIds;
     switch(type){
       case 'combat': {
-        // 1 à N mobs selon la profondeur
         const count = rollInt(rng, mobMin, mobMax);
-        enemies = pickMultiple(rng, pool.mobs, count, true);
+        enemyIds = pickMultiple(rng, pool.mobs, count, true);
         break;
       }
       case 'elite': {
-        // 1 élite + 1-2 mobs d'escort
         const elite = pickRandom(rng, pool.elites);
         const escortCount = rollInt(rng, 1, 2);
         const escort = pickMultiple(rng, pool.mobs, escortCount, true);
-        enemies = [elite, ...escort];
+        enemyIds = [elite, ...escort];
         break;
       }
-      case 'miniboss': {
-        // Miniboss seul
-        enemies = [pool.miniboss];
+      case 'miniboss':
+        enemyIds = [pool.miniboss];
         break;
-      }
-      case 'boss': {
-        // Boss seul
-        enemies = [pool.boss];
+      case 'boss':
+        enemyIds = [pool.boss];
         break;
-      }
       default:
-        enemies = [];
+        enemyIds = [];
     }
+
+    // Génère la map tile-based pour cette room.
+    // Format compatible game.html : { width, height, walls: ["x,y", ...],
+    //   playerStart: {x, y}, enemies: [{type, x, y}] }
+    const map = generateRoomMap(rng, type, enemyIds, level);
+
     return {
       index,
       type,
-      enemies,
+      // Champs consommés par game.html (readPlaytestRun → roomData) :
+      width: map.width,
+      height: map.height,
+      walls: map.walls,
+      playerStart: map.playerStart,
+      enemies: map.enemies,
+      // Métadonnées pour notre UI :
+      enemyTypes: enemyIds, // les IDs sans positions, utiles pour le compteur
       cleared: false,
     };
   });
@@ -259,6 +267,87 @@ export function generateDungeonRun(biomeId, level, options = {}){
       isFailed: false,
     },
   };
+}
+
+// ============================================================
+// MAP GENERATION (tile-based, compatible game.html)
+// ============================================================
+
+/**
+ * Génère une map tile-based pour une room.
+ * Format : { width, height, walls: ["x,y", ...], playerStart: {x,y}, enemies: [{type,x,y}] }
+ *
+ * Layout :
+ *   - Le joueur spawne sur la moitié gauche
+ *   - Les ennemis sur la moitié droite
+ *   - Quelques walls aléatoires au milieu pour donner du gameplay
+ *
+ * Les dimensions augmentent avec le type de room et le level.
+ */
+function generateRoomMap(rng, roomType, enemyIds, level){
+  // Dimensions selon type de room
+  // Plus le type est gros, plus la salle est grande pour laisser de l'espace
+  let width, height;
+  switch(roomType){
+    case 'boss':     width = 10; height = 8; break;
+    case 'miniboss': width = 9;  height = 7; break;
+    case 'elite':    width = 9;  height = 6; break;
+    default:         width = 8;  height = 6; break;
+  }
+
+  // Walls aléatoires : 0-3 walls dans la zone centrale (ni au spawn joueur ni aux spawns ennemis)
+  const walls = [];
+  const wallCount = roomType === 'boss' ? 0 // boss room reste vide pour pas piéger le boss
+                  : roomType === 'miniboss' ? rollInt(rng, 0, 1)
+                  : rollInt(rng, 1, 3);
+  const wallSet = new Set();
+  let attempts = 0;
+  while(walls.length < wallCount && attempts < 30){
+    attempts++;
+    // Walls dans la zone centrale (col 2 à width-3)
+    const wx = rollInt(rng, 2, width - 3);
+    const wy = rollInt(rng, 1, height - 2);
+    const k = `${wx},${wy}`;
+    if(wallSet.has(k)) continue;
+    wallSet.add(k);
+    walls.push(k);
+  }
+
+  // Player start : colonne 1, ligne random au milieu
+  const playerStart = { x: 1, y: Math.floor(height / 2) };
+
+  // Spawn ennemis : colonne (width-3) à (width-1), réparti verticalement
+  const enemies = [];
+  const occupied = new Set([`${playerStart.x},${playerStart.y}`, ...wallSet]);
+  const enemyCols = [width - 1, width - 2, width - 3];
+
+  for(let i = 0; i < enemyIds.length; i++){
+    const enemyId = enemyIds[i];
+    let placed = false;
+    let tries = 0;
+    while(!placed && tries < 30){
+      tries++;
+      // Boss/Miniboss : centre de la zone droite
+      let ex, ey;
+      if(roomType === 'boss' || roomType === 'miniboss'){
+        ex = width - 2;
+        ey = Math.floor(height / 2);
+      } else {
+        ex = enemyCols[i % enemyCols.length] + (tries > 5 ? rollInt(rng, -1, 0) : 0);
+        ey = rollInt(rng, 0, height - 1);
+      }
+      // Bounds check
+      if(ex < 0 || ex >= width || ey < 0 || ey >= height){ continue; }
+      const k = `${ex},${ey}`;
+      if(occupied.has(k)){ continue; }
+      occupied.add(k);
+      enemies.push({ type: enemyId, x: ex, y: ey });
+      placed = true;
+    }
+    // Si on n'a pas pu placer (jamais en théorie), on abandonne celui-là
+  }
+
+  return { width, height, walls, playerStart, enemies };
 }
 
 // ============================================================
