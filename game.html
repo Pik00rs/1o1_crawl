@@ -626,6 +626,24 @@ import { getBiome, listBiomeConfigs, listBiomeIds, preloadAllBiomes } from './sr
 import { createIsoInput } from './src/js/render/iso-input.js';
 
 // ============================================================================
+// STUBS DOM : le moteur (turn.js, attack.js, etc.) appelle render()/log() qui
+// vont chercher des éléments du HTML legacy ('grid', 'log', 'actions'...).
+// On les crée en éléments cachés pour qu'aucun code legacy ne crash.
+// game.html pilote son propre rendu canvas, ces stubs sont invisibles.
+// ============================================================================
+function ensureStubElement(id, tag = 'div'){
+  if(document.getElementById(id)) return;
+  const el = document.createElement(tag);
+  el.id = id;
+  el.style.display = 'none';
+  document.body.appendChild(el);
+}
+[
+  'grid', 'timeline', 'log', 'actions', 'equipment', 'end-turn-btn',
+  'hp-fill', 'ap-fill', 'armor-text', 'status-text', 'player-name',
+].forEach(id => ensureStubElement(id));
+
+// ============================================================================
 // CANVAS SETUP
 // ============================================================================
 const canvas = document.getElementById('game-canvas');
@@ -1743,38 +1761,13 @@ function syncLogPanel(){
 }
 
 // ----- COMBAT END HOOK -----
-// Le moteur appelle showCombatEnd via ui/combat-end.js. On override le DOM
-// pour utiliser notre modal custom.
-const combatEndModal = document.getElementById('combat-end');
-const endTitle = document.getElementById('end-title');
-const endContent = document.getElementById('end-content');
-
-function syncCombatEnd(){
-  // Vérifie si state.combatOver et show notre modal
-  if(state.combatOver && !state._endShown){
-    state._endShown = true;
-    const victory = state.player && !state.player.isDead;
-    if(victory){
-      combatEndModal.style.borderColor = '#4caf50';
-      endTitle.textContent = '✓ VICTORY';
-      endTitle.style.color = '#4caf50';
-      endContent.innerHTML = '<p style="color:#aaa; font-size:11px; letter-spacing:1px;">All enemies defeated.</p>';
-    } else {
-      combatEndModal.style.borderColor = '#f44336';
-      endTitle.textContent = '✗ DEFEAT';
-      endTitle.style.color = '#f44336';
-      endContent.innerHTML = '<p style="color:#aaa; font-size:11px; letter-spacing:1px;">You have fallen.</p>';
-    }
-    combatEndModal.style.display = 'block';
-  } else if(!state.combatOver && state._endShown){
-    state._endShown = false;
-    combatEndModal.style.display = 'none';
-  }
-}
+// Le moteur gère le modal lui-même via ui/combat-end.js (il fait endEl.style.display = 'block').
+// Notre HTML a les mêmes IDs (combat-end, end-title, end-content) donc tout marche
+// out of the box. Le bouton "Restart" appelle window.restartCombat (défini ci-dessous).
 
 window.restartCombat = async function(){
-  combatEndModal.style.display = 'none';
-  state._endShown = false;
+  const modal = document.getElementById('combat-end');
+  if(modal) modal.style.display = 'none';
   await initCombat();
 };
 
@@ -1827,7 +1820,6 @@ function tick(){
   if(keys.a) view.camX += 5;
   if(keys.d) view.camX -= 5;
   syncLogPanel();
-  syncCombatEnd();
   updateLightUI();      // HP/AP/turn (cheap)
   detectTurnChange();   // rebuild action bar quand l'actor change
 }
