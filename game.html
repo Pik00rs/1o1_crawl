@@ -458,6 +458,7 @@
 <div id="top-bar">
   <div id="top-left">
     <div id="title">▸ R_HOLLOW</div>
+    <div id="dungeon-hud" style="display:none; color:#ffd060; font-size:10px; letter-spacing:1.2px; margin-top:2px; text-shadow:0 0 6px rgba(255,208,96,0.4);"></div>
     <div id="turn-text">TURN 1</div>
   </div>
   <div id="top-right">
@@ -794,6 +795,31 @@ function genTileMap(builderMapData = null){
 }
 
 // ============================================================================
+// DUNGEON HUD : affiche "Room X/N · BIOME D-level" pour les runs Ascension
+// ============================================================================
+const DUNGEON_BIOME_LABELS = {
+  inferno: '🔥 INFERNO', cryo: '❄ CRYO', toxic: '☣ TOXIC',
+  voidnet: '⚡ VOIDNET', crimson: '🩸 CRIMSON',
+};
+function updateDungeonHud(playtestRun){
+  const hud = document.getElementById('dungeon-hud');
+  if(!hud) return;
+  if(!playtestRun || !playtestRun.biomeId || typeof playtestRun.level !== 'number'){
+    hud.style.display = 'none';
+    hud.textContent = '';
+    return;
+  }
+  // Le run consomme la première room à chaque init, donc le total d'origine
+  // peut être lu via run.roomCount, et le current = roomCount - rooms.length + 1.
+  const total = playtestRun.roomCount || playtestRun.rooms.length;
+  const remaining = playtestRun.rooms.length;
+  const current = Math.max(1, total - remaining + 1);
+  const biomeLabel = DUNGEON_BIOME_LABELS[playtestRun.biomeId] || playtestRun.biomeId.toUpperCase();
+  hud.textContent = `${biomeLabel} · D${playtestRun.level} · ROOM ${current}/${total}`;
+  hud.style.display = 'block';
+}
+
+// ============================================================================
 // INIT COMBAT — lit playtest ou builder ou défaut, lance le moteur
 // ============================================================================
 async function initCombat(){
@@ -812,11 +838,18 @@ async function initCombat(){
       stuff: playtestRun.player?.stuff || 'balanced',
       customModifiers: playtestRun.player?.customModifiers || [],
     };
+    // Si la run vient du système Ascension (biomeId présent), aligne le biome de rendu
+    if(playtestRun.biomeId && ['cryo','inferno','toxic','crimson','voidnet'].includes(playtestRun.biomeId)){
+      render.biomeId = playtestRun.biomeId;
+    }
+    // Met à jour le HUD multi-room (Room X/N + nom du donjon)
+    updateDungeonHud(playtestRun);
   } else {
     // Pas de playtest, on prend la room tutorial (par défaut)
     const tutorial = DATA.rooms.tutorial;
     if(!tutorial) throw new Error('No tutorial room in DATA');
     roomData = tutorial;
+    updateDungeonHud(null);
   }
 
   // Si un builder map existe, il override les dimensions/walls de la room
@@ -1764,12 +1797,169 @@ function syncLogPanel(){
 // Le moteur gère le modal lui-même via ui/combat-end.js (il fait endEl.style.display = 'block').
 // Notre HTML a les mêmes IDs (combat-end, end-title, end-content) donc tout marche
 // out of the box. Le bouton "Restart" appelle window.restartCombat (défini ci-dessous).
+//
+// Pour les runs Ascension multi-room, on hijack restartCombat pour soit :
+//   - charger la prochaine room du donjon
+//   - afficher l'écran de défaite et retourner au hub
+//   - afficher l'écran de loot final et retourner au hub
 
 window.restartCombat = async function(){
   const modal = document.getElementById('combat-end');
+  const raw = localStorage.getItem('rh_active_run');
+
+  // Pas de run Ascension = comportement original (Map Builder ou tutorial)
+  if(!raw){
+    if(modal) modal.style.display = 'none';
+    await initCombat();
+    return;
+  }
+
+  let run;
+  try { run = JSON.parse(raw); } catch(e){
+    if(modal) modal.style.display = 'none';
+    await initCombat();
+    return;
+  }
+
+  // Détection victoire vs défaite. Le moteur affiche le modal soit quand
+  // tous les ennemis sont morts (victoire), soit quand le joueur meurt (défaite).
+  // On lit le titre du modal s'il est visible.
+  const endTitle = document.getElementById('end-title');
+  const titleText = (endTitle?.textContent || '').toUpperCase();
+  const playerDead = state.player && state.player.isDead;
+  const isDefeat = playerDead || titleText.includes('DEFEAT') || titleText.includes('GAME OVER') || titleText.includes('LOSE');
+
+  if(isDefeat){
+    // ÉCHEC : on perd la run, retour hub.
+    showDungeonDefeatScreen(run);
+    localStorage.removeItem('rh_active_run');
+    return;
+  }
+
+  // VICTOIRE : la première room est clean. On la pop.
+  run.rooms.shift();
+
+  if(run.rooms.length === 0){
+    // Toutes les rooms sont clean → succès du donjon.
+    saveDungeonProgress(run);
+    showDungeonVictoryScreen(run);
+    localStorage.removeItem('rh_active_run');
+    return;
+  }
+
+  // Sinon, on re-persiste la run réduite et on relance le combat avec la prochaine room.
+  localStorage.setItem('rh_active_run', JSON.stringify(run));
   if(modal) modal.style.display = 'none';
   await initCombat();
 };
+
+// ============================================================================
+// DUNGEON RUN : écrans victoire/défaite + sauvegarde de progression
+// ============================================================================
+function showDungeonVictoryScreen(run){
+  const modal = document.getElementById('combat-end');
+  const title = document.getElementById('end-title');
+  const content = document.getElementById('end-content');
+  if(!modal || !title || !content) return;
+
+  const biomeLabel = DUNGEON_BIOME_LABELS[run.biomeId] || run.biomeId.toUpperCase();
+  title.innerHTML = '▸ DUNGEON CLEAR ◂';
+  title.style.color = '#ffd060';
+  title.style.textShadow = '0 0 20px rgba(255,208,96,0.6)';
+
+  // Construit le HTML du loot
+  const loot = run.finalLoot || { items: [], resource: null };
+  const itemsHtml = (loot.items || []).map(item => {
+    const rar = (item.rarity || 'common').toUpperCase();
+    const rarColors = {
+      COMMON: '#a89878', UNCOMMON: '#3df068', RARE: '#3d9cf0',
+      EPIC: '#c040ff', LEGENDARY: '#ffaa20',
+    };
+    const color = rarColors[rar] || '#a89878';
+    const star = item.isBossDrop ? ' ★' : '';
+    const statsLine = Object.entries(item.stats || {})
+      .map(([k, v]) => `${k.toUpperCase()} ${v}`).join(' · ');
+    return `<div style="padding:6px 10px; margin:3px 0; background:#1a0a14; border-left:3px solid ${color}; text-align:left; font-size:11px;">
+      <div style="color:#fff; font-weight:bold;">${item.itemId}${star}</div>
+      <div style="color:#888; font-size:9px; margin-top:2px;">${statsLine}</div>
+      <div style="display:inline-block; margin-top:3px; padding:1px 6px; background:${color}; color:#fff; font-size:8px; letter-spacing:1px;">${rar}</div>
+    </div>`;
+  }).join('');
+
+  const resourceHtml = loot.resource ? `
+    <div style="margin-top:12px; padding:10px 12px; background:#1a0a14; border-left:3px solid #ffd060; text-align:left; display:flex; align-items:center; gap:10px;">
+      <div style="font-size:24px;">${loot.resource.icon}</div>
+      <div>
+        <div style="font-size:9px; color:#888; letter-spacing:1px;">${loot.resource.name.toUpperCase()}</div>
+        <div style="font-size:16px; color:#ffd060; font-weight:bold;">+${loot.resource.amount}</div>
+      </div>
+    </div>` : '';
+
+  content.innerHTML = `
+    <div style="font-size:11px; color:#888; letter-spacing:2px; margin-bottom:14px;">${biomeLabel} · D${run.level} · ${run.roomCount} rooms</div>
+    <div style="max-height:50vh; overflow-y:auto; margin-bottom:14px;">
+      ${itemsHtml}
+      ${resourceHtml}
+    </div>
+  `;
+
+  // Remplace le bouton RESTART par un bouton retour hub
+  const btn = modal.querySelector('button');
+  if(btn){
+    btn.textContent = '▶ COLLECT & RETURN';
+    btn.onclick = () => { window.location.href = './index.html'; };
+  }
+
+  modal.style.display = 'block';
+  updateDungeonHud(null); // efface le HUD top-bar
+}
+
+function showDungeonDefeatScreen(run){
+  const modal = document.getElementById('combat-end');
+  const title = document.getElementById('end-title');
+  const content = document.getElementById('end-content');
+  if(!modal || !title || !content) return;
+
+  const biomeLabel = DUNGEON_BIOME_LABELS[run.biomeId] || run.biomeId.toUpperCase();
+  const total = run.roomCount || (run.rooms.length);
+  const reachedRoom = total - run.rooms.length + 1;
+
+  title.innerHTML = '☠ YOU DIED ☠';
+  title.style.color = '#ff5252';
+  title.style.textShadow = '0 0 16px rgba(255,82,82,0.8)';
+
+  content.innerHTML = `
+    <div style="font-size:11px; color:#888; letter-spacing:2px; margin-bottom:10px;">${biomeLabel} · D${run.level}</div>
+    <div style="font-size:13px; color:#aaa; margin-bottom:6px;">Tombé en Room ${reachedRoom}/${total}</div>
+    <div style="font-size:11px; color:#666; line-height:1.5;">Le loot de ce donjon est perdu.</div>
+  `;
+
+  const btn = modal.querySelector('button');
+  if(btn){
+    btn.textContent = '⌂ RETOUR HUB';
+    btn.onclick = () => { window.location.href = './index.html'; };
+  }
+
+  modal.style.display = 'block';
+  updateDungeonHud(null);
+}
+
+function saveDungeonProgress(run){
+  // Sauvegarde la progression dans localStorage pour qu'Ascension reflète le clear.
+  try {
+    const KEY = 'rh_player_progress';
+    const raw = localStorage.getItem(KEY);
+    const progress = raw ? JSON.parse(raw) : {};
+    if(!progress[run.biomeId]) progress[run.biomeId] = { tier: 1, clearedDungeons: [] };
+    if(!progress[run.biomeId].clearedDungeons.includes(run.level)){
+      progress[run.biomeId].clearedDungeons.push(run.level);
+    }
+    localStorage.setItem(KEY, JSON.stringify(progress));
+    // TODO : ajouter les items au chest et les ressources au wallet quand ces systèmes seront implémentés
+  } catch(e){
+    console.error('Failed to save dungeon progress:', e);
+  }
+}
 
 // ============================================================================
 // ZOOM CONTROLS
