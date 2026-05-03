@@ -2,173 +2,2026 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Reactor Hollow — Combat</title>
-
-<link rel="stylesheet" href="src/css/base/variables.css">
-<link rel="stylesheet" href="src/css/base/layout.css">
-<link rel="stylesheet" href="src/css/components/grid.css">
-<link rel="stylesheet" href="src/css/components/panels.css">
-<link rel="stylesheet" href="src/css/components/buttons.css">
-
 <style>
-  #custom-banner {
-    background: linear-gradient(90deg, rgba(255,87,34,0.18), transparent);
-    border-bottom: 1px solid rgba(255,87,34,0.4);
-    padding: 10px 20px;
-    font-family: 'JetBrains Mono', monospace, monospace;
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    color: #ffb300;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0a0a0f;
+    color: #aaa;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
   }
-  #custom-banner span.label { color: #ff5722; }
-  #custom-banner a {
-    color: #4fc3f7;
-    text-decoration: none;
-    border: 1px solid #4fc3f7;
-    padding: 4px 10px;
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+
+  #game-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    z-index: 1;
   }
-  #custom-banner a:hover { background: #4fc3f7; color: #000; }
-  .home-link {
-    position: fixed; top: 12px; right: 12px;
-    z-index: 50;
-    font-family: 'JetBrains Mono', monospace, monospace;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: #888;
-    text-decoration: none;
+
+  /* ================================================================ TOP BAR ================================================================ */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 44px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.4));
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 10px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #top-left { display: flex; flex-direction: column; gap: 2px; pointer-events: auto; }
+  #title { color: #ff5722; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+  #turn-text { color: #888; font-size: 9px; letter-spacing: 1px; }
+
+  #top-right {
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.4);
     padding: 6px 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+    min-width: 130px;
+  }
+  .top-line { display: flex; align-items: center; gap: 6px; font-size: 9px; }
+  .top-line .lab { color: #666; letter-spacing: 1px; min-width: 18px; }
+  .top-line .val { color: #fff; font-weight: 600; margin-left: auto; font-size: 9px; }
+  #hp-bar-mini { height: 4px; background: #1a0a0a; flex: 1; min-width: 50px; }
+  #hp-bar-mini-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.3s, background 0.3s; }
+  #ap-mini { display: flex; gap: 2px; flex: 1; min-width: 50px; }
+  .ap-mini-dot { width: 8px; height: 8px; border: 1px solid #4fc3f7; background: transparent; border-radius: 50%; }
+  .ap-mini-dot.full { background: #4fc3f7; box-shadow: 0 0 3px #4fc3f7; }
+
+  /* ================================================================ SIDE BUTTONS ================================================================ */
+  #side-left { position: fixed; top: 56px; left: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  #side-right { position: fixed; top: 56px; right: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  .icon-btn {
+    width: 38px; height: 38px;
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.4);
+    color: #aee6ff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+    transition: all 0.15s;
+    font-family: inherit;
+    padding: 0;
+  }
+  .icon-btn:hover, .icon-btn:active {
+    background: rgba(79,195,247,0.2);
+    border-color: #4fc3f7;
+    transform: scale(1.05);
+  }
+  .icon-btn.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+  #zoom-display {
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.3);
+    width: 38px; padding: 3px 0;
+    text-align: center; font-size: 9px; color: #aaa;
+    backdrop-filter: blur(6px);
+    letter-spacing: 1px;
+  }
+
+  /* ================================================================ ACTION BAR ================================================================ */
+  #action-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    min-height: 78px;
+    background: rgba(0,0,0,0.92);
+    border-top: 1px solid rgba(79,195,247,0.4);
+    display: flex; gap: 4px;
+    padding: 6px;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    overflow-x: auto;
+  }
+  .action-btn {
+    flex: 1 0 80px;
+    min-width: 80px;
+    background: rgba(20,20,28,0.95);
     border: 1px solid #2a2a30;
-    background: rgba(10,10,12,0.8);
+    color: #aaa;
+    cursor: pointer;
+    padding: 6px 4px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: all 0.15s;
+    font-family: inherit;
+    position: relative;
+  }
+  .action-btn:hover:not(.disabled), .action-btn:active:not(.disabled) { border-color: #4fc3f7; color: #fff; }
+  .action-btn.selected {
+    border-color: #4fc3f7; background: rgba(79,195,247,0.2);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(79,195,247,0.5) inset;
+  }
+  .action-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+  .action-btn.move { border-left: 3px solid #4fc3f7; }
+  .action-btn.attack { border-left: 3px solid #ff5722; }
+  .action-btn.spell { border-left: 3px solid #9c27b0; }
+  .action-btn.pass { border-left: 3px solid #888; }
+  .ab-icon { font-size: 18px; line-height: 1; margin-bottom: 2px; }
+  .ab-name {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+    color: #fff; text-align: center;
+    white-space: nowrap; overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+  }
+  .ab-cost { font-size: 8px; letter-spacing: 0.5px; margin-top: 1px; }
+  .action-btn.move .ab-cost { color: #4fc3f7; }
+  .action-btn.attack .ab-cost { color: #ff8a4d; }
+  .action-btn.spell .ab-cost { color: #ce93d8; }
+  .action-btn.pass .ab-cost { color: #888; }
+  .ab-info-btn {
+    position: absolute; top: 3px; right: 4px;
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .ab-info-btn:hover, .ab-info-btn:active { color: #fff; background: rgba(79,195,247,0.3); }
+
+  /* ================================================================ ACTION INFO POPUP ================================================================ */
+  #action-info-popup {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 32px);
+    max-width: 360px;
+    background: rgba(10,10,15,0.97);
+    border: 1px solid #4fc3f7;
+    backdrop-filter: blur(10px);
+    padding: 12px 14px;
+    z-index: 22;
+    display: none;
+    box-shadow: 0 4px 24px rgba(79,195,247,0.25);
+    font-size: 10px; line-height: 1.55;
+  }
+  #action-info-popup .aip-title {
+    font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+    color: #fff;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #2a2a30;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  #action-info-popup .aip-row { display: flex; justify-content: space-between; padding: 3px 0; color: #aaa; }
+  #action-info-popup .aip-row .lbl { color: #666; letter-spacing: 1px; text-transform: uppercase; font-size: 9px; }
+  #action-info-popup .aip-row .val { color: #fff; font-weight: 600; }
+  #action-info-popup .aip-section { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #2a2a30; }
+  #action-info-popup .aip-desc { color: #888; font-style: italic; line-height: 1.5; margin-top: 6px; }
+  #action-info-popup .aip-close {
+    width: 20px; height: 20px;
+    border: 1px solid #4fc3f7;
+    background: transparent;
+    color: #aee6ff;
+    cursor: pointer;
+    font-family: inherit; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #action-info-popup .aip-close:hover { background: #4fc3f7; color: #000; }
+
+  /* ================================================================ PANELS ================================================================ */
+  .panel {
+    position: fixed;
+    top: 56px; bottom: 90px; left: 8px;
+    width: calc(100vw - 16px);
+    max-width: 380px;
+    background: rgba(10,10,15,0.97);
+    border: 1px solid #4fc3f7;
+    z-index: 50;
+    transform: translateX(-110%);
+    transition: transform 0.25s ease-out;
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+    padding: 14px;
+  }
+  .panel.open { transform: translateX(0); }
+  .panel.right { left: auto; right: 8px; transform: translateX(110%); }
+  .panel.right.open { transform: translateX(0); }
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2a2a30;
+  }
+  .panel-title { color: #4fc3f7; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+  .panel-close {
+    width: 26px; height: 26px;
+    border: 1px solid #4fc3f7;
+    background: transparent;
+    color: #aee6ff;
+    cursor: pointer;
+    font-family: inherit; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .panel-close:hover { background: #4fc3f7; color: #000; }
+  .panel-section { margin-bottom: 14px; }
+  .panel-section-title { color: #666; font-size: 9px; letter-spacing: 1.5px; margin-bottom: 6px; }
+
+  #minimap {
+    display: block; width: 100%;
+    height: auto; aspect-ratio: 14/10;
+    background: #000;
+    border: 1px solid #2a2a30;
+    cursor: crosshair;
+    image-rendering: pixelated;
+  }
+  .enemy-card {
+    background: rgba(255,82,82,0.08);
+    border-left: 2px solid #ff5252;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 10px; line-height: 1.5;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .enemy-card:hover { background: rgba(255,82,82,0.15); }
+  .enemy-card-name { color: #ff5252; font-weight: 600; letter-spacing: 1px; display: flex; justify-content: space-between; }
+  .enemy-card-bar { height: 4px; background: #1a0a0a; margin: 4px 0; }
+  .enemy-card-bar-fill { height: 100%; }
+  .enemy-card-info { color: #aaa; font-size: 9px; }
+
+  .status-pill {
+    display: inline-block;
+    padding: 3px 7px;
+    background: rgba(79,195,247,0.12);
+    border: 1px solid #4fc3f7;
+    color: #aee6ff;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    margin: 0 4px 4px 0;
+  }
+
+  #log-entries { font-size: 10px; line-height: 1.6; }
+  #log-entries div {
+    margin-bottom: 4px;
+    padding: 3px 6px;
+    background: rgba(255,255,255,0.02);
+    animation: logIn 0.3s ease-out;
+  }
+  @keyframes logIn { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+  .log-damage { color: #ff8a8a; }
+  .log-heal { color: #8bc34a; }
+  .log-status { color: #ffb74d; }
+  .log-info { color: #aaa; }
+  .log-combat-end { color: #ffeb3b; font-weight: 700; }
+
+  .opt-btn {
+    display: block; width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid #2a2a30;
+    color: #aaa;
+    font-family: inherit;
+    font-size: 10px; letter-spacing: 1px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    text-align: left;
+    transition: all 0.15s;
     text-transform: uppercase;
   }
-  .home-link:hover { color: #4fc3f7; border-color: #4fc3f7; }
+  .opt-btn:hover { border-color: #4fc3f7; color: #fff; }
+  .opt-btn.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+  .biome-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+
+  /* ================================================================ TARGETING HINT ================================================================ */
+  #targeting-hint {
+    position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
+    padding: 8px 14px;
+    background: rgba(0,0,0,0.92);
+    border: 1px solid #4fc3f7;
+    color: #4fc3f7;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    display: none;
+    z-index: 20;
+    text-align: center;
+  }
+
+  /* ================================================================ FLOATING DAMAGE ================================================================ */
+  .float-text {
+    position: fixed;
+    font-weight: 700; font-size: 18px;
+    pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+    text-shadow: 0 0 4px currentColor, 0 1px 0 #000;
+    z-index: 25;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-50px); opacity: 0; }
+  }
+
+  /* ================================================================ TOUCH RETICLE ================================================================ */
+  #touch-reticle {
+    position: fixed;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 2.5px solid;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 28;
+    display: none;
+    transition: border-color 0.1s, box-shadow 0.1s;
+  }
+  #touch-reticle::before {
+    content: ''; position: absolute;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+  }
+  #touch-reticle::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%;
+    width: 28px; height: 28px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.5;
+  }
+  #touch-reticle.valid { border-color: #4caf50; color: #69f0ae; box-shadow: 0 0 16px rgba(76,175,80,0.6); }
+  #touch-reticle.attack { border-color: #f44336; color: #ff8a80; box-shadow: 0 0 16px rgba(244,67,54,0.6); }
+  #touch-reticle.spell { border-color: #9c27b0; color: #ce93d8; box-shadow: 0 0 16px rgba(156,39,176,0.6); }
+  #touch-reticle.invalid { border-color: #666; color: #888; opacity: 0.5; }
+
+  /* ================================================================ CONFIRM POPUP ================================================================ */
+  #confirm-popup {
+    position: fixed;
+    background: rgba(0,0,0,0.95);
+    border: 1.5px solid #4fc3f7;
+    backdrop-filter: blur(10px);
+    padding: 8px 10px 10px;
+    z-index: 29;
+    display: none;
+    transform: translate(-50%, 0);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+  #confirm-popup .cp-label { font-size: 9px; letter-spacing: 1.5px; color: #888; margin-bottom: 6px; text-align: center; }
+  #confirm-popup .cp-buttons { display: flex; gap: 6px; }
+  #confirm-popup button {
+    width: 56px; height: 48px;
+    background: rgba(20,20,28,0.85);
+    border: 1.5px solid;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 18px; font-weight: 700;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: transform 0.1s, background 0.15s;
+  }
+  #confirm-popup button:active { transform: scale(0.92); }
+  #confirm-popup .cp-go { border-color: #4caf50; color: #4caf50; }
+  #confirm-popup .cp-go:hover, #confirm-popup .cp-go:active { background: rgba(76,175,80,0.25); }
+  #confirm-popup .cp-go .lab { font-size: 8px; letter-spacing: 1px; color: #69f0ae; margin-top: 2px; }
+  #confirm-popup .cp-cancel { border-color: #f44336; color: #f44336; }
+  #confirm-popup .cp-cancel:hover, #confirm-popup .cp-cancel:active { background: rgba(244,67,54,0.25); }
+  #confirm-popup .cp-cancel .lab { font-size: 8px; letter-spacing: 1px; color: #ff8a80; margin-top: 2px; }
+
+  /* ================================================================ COMBAT END MODAL ================================================================ */
+  #combat-end {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: rgba(10,10,15,0.98);
+    border: 2px solid;
+    padding: 30px 36px; min-width: 280px;
+    text-align: center; z-index: 200;
+    display: none;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+  }
+  #combat-end h2 { font-size: 24px; margin-bottom: 14px; letter-spacing: 3px; font-weight: 800; }
+  #combat-end button {
+    background: #4fc3f7; color: #000;
+    border: none; padding: 10px 20px; margin-top: 14px;
+    cursor: pointer; font-family: inherit; font-weight: 700;
+    letter-spacing: 1.5px; font-size: 11px;
+    text-transform: uppercase;
+  }
+  #combat-end button:hover { background: #6ed5ff; }
+
+  /* ================================================================ ERROR ================================================================ */
+  #error-display {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    display: none;
+    background: #2a0808;
+    border: 1px solid #ff5252;
+    padding: 16px;
+    color: #ff8a80;
+    font-size: 12px;
+    max-width: 80vw;
+    z-index: 100;
+  }
+  #error-display pre { background: rgba(0,0,0,0.4); padding: 8px; overflow-x: auto; font-size: 10px; color: #ffcdd2; margin-top: 8px; }
+
+  @keyframes loaderSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(700%); } }
 </style>
 </head>
 <body>
 
-<a href="index.html" class="home-link">▸ DASHBOARD</a>
+<canvas id="game-canvas"></canvas>
 
-<div id="custom-banner" style="display:none">
-  <span><span class="label">▸ MODE PLAYTEST CUSTOM //</span> <span id="banner-info">--</span></span>
-  <a href="src/dashboard/playtest.html">↩ ÉDITER</a>
+<div id="touch-reticle"></div>
+
+<div id="confirm-popup">
+  <div class="cp-label" id="cp-action-label">▸ CONFIRMER</div>
+  <div class="cp-buttons">
+    <button class="cp-cancel" id="cp-cancel-btn"><span>✗</span><span class="lab">CANCEL</span></button>
+    <button class="cp-go" id="cp-go-btn"><span>✓</span><span class="lab">GO</span></button>
+  </div>
 </div>
 
-<h1>⚔️ Reactor Hollow — Combat</h1>
+<div id="error-display"></div>
 
-<div id="timeline"></div>
-
-<div class="layout">
-  <div class="left-panel">
-    <div id="grid"></div>
-    <div class="panel">
-      <h2>📜 Journal de combat</h2>
-      <div id="log"></div>
-    </div>
+<div id="boot-loader" style="position:fixed; inset:0; background:#08080c; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; font-family:'JetBrains Mono', monospace;">
+  <div style="font-size:14px; letter-spacing:3px; color:#aee6ff;">▸ LOADING TILE LIBRARY</div>
+  <div style="width:200px; height:3px; background:#1a1a24; border-radius:2px; overflow:hidden;">
+    <div style="width:30%; height:100%; background:linear-gradient(90deg, transparent, #aee6ff, transparent); animation: loaderSlide 1.4s linear infinite;"></div>
   </div>
+  <div style="font-size:9px; color:#666; letter-spacing:1px;">Rasterizing 150 SVG tiles…</div>
+</div>
 
-  <div class="right-panel">
-    <div class="panel">
-      <h2 id="player-name">🧙 Kael</h2>
-      <div class="stat-line"><span>PV</span><span id="hp-text">--</span></div>
-      <div class="stat-bar"><div class="stat-bar-fill" id="hp-fill" style="background:#4a8;width:100%"></div></div>
-      <div class="stat-line"><span>AP</span><span id="ap-text">--</span></div>
-      <div class="stat-bar"><div class="stat-bar-fill" id="ap-fill" style="background:#48f;width:100%"></div></div>
-      <div class="stat-line"><span>Armure</span><span id="armor-text">--</span></div>
-      <div class="stat-line"><span>Statuts</span><span id="status-text">Aucun</span></div>
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div id="top-left">
+    <div id="title">▸ R_HOLLOW</div>
+    <div id="turn-text">TURN 1</div>
+  </div>
+  <div id="top-right">
+    <div class="top-line">
+      <span class="lab">HP</span>
+      <div id="hp-bar-mini"><div id="hp-bar-mini-fill"></div></div>
+      <span class="val" id="hp-text">100/100</span>
     </div>
-
-    <div class="panel">
-      <h2>⚔️ Actions</h2>
-      <div class="actions" id="actions"></div>
-      <button id="end-turn-btn">▶ Fin du tour</button>
-    </div>
-
-    <div class="panel">
-      <h2>🎒 Équipement</h2>
-      <div id="equipment"></div>
+    <div class="top-line">
+      <span class="lab">AP</span>
+      <div id="ap-mini"></div>
+      <span class="val" id="ap-text">6/6</span>
     </div>
   </div>
 </div>
 
+<!-- LEFT ICON BUTTONS (no map-builder per design decision) -->
+<div id="side-left">
+  <button class="icon-btn" id="btn-map" title="Map">🗺</button>
+  <button class="icon-btn" id="btn-stuff" title="Stuff &amp; stats">🎒</button>
+  <button class="icon-btn" id="btn-enemies" title="Enemies info">👹</button>
+  <button class="icon-btn" id="btn-log" title="Combat log">📜</button>
+  <button class="icon-btn" id="btn-options" title="Options">⚙</button>
+</div>
+
+<!-- RIGHT ICON BUTTONS -->
+<div id="side-right">
+  <button class="icon-btn" id="btn-zoom-in" title="Zoom in">+</button>
+  <div id="zoom-display">100%</div>
+  <button class="icon-btn" id="btn-zoom-out" title="Zoom out">−</button>
+  <button class="icon-btn" id="btn-center" title="Center camera">⊙</button>
+</div>
+
+<!-- TARGETING HINT -->
+<div id="targeting-hint">
+  <span id="targeting-text">▸ SELECT TARGET</span>
+</div>
+
+<!-- ACTION BAR -->
+<div id="action-bar"></div>
+
+<!-- ACTION INFO POPUP -->
+<div id="action-info-popup">
+  <div id="aip-content"></div>
+</div>
+
+<!-- =============================================================
+     PANEL : MAP
+     ============================================================= -->
+<div class="panel" id="panel-map">
+  <div class="panel-header">
+    <span class="panel-title">▸ MAP &amp; ENEMIES</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ MINI-MAP · TAP TO PAN</div>
+    <canvas id="minimap" width="280" height="200"></canvas>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ ENEMIES</div>
+    <div id="enemy-list-mini"></div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ YOUR STATUSES</div>
+    <div id="player-status-list">
+      <span style="color:#666; font-size:10px;">No active statuses</span>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================
+     PANEL : LOG
+     ============================================================= -->
+<div class="panel" id="panel-log">
+  <div class="panel-header">
+    <span class="panel-title">▸ COMBAT LOG</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div id="log-entries"></div>
+</div>
+
+<!-- =============================================================
+     PANEL : STUFF & STATS
+     ============================================================= -->
+<div class="panel" id="panel-stuff">
+  <div class="panel-header">
+    <span class="panel-title">▸ STUFF &amp; STATS</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ EQUIPMENT</div>
+    <div id="equipment-list"></div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ FINAL STATS</div>
+    <div id="final-stats"></div>
+  </div>
+</div>
+
+<!-- =============================================================
+     PANEL : ENEMIES
+     ============================================================= -->
+<div class="panel" id="panel-enemies">
+  <div class="panel-header">
+    <span class="panel-title">▸ ENEMIES</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div id="enemies-detail-list"></div>
+</div>
+
+<!-- =============================================================
+     PANEL : OPTIONS
+     ============================================================= -->
+<div class="panel right" id="panel-options">
+  <div class="panel-header">
+    <span class="panel-title">▸ OPTIONS</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ BIOME</div>
+    <div class="biome-grid" id="biome-buttons"></div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ DISPLAY</div>
+    <button class="opt-btn" id="opt-grid">Toggle GRID</button>
+    <button class="opt-btn" id="opt-night">Toggle NIGHT</button>
+    <button class="opt-btn" id="opt-bevel">Toggle BEVEL</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ ACTIONS</div>
+    <button class="opt-btn" id="opt-restart">▸ RESTART COMBAT</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ NAV</div>
+    <a href="index.html" class="opt-btn" style="display:block; text-align:left; text-decoration:none;">DASHBOARD</a>
+  </div>
+</div>
+
+<!-- =============================================================
+     COMBAT END MODAL
+     ============================================================= -->
 <div id="combat-end">
-  <h2 id="end-title">Victoire !</h2>
+  <h2 id="end-title">VICTORY</h2>
   <div id="end-content"></div>
-  <button onclick="restartCombat()">Recommencer</button>
+  <button onclick="restartCombat()">▶ RESTART</button>
 </div>
 
 <script type="module">
-  // === Lecture du custom run depuis localStorage ===
+// ============================================================================
+// IMPORTS — moteur + rendu iso + input
+// ============================================================================
+import { state, resetState } from './src/js/core/state.js';
+import { DATA, loadAllData } from './src/js/data/loader.js';
+import { createPlayer } from './src/js/entities/player.js';
+import { createEnemy } from './src/js/entities/enemy.js';
+import { computeInitiative, startTurn, getCurrentActor, endTurn } from './src/js/core/turn.js';
+import { getPlayerSkills, selectMove, selectSkill, executeAction } from './src/js/combat/actions.js';
+import { getReachableCells } from './src/js/grid/pathfinding.js';
+import { isWall as gridIsWall, getActorAt, key as gridKey, getCellsInAOE } from './src/js/grid/grid.js';
+
+import { renderFrame } from './src/js/render/iso-engine.js';
+import { TILE_W, TILE_H, screenToIso, isoToScreen } from './src/js/render/iso-projection.js';
+import { ParticleSystem } from './src/js/render/particles.js';
+import { rng, pickWeighted } from './src/js/render/iso-utils.js';
+import { getBiome, listBiomeConfigs, listBiomeIds, preloadAllBiomes } from './src/js/render/biomes/svg-loader.js';
+import { createIsoInput } from './src/js/render/iso-input.js';
+
+// ============================================================================
+// CANVAS SETUP
+// ============================================================================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const mctx = minimap.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+mctx.imageSmoothingEnabled = false;
+
+const viewport = { width: 0, height: 0 };
+function resize(){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  viewport.width = window.innerWidth;
+  viewport.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ============================================================================
+// VIEW STATE (caméra + options visuelles)
+// ============================================================================
+const view = { camX: 0, camY: 0, zoom: 1 };
+const visualOptions = { showGrid: false, bevel: true, night: false, fxLevel: 1 };
+const particles = new ParticleSystem();
+
+// ============================================================================
+// RENDER STATE — décor (tileGrid, biome) géré ici, le combat est dans state{}
+// ============================================================================
+const render = {
+  biomeId: 'inferno',
+  mapSeed: 7,
+  tileGrid: {},
+  hover: null,        // { gx, gy } sous le curseur
+  reachableMap: new Map(),  // pour afficher le coût AP du path
+  validTargetsSet: new Set(), // miroir de state.validTargets en Set "x,y"
+  aoePreviewSet: new Set(),
+  selectedAction: null, // skill sélectionné (référence vers state.selectedSkill)
+  openPanel: null,
+  time: 0,
+  // Animation des actors
+  actorAnims: new Map(), // actor.id -> { ax, ay, idle, target, moveT, moveFrom, path, pathStep }
+};
+
+// ============================================================================
+// CUSTOM RUN / MAP BUILDER : lecture des localStorage
+// Priorité : (1) Playtest run > (2) Map builder map > (3) tutorial par défaut
+// ============================================================================
+function readPlaytestRun(){
   const urlParams = new URLSearchParams(window.location.search);
-  const isCustomRun = urlParams.get('run') === 'custom';
+  if(urlParams.get('run') !== 'custom') return null;
+  try {
+    const raw = localStorage.getItem('rh_active_run');
+    if(!raw) return null;
+    return JSON.parse(raw);
+  } catch(e){ return null; }
+}
 
-  let customPayload = null;
-  if (isCustomRun) {
-    try {
-      const raw = localStorage.getItem('rh_active_run');
-      if (raw) customPayload = JSON.parse(raw);
-    } catch (e) {
-      console.warn('Failed to parse custom run', e);
+function readBuilderMap(){
+  try {
+    const raw = localStorage.getItem('reactor_hollow_map');
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    localStorage.removeItem('reactor_hollow_map');
+    return data;
+  } catch(e){ return null; }
+}
+
+// ============================================================================
+// GENERATION DU TILEGRID DE RENDU (décor seulement, indépendant du game state)
+// ============================================================================
+function genTileMap(builderMapData = null){
+  render.tileGrid = {};
+  const biome = getBiome(render.biomeId);
+  const r = rng(render.mapSeed * 7919 + render.biomeId.charCodeAt(0) * 13);
+  const hasTypes = biome.config.tileTypes && biome.config.tileTypes.length > 0 && biome.config.tileTypes[0] !== '_stub';
+
+  if(builderMapData && builderMapData.tiles){
+    // Utilise la map du builder
+    state.gridWidth = builderMapData.width;
+    state.gridHeight = builderMapData.height;
+    for(let y = 0; y < state.gridHeight; y++){
+      for(let x = 0; x < state.gridWidth; x++){
+        const tileId = (builderMapData.tiles[y] && builderMapData.tiles[y][x]) || null;
+        let cat = 'base';
+        if(tileId){
+          const m = tileId.match(/_([BFP])\d+$/);
+          if(m){
+            if(m[1] === 'F') cat = 'furnished';
+            else if(m[1] === 'P') cat = 'blocking';
+          }
+        }
+        let typeIdx;
+        if(cat === 'blocking' || !hasTypes){
+          typeIdx = hasTypes ? pickWeighted(biome.config.tileWeights, r()) : 0;
+        } else {
+          typeIdx = biome.config.tileTypes.indexOf(tileId);
+          if(typeIdx < 0) typeIdx = pickWeighted(biome.config.tileWeights, r());
+        }
+        const tileObj = {
+          type: typeIdx,
+          seed: (x*101 + y*239 + render.mapSeed*7) % 9999,
+          microElev: (Math.sin(x*1.7 + y*2.3)*0.5 + Math.cos(x*0.7 + y*1.4)*0.5) * 0.6,
+          tintShift: (r() - 0.5) * 0.18,
+          noiseSeeds: [r(), r(), r(), r(), r()],
+          isWall: false, prop: null,
+          builderTileId: tileId,
+        };
+        if(cat === 'blocking'){
+          tileObj.isWall = true;
+          tileObj.prop = tileId;
+          // Synchronise avec state.walls pour le pathfinding
+          state.walls.add(gridKey(x, y));
+        }
+        render.tileGrid[gridKey(x, y)] = tileObj;
+      }
+    }
+  } else {
+    // Génération aléatoire (pas de builder map)
+    for(let x = 0; x < state.gridWidth; x++){
+      for(let y = 0; y < state.gridHeight; y++){
+        const type = hasTypes ? pickWeighted(biome.config.tileWeights, r()) : 0;
+        render.tileGrid[gridKey(x, y)] = {
+          type,
+          seed: (x*101 + y*239 + render.mapSeed*7) % 9999,
+          microElev: (Math.sin(x*1.7 + y*2.3)*0.5 + Math.cos(x*0.7 + y*1.4)*0.5) * 0.6,
+          tintShift: (r() - 0.5) * 0.18,
+          noiseSeeds: [r(), r(), r(), r(), r()],
+          isWall: false, prop: null,
+        };
+      }
+    }
+    // Synchronise les walls de la room avec le tileGrid (pour le rendu)
+    for(const wallKey of state.walls){
+      const t = render.tileGrid[wallKey];
+      if(t){
+        t.isWall = true;
+        const propsArr = biome.config.props || [];
+        if(propsArr.length > 0){
+          t.prop = propsArr[(r() * propsArr.length) | 0];
+        }
+      }
     }
   }
+}
 
-  // === Construire les options pour startGame() ===
-  const opts = {};
-  if (customPayload && customPayload.rooms && customPayload.rooms.length > 0) {
-    // On injecte toutes les rooms, en faisant de la première la "tutorial"
-    // (le moteur démarre sur 'tutorial' par défaut)
-    const firstRoom = customPayload.rooms[0];
-    opts.injectRooms = {
-      tutorial: { ...firstRoom, id: 'tutorial', name: firstRoom.name + ' (Custom)' },
+// ============================================================================
+// INIT COMBAT — lit playtest ou builder ou défaut, lance le moteur
+// ============================================================================
+async function initCombat(){
+  resetState();
+
+  const playtestRun = readPlaytestRun();
+  const builderMap = readBuilderMap();
+
+  // Détermine la room à utiliser
+  let roomData;
+  let playerCfg = {};
+  if(playtestRun && playtestRun.rooms && playtestRun.rooms.length > 0){
+    roomData = playtestRun.rooms[0];
+    playerCfg = {
+      level: playtestRun.player?.level || 1,
+      stuff: playtestRun.player?.stuff || 'balanced',
+      customModifiers: playtestRun.player?.customModifiers || [],
     };
-    for (let i = 1; i < customPayload.rooms.length; i++) {
-      const r = customPayload.rooms[i];
-      opts.injectRooms[r.id] = r;
-    }
-
-    // Player config : level + stuff preset + modifiers custom
-    if (customPayload.player) {
-      opts.playerConfig = {
-        level: customPayload.player.level || 1,
-        stuff: customPayload.player.stuff || 'balanced',
-        customModifiers: customPayload.player.customModifiers || [],
-      };
-    }
-
-    // Affiche le bandeau
-    const banner = document.getElementById('custom-banner');
-    banner.style.display = 'flex';
-    const totalEnemies = customPayload.rooms.reduce((s,r) => s + r.enemies.length, 0);
-    const lvl = customPayload.player?.level || 1;
-    const stf = customPayload.player?.stuff || 'balanced';
-    document.getElementById('banner-info').textContent =
-      `${customPayload.rooms.length} salle(s) // ${totalEnemies} ennemis // Lvl ${lvl} (${stf})`;
-
-    console.log('[Custom Run]', customPayload);
+  } else {
+    // Pas de playtest, on prend la room tutorial (par défaut)
+    const tutorial = DATA.rooms.tutorial;
+    if(!tutorial) throw new Error('No tutorial room in DATA');
+    roomData = tutorial;
   }
 
-  // === Démarrage ===
-  import('./src/js/core/game.js').then(({ startGame }) => {
-    return startGame(opts);
-  }).catch(err => {
-    console.error('Erreur de démarrage :', err);
-    document.body.innerHTML = `<div style="padding:40px;color:#fff;font-family:'JetBrains Mono',monospace;">
-      <h2 style="color:#f44;">Erreur de chargement</h2>
-      <p>${err.message}</p>
-      <p style="color:#aaa;margin-top:20px;">Le jeu nécessite un serveur HTTP. Voir le README.md.</p>
-      <pre style="background:#222;padding:10px;margin-top:20px;color:#8af;">python3 -m http.server 8000</pre>
-      <p style="margin-top:20px;"><a href="index.html" style="color:#4fc3f7">↩ Retour au dashboard</a></p>
-    </div>`;
-  });
-</script>
+  // Si un builder map existe, il override les dimensions/walls de la room
+  if(builderMap){
+    state.gridWidth = builderMap.width;
+    state.gridHeight = builderMap.height;
+    state.walls = new Set();
+    // Les walls seront ajoutés dans genTileMap (pour les blocking tiles)
+    if(['cryo','inferno','toxic','crimson','voidnet'].includes(builderMap.biome)){
+      render.biomeId = builderMap.biome;
+    }
+  } else {
+    state.gridWidth = roomData.width;
+    state.gridHeight = roomData.height;
+    state.walls = new Set(roomData.walls || []);
+  }
 
+  // Crée le joueur
+  const startPos = roomData.playerStart || { x: 1, y: 2 };
+  state.player = createPlayer({ ...playerCfg, x: startPos.x, y: startPos.y });
+
+  // Crée les ennemis
+  state.enemies = (roomData.enemies || []).map((e, i) =>
+    createEnemy(`${e.type}_${i}`, e.type, e.x, e.y)
+  );
+  state.actors = [state.player, ...state.enemies];
+  computeInitiative();
+
+  // Init anims pour tous les actors
+  render.actorAnims.clear();
+  for(const a of state.actors){
+    render.actorAnims.set(a.id, {
+      ax: a.x, ay: a.y,
+      idle: Math.random() * Math.PI * 2,
+      target: null, moveT: 0, moveFrom: null,
+      path: null, pathStep: 0,
+    });
+  }
+
+  // Génère le tileGrid de rendu (ajoutera les walls du builder dans state.walls)
+  genTileMap(builderMap);
+
+  // Démarre le tour
+  startTurn(getCurrentActor());
+
+  log('▸ Combat started in ' + render.biomeId.toUpperCase(), '#aee6ff');
+  log(`▸ ${state.enemies.length} enemy(ies) detected`, '#aaa');
+  if(state.player.level && state.player.stuffPreset){
+    log(`▸ Lvl ${state.player.level} · Stuff "${state.player.stuffPreset}" · ${state.player.maxHp} HP`, '#888');
+  }
+
+  refreshSelection();
+  updateUI();
+}
+
+// ============================================================================
+// SELECTION HELPERS
+// ============================================================================
+// Quand le moteur sélectionne un skill (state.selectedSkill, state.targetingMode,
+// state.validTargets), on doit synchroniser nos sets de rendu.
+
+function refreshSelection(){
+  // valid targets : state.validTargets est déjà un Set "x,y"
+  render.validTargetsSet = state.validTargets || new Set();
+  // reachable map (pour afficher coût AP du path)
+  if(state.targetingMode === 'move' && state.player && !state.player.isDead){
+    render.reachableMap = getReachableCells(state.player, state.player.ap);
+  } else {
+    render.reachableMap = new Map();
+  }
+  render.selectedAction = state.selectedSkill;
+}
+
+// Wrappers : on appelle les fonctions du moteur puis on resync le rendu.
+
+function doSelectMove(){
+  selectMove();
+  refreshSelection();
+  showTargetingHint('MOVE');
+  updateActionButtons();
+}
+
+function doSelectSkill(skill){
+  selectSkill(skill);
+  refreshSelection();
+  showTargetingHint(skill.name);
+  updateActionButtons();
+}
+
+function doExecuteAction(gx, gy){
+  if(state.combatOver) return;
+  // L'action doit être valide pour cette tile
+  if(!state.validTargets.has(gridKey(gx, gy))) return;
+
+  const skBefore = state.selectedSkill;
+
+  // Animation de mouvement si applicable
+  if(skBefore?.id === 'move'){
+    const path = bfsPath(state.player, gx, gy);
+    if(path && path.length > 0){
+      const anim = render.actorAnims.get(state.player.id);
+      if(anim){
+        anim.path = path;
+        anim.pathStep = 0;
+        anim.moveFrom = { x: anim.ax, y: anim.ay };
+        anim.target = { x: path[0].x, y: path[0].y };
+        anim.moveT = 0;
+      }
+    }
+  }
+
+  executeAction(gx, gy);
+  refreshSelection();
+  hideTargetingHint();
+  updateUI();
+
+  // Si après l'action c'est encore au joueur (cas typique), on rafraîchit
+  // Si c'est l'ennemi, le moteur s'occupe d'appeler endTurn() via setTimeout
+}
+
+function doEndTurn(){
+  if(state.combatOver) return;
+  const cur = getCurrentActor();
+  if(cur?.isPlayer){
+    log('▸ End of turn', '#666');
+    endTurn();
+    refreshSelection();
+    updateUI();
+  }
+}
+
+// ============================================================================
+// PATH POUR ANIMATION (BFS 8-dir, identique au moteur)
+// ============================================================================
+function bfsPath(actor, tx, ty){
+  if(actor.x === tx && actor.y === ty) return [];
+  const startK = actor.x + ',' + actor.y;
+  const cameFrom = new Map();
+  const visited = new Set([startK]);
+  const queue = [{ x: actor.x, y: actor.y }];
+  while(queue.length){
+    const cur = queue.shift();
+    if(cur.x === tx && cur.y === ty){
+      const path = [];
+      let k = cur.x + ',' + cur.y;
+      while(k !== startK){
+        const [px, py] = k.split(',').map(Number);
+        path.push({ x: px, y: py });
+        k = cameFrom.get(k);
+      }
+      return path.reverse();
+    }
+    for(let dx = -1; dx <= 1; dx++){
+      for(let dy = -1; dy <= 1; dy++){
+        if(dx === 0 && dy === 0) continue;
+        const nx = cur.x + dx, ny = cur.y + dy;
+        const nk = nx + ',' + ny;
+        if(visited.has(nk)) continue;
+        if(nx < 0 || ny < 0 || nx >= state.gridWidth || ny >= state.gridHeight) continue;
+        if(gridIsWall(nx, ny)) continue;
+        const a = getActorAt(nx, ny);
+        if(a && a !== actor) continue;
+        visited.add(nk);
+        cameFrom.set(nk, cur.x + ',' + cur.y);
+        queue.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return null;
+}
+
+// ============================================================================
+// ANIMATION ACTORS
+// ============================================================================
+function updateActorAnims(){
+  for(const a of state.actors){
+    if(!a) continue;
+    const anim = render.actorAnims.get(a.id);
+    if(!anim) continue;
+    anim.idle += 0.06;
+
+    // Si la position logique a bougé sans qu'on ait une anim en cours, on snap
+    if(!anim.target && (a.x !== anim.ax || a.y !== anim.ay)){
+      // Animation simple vers la nouvelle position
+      anim.moveFrom = { x: anim.ax, y: anim.ay };
+      anim.target = { x: a.x, y: a.y };
+      anim.moveT = 0;
+    }
+
+    if(anim.target){
+      anim.moveT += 0.18;
+      if(anim.moveT >= 1){
+        anim.ax = anim.target.x;
+        anim.ay = anim.target.y;
+        // Path multi-step (pour le joueur en mouvement)
+        if(anim.path && anim.pathStep < anim.path.length - 1){
+          anim.pathStep++;
+          anim.moveFrom = { x: anim.ax, y: anim.ay };
+          anim.target = { x: anim.path[anim.pathStep].x, y: anim.path[anim.pathStep].y };
+          anim.moveT = 0;
+        } else {
+          anim.target = null;
+          anim.path = null;
+          anim.pathStep = 0;
+          anim.moveT = 0;
+          // Petit dust à l'arrivée
+          const sp = isoToScreen(anim.ax, anim.ay, getElev(anim.ax, anim.ay), viewport, view);
+          particles.emitDust(sp.x, sp.y + 4);
+        }
+      } else {
+        const t = anim.moveT;
+        const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+        anim.ax = anim.moveFrom.x + (anim.target.x - anim.moveFrom.x) * ease;
+        anim.ay = anim.moveFrom.y + (anim.target.y - anim.moveFrom.y) * ease;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// ACTORS POUR LE RENDU (combinent state + anim + visual config)
+// ============================================================================
+const ACTOR_VISUALS = {
+  player: {
+    archetype: 'hero',
+    bodyColor: '#3a4a5c', accentColor: '#4fc3f7', glowColor: '#aee6ff',
+    skinColor: '#f4d4a8', hairColor: '#2c3640', capeColor: '#1a2230',
+  },
+  enemy_default: {
+    archetype: 'hero',
+    bodyColor: '#4a2c30', accentColor: '#ff8080', glowColor: '#ffaaaa',
+    skinColor: '#d4a890', hairColor: '#1a0808', capeColor: '#2a0a0a',
+  },
+  enemy_caster: {
+    archetype: 'hero',
+    bodyColor: '#5e2c70', accentColor: '#e040fb', glowColor: '#ce93d8',
+    skinColor: '#c0a4d0', hairColor: '#3a1c4c', capeColor: '#2a0a35',
+  },
+  enemy_brute: {
+    archetype: 'hero',
+    bodyColor: '#8b1f15', accentColor: '#ffb74d', glowColor: '#ff8a4d',
+    skinColor: '#a06850', hairColor: '#1a0a08', capeColor: '#3a0a05',
+  },
+};
+
+function getRenderActors(){
+  const out = [];
+  for(const a of state.actors){
+    if(!a || a.isDead) continue;
+    const anim = render.actorAnims.get(a.id) || { ax: a.x, ay: a.y, idle: 0, target: null };
+    let visual = ACTOR_VISUALS.enemy_default;
+    if(a.isPlayer) visual = ACTOR_VISUALS.player;
+    else if(a.ai === 'caster') visual = ACTOR_VISUALS.enemy_caster;
+    else if(a.ai === 'aggressive' && a.hp >= 25) visual = ACTOR_VISUALS.enemy_brute;
+    out.push({
+      ...visual,
+      isPlayer: a.isPlayer,
+      isDead: false,
+      gx: a.x, gy: a.y,
+      ax: anim.ax, ay: anim.ay,
+      idle: anim.idle,
+      target: anim.target,
+      hp: a.hp, maxHp: a.maxHp,
+      armor: a.armor || 0,
+      dodge: a.dodgeChance || 0,
+      fireRes: a.fireResist || 0,
+      name: (a.name || '?').toUpperCase(),
+      tier: a.isPlayer ? '' : ((a.ai || '').toUpperCase()),
+      // intent désactivé (decision: just HP+name pour ennemis)
+      intent: null,
+    });
+  }
+  return out;
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+function getElev(gx, gy){
+  const t = render.tileGrid[gridKey(gx, gy)];
+  return t ? t.microElev : 0;
+}
+
+function getValidityAt(gx, gy){
+  const k = gridKey(gx, gy);
+  if(!state.validTargets || !state.validTargets.has(k)) return null;
+  if(state.targetingMode === 'move') return 'valid';
+  const sk = state.selectedSkill;
+  if(sk?.type === 'spell') return 'spell';
+  if(sk?.type === 'attack') return 'attack';
+  return null;
+}
+
+// ============================================================================
+// INPUT (souris + touch via iso-input.js)
+// ============================================================================
+const reticleEl = document.getElementById('touch-reticle');
+const confirmPopupEl = document.getElementById('confirm-popup');
+const cpLabelEl = document.getElementById('cp-action-label');
+
+const inputHandler = createIsoInput({
+  canvas,
+  viewportRef: viewport,
+  viewRef: view,
+  gridSizeRef: { get gridW(){ return state.gridWidth; }, get gridH(){ return state.gridHeight; } },
+  getElev,
+  getValidity: getValidityAt,
+  hasActiveAction: () => !!state.selectedSkill && !state.combatOver,
+  onHover: (tile) => {
+    render.hover = tile;
+    updateAoePreview();
+  },
+  onSelect: (tile) => {
+    if(state.combatOver) return;
+    if(!state.selectedSkill) return;
+    doExecuteAction(tile.gx, tile.gy);
+  },
+  onCancel: () => {
+    if(state.selectedSkill){
+      state.selectedSkill = null;
+      state.targetingMode = null;
+      state.validTargets = new Set();
+      state.aoePreview = new Set();
+      refreshSelection();
+      hideTargetingHint();
+      updateActionButtons();
+    } else {
+      closeAllPanels();
+    }
+  },
+  onZoomChange: updateZoomDisplay,
+  reticleEl,
+  confirmPopupEl,
+  cpLabelEl,
+  cpGoBtn: document.getElementById('cp-go-btn'),
+  cpCancelBtn: document.getElementById('cp-cancel-btn'),
+  getActionLabel: (tile) => {
+    const sk = state.selectedSkill;
+    if(sk?.id === 'move') return `▸ MOVE → (${tile.gx},${tile.gy})`;
+    if(sk?.type === 'attack'){
+      const t = state.enemies.find(e => !e.isDead && e.x === tile.gx && e.y === tile.gy);
+      return `▸ ${sk.name.toUpperCase()} → ${(t?.name || '').toUpperCase()}`;
+    }
+    if(sk?.type === 'spell') return `▸ ${sk.name.toUpperCase()} @ (${tile.gx},${tile.gy})`;
+    return `▸ ${sk?.name?.toUpperCase() || 'ACTION'}`;
+  },
+  getActionColor: () => {
+    const sk = state.selectedSkill;
+    if(sk?.id === 'move') return '#69f0ae';
+    if(sk?.type === 'attack') return '#ff8a80';
+    if(sk?.type === 'spell') return '#ce93d8';
+    return '#aee6ff';
+  },
+});
+
+function updateAoePreview(){
+  const sk = state.selectedSkill;
+  render.aoePreviewSet = new Set();
+  if(!sk?.aoe || !render.hover) return;
+  const cells = getCellsInAOE(render.hover.gx, render.hover.gy, sk.aoe);
+  for(const c of cells) render.aoePreviewSet.add(gridKey(c.x, c.y));
+}
+
+// Keyboard pan WASD
+const keys = {};
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = true;
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = false;
+});
+
+// ============================================================================
+// UI : ACTION BAR
+// ============================================================================
+function rebuildActionBar(){
+  const bar = document.getElementById('action-bar');
+  bar.innerHTML = '';
+
+  const isPlayerTurn = getCurrentActor()?.isPlayer && !state.combatOver;
+
+  // Bouton MOVE (toujours premier)
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'action-btn move';
+  moveBtn.dataset.actionId = 'move';
+  moveBtn.innerHTML = `
+    <div class="ab-icon">🏃</div>
+    <div class="ab-name">MOVE</div>
+    <div class="ab-cost">1 AP / case</div>
+    <div class="ab-info-btn" data-info="move">ⓘ</div>
+  `;
+  if(!isPlayerTurn || state.player.ap < 1) moveBtn.classList.add('disabled');
+  if(state.selectedSkill?.id === 'move') moveBtn.classList.add('selected');
+  moveBtn.addEventListener('click', e => {
+    if(e.target.classList.contains('ab-info-btn')){ e.stopPropagation(); showActionInfo('move'); return; }
+    if(moveBtn.classList.contains('disabled')) return;
+    if(state.selectedSkill?.id === 'move'){
+      // Toggle off
+      state.selectedSkill = null;
+      state.targetingMode = null;
+      state.validTargets = new Set();
+      refreshSelection();
+      hideTargetingHint();
+      updateActionButtons();
+      return;
+    }
+    doSelectMove();
+    closeAllPanels();
+    hideActionInfo();
+  });
+  bar.appendChild(moveBtn);
+
+  // Boutons skills (depuis getPlayerSkills())
+  if(state.player && !state.player.isDead){
+    const skills = getPlayerSkills();
+    for(const sk of skills){
+      const btn = document.createElement('button');
+      const cssClass = sk.type === 'spell' ? 'spell' : 'attack';
+      btn.className = 'action-btn ' + cssClass;
+      btn.dataset.actionId = sk.id;
+      const cd = state.player.cooldowns[sk.id] || 0;
+      const cdStr = sk.cooldown ? (cd > 0 ? ` · CD${cd}` : ` · CD${sk.cooldown}`) : '';
+      const icon = sk.type === 'spell' ? (sk.damageType === 'fire' ? '🔥' : sk.damageType === 'ice' ? '❄️' : sk.damageType === 'shock' ? '⚡' : sk.damageType === 'poison' ? '☣️' : '✨') : '⚔';
+      const nameShort = sk.name.length > 10 ? sk.name.toUpperCase().slice(0, 9) + '…' : sk.name.toUpperCase();
+      btn.innerHTML = `
+        <div class="ab-icon">${icon}</div>
+        <div class="ab-name" title="${sk.name}">${nameShort}</div>
+        <div class="ab-cost">${sk.cost} AP${cdStr}</div>
+        <div class="ab-info-btn" data-info="${sk.id}">ⓘ</div>
+      `;
+      const isDisabled = !isPlayerTurn || state.player.ap < sk.cost || cd > 0;
+      if(isDisabled) btn.classList.add('disabled');
+      if(state.selectedSkill?.id === sk.id) btn.classList.add('selected');
+      btn.addEventListener('click', e => {
+        if(e.target.classList.contains('ab-info-btn')){
+          e.stopPropagation();
+          showActionInfoFromSkill(sk);
+          return;
+        }
+        if(btn.classList.contains('disabled')) return;
+        if(state.selectedSkill?.id === sk.id){
+          state.selectedSkill = null;
+          state.targetingMode = null;
+          state.validTargets = new Set();
+          refreshSelection();
+          hideTargetingHint();
+          updateActionButtons();
+          return;
+        }
+        doSelectSkill(sk);
+        closeAllPanels();
+        hideActionInfo();
+      });
+      bar.appendChild(btn);
+    }
+  }
+
+  // Bouton END TURN
+  const endBtn = document.createElement('button');
+  endBtn.className = 'action-btn pass';
+  endBtn.innerHTML = `
+    <div class="ab-icon">▶</div>
+    <div class="ab-name">END</div>
+    <div class="ab-cost">turn</div>
+  `;
+  if(!isPlayerTurn) endBtn.classList.add('disabled');
+  endBtn.addEventListener('click', () => {
+    if(endBtn.classList.contains('disabled')) return;
+    doEndTurn();
+  });
+  bar.appendChild(endBtn);
+}
+
+function updateActionButtons(){
+  // Refresh complète (rapide). Plus simple que update sélectif.
+  rebuildActionBar();
+}
+
+// ============================================================================
+// ACTION INFO POPUP
+// ============================================================================
+const aipEl = document.getElementById('action-info-popup');
+const aipContent = document.getElementById('aip-content');
+
+function showActionInfo(actId){
+  if(actId === 'move'){
+    aipContent.innerHTML = `
+      <div class="aip-title">
+        <span style="color:#69f0ae;">▸ MOVE</span>
+        <button class="aip-close" id="aip-close-btn">×</button>
+      </div>
+      <div class="aip-row"><span class="lbl">▸ Cost</span><span class="val">1 AP / tile</span></div>
+      <div class="aip-row"><span class="lbl">▸ Direction</span><span class="val">8 (incl. diag)</span></div>
+      <div class="aip-desc">Move along a path. 1 AP per tile. Walls and enemies block the path.</div>
+    `;
+    aipEl.style.display = 'block';
+    document.getElementById('aip-close-btn').addEventListener('click', e => { e.stopPropagation(); hideActionInfo(); });
+  }
+}
+
+function showActionInfoFromSkill(sk){
+  const dmgStr = sk.damage ? `${sk.damage[0]}-${sk.damage[1]}` : '—';
+  const typeStr = sk.damageType ? sk.damageType.toUpperCase() : '—';
+  const rangeStr = sk.range ? sk.range : '—';
+  const aoeStr = sk.aoe ? `${sk.aoe*2+1}×${sk.aoe*2+1}` : 'Single';
+  const cdStr = sk.cooldown ? `${sk.cooldown} turn(s)` : 'None';
+  let typeColor = '#aee6ff';
+  if(sk.type === 'attack') typeColor = '#ff8a4d';
+  if(sk.type === 'spell') typeColor = '#ce93d8';
+
+  let html = `
+    <div class="aip-title">
+      <span style="color:${typeColor};">▸ ${sk.name.toUpperCase()}</span>
+      <button class="aip-close" id="aip-close-btn">×</button>
+    </div>
+    <div class="aip-row"><span class="lbl">▸ AP Cost</span><span class="val">${sk.cost} AP</span></div>
+    <div class="aip-row"><span class="lbl">▸ Cooldown</span><span class="val">${cdStr}</span></div>
+    <div class="aip-row"><span class="lbl">▸ Range</span><span class="val">${rangeStr}</span></div>
+    <div class="aip-row"><span class="lbl">▸ AOE</span><span class="val">${aoeStr}</span></div>
+    <div class="aip-section">
+      <div class="aip-row"><span class="lbl">▸ Damage</span><span class="val" style="color:${typeColor};">${dmgStr}</span></div>
+      <div class="aip-row"><span class="lbl">▸ Type</span><span class="val" style="color:${typeColor};">${typeStr}</span></div>
+      ${sk.damageMult && sk.damageMult !== 1 ? `<div class="aip-row"><span class="lbl">▸ Multiplier</span><span class="val">×${sk.damageMult}</span></div>` : ''}
+    </div>
+    ${sk.applyStatus ? `
+      <div class="aip-section">
+        <div class="aip-row"><span class="lbl">▸ Status</span><span class="val" style="color:#ffb74d;">${sk.applyStatus.id}</span></div>
+        <div class="aip-row"><span class="lbl">▸ Chance</span><span class="val">${sk.applyStatus.chance ?? 100}%</span></div>
+        <div class="aip-row"><span class="lbl">▸ Duration</span><span class="val">${sk.applyStatus.duration} turn(s)</span></div>
+      </div>
+    ` : ''}
+    ${sk.source ? `
+      <div class="aip-section">
+        <div class="aip-row"><span class="lbl">▸ Source</span><span class="val" style="color:#aee6ff; font-size:9px;">${sk.source.name || ''}</span></div>
+      </div>
+    ` : ''}
+    ${sk.description ? `<div class="aip-desc">${sk.description}</div>` : ''}
+  `;
+  aipContent.innerHTML = html;
+  aipEl.style.display = 'block';
+  document.getElementById('aip-close-btn').addEventListener('click', e => { e.stopPropagation(); hideActionInfo(); });
+}
+
+function hideActionInfo(){
+  aipEl.style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if(aipEl.style.display !== 'block') return;
+  if(e.target.closest('#action-info-popup')) return;
+  if(e.target.classList.contains('ab-info-btn')) return;
+  hideActionInfo();
+});
+
+// ============================================================================
+// UI : top bar, panels, etc.
+// ============================================================================
+// updateLightUI : rafraîchit HP/AP/turn (appelé à chaque tick = 60fps)
+// updateUI : rebuild complet (action bar, panels) — appelé sur events
+function updateLightUI(){
+  if(!state.player) return;
+  // HP
+  const hpFill = document.getElementById('hp-bar-mini-fill');
+  const ratio = Math.max(0, state.player.hp) / state.player.maxHp;
+  hpFill.style.width = `${ratio * 100}%`;
+  hpFill.style.background = ratio > 0.5 ? 'linear-gradient(90deg,#4caf50,#8bc34a)' : ratio > 0.25 ? '#ffb300' : '#f44336';
+  document.getElementById('hp-text').textContent = `${Math.max(0, state.player.hp)}/${state.player.maxHp}`;
+  // AP
+  const apMini = document.getElementById('ap-mini');
+  const maxAp = state.player.maxAp + (state.player.bonusAp || 0);
+  // Rebuild seulement si nb d'AP a changé (perf)
+  const expectedDots = maxAp;
+  if(apMini.children.length !== expectedDots){
+    apMini.innerHTML = '';
+    for(let i = 0; i < maxAp; i++){
+      const d = document.createElement('div');
+      d.className = 'ap-mini-dot';
+      apMini.appendChild(d);
+    }
+  }
+  for(let i = 0; i < maxAp; i++){
+    const d = apMini.children[i];
+    if(!d) continue;
+    d.classList.toggle('full', i < state.player.ap);
+  }
+  document.getElementById('ap-text').textContent = `${state.player.ap}/${maxAp}`;
+  // Turn
+  document.getElementById('turn-text').textContent = `TURN ${state.turn + 1}`;
+}
+
+function updateUI(){
+  if(!state.player) return;
+  updateLightUI();
+  rebuildActionBar();
+  if(render.openPanel === 'enemies') renderEnemiesPanel();
+  if(render.openPanel === 'stuff') renderStuffPanel();
+  if(render.openPanel === 'map'){ drawMinimap(); renderEnemyListMini(); renderPlayerStatusList(); }
+}
+
+// Détection d'un changement d'actor courant pour rebuild la action bar
+let _lastTurnIdx = -1;
+let _lastApValue = -1;
+function detectTurnChange(){
+  if(!state.player) return;
+  const idx = state.currentActorIdx;
+  const ap = state.player.ap;
+  if(idx !== _lastTurnIdx || ap !== _lastApValue){
+    _lastTurnIdx = idx;
+    _lastApValue = ap;
+    rebuildActionBar();
+    // Si le panel map est ouvert, le mettre à jour aussi (HP ennemis bouge)
+    if(render.openPanel === 'map'){ drawMinimap(); renderEnemyListMini(); }
+    if(render.openPanel === 'enemies') renderEnemiesPanel();
+  }
+}
+
+// ============================================================================
+// PANELS
+// ============================================================================
+function openPanel(id){
+  closeAllPanels();
+  const p = document.getElementById('panel-' + id);
+  if(p){
+    p.classList.add('open');
+    render.openPanel = id;
+    document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('btn-' + id);
+    if(btn) btn.classList.add('active');
+    if(id === 'map'){ drawMinimap(); renderEnemyListMini(); renderPlayerStatusList(); }
+    if(id === 'stuff') renderStuffPanel();
+    if(id === 'enemies') renderEnemiesPanel();
+  }
+}
+function closeAllPanels(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+  render.openPanel = null;
+}
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAllPanels));
+document.getElementById('btn-map').addEventListener('click', () => render.openPanel === 'map' ? closeAllPanels() : openPanel('map'));
+document.getElementById('btn-stuff').addEventListener('click', () => render.openPanel === 'stuff' ? closeAllPanels() : openPanel('stuff'));
+document.getElementById('btn-enemies').addEventListener('click', () => render.openPanel === 'enemies' ? closeAllPanels() : openPanel('enemies'));
+document.getElementById('btn-log').addEventListener('click', () => render.openPanel === 'log' ? closeAllPanels() : openPanel('log'));
+document.getElementById('btn-options').addEventListener('click', () => render.openPanel === 'options' ? closeAllPanels() : openPanel('options'));
+
+// ----- ENEMY LIST MINI (panel map) -----
+function renderEnemyListMini(){
+  const list = document.getElementById('enemy-list-mini');
+  if(!list) return;
+  list.innerHTML = '';
+  for(const e of state.enemies){
+    if(e.isDead){
+      const div = document.createElement('div');
+      div.className = 'enemy-card';
+      div.style.opacity = '0.3';
+      div.style.borderLeftColor = '#666';
+      div.innerHTML = `<div class="enemy-card-name"><span style="color:#666">${e.name}</span><span style="color:#666">DEAD</span></div>`;
+      list.appendChild(div);
+      continue;
+    }
+    const card = document.createElement('div');
+    card.className = 'enemy-card';
+    const r = e.hp / e.maxHp;
+    const col = r > 0.5 ? '#4caf50' : r > 0.25 ? '#ffb300' : '#f44336';
+    card.innerHTML = `
+      <div class="enemy-card-name"><span>${e.name}</span><span style="font-size:8px;color:#888;letter-spacing:1px;">${(e.ai||'').toUpperCase()}</span></div>
+      <div class="enemy-card-bar"><div class="enemy-card-bar-fill" style="width:${r*100}%; background:${col};"></div></div>
+      <div class="enemy-card-info">HP <span style="color:#fff;">${e.hp}/${e.maxHp}</span></div>
+    `;
+    card.addEventListener('click', () => {
+      const sp = isoToScreen(e.x, e.y, 0, viewport, { camX: 0, camY: 0, zoom: view.zoom });
+      view.camX = viewport.width/2 - sp.x;
+      view.camY = viewport.height/2 - sp.y;
+      closeAllPanels();
+    });
+    list.appendChild(card);
+  }
+}
+
+function renderPlayerStatusList(){
+  const list = document.getElementById('player-status-list');
+  if(!list) return;
+  if(!state.player.statuses?.length){
+    list.innerHTML = `<span style="color:#666; font-size:10px;">No active statuses</span>`;
+    return;
+  }
+  list.innerHTML = '';
+  for(const s of state.player.statuses){
+    const def = DATA.statuses?.[s.id];
+    const span = document.createElement('span');
+    span.className = 'status-pill';
+    span.textContent = `${def?.icon || '•'} ${def?.name || s.id} ${s.duration}t`;
+    list.appendChild(span);
+  }
+}
+
+// ----- ENEMIES PANEL (détaillé) -----
+function renderEnemiesPanel(){
+  const list = document.getElementById('enemies-detail-list');
+  if(!list) return;
+  list.innerHTML = '';
+  const alive = state.enemies.filter(e => !e.isDead);
+  const dead = state.enemies.filter(e => e.isDead);
+
+  if(alive.length === 0){
+    list.innerHTML = `<div style="padding:24px; text-align:center; color:#4caf50; font-size:11px; letter-spacing:1.5px;">▸ ALL ENEMIES DEFEATED</div>`;
+    return;
+  }
+  for(const e of alive){
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: rgba(20,8,8,0.6);
+      border: 1px solid #2a0808;
+      border-left: 3px solid #ff5252;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 10px; line-height: 1.5;
+      cursor: pointer;
+      transition: background 0.15s;
+    `;
+    const ratio = e.hp / e.maxHp;
+    const hpColor = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#f44336';
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="color:#ff5252; font-weight:700; letter-spacing:1.5px; font-size:12px;">${e.name}</span>
+        <span style="color:#666; font-size:8px; letter-spacing:1px;">${(e.ai||'').toUpperCase()}</span>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-bottom:2px;">
+          <span>HP</span><span style="color:#fff;">${e.hp}/${e.maxHp}</span>
+        </div>
+        <div style="height:6px; background:#1a0808; border:1px solid #3a1414;">
+          <div style="height:100%; width:${ratio*100}%; background:${hpColor}; transition:width 0.3s;"></div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed #2a1010;">
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">ARMOR</div>
+          <div style="color:#fff; font-weight:700; font-size:13px;">${e.armor || 0}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">DMG</div>
+          <div style="color:#fff; font-weight:700; font-size:11px;">${e.attackPower ? e.attackPower[0] + '-' + e.attackPower[1] : '?'}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">RANGE</div>
+          <div style="color:#fff; font-weight:700; font-size:13px;">${e.range || 1}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px; padding-top:6px; border-top:1px dashed #2a1010; font-size:9px; color:#888;">
+        ▸ Pos : <span style="color:#fff;">(${e.x}, ${e.y})</span>
+        · Dist : <span style="color:#fff;">${Math.max(Math.abs(e.x-state.player.x), Math.abs(e.y-state.player.y))}</span>
+      </div>
+      <div style="margin-top:8px; font-size:9px; color:#666; letter-spacing:1px; text-align:right;">▸ TAP TO CENTER</div>
+    `;
+    card.addEventListener('click', () => {
+      const sp = isoToScreen(e.x, e.y, 0, viewport, { camX: 0, camY: 0, zoom: view.zoom });
+      view.camX = viewport.width/2 - sp.x;
+      view.camY = viewport.height/2 - sp.y;
+      closeAllPanels();
+    });
+    list.appendChild(card);
+  }
+  if(dead.length){
+    const sep = document.createElement('div');
+    sep.style.cssText = 'margin-top:14px; padding-top:10px; border-top:1px solid #2a2a30; font-size:9px; letter-spacing:1.5px; color:#666;';
+    sep.textContent = `▸ DEFEATED (${dead.length})`;
+    list.appendChild(sep);
+    for(const e of dead){
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:6px 8px; background:rgba(0,0,0,0.4); margin-top:4px; opacity:0.5; font-size:10px; color:#666; border-left:2px solid #444;';
+      div.innerHTML = `<span style="color:#888;">${e.name}</span> <span style="float:right; color:#666; font-size:9px; letter-spacing:1px;">DEAD</span>`;
+      list.appendChild(div);
+    }
+  }
+}
+
+// ----- STUFF PANEL -----
+function renderStuffPanel(){
+  const eq = state.player.equipment || {};
+  const list = document.getElementById('equipment-list');
+  list.innerHTML = '';
+
+  for(const [slotKey, item] of Object.entries(eq)){
+    if(!item) continue;
+    const card = document.createElement('div');
+    const tierColor = item.tierColor || '#4fc3f7';
+    card.style.cssText = `
+      background: rgba(20,20,28,0.6);
+      border: 1px solid #2a2a30;
+      border-left: 3px solid ${tierColor};
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 10px;
+      line-height: 1.5;
+    `;
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span style="font-weight:700; color:#fff; letter-spacing:1px;">${item.icon || ''} ${item.name}</span>
+      </div>
+      <div style="font-size:8px; letter-spacing:1px; color:#666; text-transform:uppercase; margin-bottom:6px;">
+        ${slotKey}
+      </div>
+    `;
+    if(item.damage){
+      html += `<div style="color:#ff8a4d;">▸ Damage <span style="color:#fff; float:right;">${item.damage[0]}-${item.damage[1]} ${item.damageType || ''}</span></div>`;
+    }
+    if(item.range){
+      html += `<div style="color:#888;">▸ Range <span style="color:#fff; float:right;">${item.range}</span></div>`;
+    }
+    if(item.spell){
+      const sp = DATA.spells?.[item.spell];
+      if(sp){
+        html += `<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #2a2a30;">`;
+        html += `<div><span style="color:#ce93d8;">✦ ${sp.name}</span> <span style="color:#888; float:right; font-size:9px;">${sp.cost} AP${sp.cooldown ? ' · CD' + sp.cooldown : ''}</span></div>`;
+        html += `<div style="font-size:9px; color:#666;">${sp.damage ? sp.damage[0] + '-' + sp.damage[1] : '?'} ${sp.damageType || ''} · Range ${sp.range}${sp.aoe ? ' · AOE' : ''}</div>`;
+        html += `</div>`;
+      }
+    }
+    if(item.passive){
+      html += `<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #2a2a30;">`;
+      for(const [k, v] of Object.entries(item.passive)){
+        const isPct = ['lifesteal','critChance','dodgeChance','fireResist','iceResist','shockResist','poisonResist','magicResist','blockChance','ccReduction'].includes(k);
+        html += `<div style="color:#8bc34a;">+ ${v}${isPct ? '%' : ''} <span style="color:#aaa;">${k}</span></div>`;
+      }
+      html += `</div>`;
+    }
+    card.innerHTML = html;
+    list.appendChild(card);
+  }
+
+  // Final stats
+  const fs = state.player.finalStats || {};
+  const stats = document.getElementById('final-stats');
+  stats.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:6px;';
+  const rows = [
+    ['HP', state.player.maxHp, ''],
+    ['Damage', state.player.damage ? `${state.player.damage[0]}-${state.player.damage[1]}` : '-', ''],
+    ['Armor', state.player.armor, ''],
+    ['Crit', state.player.critChance, '%'],
+    ['Crit Mult', state.player.critMultiplier, '%'],
+    ['Dodge', state.player.dodgeChance, '%'],
+    ['Lifesteal', state.player.lifesteal, '%'],
+    ['HP Regen', state.player.hpRegen, '/turn'],
+    ['Bonus Fire', state.player.bonusFire, ''],
+    ['Fire Res', state.player.fireResist, '%'],
+    ['Ice Res', state.player.iceResist, '%'],
+  ];
+  for(const [label, val, suffix] of rows){
+    if(val === undefined || val === null) continue;
+    const cell = document.createElement('div');
+    cell.style.cssText = 'background: rgba(20,20,28,0.6); border: 1px solid #2a2a30; border-left: 2px solid #4fc3f7; padding: 6px 9px; font-size: 10px;';
+    cell.innerHTML = `
+      <div style="font-size:8px; letter-spacing:1px; color:#666; text-transform:uppercase;">${label}</div>
+      <div style="color:#fff; font-weight:700; font-size:12px; margin-top:2px;">${val}${suffix}</div>
+    `;
+    grid.appendChild(cell);
+  }
+  stats.appendChild(grid);
+}
+
+// ----- MINIMAP -----
+function drawMinimap(){
+  const w = minimap.width, h = minimap.height;
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0, 0, w, h);
+  const sx = w / state.gridWidth, sy = h / state.gridHeight;
+  const biome = getBiome(render.biomeId);
+  for(let x = 0; x < state.gridWidth; x++){
+    for(let y = 0; y < state.gridHeight; y++){
+      const t = render.tileGrid[gridKey(x, y)];
+      if(!t) continue;
+      mctx.fillStyle = t.isWall ? '#222' : (biome.config.base || '#1a1a24');
+      mctx.fillRect(x * sx, y * sy, sx - 0.3, sy - 0.3);
+    }
+  }
+  if(state.player){
+    mctx.fillStyle = '#4fc3f7';
+    mctx.fillRect(state.player.x * sx - 1, state.player.y * sy - 1, sx + 2, sy + 2);
+  }
+  for(const e of state.enemies){
+    if(e.isDead) continue;
+    mctx.fillStyle = '#ff5252';
+    mctx.fillRect(e.x * sx - 1, e.y * sy - 1, sx + 2, sy + 2);
+  }
+}
+
+minimap.addEventListener('click', e => {
+  const r = minimap.getBoundingClientRect();
+  const mx = (e.clientX - r.left) / r.width;
+  const my = (e.clientY - r.top) / r.height;
+  const gx = mx * state.gridWidth;
+  const gy = my * state.gridHeight;
+  const sp = isoToScreen(gx, gy, 0, viewport, { camX: 0, camY: 0, zoom: view.zoom });
+  view.camX = viewport.width/2 - sp.x;
+  view.camY = viewport.height/2 - sp.y;
+  closeAllPanels();
+});
+
+// ----- TARGETING HINT -----
+function showTargetingHint(name){
+  const t = document.getElementById('targeting-hint');
+  t.style.display = 'block';
+  document.getElementById('targeting-text').textContent = `▸ TARGET FOR ${name.toUpperCase()} · ESC TO CANCEL`;
+}
+function hideTargetingHint(){
+  document.getElementById('targeting-hint').style.display = 'none';
+  inputHandler.hideReticle();
+  inputHandler.hideConfirmPopup();
+}
+
+// ----- LOG -----
+// Wrapper autour du log() du moteur. On push dans state.log via le moteur,
+// et c'est syncLogPanel() qui s'occupe d'ajouter au DOM (single source of truth).
+function log(msg, type = 'info'){
+  state.log.push({ msg, type });
+}
+
+// syncLogPanel : observe la croissance de state.log et ajoute les nouveaux
+// messages au DOM. Appelé dans la boucle tick() (16ms).
+let _lastLogLen = 0;
+function syncLogPanel(){
+  if(!state.log) return;
+  if(state.log.length === _lastLogLen) return;
+  const entries = document.getElementById('log-entries');
+  if(!entries){ _lastLogLen = state.log.length; return; }
+  for(let i = _lastLogLen; i < state.log.length; i++){
+    const entry = state.log[i];
+    const div = document.createElement('div');
+    div.className = 'log-' + (entry.type || 'info');
+    div.innerHTML = entry.msg;
+    entries.appendChild(div);
+  }
+  while(entries.children.length > 50) entries.removeChild(entries.firstChild);
+  entries.scrollTop = entries.scrollHeight;
+  _lastLogLen = state.log.length;
+}
+
+// ----- COMBAT END HOOK -----
+// Le moteur appelle showCombatEnd via ui/combat-end.js. On override le DOM
+// pour utiliser notre modal custom.
+const combatEndModal = document.getElementById('combat-end');
+const endTitle = document.getElementById('end-title');
+const endContent = document.getElementById('end-content');
+
+function syncCombatEnd(){
+  // Vérifie si state.combatOver et show notre modal
+  if(state.combatOver && !state._endShown){
+    state._endShown = true;
+    const victory = state.player && !state.player.isDead;
+    if(victory){
+      combatEndModal.style.borderColor = '#4caf50';
+      endTitle.textContent = '✓ VICTORY';
+      endTitle.style.color = '#4caf50';
+      endContent.innerHTML = '<p style="color:#aaa; font-size:11px; letter-spacing:1px;">All enemies defeated.</p>';
+    } else {
+      combatEndModal.style.borderColor = '#f44336';
+      endTitle.textContent = '✗ DEFEAT';
+      endTitle.style.color = '#f44336';
+      endContent.innerHTML = '<p style="color:#aaa; font-size:11px; letter-spacing:1px;">You have fallen.</p>';
+    }
+    combatEndModal.style.display = 'block';
+  } else if(!state.combatOver && state._endShown){
+    state._endShown = false;
+    combatEndModal.style.display = 'none';
+  }
+}
+
+window.restartCombat = async function(){
+  combatEndModal.style.display = 'none';
+  state._endShown = false;
+  await initCombat();
+};
+
+// ============================================================================
+// ZOOM CONTROLS
+// ============================================================================
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+  view.zoom = Math.min(2.5, view.zoom * 1.15);
+  updateZoomDisplay();
+});
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+  view.zoom = Math.max(0.4, view.zoom / 1.15);
+  updateZoomDisplay();
+});
+document.getElementById('btn-center').addEventListener('click', () => {
+  view.camX = 0; view.camY = 0;
+});
+function updateZoomDisplay(){
+  document.getElementById('zoom-display').textContent = `${Math.round(view.zoom * 100)}%`;
+}
+
+// ============================================================================
+// OPTIONS
+// ============================================================================
+document.getElementById('opt-grid').addEventListener('click', e => {
+  visualOptions.showGrid = !visualOptions.showGrid;
+  e.target.classList.toggle('active', visualOptions.showGrid);
+});
+document.getElementById('opt-night').addEventListener('click', e => {
+  visualOptions.night = !visualOptions.night;
+  e.target.classList.toggle('active', visualOptions.night);
+});
+document.getElementById('opt-bevel').addEventListener('click', e => {
+  visualOptions.bevel = !visualOptions.bevel;
+  e.target.classList.toggle('active', !visualOptions.bevel);
+});
+document.getElementById('opt-restart').addEventListener('click', async () => {
+  closeAllPanels();
+  await window.restartCombat();
+});
+
+// ============================================================================
+// LOOP
+// ============================================================================
+function tick(){
+  updateActorAnims();
+  particles.update();
+  if(keys.w) view.camY += 5;
+  if(keys.s) view.camY -= 5;
+  if(keys.a) view.camX += 5;
+  if(keys.d) view.camX -= 5;
+  syncLogPanel();
+  syncCombatEnd();
+  updateLightUI();      // HP/AP/turn (cheap)
+  detectTurnChange();   // rebuild action bar quand l'actor change
+}
+setInterval(tick, 16);
+
+function renderLoop(){
+  let targetColor = '#f44336';
+  let targetStroke = '#ff8a80';
+  const sk = state.selectedSkill;
+  if(sk){
+    if(sk.type === 'spell'){ targetColor = '#9c27b0'; targetStroke = '#ce93d8'; }
+    else if(sk.id === 'move'){ targetColor = '#4caf50'; targetStroke = '#69f0ae'; }
+  }
+
+  // reachableSet pour overlay (mode move uniquement)
+  const reachableSet = (sk?.id === 'move')
+    ? new Set([...render.reachableMap.keys()])
+    : new Set();
+
+  // validTargets pour overlay (modes attack/spell uniquement)
+  const validTargetsForRender = (sk && sk.id !== 'move')
+    ? state.validTargets
+    : new Set();
+
+  renderFrame(ctx, {
+    viewport,
+    tileGrid: render.tileGrid,
+    gridW: state.gridWidth,
+    gridH: state.gridHeight,
+    actors: getRenderActors(),
+    hover: render.hover,
+    reachableSet,
+    validTargets: validTargetsForRender,
+    aoePreview: render.aoePreviewSet,
+    biome: getBiome(render.biomeId),
+    particles,
+    time: render.time++,
+    view,
+    options: { ...visualOptions, targetColor, targetStroke },
+  });
+
+  // Path overlay (trait blanc + coût AP)
+  drawPathOverlay();
+
+  if(render.openPanel === 'map') drawMinimap();
+
+  requestAnimationFrame(renderLoop);
+}
+
+function drawPathOverlay(){
+  const sk = state.selectedSkill;
+  if(!sk || sk.id !== 'move') return;
+  if(!render.hover) return;
+  if(!state.player || state.player.isDead) return;
+  const k = gridKey(render.hover.gx, render.hover.gy);
+  if(!state.validTargets.has(k)) return;
+
+  const path = bfsPath(state.player, render.hover.gx, render.hover.gy);
+  if(!path || path.length === 0) return;
+
+  ctx.save();
+  // Trait pointillé sombre
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  const anim = render.actorAnims.get(state.player.id) || { ax: state.player.x, ay: state.player.y };
+  const sStart = isoToScreen(anim.ax, anim.ay, getElev(state.player.x, state.player.y), viewport, view);
+  ctx.moveTo(sStart.x, sStart.y);
+  for(const p of path){
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, view);
+    ctx.lineTo(sp.x, sp.y);
+  }
+  ctx.stroke();
+  // Trait blanc principal
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(sStart.x, sStart.y);
+  for(const p of path){
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, view);
+    ctx.lineTo(sp.x, sp.y);
+  }
+  ctx.stroke();
+  // Pastilles aux points de passage
+  for(let i = 0; i < path.length - 1; i++){
+    const p = path[i];
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, view);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // Destination + label
+  const last = path[path.length - 1];
+  const sLast = isoToScreen(last.x, last.y, getElev(last.x, last.y), viewport, view);
+  ctx.fillStyle = '#4caf50';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(sLast.x, sLast.y, 6, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  const cost = render.reachableMap.get(gridKey(last.x, last.y));
+  if(cost !== undefined){
+    const labelX = sLast.x + 14;
+    const labelY = sLast.y - 14;
+    const labelText = `${cost} AP`;
+    ctx.font = 'bold 12px monospace';
+    const tw = ctx.measureText(labelText).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(labelX - 4, labelY - 12, tw + 8, 16);
+    ctx.strokeStyle = cost > state.player.ap ? '#f44336' : '#4caf50';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(labelX - 4, labelY - 12, tw + 8, 16);
+    ctx.fillStyle = cost > state.player.ap ? '#ff8a80' : '#69f0ae';
+    ctx.fillText(labelText, labelX, labelY);
+  }
+  ctx.restore();
+}
+
+// ============================================================================
+// BOOT (async : load data + biomes en parallèle)
+// ============================================================================
+(async () => {
+  const loader = document.getElementById('boot-loader');
+  try {
+    await Promise.all([
+      loadAllData(),
+      preloadAllBiomes(),
+    ]);
+    window.__DATA__ = DATA;
+
+    // Construire les boutons de biome
+    const biomeButtons = document.getElementById('biome-buttons');
+    biomeButtons.innerHTML = '';
+    for(const cfg of listBiomeConfigs()){
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn' + (cfg.id === render.biomeId ? ' active' : '');
+      btn.dataset.biome = cfg.id;
+      btn.textContent = cfg.displayName || cfg.name || cfg.id;
+      btn.style.textAlign = 'center';
+      btn.addEventListener('click', () => {
+        render.biomeId = cfg.id;
+        // Re-génère le tileGrid avec le nouveau biome (sans toucher au state combat)
+        const oldWalls = new Set(state.walls);
+        state.walls = new Set();  // sera repeuplé par genTileMap si builder
+        genTileMap(null);
+        // Re-applique les walls de la room originale (pas de builder ici)
+        for(const k of oldWalls) state.walls.add(k);
+        // Re-marque les tiles wall correspondantes
+        for(const k of state.walls){
+          const t = render.tileGrid[k];
+          if(t){ t.isWall = true; }
+        }
+        document.querySelectorAll('#biome-buttons button').forEach(b => b.classList.toggle('active', b.dataset.biome === render.biomeId));
+      });
+      biomeButtons.appendChild(btn);
+    }
+
+    // Init combat (lit playtest / builder / tutorial)
+    await initCombat();
+
+    if(loader) loader.style.display = 'none';
+    updateZoomDisplay();
+    renderLoop();
+  } catch(e){
+    console.error('Boot failed:', e);
+    if(loader){
+      loader.innerHTML = `<div style="color:#f44336; font-size:13px; max-width:400px; text-align:center; padding:20px;">
+        <strong>⚠ Boot failed</strong><br><br>
+        <span style="font-size:11px; color:#ff8a80;">${e.message || e}</span><br><br>
+        <a href="index.html" style="color:#4fc3f7;">↩ Back to dashboard</a>
+      </div>`;
+    }
+  }
+})();
+
+// Cross-tab : si le map builder pousse une nouvelle map, la prend en compte
+window.addEventListener('storage', async (e) => {
+  if(e.key === 'reactor_hollow_map' && e.newValue){
+    await initCombat();
+  }
+});
+
+window.addEventListener('error', ev => {
+  const display = document.getElementById('error-display');
+  display.style.display = 'block';
+  display.innerHTML = `
+    <strong>⚠ Erreur :</strong>
+    <pre>${ev.message}\nSource: ${ev.filename}:${ev.lineno}</pre>
+    <p style="margin-top:10px; color:#aaa">Vérifie la console.</p>
+  `;
+});
+</script>
 </body>
 </html>
