@@ -824,6 +824,7 @@ function updateDungeonHud(playtestRun){
 // ============================================================================
 async function initCombat(){
   resetState();
+  if(typeof resetDungeonEndFlags === 'function') resetDungeonEndFlags();
 
   const playtestRun = readPlaytestRun();
   const builderMap = readBuilderMap();
@@ -2012,8 +2013,58 @@ function tick(){
   syncLogPanel();
   updateLightUI();      // HP/AP/turn (cheap)
   detectTurnChange();   // rebuild action bar quand l'actor change
+  detectDungeonRoomEnd(); // multi-room : auto-charge la prochaine room dès que clean
 }
 setInterval(tick, 16);
+
+// ============================================================================
+// MULTI-ROOM AUTO-TRANSITION
+// Pour les runs Ascension, dès que tous les ennemis sont morts (ou que le joueur
+// meurt), on auto-trigger la transition sans attendre que l'utilisateur clique
+// sur le bouton Restart du modal externe.
+// ============================================================================
+let _dungeonEndHandled = false;
+let _dungeonEndTriggerTime = 0;
+
+function detectDungeonRoomEnd(){
+  // Skip si pas de run Ascension
+  const raw = localStorage.getItem('rh_active_run');
+  if(!raw) { _dungeonEndHandled = false; return; }
+  if(_dungeonEndHandled) return;
+  if(!state.player || !state.enemies) return;
+
+  const playerDead = state.player.isDead || state.player.hp <= 0;
+  const aliveEnemies = state.enemies.filter(e => !e.isDead && e.hp > 0);
+  const allEnemiesDead = state.enemies.length > 0 && aliveEnemies.length === 0;
+
+  if(!playerDead && !allEnemiesDead) return;
+
+  // Lance le timer si c'est la première fois qu'on détecte la fin
+  if(_dungeonEndTriggerTime === 0){
+    _dungeonEndTriggerTime = performance.now();
+    return;
+  }
+
+  // Délai de 1.2s pour laisser jouer les anims de mort + dernière particule
+  if(performance.now() - _dungeonEndTriggerTime < 1200) return;
+
+  // Maintenant on déclenche la transition
+  _dungeonEndHandled = true;
+  _dungeonEndTriggerTime = 0;
+
+  // Cache le modal externe s'il est apparu (le moteur a pu déjà le show)
+  const modal = document.getElementById('combat-end');
+  if(modal) modal.style.display = 'none';
+
+  // Délègue à window.restartCombat qui gère déjà toute la logique multi-room
+  window.restartCombat();
+}
+
+// Reset le flag à chaque init de combat (appelé depuis initCombat plus bas via resetDungeonEndFlags())
+function resetDungeonEndFlags(){
+  _dungeonEndHandled = false;
+  _dungeonEndTriggerTime = 0;
+}
 
 function renderLoop(){
   let targetColor = '#f44336';
