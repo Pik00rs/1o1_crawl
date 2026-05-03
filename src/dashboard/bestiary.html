@@ -512,28 +512,59 @@ function runAttackLoop(){
     attackCtx.stroke();
   }
 
-  // Position du sprite dans la zone
-  const sx = w / 2;
+  // Position du sprite ennemi : à gauche (1/3 width) pour laisser de la place à Kael
+  const sx = Math.round(w * 0.33);
   const sy = h - 40;
+  // Position de Kael fantôme : à droite (2/3 width)
+  const kaelX = Math.round(w * 0.78);
+  const kaelY = h - 40;
 
   if(state.currentAttack && detailSprite){
     const attack = detailSprite.attacks[state.currentAttack];
     if(attack){
       const result = attack.update(state.attackFrame, attack.duration, attackCtx);
       state.attackOpts = result.opts || {};
-      // Émet les FX commandés
+
+      // Émet les FX commandés (avec enrichissement projectile)
       for(const cmd of (result.fx || [])){
-        state.fxSystem.emit(cmd, sx, sy);
+        if(cmd.type === 'projectile' && cmd.useAttackProjectile){
+          // Récupère la spec du projectile depuis l'attaque
+          const projSpec = attack.projectile;
+          if(projSpec){
+            // Origine ennemi + offset, cible Kael
+            state.fxSystem.spawnProjectile(
+              sx + (cmd.dx || 0),
+              sy + (cmd.dy || 0),
+              kaelX,
+              kaelY - 18, // Kael's body center
+              {
+                drawProjectile: projSpec.drawProjectile,
+                travelFrames: projSpec.travelFrames || 18,
+                trailColor: projSpec.trailColor,
+                arc: projSpec.arc || 0,
+                onHit: projSpec.onHit,
+              }
+            );
+          }
+        } else if(cmd.useTargetPosition){
+          // FX qui doit s'émettre à la position de la cible (ex: ondes secondaires AOE)
+          state.fxSystem.emit({ ...cmd, dx: 0, dy: 0, type: cmd.type }, kaelX, kaelY - 18);
+        } else {
+          state.fxSystem.emit(cmd, sx, sy);
+        }
       }
 
       // Render under (shockwaves)
       state.fxSystem.update();
       state.fxSystem.renderUnder(attackCtx);
 
-      // Sprite (avec opts d'anim)
+      // Kael fantôme (avant le sprite ennemi pour qu'il soit derrière)
+      drawKaelGhost(attackCtx, kaelX, kaelY, state.attackFrame);
+
+      // Sprite ennemi (avec opts d'anim)
       detailSprite.draw(attackCtx, sx, sy, state.attackFrame, state.attackOpts);
 
-      // Render over (particules)
+      // Render over (particules + projectiles)
       state.fxSystem.renderOver(attackCtx);
 
       // Frame counter + progress bar
@@ -568,7 +599,11 @@ function runAttackLoop(){
       }
 
       state.attackFrame++;
-      if(attack.looping || attack.duration >= 9999){
+      if(attack.looping){
+        // Boucle au-delà de duration
+        if(state.attackFrame >= attack.duration) state.attackFrame = 0;
+      } else if(attack.duration >= 9999){
+        // Loop infini (idle)
         if(state.attackFrame > 200) state.attackFrame = 0;
       } else if(state.attackFrame > attack.duration + 30){
         // Replay automatique avec petit délai
@@ -577,9 +612,10 @@ function runAttackLoop(){
       }
     }
   } else {
-    // Pas d'attaque sélectionnée : sprite en idle
+    // Pas d'attaque sélectionnée : sprite en idle au centre
+    const cx = w / 2;
     if(detailSprite){
-      detailSprite.draw(attackCtx, sx, sy, state.attackFrame, {});
+      detailSprite.draw(attackCtx, cx, sy, state.attackFrame, {});
       state.attackFrame++;
     }
     attackCtx.font = 'bold 9px JetBrains Mono, monospace';
@@ -589,6 +625,65 @@ function runAttackLoop(){
   }
 
   requestAnimationFrame(runAttackLoop);
+}
+
+/**
+ * Dessine une silhouette fantôme de Kael (semi-transparente) à la position donnée.
+ * Sert de cible visuelle pour les attaques rangées dans le bestiaire.
+ * sx,sy = position des pieds.
+ */
+function drawKaelGhost(ctx, sx, sy, t){
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  const bob = Math.sin(t * 0.04) * 0.5;
+  sy = Math.round(sy + bob);
+  sx = Math.round(sx);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 6, 11, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Halo cyan (ami)
+  const grad = ctx.createRadialGradient(sx, sy - 14, 4, sx, sy - 14, 22);
+  grad.addColorStop(0, 'rgba(79,195,247,0.25)');
+  grad.addColorStop(1, 'rgba(79,195,247,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(sx - 22, sy - 36, 44, 44);
+
+  // Legs (silhouette)
+  ctx.fillStyle = 'rgba(180,200,220,0.7)';
+  ctx.fillRect(sx - 5, sy - 1, 4, 9);
+  ctx.fillRect(sx + 1, sy - 1, 4, 9);
+  // Boots
+  ctx.fillStyle = 'rgba(40,50,70,0.7)';
+  ctx.fillRect(sx - 6, sy + 8, 5, 2);
+  ctx.fillRect(sx + 1, sy + 8, 5, 2);
+  // Torso
+  ctx.fillStyle = 'rgba(150,180,210,0.7)';
+  ctx.fillRect(sx - 6, sy - 16, 12, 16);
+  // Cape (bleu)
+  ctx.fillStyle = 'rgba(79,195,247,0.5)';
+  ctx.fillRect(sx + 5, sy - 14, 2, 12);
+  // Head
+  ctx.fillStyle = 'rgba(220,200,170,0.7)';
+  ctx.fillRect(sx - 4, sy - 24, 8, 8);
+  // Hair
+  ctx.fillStyle = 'rgba(80,90,110,0.7)';
+  ctx.fillRect(sx - 4, sy - 24, 8, 3);
+  // Eyes (cyan glow)
+  ctx.fillStyle = 'rgba(174,230,255,0.9)';
+  ctx.fillRect(sx - 2, sy - 20, 1, 1);
+  ctx.fillRect(sx + 1, sy - 20, 1, 1);
+
+  // "TARGET" label discret
+  ctx.fillStyle = 'rgba(174,230,255,0.55)';
+  ctx.font = '7px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('▸ KAEL', sx, sy + 18);
+
+  ctx.restore();
 }
 
 function selectAttack(attackId){
