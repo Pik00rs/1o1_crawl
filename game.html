@@ -872,6 +872,15 @@ async function initCombat(){
   const startPos = roomData.playerStart || { x: 1, y: 2 };
   state.player = createPlayer({ ...playerCfg, x: startPos.x, y: startPos.y });
 
+  // === MULTI-ROOM HP PERSISTENCE ===
+  // Si on est dans un dungeon run et qu'un HP courant a été sauvegardé entre
+  // les rooms, on le restaure (sinon on garde le HP max comme set par createPlayer).
+  // Les effets/buffs/debuffs/cooldowns ne sont PAS persistés (volontairement,
+  // c'est la spec : "tout les effets se dissipent").
+  if(playtestRun && typeof playtestRun.playerHp === 'number' && playtestRun.playerHp > 0){
+    state.player.hp = Math.min(playtestRun.playerHp, state.player.maxHp);
+  }
+
   // Crée les ennemis
   state.enemies = (roomData.enemies || []).map((e, i) => {
     const enemy = createEnemy(`${e.type}_${i}`, e.type, e.x, e.y);
@@ -1853,6 +1862,12 @@ window.restartCombat = async function(){
     return;
   }
 
+  // Sauvegarde le HP courant du joueur pour qu'il soit restauré dans la prochaine room.
+  // Les effets/buffs/cooldowns ne sont volontairement PAS persistés (spec).
+  if(state.player && typeof state.player.hp === 'number'){
+    run.playerHp = state.player.hp;
+  }
+
   // Sinon, on re-persiste la run réduite et on relance le combat avec la prochaine room.
   localStorage.setItem('rh_active_run', JSON.stringify(run));
   if(modal) modal.style.display = 'none';
@@ -2308,53 +2323,87 @@ function startCorridorAnimation(){
     ctx.closePath();
     ctx.fill();
 
-    // === Lueur de la torche (à droite, lointain) ===
-    const torchPulse = 0.75 + Math.sin(t * 0.18) * 0.18 + Math.sin(t * 0.07) * 0.07;
-    const torchX = W - vpX * 0.78 - 6;
-    const torchY = vpY + (floorY - vpY) * 0.30;
+    // === Atténuation au point de fuite : darken au fond pour effet "infini" ===
+    // Crée un fade radial très sombre autour du vanishing point pour éviter
+    // qu'on voit "le fond" du couloir. C'est ce qui donne l'illusion d'infini.
+    const vpFade = ctx.createRadialGradient(vpX, vpY, 0, vpX, vpY, 110);
+    vpFade.addColorStop(0, 'rgba(0,0,0,0.85)');
+    vpFade.addColorStop(0.5, 'rgba(0,0,0,0.5)');
+    vpFade.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = vpFade;
+    ctx.fillRect(vpX - 110, vpY - 110, 220, 220);
 
-    // Halo de lumière
-    const halo = ctx.createRadialGradient(torchX, torchY, 0, torchX, torchY, 80);
-    halo.addColorStop(0, `rgba(255,180,90,${0.55 * torchPulse})`);
-    halo.addColorStop(0.4, `rgba(255,140,60,${0.25 * torchPulse})`);
+    // === HERO + TORCHE (la torche est tenue dans la main du hero) ===
+    // Ordre de rendu : on dessine d'abord la lueur de la torche (en arrière-plan),
+    // puis le hero, puis la flamme par-dessus.
+    const torchPulse = 0.78 + Math.sin(t * 0.18) * 0.16 + Math.sin(t * 0.07) * 0.06;
+
+    // Calcule la position de la torche (suit le bras gauche du hero qui balance)
+    // armL : décalage Y du bras gauche (frame 0 = +1, frame 2 = -1, sinon 0)
+    const SCALE = 3;
+    const frame = Math.floor(t / 9) % 4;
+    const armL = (frame === 0) ? 1 : (frame === 2 ? -1 : 0);
+    // Bobbing du hero (cohérent avec drawHeroBack)
+    const bob = (frame === 0 || frame === 2) ? 0 : -1;
+    const heroYOffset = bob * SCALE;
+
+    // Position de la main gauche du hero (pixel coords du sprite : x=2, y≈14)
+    // baseX du sprite = vpX - 8*SCALE, baseY = floorY-4 + heroYOffset, sprite hauteur=24
+    const heroBaseX = vpX - 8 * SCALE;
+    const heroBaseY = (floorY - 4) + heroYOffset;
+    // La main gauche est à (x=2, y=14+armL) dans le sprite, et le sprite va de y=0 (top) à y=24 (bottom = baseY)
+    const handX = heroBaseX + 2 * SCALE + SCALE / 2;
+    const handY = heroBaseY + (14 + armL) * SCALE - 24 * SCALE;
+
+    // Position du bout de la torche (la flamme) : on prolonge depuis la main vers le haut-gauche
+    const torchTipX = handX - 5; // un peu à gauche de la main
+    const torchTipY = handY - 8; // au-dessus de la main
+
+    // Halo de lumière émanant de la flamme
+    const haloRadius = 60 + Math.sin(t * 0.15) * 4;
+    const halo = ctx.createRadialGradient(torchTipX, torchTipY, 0, torchTipX, torchTipY, haloRadius);
+    halo.addColorStop(0, `rgba(255,200,110,${0.55 * torchPulse})`);
+    halo.addColorStop(0.35, `rgba(255,140,60,${0.30 * torchPulse})`);
     halo.addColorStop(1, 'rgba(255,140,60,0)');
     ctx.fillStyle = halo;
-    ctx.fillRect(torchX - 80, torchY - 80, 160, 160);
+    ctx.fillRect(torchTipX - haloRadius, torchTipY - haloRadius, haloRadius * 2, haloRadius * 2);
 
-    // Flamme (carré + flicker)
-    const flameW = 4 + Math.sin(t * 0.3) * 0.5;
-    const flameH = 5 + Math.sin(t * 0.45) * 1;
-    ctx.fillStyle = '#ffe890';
-    ctx.fillRect(torchX - flameW/2, torchY - flameH, flameW, flameH);
-    ctx.fillStyle = '#ff8a3d';
-    ctx.fillRect(torchX - flameW/2 - 1, torchY - flameH + 1, flameW + 2, flameH - 1);
-    // Tige de la torche (petit rect sombre)
-    ctx.fillStyle = '#2a1a14';
-    ctx.fillRect(torchX - 1, torchY, 2, 8);
-
-    // Lueur projetée sur le mur droit
-    const wallGlow = ctx.createRadialGradient(torchX, torchY, 0, torchX, torchY, 120);
-    wallGlow.addColorStop(0, `rgba(255,140,60,${0.18 * torchPulse})`);
-    wallGlow.addColorStop(1, 'rgba(255,140,60,0)');
-    ctx.fillStyle = wallGlow;
+    // Lueur projetée sur le sol près du hero (pool de lumière au sol)
+    const groundGlow = ctx.createRadialGradient(vpX, floorY, 0, vpX, floorY, 80);
+    groundGlow.addColorStop(0, `rgba(255,150,70,${0.22 * torchPulse})`);
+    groundGlow.addColorStop(1, 'rgba(255,140,60,0)');
+    ctx.fillStyle = groundGlow;
     ctx.beginPath();
-    ctx.moveTo(W, 0);
-    ctx.lineTo(W - vpX * 0.7, vpY);
-    ctx.lineTo(W - vpX * 0.7, floorY);
-    ctx.lineTo(W, H);
-    ctx.closePath();
+    ctx.ellipse(vpX, floorY, 60, 18, 0, 0, Math.PI * 2);
     ctx.fill();
-
-    // === Lueur ambiante de la prochaine room (au fond, vanishing point) ===
-    const farGlow = ctx.createRadialGradient(vpX, vpY, 0, vpX, vpY, 70);
-    farGlow.addColorStop(0, 'rgba(255,208,96,0.35)');
-    farGlow.addColorStop(0.5, 'rgba(200,80,40,0.15)');
-    farGlow.addColorStop(1, 'rgba(200,80,40,0)');
-    ctx.fillStyle = farGlow;
-    ctx.fillRect(vpX - 70, vpY - 70, 140, 140);
 
     // === HERO PIXEL ART (vu de dos, cycle de marche 4 frames) ===
     drawHeroBack(ctx, vpX, floorY - 4, t);
+
+    // === TORCHE (tige + flamme), dessinée APRÈS le hero pour passer devant le bras ===
+    // Tige (rect oblique : depuis la main vers la flamme)
+    ctx.fillStyle = '#3a1810';
+    // Tige courbée : 3 segments pour donner un peu d'angle
+    ctx.fillRect(handX - 1, handY - 2, 2, 2);   // base près de la main
+    ctx.fillRect(handX - 2, handY - 4, 2, 2);   // milieu
+    ctx.fillRect(handX - 3, handY - 6, 2, 2);   // proche de la flamme
+    // Highlight bois
+    ctx.fillStyle = '#5a2818';
+    ctx.fillRect(handX - 2, handY - 3, 1, 1);
+    ctx.fillRect(handX - 3, handY - 5, 1, 1);
+
+    // Flamme (rect avec flicker) au bout de la torche
+    const flameW = 3 + Math.sin(t * 0.3) * 0.5;
+    const flameH = 5 + Math.sin(t * 0.45) * 1;
+    // Flamme externe orange
+    ctx.fillStyle = '#ff8a3d';
+    ctx.fillRect(torchTipX - flameW/2 - 1, torchTipY - flameH, flameW + 2, flameH);
+    // Flamme interne jaune
+    ctx.fillStyle = '#ffe890';
+    ctx.fillRect(torchTipX - flameW/2, torchTipY - flameH + 1, flameW, flameH - 2);
+    // Cœur blanc (très bright)
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(torchTipX - 0.5, torchTipY - flameH + 2, 1, flameH - 3);
 
     // === Particules ambiantes de poussière (très subtil) ===
     for(let i = 0; i < 12; i++){
@@ -2364,6 +2413,18 @@ function startCorridorAnimation(){
       const alpha = 0.18 + Math.sin(t * 0.05 + i * 0.7) * 0.1;
       ctx.fillStyle = `rgba(200,180,140,${alpha})`;
       ctx.fillRect(px | 0, py | 0, 1, 1);
+    }
+
+    // === Étincelles qui s'envolent de la torche (occasionnellement) ===
+    for(let i = 0; i < 4; i++){
+      const sparkSeed = (i * 73 + Math.floor(t / 3)) % 100;
+      if(sparkSeed > 60) continue; // 40% des frames ont une étincelle
+      const sparkAge = (t * 0.5 + i * 8) % 30; // cycle de 30 frames
+      const sparkX = torchTipX + Math.sin(sparkAge * 0.3 + i) * (sparkAge * 0.4);
+      const sparkY = torchTipY - sparkAge * 0.6;
+      const sparkAlpha = Math.max(0, 1 - sparkAge / 30);
+      ctx.fillStyle = `rgba(255,200,80,${sparkAlpha * 0.7})`;
+      ctx.fillRect(sparkX | 0, sparkY | 0, 1, 1);
     }
 
     t++;
