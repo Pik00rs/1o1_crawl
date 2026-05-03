@@ -6,18 +6,19 @@
 <title>Bestiaire — Reactor Hollow</title>
 <link rel="stylesheet" href="styles.css">
 <style>
+  /* ============================================================
+     LAYOUT GÉNÉRAL
+     ============================================================ */
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: 24px;
   }
-  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
 
   .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
+    display: flex; flex-wrap: wrap;
+    gap: 10px; align-items: center;
     margin-bottom: 16px;
   }
   .filter-group { display: flex; gap: 4px; }
@@ -27,10 +28,8 @@
     color: var(--text-dim);
     border: 1px solid var(--border-strong);
     font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    cursor: pointer;
+    font-size: 10px; letter-spacing: 1.5px;
+    text-transform: uppercase; cursor: pointer;
   }
   .filter-btn.active { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
   .filter-btn[data-biome].active { background: var(--biome-color, var(--accent-cyan)); border-color: var(--biome-color, var(--accent-cyan)); }
@@ -41,19 +40,19 @@
     padding: 14px 18px;
     border-left: 3px solid var(--biome-color, var(--accent-cyan));
     background: var(--biome-bg, rgba(255,255,255,0.02));
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    flex-wrap: wrap;
+    display: flex; gap: 16px;
+    align-items: center; flex-wrap: wrap;
   }
   .biome-banner__title {
     font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 18px; font-weight: 700;
     color: var(--biome-color, var(--accent-cyan));
   }
   .biome-banner__desc { color: var(--text-dim); font-size: 13px; font-style: italic; flex: 1 1 200px; }
 
+  /* ============================================================
+     LIST OF ENEMIES (left side)
+     ============================================================ */
   .enemy-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -61,11 +60,12 @@
   }
   .enemy-card {
     cursor: pointer;
-    padding: 12px;
+    padding: 10px;
     background: var(--bg-2);
     border: 1px solid var(--border);
     position: relative;
     transition: all 0.15s;
+    display: flex; gap: 10px; align-items: flex-start;
   }
   .enemy-card:hover { border-color: var(--enemy-color, var(--accent-cyan)); }
   .enemy-card.selected {
@@ -78,21 +78,36 @@
     border-top: 2px solid var(--enemy-color, var(--accent-cyan));
     border-left: 2px solid var(--enemy-color, var(--accent-cyan));
   }
-  .enemy-card__row { display: flex; gap: 12px; align-items: flex-start; }
-  .enemy-card__icon { font-size: 30px; line-height: 1; }
+  .enemy-card__sprite {
+    width: 48px; height: 56px;
+    flex-shrink: 0;
+    background: #0a0408;
+    border: 1px solid var(--border);
+    display: block;
+    image-rendering: pixelated;
+  }
+  .enemy-card__sprite--placeholder {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: var(--text-faint);
+  }
   .enemy-card__name {
     font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: 0.3px;
+    font-size: 13px; font-weight: 700;
+    color: #fff; letter-spacing: 0.3px;
     margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .enemy-card__stats { display: flex; gap: 10px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+  .enemy-card__stats {
+    display: flex; gap: 10px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-dim);
+    flex-wrap: wrap;
+  }
 
+  /* ============================================================
+     DETAIL PANEL (right side)
+     ============================================================ */
   .detail {
     background: var(--bg-1);
     border: 1px solid var(--biome-color-strong, var(--accent-cyan));
@@ -104,17 +119,26 @@
     width: 14px; height: 14px;
     border-color: var(--biome-color-strong, var(--accent-cyan));
   }
-  .detail__corner--tl { top:0;left:0;border-top:2px solid;border-left:2px solid; }
-  .detail__corner--tr { top:0;right:0;border-top:2px solid;border-right:2px solid; }
-  .detail__corner--bl { bottom:0;left:0;border-bottom:2px solid;border-left:2px solid; }
-  .detail__corner--br { bottom:0;right:0;border-bottom:2px solid;border-right:2px solid; }
-  .detail__head { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 22px; }
-  .detail__icon-box {
-    font-size: 56px; line-height: 1; padding: 12px;
-    background: var(--biome-bg, rgba(255,255,255,0.04));
-    border: 1px solid var(--biome-border, var(--border-strong));
+  .detail__corner--tl { top:0; left:0; border-top:2px solid; border-left:2px solid; }
+  .detail__corner--tr { top:0; right:0; border-top:2px solid; border-right:2px solid; }
+  .detail__corner--bl { bottom:0; left:0; border-bottom:2px solid; border-left:2px solid; }
+  .detail__corner--br { bottom:0; right:0; border-bottom:2px solid; border-right:2px solid; }
+
+  .detail__head {
+    display: flex; gap: 18px;
+    align-items: flex-start; margin-bottom: 22px;
   }
-  .detail__title-block { flex: 1; }
+  /* Le canvas du sprite remplace l'icône emoji */
+  .detail__sprite-canvas {
+    width: 120px; height: 140px;
+    background: linear-gradient(180deg, #0e0e14 0%, #02020a 100%);
+    border: 1px solid var(--biome-border, var(--border-strong));
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    flex-shrink: 0;
+    display: block;
+  }
+  .detail__title-block { flex: 1; min-width: 0; }
   .detail__file {
     font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
     color: var(--text-faint); margin-bottom: 6px;
@@ -124,6 +148,7 @@
     color: #fff; letter-spacing: 1px; margin-bottom: 8px;
   }
   .detail__badges { display: flex; gap: 6px; flex-wrap: wrap; }
+
   .detail__lore {
     padding: 14px 18px;
     background: #000;
@@ -131,21 +156,116 @@
     border-left: 3px solid var(--biome-color-strong, var(--accent-cyan));
     margin-bottom: 22px;
     font-style: italic;
-    font-size: 13px;
-    line-height: 1.6;
+    font-size: 13px; line-height: 1.6;
     color: #bbb;
   }
   .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 22px;
-    margin-bottom: 22px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 22px; margin-bottom: 22px;
   }
   @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
   .stats-grid h4 {
     font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
-    color: var(--biome-color-strong, var(--accent-cyan)); margin: 0 0 8px;
+    color: var(--biome-color-strong, var(--accent-cyan));
+    margin: 0 0 8px;
   }
+
+  /* ============================================================
+     ATTACK LAB
+     ============================================================ */
+  .attack-lab {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 22px 0;
+    padding: 16px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+  }
+  @media (max-width: 700px) { .attack-lab { grid-template-columns: 1fr; } }
+
+  .attack-lab__head {
+    grid-column: 1 / -1;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 4px;
+  }
+  .attack-lab__title {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 2.5px; color: var(--biome-color-strong, var(--accent-cyan));
+    text-transform: uppercase;
+  }
+  .attack-lab__status {
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-faint); letter-spacing: 1.5px;
+  }
+
+  .attack-lab__list {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .attack-btn {
+    background: rgba(20,20,28,0.6);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--text-faint);
+    padding: 10px 12px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .attack-btn:hover { background: rgba(40,40,50,0.6); border-left-color: var(--biome-color-strong); }
+  .attack-btn.active {
+    background: rgba(var(--biome-color-rgb, 79,195,247), 0.15);
+    border-left-color: var(--biome-color-strong);
+    box-shadow: 0 0 10px rgba(var(--biome-color-rgb, 79,195,247), 0.2) inset;
+  }
+  .attack-btn__head {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 3px;
+  }
+  .attack-btn__name {
+    font-weight: 700; letter-spacing: 1px;
+    color: #fff;
+  }
+  .attack-btn__duration {
+    font-size: 9px; color: var(--text-faint);
+    letter-spacing: 1px;
+  }
+  .attack-btn__desc {
+    font-size: 10px; color: var(--text-dim);
+    line-height: 1.4; font-style: italic;
+  }
+
+  .attack-lab__preview {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .attack-canvas {
+    width: 100%; aspect-ratio: 3/2;
+    background: linear-gradient(180deg, #1a0805 0%, #0a0303 100%);
+    border: 0.5px solid var(--border);
+    image-rendering: pixelated;
+    display: block;
+  }
+  .attack-canvas--placeholder {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-faint); letter-spacing: 1.5px;
+  }
+  .attack-progress {
+    height: 3px; background: var(--bg-3); position: relative;
+  }
+  .attack-progress__fill {
+    height: 100%; background: var(--biome-color-strong, var(--accent-cyan));
+    width: 0%; transition: width 0.05s linear;
+  }
+  .attack-frame-info {
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-faint); letter-spacing: 1.5px;
+    display: flex; justify-content: space-between;
+  }
+
   .ability {
     padding: 10px 14px; background: var(--bg-2); border: 1px solid var(--border);
     display: flex; gap: 12px; align-items: flex-start; margin-bottom: 6px;
@@ -165,14 +285,16 @@
     margin-top: 14px;
   }
   .tip-box__head {
-    font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
-    color: var(--biome-accent, var(--accent-cyan)); margin-bottom: 4px;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 2px; color: var(--biome-accent, var(--accent-cyan));
+    margin-bottom: 4px;
   }
   .tip-box__body { font-size: 13px; color: #ddd; line-height: 1.6; }
 
   .empty-state {
     padding: 32px; text-align: center;
-    color: var(--text-faint); font-family: var(--font-mono); font-size: 12px;
+    color: var(--text-faint);
+    font-family: var(--font-mono); font-size: 12px;
   }
 </style>
 </head>
@@ -220,11 +342,16 @@
 
 </main>
 
-<script>
-// ==========================================
-// BESTIARY DATA + RENDER (vanilla JS)
-// ==========================================
+<script type="module">
+// ============================================================================
+// IMPORTS
+// ============================================================================
+import { ENEMY_SPRITES, getEnemySprite } from '../js/render/enemies/index.js';
+import { FxSystem } from '../js/render/enemies/fx-system.js';
 
+// ============================================================================
+// CONSTANTES
+// ============================================================================
 const BIOMES = {
   inferno: { id:'inferno', name:'Secteur Inferno', shortName:'Inferno', color:'#ff5722', accentColor:'#ffb300', danger:'high', description:"Ancienne fonderie d'acier reconvertie en réacteur thermique. Les conduits de magma à ciel ouvert ont fait fondre la structure jusqu'à la rendre méconnaissable." },
   cryo: { id:'cryo', name:'Coffre Cryo', shortName:'Cryo', color:'#4fc3f7', accentColor:'#b3e5fc', danger:'medium', description:"Bunker de stockage cryogénique abandonné. Les cellules de prisonniers congelés ont éclaté il y a des décennies." },
@@ -246,17 +373,21 @@ let state = {
   role: 'all',
   search: '',
   selectedId: null,
+  // Animation lab state
+  currentAttack: null,    // id de l'attaque jouée
+  attackFrame: 0,         // frame courante
+  attackOpts: {},         // dernières opts du sprite
+  fxSystem: new FxSystem(),
 };
 
-// ============ FETCH DATA ============
-
+// ============================================================================
+// DATA LOADING
+// ============================================================================
 async function loadEnemies() {
   try {
     const res = await fetch('../../src/data/enemies.json');
     if (!res.ok) throw new Error('Impossible de charger enemies.json');
-    const data = await res.json();
-    // data is { id1: {...}, id2: {...} }
-    return Object.values(data);
+    return Object.values(await res.json());
   } catch (err) {
     console.error(err);
     document.getElementById('entries-count').textContent = '⚠ Erreur de chargement : ' + err.message;
@@ -265,8 +396,220 @@ async function loadEnemies() {
   }
 }
 
-// ============ RENDER ============
+// ============================================================================
+// CARD SPRITE RENDERING (mini canvas dans la liste)
+// ============================================================================
+// Chaque carte a son canvas qui anime le sprite en idle. On renderloop tout
+// dans une seule boucle requestAnimationFrame pour éviter de spammer N rAF.
+const cardCanvases = []; // { canvas, ctx, sprite, t: 0 }
+let cardLoopActive = false;
 
+function attachCardCanvas(canvas, enemyId){
+  const sprite = getEnemySprite(enemyId);
+  if(!sprite || !sprite.draw) return false;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  cardCanvases.push({ canvas, ctx, sprite, t: Math.random() * 100 });
+  if(!cardLoopActive){
+    cardLoopActive = true;
+    runCardLoop();
+  }
+  return true;
+}
+
+function clearCardCanvases(){
+  cardCanvases.length = 0;
+}
+
+function runCardLoop(){
+  for(const c of cardCanvases){
+    c.ctx.clearRect(0, 0, c.canvas.width, c.canvas.height);
+    // Centre horizontal, "pieds" en bas
+    c.sprite.draw(c.ctx, c.canvas.width / 2, c.canvas.height - 8, c.t, {});
+    c.t++;
+  }
+  requestAnimationFrame(runCardLoop);
+}
+
+// ============================================================================
+// DETAIL SPRITE RENDERING (gros canvas dans la fiche)
+// ============================================================================
+let detailCanvas = null;
+let detailCtx = null;
+let detailSprite = null;
+let detailT = 0;
+
+function setupDetailCanvas(canvas, enemyId){
+  detailCanvas = canvas;
+  detailCtx = canvas.getContext('2d');
+  detailCtx.imageSmoothingEnabled = false;
+  detailSprite = getEnemySprite(enemyId);
+  detailT = 0;
+  if(!detailLoopActive){
+    detailLoopActive = true;
+    runDetailLoop();
+  }
+}
+
+let detailLoopActive = false;
+
+function runDetailLoop(){
+  if(detailCanvas && detailCtx && detailSprite && detailSprite.draw){
+    const w = detailCanvas.width;
+    const h = detailCanvas.height;
+    detailCtx.clearRect(0, 0, w, h);
+    // Background gradient (déjà via CSS, on clear juste)
+    detailSprite.draw(detailCtx, w / 2, h - 16, detailT, {});
+    detailT++;
+  }
+  requestAnimationFrame(runDetailLoop);
+}
+
+// ============================================================================
+// ATTACK LAB RENDERING
+// ============================================================================
+let attackCanvas = null;
+let attackCtx = null;
+let attackLoopActive = false;
+
+function setupAttackCanvas(canvas){
+  attackCanvas = canvas;
+  attackCtx = canvas.getContext('2d');
+  attackCtx.imageSmoothingEnabled = false;
+  if(!attackLoopActive){
+    attackLoopActive = true;
+    runAttackLoop();
+  }
+}
+
+function runAttackLoop(){
+  if(!attackCanvas || !attackCtx) {
+    requestAnimationFrame(runAttackLoop);
+    return;
+  }
+  const w = attackCanvas.width;
+  const h = attackCanvas.height;
+
+  // Background plus contrasté
+  attackCtx.fillStyle = '#0a0303';
+  attackCtx.fillRect(0, 0, w, h);
+  const grad = attackCtx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#1a0805');
+  grad.addColorStop(1, '#0a0303');
+  attackCtx.fillStyle = grad;
+  attackCtx.fillRect(0, 0, w, h);
+
+  // Sol iso suggéré
+  attackCtx.fillStyle = 'rgba(122,53,37,0.12)';
+  attackCtx.fillRect(0, h - 50, w, 50);
+  attackCtx.strokeStyle = 'rgba(255,107,26,0.18)';
+  attackCtx.lineWidth = 0.5;
+  for(let i = 0; i < w; i += 60){
+    attackCtx.beginPath();
+    attackCtx.moveTo(i, h - 50);
+    attackCtx.lineTo(i + 30, h - 35);
+    attackCtx.lineTo(i + 60, h - 50);
+    attackCtx.stroke();
+  }
+
+  // Position du sprite dans la zone
+  const sx = w / 2;
+  const sy = h - 40;
+
+  if(state.currentAttack && detailSprite){
+    const attack = detailSprite.attacks[state.currentAttack];
+    if(attack){
+      const result = attack.update(state.attackFrame, attack.duration, attackCtx);
+      state.attackOpts = result.opts || {};
+      // Émet les FX commandés
+      for(const cmd of (result.fx || [])){
+        state.fxSystem.emit(cmd, sx, sy);
+      }
+
+      // Render under (shockwaves)
+      state.fxSystem.update();
+      state.fxSystem.renderUnder(attackCtx);
+
+      // Sprite (avec opts d'anim)
+      detailSprite.draw(attackCtx, sx, sy, state.attackFrame, state.attackOpts);
+
+      // Render over (particules)
+      state.fxSystem.renderOver(attackCtx);
+
+      // Frame counter + progress bar
+      attackCtx.font = 'bold 8px JetBrains Mono, monospace';
+      attackCtx.fillStyle = '#5a3525';
+      attackCtx.textAlign = 'left';
+      const dur = attack.duration < 9999 ? ' / ' + attack.duration : '';
+      attackCtx.fillText('FRAME ' + state.attackFrame + dur, 10, 14);
+      attackCtx.textAlign = 'right';
+      attackCtx.fillText('60 FPS', w - 10, 14);
+
+      // Phase courante
+      const currentPhase = (attack.phases || []).find(p =>
+        state.attackFrame >= p.from && state.attackFrame < p.to
+      );
+      if(currentPhase){
+        attackCtx.textAlign = 'center';
+        attackCtx.fillStyle = '#ffb347';
+        attackCtx.fillText('▸ ' + currentPhase.label.toUpperCase(), w / 2, 14);
+      }
+
+      // Update progress bar UI
+      const progEl = document.getElementById('attack-progress-fill');
+      if(progEl && attack.duration < 9999){
+        progEl.style.width = (state.attackFrame / attack.duration * 100) + '%';
+      } else if(progEl){
+        progEl.style.width = '100%';
+      }
+      const frameEl = document.getElementById('attack-frame-text');
+      if(frameEl){
+        frameEl.textContent = `frame ${state.attackFrame}${dur}`;
+      }
+
+      state.attackFrame++;
+      if(attack.looping || attack.duration >= 9999){
+        if(state.attackFrame > 200) state.attackFrame = 0;
+      } else if(state.attackFrame > attack.duration + 30){
+        // Replay automatique avec petit délai
+        state.attackFrame = 0;
+        state.fxSystem.clear();
+      }
+    }
+  } else {
+    // Pas d'attaque sélectionnée : sprite en idle
+    if(detailSprite){
+      detailSprite.draw(attackCtx, sx, sy, state.attackFrame, {});
+      state.attackFrame++;
+    }
+    attackCtx.font = 'bold 9px JetBrains Mono, monospace';
+    attackCtx.fillStyle = '#5a3525';
+    attackCtx.textAlign = 'center';
+    attackCtx.fillText('▸ SÉLECTIONNE UNE ATTAQUE', w / 2, h / 2 - 50);
+  }
+
+  requestAnimationFrame(runAttackLoop);
+}
+
+function selectAttack(attackId){
+  state.currentAttack = attackId;
+  state.attackFrame = 0;
+  state.fxSystem.clear();
+  // Update UI
+  document.querySelectorAll('.attack-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.attack === attackId);
+  });
+  // Update status
+  const statusEl = document.getElementById('attack-lab-status');
+  if(statusEl && detailSprite && detailSprite.attacks[attackId]){
+    const a = detailSprite.attacks[attackId];
+    statusEl.textContent = `${a.name.toUpperCase()} · ${a.duration < 9999 ? a.duration + 'f' : 'LOOP'}`;
+  }
+}
+
+// ============================================================================
+// RENDER UI
+// ============================================================================
 function renderBiomeFilters() {
   const host = document.getElementById('biome-filters');
   host.innerHTML = '';
@@ -276,7 +619,6 @@ function renderBiomeFilters() {
   allBtn.textContent = 'TOUS LES BIOMES';
   allBtn.addEventListener('click', () => { state.biome = 'all'; render(); });
   host.appendChild(allBtn);
-
   for (const b of Object.values(BIOMES)) {
     const btn = document.createElement('button');
     btn.className = 'filter-btn' + (state.biome === b.id ? ' active' : '');
@@ -325,6 +667,8 @@ function renderEnemyGrid() {
   const filtered = getFiltered();
   document.getElementById('entries-count').textContent = `▸ ${filtered.length} entrée${filtered.length>1?'s':''}`;
   grid.innerHTML = '';
+  clearCardCanvases();
+
   if (filtered.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
@@ -332,6 +676,7 @@ function renderEnemyGrid() {
     grid.appendChild(empty);
     return;
   }
+
   for (const e of filtered) {
     const card = document.createElement('div');
     card.className = 'enemy-card' + (state.selectedId === e.id ? ' selected' : '');
@@ -339,16 +684,20 @@ function renderEnemyGrid() {
     card.style.setProperty('--enemy-color', biome.color || '#888');
     const role = ROLES[e.role] || ROLES.mob;
     const dmg = (e.attackPower || e.baseDmg || [0,0]);
+
+    const hasSprite = !!getEnemySprite(e.id);
+    const spriteHtml = hasSprite
+      ? `<canvas class="enemy-card__sprite" width="48" height="56" data-enemy="${e.id}"></canvas>`
+      : `<div class="enemy-card__sprite enemy-card__sprite--placeholder">${e.icon || '?'}</div>`;
+
     card.innerHTML = `
-      <div class="enemy-card__row">
-        <div class="enemy-card__icon">${e.icon || '?'}</div>
-        <div style="flex:1; min-width:0;">
-          <div class="badge badge--${e.role}" style="margin-bottom:4px; font-size:8px;">${role.label}</div>
-          <div class="enemy-card__name">${e.name}</div>
-          <div class="enemy-card__stats">
-            <span>HP <span style="color:#fff">${e.hp || e.baseHP}</span></span>
-            <span>DMG <span class="dmg-${e.damageType}">${dmg[0]}-${dmg[1]}</span></span>
-          </div>
+      ${spriteHtml}
+      <div style="flex:1; min-width:0;">
+        <div class="badge badge--${e.role}" style="margin-bottom:4px; font-size:8px;">${role.label}</div>
+        <div class="enemy-card__name">${e.name}</div>
+        <div class="enemy-card__stats">
+          <span>HP <span style="color:#fff">${e.hp || e.baseHP}</span></span>
+          <span>DMG <span class="dmg-${e.damageType}">${dmg[0]}-${dmg[1]}</span></span>
         </div>
       </div>
     `;
@@ -357,6 +706,12 @@ function renderEnemyGrid() {
       render();
     });
     grid.appendChild(card);
+
+    // Attache le canvas si sprite dispo
+    if(hasSprite){
+      const cv = card.querySelector('canvas[data-enemy]');
+      if(cv) attachCardCanvas(cv, e.id);
+    }
   }
 }
 
@@ -364,22 +719,23 @@ function renderDetail() {
   const host = document.getElementById('detail-host');
   if (!state.selectedId) {
     host.innerHTML = `<div class="empty-state">Sélectionnez une entité pour voir les détails</div>`;
+    detailCanvas = null;
+    detailSprite = null;
+    attackCanvas = null;
     return;
   }
   const e = ALL_ENEMIES.find(x => x.id === state.selectedId);
   if (!e) { host.innerHTML = ''; return; }
   const biome = BIOMES[e.biome] || { color:'#888', accentColor:'#888', name:'-', shortName:'?' };
   const role = ROLES[e.role] || ROLES.mob;
-  const baseHP = e.baseHP || e.hp;
   const baseDmg = e.baseDmg || e.attackPower || [0,0];
   const avgDmg = (baseDmg[0] + baseDmg[1]) / 2;
 
   const hpMult = e.role === 'boss' ? 1.35 : e.role === 'elite' ? 1.15 : 1.0;
+  const baseHP = e.baseHP || e.hp;
   const hpL1 = Math.round(baseHP * 0.45 * hpMult);
   const hpL5 = Math.round(baseHP * 1.20 * hpMult);
   const hpL10 = Math.round(baseHP * 3.50 * hpMult);
-  const dmgL5 = `${Math.round(baseDmg[0]*1.20)}-${Math.round(baseDmg[1]*1.20)}`;
-  const dmgL10 = `${Math.round(baseDmg[0]*3.50)}-${Math.round(baseDmg[1]*3.50)}`;
 
   const abilities = (e.specialAbilities || []).map(a => `
     <div class="ability">
@@ -387,6 +743,9 @@ function renderDetail() {
       <div class="ability__desc">${a.description}</div>
     </div>
   `).join('') || '<div class="muted text-sm">Aucune capacité spéciale.</div>';
+
+  const sprite = getEnemySprite(e.id);
+  const hasSprite = !!sprite;
 
   const detail = document.createElement('div');
   detail.className = 'detail';
@@ -396,6 +755,55 @@ function renderDetail() {
   detail.style.setProperty('--biome-accent', biome.accentColor);
   detail.style.setProperty('--biome-tipbg', `${biome.accentColor}10`);
 
+  // Build attack lab section if sprite has attacks
+  let attackLabHtml = '';
+  if(hasSprite && sprite.attacks){
+    const attackButtons = Object.values(sprite.attacks).map(a => `
+      <button class="attack-btn" data-attack="${a.id}">
+        <div class="attack-btn__head">
+          <span class="attack-btn__name">${a.icon || '◇'} ${a.name}</span>
+          <span class="attack-btn__duration">${a.duration < 9999 ? a.duration + 'f' : 'LOOP'}${a.passive ? ' · PASSIVE' : ''}</span>
+        </div>
+        <div class="attack-btn__desc">${a.description || ''}</div>
+      </button>
+    `).join('');
+    attackLabHtml = `
+      <div class="attack-lab">
+        <div class="attack-lab__head">
+          <div class="attack-lab__title">▸ ATTACK LAB</div>
+          <div class="attack-lab__status" id="attack-lab-status">CLIQUE UNE ATTAQUE</div>
+        </div>
+        <div class="attack-lab__list">${attackButtons}</div>
+        <div class="attack-lab__preview">
+          <canvas class="attack-canvas" id="attack-canvas" width="320" height="200"></canvas>
+          <div class="attack-progress"><div class="attack-progress__fill" id="attack-progress-fill"></div></div>
+          <div class="attack-frame-info">
+            <span id="attack-frame-text">—</span>
+            <span>60 FPS</span>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    attackLabHtml = `
+      <div class="attack-lab">
+        <div class="attack-lab__head">
+          <div class="attack-lab__title">▸ ATTACK LAB</div>
+          <div class="attack-lab__status">SPRITE EN COURS DE CRÉATION</div>
+        </div>
+        <div style="grid-column:1/-1; padding:24px; text-align:center; color:var(--text-faint); font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px;">
+          ▸ AUCUN SPRITE PIXEL-ART POUR CET ENNEMI<br>
+          <span style="font-size:9px; color:var(--text-faint);">Prochaine étape : design + implémentation</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Sprite head : canvas si dispo, sinon emoji
+  const headSpriteHtml = hasSprite
+    ? `<canvas class="detail__sprite-canvas" id="detail-sprite-canvas" width="120" height="140"></canvas>`
+    : `<div class="detail__sprite-canvas" style="display:flex; align-items:center; justify-content:center; font-size:64px;">${e.icon || '?'}</div>`;
+
   detail.innerHTML = `
     <div class="detail__corner detail__corner--tl"></div>
     <div class="detail__corner detail__corner--tr"></div>
@@ -403,7 +811,7 @@ function renderDetail() {
     <div class="detail__corner detail__corner--br"></div>
 
     <div class="detail__head">
-      <div class="detail__icon-box">${e.icon || '?'}</div>
+      ${headSpriteHtml}
       <div class="detail__title-block">
         <div class="detail__file">FILE://BESTIARY/${(e.id||'').toUpperCase()}</div>
         <div class="detail__name">${e.name}</div>
@@ -417,9 +825,11 @@ function renderDetail() {
 
     <div class="detail__lore">${e.lore || '<i>Pas de lore enregistré.</i>'}</div>
 
+    ${attackLabHtml}
+
     <div class="stats-grid">
       <div>
-        <h4>◢ STATS DE BASE (legacy)</h4>
+        <h4>◢ STATS DE BASE</h4>
         <div class="stat-row"><span class="stat-row__label">HP</span><span class="stat-row__value">${e.hp}</span></div>
         <div class="stat-row"><span class="stat-row__label">Armure</span><span class="stat-row__value">${e.armor}</span></div>
         <div class="stat-row"><span class="stat-row__label">Dégâts</span><span class="stat-row__value dmg-${e.damageType}">${baseDmg[0]}-${baseDmg[1]} (avg ${avgDmg.toFixed(0)})</span></div>
@@ -434,12 +844,10 @@ function renderDetail() {
         <div class="stat-row"><span class="stat-row__label">HP lvl 1</span><span class="stat-row__value">${hpL1}</span></div>
         <div class="stat-row"><span class="stat-row__label">HP lvl 5</span><span class="stat-row__value">${hpL5}</span></div>
         <div class="stat-row"><span class="stat-row__label">HP lvl 10</span><span class="stat-row__value">${hpL10}</span></div>
-        <div class="stat-row"><span class="stat-row__label">DMG lvl 5</span><span class="stat-row__value dmg-${e.damageType}">${dmgL5}</span></div>
-        <div class="stat-row"><span class="stat-row__label">DMG lvl 10</span><span class="stat-row__value dmg-${e.damageType}">${dmgL10}</span></div>
       </div>
     </div>
 
-    <h4 class="text-xs uppercase mb-2" style="color:${biome.color};letter-spacing:2px">◢ CAPACITÉS SPÉCIALES</h4>
+    <h4 class="text-xs uppercase mb-2" style="color:${biome.color};letter-spacing:2px">◢ CAPACITÉS (FICHE)</h4>
     <div class="mb-4">${abilities}</div>
 
     ${e.behavior ? `
@@ -454,8 +862,31 @@ function renderDetail() {
       </div>
     ` : ''}
   `;
+
   host.innerHTML = '';
   host.appendChild(detail);
+
+  // Setup canvases si sprite dispo
+  if(hasSprite){
+    const dCv = document.getElementById('detail-sprite-canvas');
+    if(dCv) setupDetailCanvas(dCv, e.id);
+    const aCv = document.getElementById('attack-canvas');
+    if(aCv){
+      setupAttackCanvas(aCv);
+      // Reset l'attaque
+      state.currentAttack = null;
+      state.attackFrame = 0;
+      state.fxSystem.clear();
+    }
+    // Wire les boutons d'attaque
+    document.querySelectorAll('.attack-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectAttack(btn.dataset.attack));
+    });
+  } else {
+    detailCanvas = null;
+    detailSprite = null;
+    attackCanvas = null;
+  }
 }
 
 function render() {
@@ -463,26 +894,28 @@ function render() {
   renderBiomeBanner();
   renderEnemyGrid();
   renderDetail();
-  // Update active classes for role filters
   document.querySelectorAll('#role-filters .filter-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.role === state.role);
   });
 }
 
-// ============ INIT ============
-
+// ============================================================================
+// INIT
+// ============================================================================
 (async function init() {
   ALL_ENEMIES = await loadEnemies();
   document.getElementById('header-sub').textContent =
-    `${ALL_ENEMIES.length} ENTITÉS_RÉPERTORIÉES // ${Object.keys(BIOMES).length} BIOMES_ACTIFS`;
-  if (ALL_ENEMIES.length > 0) state.selectedId = ALL_ENEMIES[0].id;
+    `${ALL_ENEMIES.length} ENTITÉS_RÉPERTORIÉES // ${Object.keys(BIOMES).length} BIOMES_ACTIFS // ${Object.keys(ENEMY_SPRITES).length} SPRITES_ACTIFS`;
 
-  // Search input
+  // Sélectionne par défaut le premier ennemi qui a un sprite, sinon le premier tout court
+  const firstWithSprite = ALL_ENEMIES.find(e => getEnemySprite(e.id));
+  if (firstWithSprite) state.selectedId = firstWithSprite.id;
+  else if (ALL_ENEMIES.length > 0) state.selectedId = ALL_ENEMIES[0].id;
+
   document.getElementById('search').addEventListener('input', e => {
     state.search = e.target.value;
     render();
   });
-  // Role filters
   document.querySelectorAll('#role-filters .filter-btn').forEach(b => {
     b.addEventListener('click', () => { state.role = b.dataset.role; render(); });
   });
