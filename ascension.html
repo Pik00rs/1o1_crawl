@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0510">
+<title>Reactor Hollow — Ascension</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0a0510;
+    color: #d8c8a0;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body {
+    padding: 24px;
+    background: radial-gradient(ellipse at top, #1a0820 0%, #0a0510 70%);
+    -webkit-tap-highlight-color: transparent;
+  }
+  html { scroll-behavior: smooth; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0510; }
+  ::-webkit-scrollbar-thumb { background: #3a2840; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #5a4860; }
+
+  /* === HEADER === */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border: 1px solid #3a2840;
+    background: #14081e;
+    margin-bottom: 24px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .header-title {
+    font-size: 18px;
+    color: #ffd060;
+    text-shadow: 0 0 8px rgba(255,208,96,0.4);
+    letter-spacing: 2px;
+  }
+  .header-subtitle {
+    font-size: 11px;
+    color: #6a5878;
+    margin-top: 2px;
+    letter-spacing: 1px;
+  }
+  .header-stats {
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    color: #8a7898;
+  }
+  .header-stat .v { color: #d8c8a0; font-weight: bold; }
+
+  /* Entry animations : fade-up + stagger */
+  @keyframes entryFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .biome-grid > .biome-card,
+  .dungeon-list > .dungeon-card {
+    animation: entryFadeUp 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  .biome-grid > .biome-card:nth-child(1) { animation-delay: 0.04s; }
+  .biome-grid > .biome-card:nth-child(2) { animation-delay: 0.10s; }
+  .biome-grid > .biome-card:nth-child(3) { animation-delay: 0.16s; }
+  .biome-grid > .biome-card:nth-child(4) { animation-delay: 0.22s; }
+  .biome-grid > .biome-card:nth-child(5) { animation-delay: 0.28s; }
+  .dungeon-list > .dungeon-card:nth-child(1) { animation-delay: 0.05s; }
+  .dungeon-list > .dungeon-card:nth-child(2) { animation-delay: 0.11s; }
+  .dungeon-list > .dungeon-card:nth-child(3) { animation-delay: 0.17s; }
+  .dungeon-list > .dungeon-card:nth-child(4) { animation-delay: 0.23s; }
+  .dungeon-list > .dungeon-card:nth-child(5) { animation-delay: 0.29s; }
+  .dungeon-list > .dungeon-card:nth-child(6) { animation-delay: 0.35s; }
+
+  /* === STEP 1: BIOME GRID === */
+  .step-title {
+    font-size: 13px;
+    color: #6a5878;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+  .biome-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .biome-card {
+    position: relative;
+    border: 2px solid #3a2840;
+    background: #14081e;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .biome-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--biome-gradient);
+    opacity: 0.15;
+    pointer-events: none;
+  }
+  .biome-card.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .biome-card:active:not(.locked) {
+    transform: scale(0.98);
+    border-color: var(--biome-color);
+  }
+  @media (hover: hover) {
+    .biome-card:hover:not(.locked) {
+      border-color: var(--biome-color);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+    .biome-card.locked:hover {
+      transform: none;
+      border-color: #3a2840;
+    }
+  }
+  .biome-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .biome-icon-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .biome-icon {
+    font-size: 32px;
+    filter: drop-shadow(0 0 8px var(--biome-color));
+  }
+  .biome-name {
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--biome-accent);
+    text-shadow: 0 0 8px var(--biome-color);
+  }
+  .biome-subtitle {
+    font-size: 11px;
+    color: #8a7898;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .biome-tier {
+    font-size: 11px;
+    color: #ffd060;
+    border: 1px solid #5a4828;
+    padding: 4px 8px;
+    background: rgba(255,208,96,0.1);
+    letter-spacing: 1px;
+  }
+  .biome-desc {
+    font-size: 12px;
+    color: #a89878;
+    line-height: 1.5;
+    margin-top: 12px;
+    flex: 1;
+  }
+  .biome-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #2a1830;
+    font-size: 11px;
+  }
+  .biome-resource {
+    color: var(--biome-color);
+    letter-spacing: 1px;
+  }
+  .biome-progress {
+    color: #6a5878;
+  }
+  .biome-progress .v {
+    color: #d8c8a0;
+    font-weight: bold;
+  }
+
+  /* === STEP 2: DUNGEON LIST === */
+  .step2 { display: none; }
+  .step2.active {
+    display: block;
+    animation: stepFadeIn 0.35s ease-out;
+  }
+  @keyframes stepFadeIn {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .biome-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 2px solid;
+    background: #14081e;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .biome-header-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--biome-gradient);
+    opacity: 0.2;
+    pointer-events: none;
+  }
+  .back-btn {
+    background: transparent;
+    border: 1px solid #5a4828;
+    color: #d8c8a0;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    min-height: 40px;
+  }
+  .back-btn:active {
+    border-color: #ffd060;
+    color: #ffd060;
+    transform: scale(0.96);
+  }
+  @media (hover: hover) {
+    .back-btn:hover {
+      border-color: #ffd060;
+      color: #ffd060;
+    }
+  }
+  .biome-header-content {
+    flex: 1;
+    z-index: 1;
+  }
+  .biome-header-title {
+    font-size: 24px;
+    color: var(--biome-accent);
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px var(--biome-color);
+  }
+  .biome-header-info {
+    font-size: 11px;
+    color: #8a7898;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  .biome-header-resource {
+    text-align: right;
+    z-index: 1;
+  }
+  .biome-header-resource .label { font-size: 10px; color: #6a5878; letter-spacing: 1px; }
+  .biome-header-resource .value { font-size: 16px; color: var(--biome-color); margin-top: 2px; }
+
+  .dungeon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 900px;
+  }
+  .dungeon-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border: 2px solid #2a1830;
+    background: #14081e;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .dungeon-card.available {
+    border-color: #5a4828;
+  }
+  .dungeon-card.cleared {
+    border-color: #3a5828;
+    background: linear-gradient(90deg, rgba(61,240,104,0.05), transparent);
+  }
+  .dungeon-card.available:active {
+    transform: scale(0.985);
+    border-color: var(--biome-color);
+    background: rgba(0,0,0,0.5);
+  }
+  @media (hover: hover) {
+    .dungeon-card.available:hover {
+      border-color: var(--biome-color);
+      background: rgba(0,0,0,0.5);
+      transform: translateX(4px);
+    }
+    .dungeon-card.cleared:hover {
+      border-color: #3df068;
+    }
+  }
+  .dungeon-card.locked {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #0a0510;
+  }
+  .dungeon-card.selected {
+    border-color: var(--biome-accent);
+    background: rgba(0,0,0,0.6);
+  }
+  .dungeon-level {
+    font-size: 28px;
+    font-weight: bold;
+    width: 50px;
+    text-align: center;
+    color: var(--biome-color);
+    text-shadow: 0 0 8px var(--biome-color);
+    letter-spacing: -1px;
+  }
+  .dungeon-card.locked .dungeon-level { color: #5a4828; text-shadow: none; }
+  .dungeon-info {
+    flex: 1;
+  }
+  .dungeon-name {
+    font-size: 16px;
+    color: #d8c8a0;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .dungeon-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: #8a7898;
+  }
+  .dungeon-meta span { display: flex; align-items: center; gap: 4px; }
+  .dungeon-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .tag.elite { background: #5a3868; color: #c8a0e8; }
+  .tag.miniboss { background: #5a4828; color: #ffd060; }
+  .tag.boss {
+    background: #5a0808; color: #ff8080;
+    box-shadow: 0 0 10px rgba(255,128,128,0.5);
+    animation: bossPulse 2s ease-in-out infinite;
+  }
+  @keyframes bossPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,128,128,0.5); }
+    50% { box-shadow: 0 0 16px rgba(255,128,128,0.85); }
+  }
+  /* Boss dungeon card : sang qui suinte du bord droit */
+  .dungeon-card.has-boss {
+    background: linear-gradient(90deg, #14081e 0%, #14081e 70%, rgba(90,8,8,0.4) 100%);
+  }
+  .dungeon-card.has-boss::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, transparent, #c82828, transparent);
+    opacity: 0.6;
+  }
+  .dungeon-status {
+    width: 90px;
+    text-align: right;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+  .status-cleared { color: #3df068; }
+  .status-available { color: #ffd060; }
+  .status-locked { color: #5a4828; }
+
+  /* === SIDE PANEL === */
+  .side-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(2px);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .side-panel-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .side-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 480px;
+    max-width: 90vw;
+    background: #0a0510;
+    border-left: 2px solid var(--biome-color, #5a4828);
+    z-index: 101;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    box-shadow: -8px 0 30px rgba(0,0,0,0.7);
+  }
+  .side-panel.active { transform: translateX(0); }
+
+  .side-panel-header {
+    padding: 20px 24px;
+    border-bottom: 2px solid #2a1830;
+    background: #14081e;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    backdrop-filter: blur(4px);
+  }
+  .side-panel-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: 1px solid #5a4828;
+    color: #d8c8a0;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .side-panel-close:active { border-color: #ff8080; color: #ff8080; transform: scale(0.92); }
+  @media (hover: hover) {
+    .side-panel-close:hover { border-color: #ff8080; color: #ff8080; }
+  }
+
+  .side-level {
+    font-size: 11px;
+    color: var(--biome-color);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .side-name {
+    font-size: 22px;
+    color: var(--biome-accent);
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px var(--biome-color);
+    margin-bottom: 8px;
+  }
+  .side-status {
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    display: inline-block;
+    border: 1px solid;
+  }
+
+  .side-section {
+    padding: 18px 24px;
+    border-bottom: 1px solid #2a1830;
+  }
+  .side-section-title {
+    font-size: 11px;
+    color: #6a5878;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .stat-box {
+    padding: 10px 12px;
+    background: #14081e;
+    border: 1px solid #2a1830;
+  }
+  .stat-box-label {
+    font-size: 10px;
+    color: #6a5878;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .stat-box-value {
+    font-size: 18px;
+    color: #d8c8a0;
+    font-weight: bold;
+    line-height: 1.2;
+  }
+  .stat-box-value .unit { font-size: 11px; color: #8a7898; font-weight: normal; }
+
+  /* Enemy list */
+  .enemy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .enemy-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #14081e;
+    border: 1px solid #2a1830;
+  }
+  .enemy-sprite-mini {
+    width: 28px;
+    height: 38px;
+    background: #0a0510;
+    border: 1px solid #2a1830;
+    flex-shrink: 0;
+  }
+  .enemy-info { flex: 1; min-width: 0; }
+  .enemy-name {
+    font-size: 12px;
+    color: #d8c8a0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .enemy-role {
+    font-size: 10px;
+    color: #6a5878;
+    margin-top: 2px;
+  }
+  .enemy-role.elite { color: #c8a0e8; }
+  .enemy-role.miniboss { color: #ffd060; }
+  .enemy-role.boss { color: #ff8080; }
+
+  /* Loot pool */
+  .loot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .loot-row {
+    padding: 10px 12px;
+    background: #14081e;
+    border-left: 3px solid var(--rarity-color);
+    border-top: 1px solid #2a1830;
+    border-right: 1px solid #2a1830;
+    border-bottom: 1px solid #2a1830;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .loot-icon {
+    font-size: 22px;
+    width: 32px;
+    text-align: center;
+  }
+  .loot-info { flex: 1; min-width: 0; }
+  .loot-name-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .loot-name {
+    font-size: 13px;
+    color: var(--rarity-color);
+    font-weight: bold;
+  }
+  .loot-rarity {
+    font-size: 9px;
+    color: var(--rarity-color);
+    border: 1px solid var(--rarity-color);
+    padding: 1px 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .loot-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    font-size: 10px;
+    color: #8a7898;
+  }
+  .loot-stat .label { color: #6a5878; }
+  .loot-stat .val { color: #d8c8a0; }
+  .loot-weight {
+    font-size: 10px;
+    color: #6a5878;
+    margin-top: 4px;
+  }
+  .loot-weight .v { color: #a89878; }
+
+  /* Resource preview */
+  .resource-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #14081e;
+    border: 1px solid #2a1830;
+  }
+  .resource-icon {
+    font-size: 28px;
+    width: 36px;
+    text-align: center;
+    filter: drop-shadow(0 0 6px var(--biome-color));
+  }
+  .resource-name {
+    font-size: 14px;
+    color: var(--biome-color);
+    letter-spacing: 1px;
+  }
+  .resource-amount {
+    font-size: 11px;
+    color: #8a7898;
+    margin-top: 2px;
+  }
+  .resource-amount .v { color: #d8c8a0; font-weight: bold; }
+
+  /* Enter button */
+  .enter-btn-wrap { padding: 18px 24px 32px; position: sticky; bottom: 0; background: linear-gradient(180deg, transparent, #0a0510 30%); }
+  .enter-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--biome-color);
+    color: #0a0510;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    min-height: 52px;
+  }
+  .enter-btn:active:not(:disabled) {
+    background: var(--biome-accent);
+    box-shadow: 0 0 30px var(--biome-color);
+    transform: scale(0.98);
+  }
+  @media (hover: hover) {
+    .enter-btn:hover:not(:disabled) {
+      background: var(--biome-accent);
+      box-shadow: 0 0 20px var(--biome-color);
+    }
+  }
+  .enter-btn:disabled {
+    background: #2a1830;
+    color: #5a4828;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* Boss legendary guarantee notice */
+  .boss-notice {
+    padding: 12px 14px;
+    background: linear-gradient(90deg, rgba(255,170,32,0.18), rgba(255,170,32,0.04) 70%, transparent);
+    border-left: 3px solid #ffaa20;
+    font-size: 11px;
+    color: #ffd060;
+    margin-top: 12px;
+    letter-spacing: 1.2px;
+    line-height: 1.4;
+    text-shadow: 0 0 8px rgba(255,208,96,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .boss-notice::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -50%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,208,96,0.3), transparent);
+    animation: bossNoticeShine 3.2s ease-in-out infinite;
+  }
+  @keyframes bossNoticeShine {
+    0% { left: -50%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+  }
+
+
+  /* === A11Y : focus visible pour navigation clavier === */
+  button:focus-visible,
+  .biome-card:focus-visible,
+  .dungeon-card:focus-visible {
+    outline: 2px solid #ffd060;
+    outline-offset: 2px;
+  }
+  .biome-card:focus-visible {
+    border-color: var(--biome-color);
+  }
+  .biome-card,
+  .dungeon-card {
+    /* Permet le focus clavier */
+  }
+
+    /* ============================================================
+     MOBILE / RESPONSIVE
+     ============================================================ */
+
+  /* Tablet : ~700-900px */
+  @media (max-width: 900px) {
+    .biome-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .side-panel { width: 420px; }
+  }
+
+  /* Mobile : ~600px et moins */
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+
+    /* Header compact, stats sur ligne suivante */
+    .header { padding: 10px 12px; gap: 8px; }
+    .header-title { font-size: 16px; letter-spacing: 1.5px; }
+    .header-subtitle { font-size: 9px; letter-spacing: 0.5px; }
+    .header-stats { gap: 12px; font-size: 10px; flex-wrap: wrap; width: 100%; }
+
+    /* Step title compact */
+    .step-title { font-size: 11px; letter-spacing: 2px; margin-bottom: 8px; }
+
+    /* Biome grid : 1 colonne pleine largeur */
+    .biome-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: 16px; }
+    .biome-card { padding: 14px; min-height: auto; }
+    .biome-card-header { flex-wrap: wrap; gap: 8px; }
+    .biome-icon { font-size: 26px; }
+    .biome-name { font-size: 18px; letter-spacing: 1.5px; }
+    .biome-subtitle { font-size: 10px; }
+    .biome-tier { font-size: 10px; padding: 3px 6px; }
+    .biome-desc { font-size: 11px; line-height: 1.4; margin-top: 8px; }
+    .biome-footer { font-size: 10px; margin-top: 10px; padding-top: 10px; }
+
+    /* Step 2 header bar : reflow vertical */
+    .biome-header-bar {
+      flex-wrap: wrap;
+      padding: 12px;
+      gap: 10px;
+    }
+    .biome-header-bar > div[style*="font-size: 32px"] { font-size: 24px !important; }
+    .biome-header-content { flex-basis: 100%; order: 3; }
+    .biome-header-title { font-size: 18px; letter-spacing: 2px; }
+    .biome-header-info { font-size: 10px; line-height: 1.5; }
+    .biome-header-resource { text-align: left; flex: 1; }
+    .biome-header-resource .label { font-size: 9px; }
+    .biome-header-resource .value { font-size: 13px; }
+    .back-btn { padding: 8px 12px; font-size: 11px; min-height: 36px; }
+
+    /* Dungeon cards : compact, pas de transform sur tap */
+    .dungeon-list { gap: 8px; }
+    .dungeon-card { padding: 12px; gap: 10px; }
+    .dungeon-card.available:active, .dungeon-card.cleared:active { transform: scale(0.99); }
+    .dungeon-level { font-size: 22px; width: 32px; }
+    .dungeon-name { font-size: 14px; letter-spacing: 0.5px; }
+    .dungeon-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+      font-size: 10px;
+    }
+    .dungeon-meta span { gap: 3px; }
+    .dungeon-status { width: auto; min-width: 60px; font-size: 9px; }
+
+    /* Side panel : devient bottom-sheet pour mobile */
+    .side-panel {
+      width: 100%;
+      max-width: 100%;
+      top: auto;
+      bottom: 0;
+      height: 90vh;
+      max-height: 90vh;
+      border-left: none;
+      border-top: 2px solid var(--biome-color, #5a4828);
+      transform: translateY(100%);
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.7);
+      border-radius: 12px 12px 0 0;
+    }
+    .side-panel.active { transform: translateY(0); }
+    .side-panel-header { padding: 16px 18px; }
+    .side-panel-header::before {
+      content: '';
+      position: absolute;
+      top: 6px; left: 50%;
+      transform: translateX(-50%);
+      width: 36px; height: 4px;
+      background: #5a4828;
+      border-radius: 2px;
+    }
+    .side-section { padding: 14px 18px; }
+    .side-section-title { font-size: 10px; margin-bottom: 8px; }
+    .side-name { font-size: 18px; padding-right: 50px; }
+    .side-level { font-size: 10px; }
+    .side-status { font-size: 10px; }
+
+    /* Stats grid mobile : 2 colonnes (déjà OK), juste réduire padding */
+    .stats-grid { gap: 8px; }
+    .stat-box { padding: 8px 10px; }
+    .stat-box-label { font-size: 9px; }
+    .stat-box-value { font-size: 16px; }
+
+    /* Enemy/loot rows */
+    .enemy-row { padding: 6px 8px; gap: 8px; }
+    .enemy-sprite-mini { width: 32px; height: 44px; }
+    .enemy-name { font-size: 11px; }
+    .enemy-role { font-size: 9px; }
+
+    .loot-row { padding: 8px 10px; gap: 8px; }
+    .loot-icon { font-size: 18px; width: 24px; }
+    .loot-name { font-size: 12px; }
+    .loot-rarity { font-size: 8px; padding: 1px 5px; }
+    .loot-stats { gap: 6px; font-size: 9px; }
+
+    .resource-icon { font-size: 22px; width: 28px; }
+    .resource-name { font-size: 13px; }
+    .resource-amount { font-size: 10px; }
+
+    .enter-btn-wrap { padding: 14px 18px 24px; }
+    .enter-btn { font-size: 13px; letter-spacing: 2px; padding: 14px; }
+
+    .boss-notice { font-size: 10px; padding: 8px 10px; }
+  }
+
+  /* Très petit : ~380px (typique smartphone moderne) */
+  @media (max-width: 400px) {
+    body { padding: 8px; }
+    .header-title { font-size: 14px; }
+    .biome-name { font-size: 16px; }
+    .dungeon-meta { font-size: 9px; gap: 3px 8px; }
+    .side-panel { height: 92vh; }
+  }
+
+  /* Reduce motion : respecter les préférences accessibilité */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-title">⛧ ASCENSION</div>
+    <div class="header-subtitle">SELECT BIOME · DESCEND DUNGEONS · ASCEND TIERS</div>
+  </div>
+  <div class="header-stats" id="header-stats"></div>
+</div>
+
+<!-- STEP 1 : BIOME GRID -->
+<div class="step1" id="step1">
+  <div class="step-title">▸ Select Biome</div>
+  <div class="biome-grid" id="biome-grid"></div>
+</div>
+
+<!-- STEP 2 : DUNGEON LIST -->
+<div class="step2" id="step2">
+  <div class="biome-header-bar" id="biome-header-bar"></div>
+  <div class="step-title">▸ Select Dungeon</div>
+  <div class="dungeon-list" id="dungeon-list"></div>
+</div>
+
+<!-- SIDE PANEL -->
+<div class="side-panel-overlay" id="side-panel-overlay"></div>
+<div class="side-panel" id="side-panel">
+  <div id="side-panel-content"></div>
+</div>
+
+<script type="module">
+import { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, getDungeonStatus } from './ascension-data.js';
+import { getEnemySprite } from '../js/render/enemies/index.js';
+
+// === STATE ===
+let currentBiome = null;
+let currentDungeon = null;
+const enemyAnimations = new Map(); // enemyId → animFrame counter
+
+// === ENEMY METADATA (for role labels) ===
+function getEnemyRole(enemyId){
+  if(enemyId.includes('_boss') && !enemyId.includes('miniboss')) return 'boss';
+  if(enemyId.includes('miniboss')) return 'miniboss';
+  if(['inferno_berserker', 'cryo_sentinel', 'toxic_alpha', 'voidnet_overclocked', 'crimson_gladiator'].includes(enemyId)) return 'elite';
+  return 'mob';
+}
+
+function getEnemyDisplayName(enemyId){
+  const names = {
+    inferno_brute: 'Mineur Brûlé', inferno_caster: 'Pyromancien Mineur', inferno_charger: 'Charge-Brasier',
+    inferno_archer: 'Archer Cendré', inferno_engineer: 'Ingénieur Damné', inferno_berserker: 'Berserker Ardent',
+    inferno_minibossDrone: 'Drone d\'Assaut', inferno_boss: 'Pyromancien',
+    cryo_brute: 'Brute Givrée', cryo_caster: 'Cryo-Mancien', cryo_skater: 'Patineur de Glace',
+    cryo_archer: 'Archer Glacé', cryo_shielder: 'Bouclier Givré', cryo_sentinel: 'Sentinelle Glaciaire',
+    cryo_minibossWarden: 'Warden de Glace', cryo_boss: 'Cryo-Reine',
+    toxic_brute: 'Brute Putride', toxic_spitter: 'Cracheur d\'Acide', toxic_swarmer: 'Essaim Putride',
+    toxic_carrier: 'Porteur de Spores', toxic_grafted: 'Greffé Mutant', toxic_alpha: 'Alpha de la Meute',
+    toxic_minibossSpore: 'Mère-Spore', toxic_boss: 'Bête Putréfiée',
+    voidnet_glitch: 'Erreur Persistante', voidnet_daemon: 'Daemon Mineur', voidnet_executor: 'Exécuteur',
+    voidnet_corrupter: 'Corrupteur', voidnet_replicator: 'Réplicateur', voidnet_overclocked: 'Process Overclocké',
+    voidnet_minibossKernel: 'Sous-Noyau de Trame', voidnet_boss: 'Architecte du Vide',
+    crimson_brawler: 'Bagarreur de Fosse', crimson_butcher: 'Boucher', crimson_throwblade: 'Lanceur de Lames',
+    crimson_hooked: 'Crocheteur', crimson_doctor: 'Docteur de Sang', crimson_gladiator: 'Gladiateur',
+    crimson_minibossExecutioner: 'Exécuteur de l\'Arène', crimson_boss: 'Champion du Sang',
+  };
+  return names[enemyId] || enemyId;
+}
+
+// === RENDER STEP 1 : BIOME GRID ===
+function renderBiomeGrid(){
+  const grid = document.getElementById('biome-grid');
+  grid.innerHTML = '';
+  Object.values(ASCENSION_DATA).forEach(biome => {
+    const card = document.createElement('div');
+    card.className = 'biome-card';
+    card.style.setProperty('--biome-color', biome.color);
+    card.style.setProperty('--biome-accent', biome.accent);
+    card.style.setProperty('--biome-gradient', `linear-gradient(135deg, ${biome.colorDark}, ${biome.color})`);
+
+    if(!biome.unlocked) card.classList.add('locked');
+
+    const progress = PLAYER_PROGRESS[biome.id];
+    const cleared = progress.clearedDungeons.length;
+
+    card.innerHTML = `
+      <div class="biome-card-header">
+        <div class="biome-icon-wrap">
+          <div class="biome-icon">${biome.icon}</div>
+          <div>
+            <div class="biome-name">${biome.name}</div>
+            <div class="biome-subtitle">${biome.subtitle}</div>
+          </div>
+        </div>
+        <div class="biome-tier">TIER ${biome.tier}</div>
+      </div>
+      <div class="biome-desc">${biome.description}</div>
+      <div class="biome-footer">
+        <div class="biome-resource">${biome.resource.icon} ${biome.resource.name}</div>
+        <div class="biome-progress"><span class="v">${cleared}</span>/6 cleared</div>
+      </div>
+    `;
+    if(biome.unlocked){
+      card.addEventListener('click', () => openBiome(biome.id));
+    }
+    grid.appendChild(card);
+  });
+
+  // Header stats
+  const totalCleared = Object.values(PLAYER_PROGRESS).reduce((s, p) => s + p.clearedDungeons.length, 0);
+  document.getElementById('header-stats').innerHTML = `
+    <div class="header-stat">DUNGEONS · <span class="v">${totalCleared}/30</span></div>
+    <div class="header-stat">BIOMES · <span class="v">5</span></div>
+  `;
+}
+
+// === RENDER STEP 2 : DUNGEON LIST ===
+function openBiome(biomeId){
+  currentBiome = biomeId;
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').classList.add('active');
+  renderBiomeHeader();
+  renderDungeonList();
+}
+
+function backToStep1(){
+  closeSidePanel();
+  currentBiome = null;
+  currentDungeon = null;
+  document.getElementById('step1').style.display = 'block';
+  document.getElementById('step2').classList.remove('active');
+}
+
+function renderBiomeHeader(){
+  const biome = ASCENSION_DATA[currentBiome];
+  const bar = document.getElementById('biome-header-bar');
+  bar.style.setProperty('--biome-color', biome.color);
+  bar.style.setProperty('--biome-accent', biome.accent);
+  bar.style.setProperty('--biome-gradient', `linear-gradient(90deg, ${biome.colorDark}, transparent)`);
+  bar.style.borderColor = biome.color;
+
+  const progress = PLAYER_PROGRESS[currentBiome];
+  const cleared = progress.clearedDungeons.length;
+
+  bar.innerHTML = `
+    <button class="back-btn" id="back-btn">◂ BACK</button>
+    <div style="font-size: 32px;">${biome.icon}</div>
+    <div class="biome-header-content">
+      <div class="biome-header-title">${biome.name.toUpperCase()}</div>
+      <div class="biome-header-info">${biome.subtitle} · TIER ${biome.tier} · ${cleared}/6 cleared · loot favorisé : ${biome.lootFavored}</div>
+    </div>
+    <div class="biome-header-resource">
+      <div class="label">BIOME RESOURCE</div>
+      <div class="value">${biome.resource.icon} ${biome.resource.name}</div>
+    </div>
+  `;
+  document.getElementById('back-btn').addEventListener('click', backToStep1);
+}
+
+function renderDungeonList(){
+  const biome = ASCENSION_DATA[currentBiome];
+  const list = document.getElementById('dungeon-list');
+  list.innerHTML = '';
+  list.style.setProperty('--biome-color', biome.color);
+  list.style.setProperty('--biome-accent', biome.accent);
+
+  biome.dungeons.forEach(dungeon => {
+    const status = getDungeonStatus(currentBiome, dungeon.level);
+    const card = document.createElement('div');
+    let cls = `dungeon-card ${status}`;
+    if(dungeon.hasBoss) cls += ' has-boss';
+    card.className = cls;
+    card.style.setProperty('--biome-color', biome.color);
+    card.style.setProperty('--biome-accent', biome.accent);
+
+    const tags = [];
+    if(dungeon.hasElite) tags.push('<span class="tag elite">ELITE</span>');
+    if(dungeon.hasMiniboss) tags.push('<span class="tag miniboss">MINIBOSS</span>');
+    if(dungeon.hasBoss) tags.push('<span class="tag boss">BOSS</span>');
+
+    let statusLabel = '';
+    if(status === 'cleared') statusLabel = '<div class="status-cleared">✓ CLEAN</div>';
+    else if(status === 'available') statusLabel = '<div class="status-available">▸ READY</div>';
+    else statusLabel = '<div class="status-locked">🔒 LOCKED</div>';
+
+    card.innerHTML = `
+      <div class="dungeon-level">${dungeon.level}</div>
+      <div class="dungeon-info">
+        <div class="dungeon-name">${dungeon.name}</div>
+        <div class="dungeon-meta">
+          <span>📐 ${dungeon.rooms} pièces</span>
+          <span>👹 ${dungeon.enemyCount.min}-${dungeon.enemyCount.max} ennemis</span>
+          <span>💰 ${dungeon.lootCount.min}-${dungeon.lootCount.max} loots</span>
+          <span>${biome.resource.icon} ${dungeon.resourceDrop.min}-${dungeon.resourceDrop.max}</span>
+        </div>
+        <div class="dungeon-tags" style="margin-top: 6px;">${tags.join('')}</div>
+      </div>
+      ${statusLabel}
+    `;
+    if(status !== 'locked'){
+      card.addEventListener('click', () => openDungeonPanel(dungeon, card));
+    }
+    list.appendChild(card);
+  });
+}
+
+// === SIDE PANEL ===
+function openDungeonPanel(dungeon, cardEl){
+  currentDungeon = dungeon;
+  const biome = ASCENSION_DATA[currentBiome];
+  const status = getDungeonStatus(currentBiome, dungeon.level);
+
+  // Highlight selected card
+  document.querySelectorAll('.dungeon-card').forEach(c => c.classList.remove('selected'));
+  if(cardEl) cardEl.classList.add('selected');
+
+  const panel = document.getElementById('side-panel');
+  panel.style.setProperty('--biome-color', biome.color);
+  panel.style.setProperty('--biome-accent', biome.accent);
+
+  let statusLabel = '';
+  let statusColor = '';
+  if(status === 'cleared'){ statusLabel = '✓ CLEAN'; statusColor = '#3df068'; }
+  else if(status === 'available'){ statusLabel = '▸ READY TO DESCEND'; statusColor = biome.accent; }
+
+  document.getElementById('side-panel-content').innerHTML = `
+    <div class="side-panel-header">
+      <button class="side-panel-close" id="close-panel">×</button>
+      <div class="side-level">DUNGEON ${dungeon.level} / 6</div>
+      <div class="side-name">${dungeon.name}</div>
+      <div class="side-status" style="color: ${statusColor}; border-color: ${statusColor};">${statusLabel}</div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-title">▸ Layout</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-box-label">PIÈCES</div>
+          <div class="stat-box-value">${dungeon.rooms} <span class="unit">rooms</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">ENNEMIS</div>
+          <div class="stat-box-value">${dungeon.enemyCount.min}–${dungeon.enemyCount.max} <span class="unit">total</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-title">▸ Bestiaire (${dungeon.enemyTypes.length} types)</div>
+      <div class="enemy-list" id="enemy-list-panel"></div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-title">▸ Pool de Loot · ${dungeon.lootCount.min}–${dungeon.lootCount.max} drops</div>
+      <div class="loot-list" id="loot-list-panel"></div>
+      ${dungeon.hasBoss ? '<div class="boss-notice">⚠ BOSS DROP : 1 ÉPIQUE OU LÉGENDAIRE GARANTI</div>' : ''}
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-title">▸ Ressource Biome</div>
+      <div class="resource-row">
+        <div class="resource-icon">${biome.resource.icon}</div>
+        <div>
+          <div class="resource-name">${biome.resource.name}</div>
+          <div class="resource-amount"><span class="v">${dungeon.resourceDrop.min}–${dungeon.resourceDrop.max}</span> par run</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="enter-btn-wrap">
+      <button class="enter-btn" id="enter-btn" ${status === 'locked' ? 'disabled' : ''}>
+        ${status === 'cleared' ? 'REPLAY DUNGEON' : 'ENTER DUNGEON'}
+      </button>
+    </div>
+  `;
+
+  // Render enemy mini-sprites
+  renderEnemyList(dungeon);
+  renderLootPool(dungeon);
+
+  document.getElementById('close-panel').addEventListener('click', closeSidePanel);
+  document.getElementById('enter-btn').addEventListener('click', () => {
+    alert(`Lancement de "${dungeon.name}" (level ${dungeon.level} ${ASCENSION_DATA[currentBiome].name})`);
+  });
+
+  panel.classList.add('active');
+  document.getElementById('side-panel-overlay').classList.add('active');
+}
+
+function closeSidePanel(){
+  document.getElementById('side-panel').classList.remove('active');
+  document.getElementById('side-panel-overlay').classList.remove('active');
+  document.querySelectorAll('.dungeon-card').forEach(c => c.classList.remove('selected'));
+  // Stop animations
+  enemyAnimations.forEach(a => clearInterval(a.intervalId));
+  enemyAnimations.clear();
+}
+
+function renderEnemyList(dungeon){
+  const container = document.getElementById('enemy-list-panel');
+  container.innerHTML = '';
+  dungeon.enemyTypes.forEach(enemyId => {
+    const role = getEnemyRole(enemyId);
+    const name = getEnemyDisplayName(enemyId);
+    const row = document.createElement('div');
+    row.className = 'enemy-row';
+    row.innerHTML = `
+      <canvas class="enemy-sprite-mini" width="56" height="76" data-enemy="${enemyId}"></canvas>
+      <div class="enemy-info">
+        <div class="enemy-name">${name}</div>
+        <div class="enemy-role ${role}">${role.toUpperCase()}</div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+  // Animate the canvases
+  setTimeout(() => animateEnemyCanvases(), 50);
+}
+
+function animateEnemyCanvases(){
+  document.querySelectorAll('canvas[data-enemy]').forEach(canvas => {
+    const enemyId = canvas.dataset.enemy;
+    const sprite = getEnemySprite(enemyId);
+    if(!sprite) return;
+
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    let frame = 0;
+
+    const intervalId = setInterval(() => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Light bg
+      ctx.fillStyle = '#0a0510';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Floor line
+      ctx.fillStyle = '#1a0820';
+      ctx.fillRect(0, 60, canvas.width, 16);
+
+      // Center sprite
+      const sx = canvas.width / 2;
+      const sy = 60;
+      const idleAttack = sprite.attacks?.idle;
+      let opts = {};
+      if(idleAttack && idleAttack.update){
+        const result = idleAttack.update(frame, idleAttack.duration);
+        opts = result.opts || {};
+      }
+      // Scale down for minis
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.scale(0.55, 0.55);
+      sprite.draw(ctx, 0, 0, frame, opts);
+      ctx.restore();
+      frame++;
+    }, 50);
+
+    enemyAnimations.set(enemyId, { intervalId });
+  });
+}
+
+function renderLootPool(dungeon){
+  const container = document.getElementById('loot-list-panel');
+  container.innerHTML = '';
+  // Sort by rarity (legendary first)
+  const rarityOrder = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
+  const sorted = [...dungeon.lootPool].sort((a, b) => rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity));
+
+  // Compute total weight for percentage
+  const totalWeight = sorted.reduce((s, l) => s + l.weight, 0);
+
+  sorted.forEach(loot => {
+    const tpl = ITEM_TEMPLATES[loot.itemId];
+    const rarity = RARITIES[loot.rarity];
+    if(!tpl || !rarity) return;
+
+    const row = document.createElement('div');
+    row.className = 'loot-row';
+    row.style.setProperty('--rarity-color', rarity.color);
+
+    const statsHtml = Object.entries(loot.statRanges).map(([k, v]) => {
+      const range = (v[0] === v[1]) ? `${v[0]}` : `${v[0]}–${v[1]}`;
+      return `<span class="loot-stat"><span class="label">${k.toUpperCase()}</span> <span class="val">${range}</span></span>`;
+    }).join('');
+
+    const pct = ((loot.weight / totalWeight) * 100).toFixed(1);
+
+    row.innerHTML = `
+      <div class="loot-icon">${tpl.icon}</div>
+      <div class="loot-info">
+        <div class="loot-name-row">
+          <div class="loot-name">${tpl.name}</div>
+          <div class="loot-rarity">${rarity.label}</div>
+        </div>
+        <div class="loot-stats">${statsHtml}</div>
+        <div class="loot-weight">DROP RATE · <span class="v">${pct}%</span> dans le pool</div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// === INIT ===
+document.getElementById('side-panel-overlay').addEventListener('click', closeSidePanel);
+
+// Esc pour fermer panel ou revenir step1
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  const panel = document.getElementById('side-panel');
+  if(panel.classList.contains('active')){
+    closeSidePanel();
+  } else if(document.getElementById('step2').classList.contains('active')){
+    backToStep1();
+  }
+});
+
+// Mobile : swipe down sur le side-panel pour le fermer (bottom sheet UX)
+(function setupSwipeToClose(){
+  const panel = document.getElementById('side-panel');
+  let touchStartY = 0;
+  let touchCurrentY = 0;
+  let dragging = false;
+  let startedAtTop = false;
+
+  panel.addEventListener('touchstart', (e) => {
+    if(!panel.classList.contains('active')) return;
+    // Seulement si on est en haut du scroll (pour ne pas interférer avec le scroll interne)
+    startedAtTop = panel.scrollTop <= 2;
+    touchStartY = e.touches[0].clientY;
+    touchCurrentY = touchStartY;
+    dragging = startedAtTop;
+  }, { passive: true });
+
+  panel.addEventListener('touchmove', (e) => {
+    if(!dragging) return;
+    touchCurrentY = e.touches[0].clientY;
+    const dy = touchCurrentY - touchStartY;
+    if(dy > 0){
+      panel.style.transition = 'none';
+      panel.style.transform = `translateY(${dy}px)`;
+    }
+  }, { passive: true });
+
+  panel.addEventListener('touchend', () => {
+    if(!dragging) return;
+    dragging = false;
+    panel.style.transition = '';
+    const dy = touchCurrentY - touchStartY;
+    if(dy > 100){
+      closeSidePanel();
+      // Reset transform après l'anim de close
+      setTimeout(() => { panel.style.transform = ''; }, 350);
+    } else {
+      panel.style.transform = '';
+    }
+  });
+})();
+
+renderBiomeGrid();
+</script>
+
+</body>
+</html>
