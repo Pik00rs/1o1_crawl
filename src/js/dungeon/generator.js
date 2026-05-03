@@ -1,1 +1,275 @@
+// src/js/dungeon/generator.js
+// Génère une run complète de donjon : séquence de rooms + métadonnées.
+// Pure fonction : pas d'effet de bord. Une seed permet la reproductibilité.
 
+import { rollDungeonLoot } from './loot-roller.js';
+
+// ============================================================
+// CONFIGURATION
+// ============================================================
+
+// Mapping biome → ennemis (par catégorie).
+// On reflète la composition exacte des sprites dans /js/render/enemies/.
+const ENEMY_POOL = {
+  inferno: {
+    mobs:     ['inferno_brute', 'inferno_caster', 'inferno_charger', 'inferno_archer', 'inferno_engineer'],
+    elites:   ['inferno_berserker'],
+    miniboss: 'inferno_minibossDrone',
+    boss:     'inferno_boss',
+  },
+  cryo: {
+    mobs:     ['cryo_brute', 'cryo_caster', 'cryo_skater', 'cryo_archer', 'cryo_shielder'],
+    elites:   ['cryo_sentinel'],
+    miniboss: 'cryo_minibossWarden',
+    boss:     'cryo_boss',
+  },
+  toxic: {
+    mobs:     ['toxic_brute', 'toxic_spitter', 'toxic_swarmer', 'toxic_carrier', 'toxic_grafted'],
+    elites:   ['toxic_alpha'],
+    miniboss: 'toxic_minibossSpore',
+    boss:     'toxic_boss',
+  },
+  voidnet: {
+    mobs:     ['voidnet_glitch', 'voidnet_daemon', 'voidnet_executor', 'voidnet_corrupter', 'voidnet_replicator'],
+    elites:   ['voidnet_overclocked'],
+    miniboss: 'voidnet_minibossKernel',
+    boss:     'voidnet_boss',
+  },
+  crimson: {
+    mobs:     ['crimson_brawler', 'crimson_butcher', 'crimson_throwblade', 'crimson_hooked', 'crimson_doctor'],
+    elites:   ['crimson_gladiator'],
+    miniboss: 'crimson_minibossExecutioner',
+    boss:     'crimson_boss',
+  },
+};
+
+// Quantité de rooms par donjon (min, max). Index 0 = D1.
+const ROOM_COUNT_RANGES = [
+  [1, 3],   // D1
+  [2, 4],   // D2
+  [3, 5],   // D3
+  [4, 5],   // D4
+  [5, 6],   // D5
+  [6, 6],   // D6 (fixe)
+];
+
+// Composition par niveau de donjon (qui apparaît dans la séquence ?)
+// Les flags additionnels s'ajoutent aux mobs normaux.
+const DUNGEON_COMPOSITION = [
+  { hasElite: false, hasMiniboss: false, hasBoss: false }, // D1
+  { hasElite: false, hasMiniboss: false, hasBoss: false }, // D2
+  { hasElite: true,  hasMiniboss: false, hasBoss: false }, // D3
+  { hasElite: true,  hasMiniboss: true,  hasBoss: false }, // D4
+  { hasElite: true,  hasMiniboss: true,  hasBoss: false }, // D5
+  { hasElite: true,  hasMiniboss: true,  hasBoss: true  }, // D6
+];
+
+// Nombre de mobs par room normale (min, max). Index 0 = D1.
+const MOBS_PER_ROOM_RANGES = [
+  [1, 2],   // D1
+  [1, 2],   // D2
+  [2, 3],   // D3
+  [2, 3],   // D4
+  [3, 4],   // D5
+  [3, 4],   // D6
+];
+
+// ============================================================
+// PRNG : Mulberry32 (déterministe à partir d'une seed)
+// ============================================================
+
+function mulberry32(seed){
+  let s = seed | 0;
+  return function(){
+    s = (s + 0x6D2B79F5) | 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Convertit une string en seed entière (hash simple)
+function strToSeed(str){
+  let h = 0x811c9dc5;
+  for(let i = 0; i < str.length; i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function rollInt(rng, min, max){
+  // Inclusive both ends.
+  return Math.floor(rng() * (max - min + 1)) + min;
+}
+
+function pickRandom(rng, array){
+  if(array.length === 0) return null;
+  return array[Math.floor(rng() * array.length)];
+}
+
+function pickMultiple(rng, array, count, allowDuplicates = true){
+  if(allowDuplicates){
+    const out = [];
+    for(let i = 0; i < count; i++) out.push(pickRandom(rng, array));
+    return out;
+  }
+  // Sans doublons (Fisher-Yates partiel)
+  const pool = [...array];
+  const out = [];
+  for(let i = 0; i < count && pool.length > 0; i++){
+    const idx = Math.floor(rng() * pool.length);
+    out.push(pool[idx]);
+    pool.splice(idx, 1);
+  }
+  return out;
+}
+
+// ============================================================
+// MAIN GENERATOR
+// ============================================================
+
+/**
+ * Génère une run de donjon complète.
+ *
+ * @param {string} biomeId - 'inferno' | 'cryo' | 'toxic' | 'voidnet' | 'crimson'
+ * @param {number} level - 1..6
+ * @param {object} options
+ * @param {string|number} [options.seed] - seed pour reproductibilité (default: aléatoire)
+ * @returns {Run} Run object
+ */
+export function generateDungeonRun(biomeId, level, options = {}){
+  // Validation
+  if(!ENEMY_POOL[biomeId]){
+    throw new Error(`Unknown biome: ${biomeId}`);
+  }
+  if(!Number.isInteger(level) || level < 1 || level > 6){
+    throw new Error(`Invalid dungeon level: ${level} (must be 1-6)`);
+  }
+
+  // Seed handling
+  const seedSource = options.seed !== undefined
+    ? (typeof options.seed === 'string' ? strToSeed(options.seed) : options.seed)
+    : Math.floor(Math.random() * 0xFFFFFFFF);
+  const rng = mulberry32(seedSource);
+
+  const pool = ENEMY_POOL[biomeId];
+  const composition = DUNGEON_COMPOSITION[level - 1];
+  const [roomMin, roomMax] = ROOM_COUNT_RANGES[level - 1];
+  const [mobMin, mobMax] = MOBS_PER_ROOM_RANGES[level - 1];
+
+  // 1) Combien de rooms ?
+  const roomCount = rollInt(rng, roomMin, roomMax);
+
+  // 2) Construire la séquence d'archétypes de rooms.
+  // Règles :
+  //   - Boss → toujours dernière room (si hasBoss)
+  //   - Miniboss → avant-dernière room (si hasMiniboss)
+  //   - Élite → random parmi les rooms restantes, mais pas la room 0 (sauf si seul choix possible)
+  //   - Le reste = combat
+  const roomTypes = new Array(roomCount).fill('combat');
+
+  // Si très peu de rooms, on doit packer intelligemment.
+  // Cas extrême : roomCount=1 → impossible d'avoir miniboss avant boss, donc on collapse.
+  // Heureusement nos compos garantissent : si hasBoss alors level=6 → roomCount=6 (fixe).
+  // Pour D4-D5 (hasMiniboss sans hasBoss) : roomMin=4, donc OK, miniboss en avant-dernière.
+
+  if(composition.hasBoss){
+    roomTypes[roomCount - 1] = 'boss';
+  }
+
+  if(composition.hasMiniboss){
+    // Avant-dernière. Si hasBoss alors c'est room N-2, sinon dernière room (N-1).
+    const minibossIdx = composition.hasBoss ? roomCount - 2 : roomCount - 1;
+    roomTypes[minibossIdx] = 'miniboss';
+  }
+
+  if(composition.hasElite){
+    // Pool d'index disponibles : tout sauf la room 0 et les rooms déjà occupées (boss/miniboss).
+    const candidates = [];
+    for(let i = 1; i < roomCount; i++){
+      if(roomTypes[i] === 'combat') candidates.push(i);
+    }
+    if(candidates.length > 0){
+      const eliteIdx = pickRandom(rng, candidates);
+      roomTypes[eliteIdx] = 'elite';
+    }
+    // Si pas de candidats valides (improbable dans nos configs), on skip silencieusement.
+  }
+
+  // 3) Pour chaque room, déterminer les ennemis présents.
+  const rooms = roomTypes.map((type, index) => {
+    let enemies;
+    switch(type){
+      case 'combat': {
+        // 1 à N mobs selon la profondeur
+        const count = rollInt(rng, mobMin, mobMax);
+        enemies = pickMultiple(rng, pool.mobs, count, true);
+        break;
+      }
+      case 'elite': {
+        // 1 élite + 1-2 mobs d'escort
+        const elite = pickRandom(rng, pool.elites);
+        const escortCount = rollInt(rng, 1, 2);
+        const escort = pickMultiple(rng, pool.mobs, escortCount, true);
+        enemies = [elite, ...escort];
+        break;
+      }
+      case 'miniboss': {
+        // Miniboss seul
+        enemies = [pool.miniboss];
+        break;
+      }
+      case 'boss': {
+        // Boss seul
+        enemies = [pool.boss];
+        break;
+      }
+      default:
+        enemies = [];
+    }
+    return {
+      index,
+      type,
+      enemies,
+      cleared: false,
+    };
+  });
+
+  // 4) Loot final pré-rollé (au moment de la génération, comme spec'd).
+  const loot = rollDungeonLoot(biomeId, level, rng);
+
+  // 5) Build the Run object.
+  return {
+    biomeId,
+    level,
+    seed: seedSource,
+    roomCount,
+    rooms,
+    finalLoot: loot,
+    // Runtime state (sera mis à jour pendant la run)
+    state: {
+      currentRoomIndex: 0,
+      isComplete: false,
+      isFailed: false,
+    },
+  };
+}
+
+// ============================================================
+// EXPORTS UTILITAIRES (pour debug + UI)
+// ============================================================
+
+export const ROOM_TYPE_LABELS = {
+  combat:   { label: 'COMBAT',   icon: '⚔',  color: '#a89878' },
+  elite:    { label: 'ÉLITE',    icon: '⚜',  color: '#c8a040' },
+  miniboss: { label: 'MINIBOSS', icon: '☠',  color: '#ff8830' },
+  boss:     { label: 'BOSS',     icon: '☠☠', color: '#ff5252' },
+};
+
+export { ENEMY_POOL, DUNGEON_COMPOSITION, ROOM_COUNT_RANGES, MOBS_PER_ROOM_RANGES };
