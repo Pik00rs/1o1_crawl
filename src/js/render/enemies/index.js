@@ -1,6 +1,7 @@
 // src/js/render/enemies/index.js
 // Registry des sprites ennemis. Chaque ennemi exporte une fonction draw()
 // avec la signature standard : (ctx, sx, sy, time, options).
+// 40 ennemis sprités : 5 biomes × 8 (Inferno + Cryo + Toxic + Voidnet + Crimson).
 
 // === INFERNO ===
 import * as inferno_brute from './inferno_brute.js';
@@ -42,6 +43,16 @@ import * as voidnet_overclocked from './voidnet_overclocked.js';
 import * as voidnet_minibossKernel from './voidnet_minibossKernel.js';
 import * as voidnet_boss from './voidnet_boss.js';
 
+// === CRIMSON ===
+import * as crimson_brawler from './crimson_brawler.js';
+import * as crimson_butcher from './crimson_butcher.js';
+import * as crimson_throwblade from './crimson_throwblade.js';
+import * as crimson_hooked from './crimson_hooked.js';
+import * as crimson_doctor from './crimson_doctor.js';
+import * as crimson_gladiator from './crimson_gladiator.js';
+import * as crimson_minibossExecutioner from './crimson_minibossExecutioner.js';
+import * as crimson_boss from './crimson_boss.js';
+
 export const ENEMY_SPRITES = {
   // Inferno
   inferno_brute,
@@ -79,6 +90,15 @@ export const ENEMY_SPRITES = {
   voidnet_overclocked,
   voidnet_minibossKernel,
   voidnet_boss,
+  // Crimson
+  crimson_brawler,
+  crimson_butcher,
+  crimson_throwblade,
+  crimson_hooked,
+  crimson_doctor,
+  crimson_gladiator,
+  crimson_minibossExecutioner,
+  crimson_boss,
 };
 
 /**
