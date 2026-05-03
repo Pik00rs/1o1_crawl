@@ -3,6 +3,28 @@
 // 5 biomes × 6 donjons = 30 donjons au total.
 // Schéma : biome → tier → 6 dungeons → loot pool + enemies.
 
+// === ENEMY DISPLAY NAMES ===
+// Source de vérité pour les noms d'ennemis affichés partout (panel Ascension,
+// combat, bestiaire). Ces noms sont utilisés à la place de DATA.enemies[id].name
+// quand on est dans le contexte d'une run Ascension.
+export const ENEMY_NAMES = {
+  inferno_brute: 'Mineur Brûlé', inferno_caster: 'Pyromancien Mineur', inferno_charger: 'Charge-Brasier',
+  inferno_archer: 'Archer Cendré', inferno_engineer: 'Ingénieur Damné', inferno_berserker: 'Berserker Ardent',
+  inferno_minibossDrone: 'Drone d\'Assaut', inferno_boss: 'Pyromancien',
+  cryo_brute: 'Brute Givrée', cryo_caster: 'Cryo-Mancien', cryo_skater: 'Patineur de Glace',
+  cryo_archer: 'Archer Glacé', cryo_shielder: 'Bouclier Givré', cryo_sentinel: 'Sentinelle Glaciaire',
+  cryo_minibossWarden: 'Warden de Glace', cryo_boss: 'Cryo-Reine',
+  toxic_brute: 'Brute Putride', toxic_spitter: 'Cracheur d\'Acide', toxic_swarmer: 'Essaim Putride',
+  toxic_carrier: 'Porteur de Spores', toxic_grafted: 'Greffé Mutant', toxic_alpha: 'Alpha de la Meute',
+  toxic_minibossSpore: 'Mère-Spore', toxic_boss: 'Bête Putréfiée',
+  voidnet_glitch: 'Erreur Persistante', voidnet_daemon: 'Daemon Mineur', voidnet_executor: 'Exécuteur',
+  voidnet_corrupter: 'Corrupteur', voidnet_replicator: 'Réplicateur', voidnet_overclocked: 'Process Overclocké',
+  voidnet_minibossKernel: 'Sous-Noyau de Trame', voidnet_boss: 'Architecte du Vide',
+  crimson_brawler: 'Bagarreur de Fosse', crimson_butcher: 'Boucher', crimson_throwblade: 'Lanceur de Lames',
+  crimson_hooked: 'Crocheteur', crimson_doctor: 'Docteur de Sang', crimson_gladiator: 'Gladiateur',
+  crimson_minibossExecutioner: 'Exécuteur de l\'Arène', crimson_boss: 'Champion du Sang',
+};
+
 // === ITEMS POOL (référentiel central) ===
 // Chaque item a un id, un nom, une catégorie, un slot, une icône.
 // Les ranges de stats sont définis par donjon (le même item à dungeon 1 vs 6 a des stats différentes).
@@ -365,4 +387,4 @@ export function getDungeonStatus(biomeId, dungeonLevel){
   return 'locked';
 }
 
-export default { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, getDungeonStatus };
+export default { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, getDungeonStatus, ENEMY_NAMES };
