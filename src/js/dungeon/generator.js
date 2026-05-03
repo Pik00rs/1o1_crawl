@@ -6,7 +6,7 @@
 //   2. Générer une map tile-based par room (compatible game.html)
 //   3. Roller le loot final selon la spec du donjon
 
-import { ASCENSION_DATA } from '../../dashboard/ascension-data.js';
+import { ASCENSION_DATA, ENEMY_NAMES } from '../../dashboard/ascension-data.js';
 
 // ============================================================
 // PRNG : Mulberry32 déterministe
@@ -274,7 +274,11 @@ function generateRoomMap(rng, roomType, enemyIds){
       const k = `${ex},${ey}`;
       if(occupied.has(k)) continue;
       occupied.add(k);
-      enemies.push({ type: enemyId, x: ex, y: ey });
+      enemies.push({
+        type: enemyId,
+        x: ex, y: ey,
+        displayName: ENEMY_NAMES[enemyId] || enemyId,
+      });
       placed = true;
     }
   }
