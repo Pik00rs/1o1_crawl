@@ -2115,53 +2115,16 @@ async function performRoomTransition(){
     return;
   }
 
-  // Sinon : transition mid-dungeon avec fade noir
-  // 1. Fade in noir + label "ROOM X/N"
+  // Sinon : transition mid-dungeon avec couloir + hero qui marche
   const totalRooms = run.roomCount || run.rooms.length;
   const remainingAfterShift = run.rooms.length - 1;
   const nextRoomNum = totalRooms - remainingAfterShift + 1;
+  // Le label affiche la PROCHAINE room (celle qu'on s'apprête à entrer)
   await showRoomTransitionOverlay(nextRoomNum, totalRooms, run.biomeId);
-
-  // 2. Charge la prochaine room (window.restartCombat va shift et init)
+  // Charge la prochaine room après que l'utilisateur ait cliqué CONTINUER
   await window.restartCombat();
-
-  // 3. Fade out
+  // Fade out
   await hideRoomTransitionOverlay();
-}
-
-function ensureRoomTransitionOverlay(){
-  let el = document.getElementById('room-transition');
-  if(el) return el;
-  el = document.createElement('div');
-  el.id = 'room-transition';
-  el.style.cssText = `
-    position: fixed; inset: 0; z-index: 9999;
-    background: #000; opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.32s ease;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 16px;
-    color: #ffd060;
-    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
-    text-align: center;
-  `;
-  el.innerHTML = `
-    <div id="room-transition-biome" style="
-      font-size: 11px; letter-spacing: 4px; opacity: 0.8;
-      color: var(--rt-biome-color, #ffd060);
-      text-shadow: 0 0 8px var(--rt-biome-glow, rgba(255,208,96,0.4));
-    "></div>
-    <div id="room-transition-label" style="
-      font-size: 48px; font-weight: 800; letter-spacing: 8px;
-      text-shadow: 0 0 24px rgba(255,208,96,0.6);
-    "></div>
-    <div id="room-transition-sub" style="
-      font-size: 11px; letter-spacing: 3px; opacity: 0.5;
-    ">▸ ENTERING ◂</div>
-  `;
-  document.body.appendChild(el);
-  return el;
 }
 
 const RT_BIOME_LABELS = {
@@ -2172,19 +2135,394 @@ const RT_BIOME_LABELS = {
   crimson: { label: '🩸 CRIMSON', color: '#ff5252' },
 };
 
+let _rtAnimFrame = null;
+
+function ensureRoomTransitionOverlay(){
+  let el = document.getElementById('room-transition');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'room-transition';
+  el.style.cssText = `
+    position: fixed; inset: 0; z-index: 9999;
+    background: #000; opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px;
+    color: #ffd060;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    text-align: center;
+    padding: 24px 16px;
+    box-sizing: border-box;
+  `;
+  el.innerHTML = `
+    <div id="rt-biome" style="
+      font-size: 11px; letter-spacing: 4px; opacity: 0.85;
+      color: var(--rt-biome-color, #ffd060);
+      text-shadow: 0 0 8px var(--rt-biome-glow, rgba(255,208,96,0.4));
+    "></div>
+    <div id="rt-label" style="
+      font-size: 44px; font-weight: 800; letter-spacing: 7px;
+      text-shadow: 0 0 24px rgba(255,208,96,0.6);
+      line-height: 1;
+    "></div>
+    <div id="rt-sub" style="
+      font-size: 10px; letter-spacing: 3px; opacity: 0.55;
+    ">▸ NEXT ROOM ◂</div>
+
+    <canvas id="rt-corridor" width="320" height="220" style="
+      width: min(360px, 78vw); height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      margin-top: 6px;
+      border: 1px solid #2a1830;
+      box-shadow: 0 0 28px rgba(255,170,32,0.15);
+    "></canvas>
+
+    <button id="rt-continue" style="
+      margin-top: 14px;
+      padding: 14px 36px;
+      background: #ffd060;
+      color: #0a0510;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      cursor: pointer;
+      min-height: 52px;
+      text-transform: uppercase;
+      transition: all 0.15s;
+      box-shadow: 0 0 18px rgba(255,208,96,0.5);
+    ">▸ CONTINUER ◂</button>
+  `;
+  document.body.appendChild(el);
+
+  const btn = el.querySelector('#rt-continue');
+  btn.addEventListener('mouseenter', () => { btn.style.background = '#ffe890'; btn.style.boxShadow = '0 0 28px rgba(255,208,96,0.85)'; });
+  btn.addEventListener('mouseleave', () => { btn.style.background = '#ffd060'; btn.style.boxShadow = '0 0 18px rgba(255,208,96,0.5)'; });
+  btn.addEventListener('mousedown', () => { btn.style.transform = 'scale(0.96)'; });
+  btn.addEventListener('mouseup', () => { btn.style.transform = ''; });
+  btn.addEventListener('touchstart', () => { btn.style.transform = 'scale(0.96)'; }, { passive: true });
+  btn.addEventListener('touchend', () => { btn.style.transform = ''; }, { passive: true });
+
+  return el;
+}
+
+// Démarre l'animation pixel-art du couloir + hero qui marche
+function startCorridorAnimation(){
+  const canvas = document.getElementById('rt-corridor');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const W = canvas.width;
+  const H = canvas.height;
+  let t = 0;
+
+  function draw(){
+    // Background gradient
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#0e0820');
+    sky.addColorStop(1, '#02010a');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // Vanishing point
+    const vpX = W / 2;
+    const vpY = H * 0.42;
+    const floorY = H * 0.78;
+
+    // === SOL : tiles de profondeur qui défilent (parallax) ===
+    // On dessine plusieurs lignes à des distances qui simulent la perspective.
+    // Les lignes scroll vers le joueur (taille augmente, y descend).
+    const scroll = (t * 0.04) % 1;
+    for(let i = -1; i < 12; i++){
+      // i = profondeur de la tile (0 = près, 11 = loin)
+      const depth = i + scroll;
+      // Position Y avec perspective : near=H, far=floorY (vanishing)
+      const ratio = 1 - 1 / (1 + depth * 0.35);
+      const yNear = H + 4 - ratio * (H - floorY);
+      const ratioNext = 1 - 1 / (1 + (depth + 1) * 0.35);
+      const yFar = H + 4 - ratioNext * (H - floorY);
+      // Largeur du sol à cette profondeur
+      const wNear = W * (1 - ratio * 0.85);
+      const wFar = W * (1 - ratioNext * 0.85);
+      const xNearL = (W - wNear) / 2;
+      const xNearR = xNearL + wNear;
+      const xFarL = (W - wFar) / 2;
+      const xFarR = xFarL + wFar;
+
+      // Trapézoïde du sol (alterne couleurs pour effet damier-stripe)
+      const isStrip = i % 2 === 0;
+      ctx.fillStyle = isStrip ? '#1a1418' : '#0e0a0c';
+      ctx.beginPath();
+      ctx.moveTo(xNearL, yNear);
+      ctx.lineTo(xNearR, yNear);
+      ctx.lineTo(xFarR, yFar);
+      ctx.lineTo(xFarL, yFar);
+      ctx.closePath();
+      ctx.fill();
+
+      // Ligne de séparation (subtile)
+      ctx.strokeStyle = 'rgba(60,40,40,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xNearL, yNear);
+      ctx.lineTo(xFarL, yFar);
+      ctx.moveTo(xNearR, yNear);
+      ctx.lineTo(xFarR, yFar);
+      ctx.stroke();
+    }
+
+    // === MURS : trapèzes latéraux + briques sur les côtés qui défilent ===
+    // Mur gauche
+    ctx.fillStyle = '#1a0e14';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(vpX * 0.7, vpY);
+    ctx.lineTo(vpX * 0.7, floorY);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+    // Mur droit
+    ctx.beginPath();
+    ctx.moveTo(W, 0);
+    ctx.lineTo(W - vpX * 0.7, vpY);
+    ctx.lineTo(W - vpX * 0.7, floorY);
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // Plafond (sombre)
+    const ceilGrad = ctx.createLinearGradient(0, 0, 0, vpY);
+    ceilGrad.addColorStop(0, '#02010a');
+    ceilGrad.addColorStop(1, '#1a0a14');
+    ctx.fillStyle = ceilGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(W, 0);
+    ctx.lineTo(W - vpX * 0.7, vpY);
+    ctx.lineTo(vpX * 0.7, vpY);
+    ctx.closePath();
+    ctx.fill();
+
+    // === Lueur de la torche (à droite, lointain) ===
+    const torchPulse = 0.75 + Math.sin(t * 0.18) * 0.18 + Math.sin(t * 0.07) * 0.07;
+    const torchX = W - vpX * 0.78 - 6;
+    const torchY = vpY + (floorY - vpY) * 0.30;
+
+    // Halo de lumière
+    const halo = ctx.createRadialGradient(torchX, torchY, 0, torchX, torchY, 80);
+    halo.addColorStop(0, `rgba(255,180,90,${0.55 * torchPulse})`);
+    halo.addColorStop(0.4, `rgba(255,140,60,${0.25 * torchPulse})`);
+    halo.addColorStop(1, 'rgba(255,140,60,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(torchX - 80, torchY - 80, 160, 160);
+
+    // Flamme (carré + flicker)
+    const flameW = 4 + Math.sin(t * 0.3) * 0.5;
+    const flameH = 5 + Math.sin(t * 0.45) * 1;
+    ctx.fillStyle = '#ffe890';
+    ctx.fillRect(torchX - flameW/2, torchY - flameH, flameW, flameH);
+    ctx.fillStyle = '#ff8a3d';
+    ctx.fillRect(torchX - flameW/2 - 1, torchY - flameH + 1, flameW + 2, flameH - 1);
+    // Tige de la torche (petit rect sombre)
+    ctx.fillStyle = '#2a1a14';
+    ctx.fillRect(torchX - 1, torchY, 2, 8);
+
+    // Lueur projetée sur le mur droit
+    const wallGlow = ctx.createRadialGradient(torchX, torchY, 0, torchX, torchY, 120);
+    wallGlow.addColorStop(0, `rgba(255,140,60,${0.18 * torchPulse})`);
+    wallGlow.addColorStop(1, 'rgba(255,140,60,0)');
+    ctx.fillStyle = wallGlow;
+    ctx.beginPath();
+    ctx.moveTo(W, 0);
+    ctx.lineTo(W - vpX * 0.7, vpY);
+    ctx.lineTo(W - vpX * 0.7, floorY);
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // === Lueur ambiante de la prochaine room (au fond, vanishing point) ===
+    const farGlow = ctx.createRadialGradient(vpX, vpY, 0, vpX, vpY, 70);
+    farGlow.addColorStop(0, 'rgba(255,208,96,0.35)');
+    farGlow.addColorStop(0.5, 'rgba(200,80,40,0.15)');
+    farGlow.addColorStop(1, 'rgba(200,80,40,0)');
+    ctx.fillStyle = farGlow;
+    ctx.fillRect(vpX - 70, vpY - 70, 140, 140);
+
+    // === HERO PIXEL ART (vu de dos, cycle de marche 4 frames) ===
+    drawHeroBack(ctx, vpX, floorY - 4, t);
+
+    // === Particules ambiantes de poussière (très subtil) ===
+    for(let i = 0; i < 12; i++){
+      const seed = i * 137;
+      const px = (seed * 17 + t * 0.5) % W;
+      const py = ((seed * 7) % (H - 40)) + 20 + Math.sin(t * 0.04 + i) * 3;
+      const alpha = 0.18 + Math.sin(t * 0.05 + i * 0.7) * 0.1;
+      ctx.fillStyle = `rgba(200,180,140,${alpha})`;
+      ctx.fillRect(px | 0, py | 0, 1, 1);
+    }
+
+    t++;
+    _rtAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function stopCorridorAnimation(){
+  if(_rtAnimFrame){
+    cancelAnimationFrame(_rtAnimFrame);
+    _rtAnimFrame = null;
+  }
+}
+
+// Hero pixel art de dos, 32×40 logique scaled up
+// Cycle de marche : alterne 4 frames (jambe gauche / pose / jambe droite / pose)
+function drawHeroBack(ctx, cx, footY, t){
+  const SCALE = 3;
+  // Bobbing : le perso bobble légèrement vers le haut/bas pendant la marche
+  const frame = Math.floor(t / 9) % 4; // cycle de marche, 9 ticks = ~150ms par frame
+  const bob = (frame === 0 || frame === 2) ? 0 : -1; // step up sur les poses
+  const yOffset = bob * SCALE;
+
+  const baseX = cx - 8 * SCALE;
+  const baseY = footY + yOffset;
+
+  // PALETTE
+  const C_HAIR = '#2a1810';
+  const C_SKIN = '#a06850';
+  const C_CAPE = '#3a2030';
+  const C_CAPE_SHADOW = '#1e1018';
+  const C_TUNIC = '#3a4a5c';
+  const C_TUNIC_DARK = '#1e2a36';
+  const C_BELT = '#2a1a14';
+  const C_PANT = '#1a141c';
+  const C_BOOT = '#0e0a0c';
+  const C_GLINT = '#4fc3f7';
+
+  // Définit chaque "pixel" en (x, y, color) relatif à baseX/baseY
+  // 0,0 est en haut-gauche du sprite, le perso fait 16px de large × 24px de haut
+  function px(x, y, color){
+    ctx.fillStyle = color;
+    ctx.fillRect(baseX + x * SCALE, baseY + y * SCALE - 24 * SCALE, SCALE, SCALE);
+  }
+  function rect(x, y, w, h, color){
+    ctx.fillStyle = color;
+    ctx.fillRect(baseX + x * SCALE, baseY + y * SCALE - 24 * SCALE, w * SCALE, h * SCALE);
+  }
+
+  // === TÊTE (rangée 0-5) ===
+  // Cheveux foncés vu de dos
+  rect(5, 0, 6, 1, C_HAIR);
+  rect(4, 1, 8, 1, C_HAIR);
+  rect(4, 2, 8, 1, C_HAIR);
+  rect(4, 3, 8, 1, C_HAIR);
+  // Petit highlight cheveux
+  px(6, 0, '#3a2418');
+  px(9, 0, '#3a2418');
+  // Nuque
+  rect(6, 4, 4, 1, C_SKIN);
+  // Bord cou
+  rect(5, 5, 6, 1, C_TUNIC_DARK);
+
+  // === ÉPAULES + CAPE (rangée 6-15) ===
+  // Cape large derrière qui bouge légèrement
+  const capeSwayL = (frame === 1) ? -1 : 0;
+  const capeSwayR = (frame === 3) ? 1 : 0;
+  // Cape contour
+  rect(2 + capeSwayL, 7, 4, 9, C_CAPE_SHADOW);
+  rect(10 - capeSwayR, 7, 4, 9, C_CAPE_SHADOW);
+  // Cape corps
+  rect(3 + capeSwayL, 6, 10, 11, C_CAPE);
+  // Pli central de la cape
+  rect(7, 7, 2, 9, C_CAPE_SHADOW);
+  // Bord lumineux sur la cape (highlight)
+  rect(3 + capeSwayL, 6, 1, 8, '#4a2a3a');
+  rect(12 - capeSwayR, 6, 1, 8, '#1e1018');
+
+  // Tunique visible au-dessus de la cape (épaules)
+  rect(5, 6, 6, 1, C_TUNIC);
+  // Petit accent cyan (col / accent)
+  px(7, 6, C_GLINT);
+  px(8, 6, C_GLINT);
+
+  // === BRAS (rangée 7-14) ===
+  // Bras qui balancent légèrement en sens opposé des jambes
+  const armL = (frame === 0) ? 1 : (frame === 2 ? -1 : 0);
+  const armR = -armL;
+  // Bras gauche (côté gauche du sprite)
+  rect(2, 8 + armL, 1, 6, C_TUNIC_DARK);
+  px(2, 14 + armL, C_SKIN);
+  // Bras droit
+  rect(13, 8 + armR, 1, 6, C_TUNIC_DARK);
+  px(13, 14 + armR, C_SKIN);
+
+  // === CEINTURE ===
+  rect(4, 16, 8, 1, C_BELT);
+  px(7, 16, '#5a3018'); // boucle
+  px(8, 16, '#5a3018');
+
+  // === JAMBES (rangée 17-22) - cycle de marche 4 frames ===
+  // Frame 0 : jambe gauche avancée, droite reculée
+  // Frame 1 : pose neutre (sortie de pas)
+  // Frame 2 : jambe droite avancée, gauche reculée
+  // Frame 3 : pose neutre (sortie de pas inverse)
+  let lLegX, lLegY, rLegX, rLegY;
+  switch(frame){
+    case 0: lLegX = 5; lLegY = 17; rLegX = 9; rLegY = 18; break;
+    case 1: lLegX = 5; lLegY = 17; rLegX = 9; rLegY = 17; break;
+    case 2: lLegX = 5; lLegY = 18; rLegX = 9; rLegY = 17; break;
+    case 3: lLegX = 5; lLegY = 17; rLegX = 9; rLegY = 17; break;
+  }
+
+  // Jambe gauche
+  rect(lLegX, lLegY, 2, 5, C_PANT);
+  // Botte
+  rect(lLegX, lLegY + 5, 2, 1, C_BOOT);
+  // Jambe droite
+  rect(rLegX, rLegY, 2, 5, C_PANT);
+  rect(rLegX, rLegY + 5, 2, 1, C_BOOT);
+
+  // === OMBRE AU SOL (ellipse subtile sous les pieds) ===
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  const shadowSize = 9 + (frame === 1 || frame === 3 ? 0 : -1);
+  ctx.beginPath();
+  ctx.ellipse(cx, footY + 1, shadowSize, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function showRoomTransitionOverlay(roomNum, totalRooms, biomeId){
   return new Promise(resolve => {
     const el = ensureRoomTransitionOverlay();
     const biomeMeta = RT_BIOME_LABELS[biomeId] || { label: '', color: '#ffd060' };
     el.style.setProperty('--rt-biome-color', biomeMeta.color);
     el.style.setProperty('--rt-biome-glow', biomeMeta.color + '66');
-    el.querySelector('#room-transition-biome').textContent = biomeMeta.label;
-    el.querySelector('#room-transition-label').textContent = `ROOM ${roomNum} / ${totalRooms}`;
-    // Force reflow then animate
+    el.querySelector('#rt-biome').textContent = biomeMeta.label;
+    el.querySelector('#rt-label').textContent = `ROOM ${roomNum} / ${totalRooms}`;
+
+    // Setup le bouton CONTINUER : il résout la promesse au clic
+    const btn = el.querySelector('#rt-continue');
+    let resolved = false;
+    const onClick = () => {
+      if(resolved) return;
+      resolved = true;
+      btn.removeEventListener('click', onClick);
+      // Stop l'anim canvas pour économiser la perf pendant la transition
+      stopCorridorAnimation();
+      resolve();
+    };
+    btn.addEventListener('click', onClick);
+
+    // Affiche
     el.style.opacity = '0';
+    el.style.pointerEvents = 'auto';
     requestAnimationFrame(() => {
       el.style.opacity = '1';
-      setTimeout(resolve, 380); // attend que le fade in finisse + un peu de breath
+      // Démarre l'animation du couloir
+      startCorridorAnimation();
     });
   });
 }
@@ -2194,7 +2532,8 @@ function hideRoomTransitionOverlay(){
     const el = document.getElementById('room-transition');
     if(!el){ resolve(); return; }
     el.style.opacity = '0';
-    setTimeout(() => { resolve(); }, 340);
+    el.style.pointerEvents = 'none';
+    setTimeout(() => { resolve(); }, 420);
   });
 }
 
