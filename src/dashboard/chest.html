@@ -160,10 +160,11 @@
   }
   .filter-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px;
     padding: 3px 0;
     align-items: center;
+    overflow: hidden;
   }
   .filter-row + .filter-row { margin-top: 4px; }
   .filter-label {
@@ -196,9 +197,7 @@
     color: #000;
   }
   .slot-btn.all {
-    width: auto; padding: 0 8px;
-    font-size: 9px;
-    letter-spacing: 1px;
+    font-size: 12px;
     font-weight: bold;
   }
   /* RARITY btn — colored square, no text */
@@ -229,17 +228,20 @@
     border-color: var(--text-0);
     box-shadow: 0 0 0 1px var(--accent);
   }
-  /* ILVL btn — small square with roman numeral */
+  /* ILVL btn — small square with roman numeral. 11 boutons sur 1 seule ligne. */
   .ilvl-btn {
     background: var(--bg-2);
     border: 1px solid var(--border-1);
     color: var(--text-1);
     font-family: inherit;
     cursor: pointer;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    flex-grow: 0;
+    flex-basis: 26px;
     transition: all 0.1s;
     width: 26px;
     height: 26px;
+    min-width: 0;
     font-size: 10px;
     font-weight: bold;
     letter-spacing: 0.5px;
@@ -255,8 +257,7 @@
     color: #000;
   }
   .ilvl-btn.all {
-    width: auto; padding: 0 6px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .search-input {
     background: var(--bg-2);
@@ -444,8 +445,8 @@
     .stats-mini { display: none; }
     .title { font-size: 13px; }
     .filter-label { width: 32px; font-size: 7px; }
-    .slot-btn, .rarity-btn { width: 26px; height: 26px; }
-    .ilvl-btn { width: 24px; height: 24px; }
+    .slot-btn, .rarity-btn { width: 24px; height: 24px; }
+    .ilvl-btn { width: 22px; height: 22px; flex-basis: 22px; font-size: 9px; }
   }
   @media (max-width: 480px) {
     .grid { gap: 2px; }
@@ -459,9 +460,16 @@
     .cmp-stat { font-size: 8px; }
     .cmp-stat .lbl { font-size: 8px; }
     .cmp-side h3 { font-size: 7px; padding-bottom: 2px; }
+    .filter-label { width: 26px; font-size: 6px; }
+    .slot-btn, .rarity-btn { width: 22px; height: 22px; font-size: 12px; }
+    .ilvl-btn { width: 20px; height: 20px; flex-basis: 20px; font-size: 8px; }
+    .filter-row { gap: 2px; }
   }
   @media (max-width: 360px) {
     .item-icon { font-size: 18px; }
+    .ilvl-btn { width: 18px; height: 18px; flex-basis: 18px; font-size: 7px; }
+    .slot-btn, .rarity-btn { width: 20px; height: 20px; font-size: 11px; }
+    .filter-label { width: 22px; }
   }
 </style>
 </head>
@@ -666,8 +674,9 @@ function buildFilterButtons(){
   // 'all' button first
   const allBtn = document.createElement('button');
   allBtn.className = 'slot-btn all active';
-  allBtn.textContent = 'TOUS';
+  allBtn.textContent = 'A';
   allBtn.dataset.slot = 'all';
+  allBtn.title = 'Tous les slots';
   allBtn.addEventListener('click', () => onSlotFilterClick('all'));
   slotRow.appendChild(allBtn);
   // Slot icons
@@ -704,8 +713,9 @@ function buildFilterButtons(){
   ilvlRow.innerHTML = '<span class="filter-label">ILVL</span>';
   const ilvlAll = document.createElement('button');
   ilvlAll.className = 'ilvl-btn all active';
-  ilvlAll.textContent = 'TOUS';
+  ilvlAll.textContent = 'A';
   ilvlAll.dataset.ilvl = 'all';
+  ilvlAll.title = 'Tous les iLvl';
   ilvlAll.addEventListener('click', () => onIlvlFilterClick('all'));
   ilvlRow.appendChild(ilvlAll);
   for(let lv = 1; lv <= 10; lv++){
