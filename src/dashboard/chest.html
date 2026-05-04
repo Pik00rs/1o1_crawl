@@ -496,10 +496,34 @@ async function boot(){
 }
 
 function loadFromStorage(){
-  try { STATE.chest = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]'); }
-  catch { STATE.chest = []; }
-  try { STATE.equipped = JSON.parse(localStorage.getItem(STORAGE_EQUIPPED) || '{}'); }
-  catch { STATE.equipped = {}; }
+  // Chest = array d'instances. Si shape invalide (ancien format objet, null, etc.) → reset.
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]');
+    if(Array.isArray(raw) && raw.every(it => it && typeof it === 'object' && it.instanceId && it.itemId)){
+      STATE.chest = raw;
+    } else {
+      console.warn('[chest] Format invalide dans localStorage, reset.');
+      STATE.chest = [];
+      localStorage.removeItem(STORAGE_CHEST);
+    }
+  } catch {
+    STATE.chest = [];
+    localStorage.removeItem(STORAGE_CHEST);
+  }
+  // Equipped = objet {slot: instance}. Si shape invalide → reset.
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_EQUIPPED) || '{}');
+    if(raw && typeof raw === 'object' && !Array.isArray(raw)){
+      STATE.equipped = raw;
+    } else {
+      console.warn('[equipped] Format invalide dans localStorage, reset.');
+      STATE.equipped = {};
+      localStorage.removeItem(STORAGE_EQUIPPED);
+    }
+  } catch {
+    STATE.equipped = {};
+    localStorage.removeItem(STORAGE_EQUIPPED);
+  }
 }
 
 function saveChest(){ localStorage.setItem(STORAGE_CHEST, JSON.stringify(STATE.chest)); }
