@@ -580,7 +580,8 @@
 <script type="module">
 import {
   loadCatalog, getItem, getAllItems, getAllAffixes,
-  composeItemName, ilvlToRoman
+  composeItemName, ilvlToRoman,
+  rollAffixValue, affixQualityPct,
 } from './items-catalog.js';
 
 // === STATE ===
@@ -937,16 +938,10 @@ function renderReroller(){
   affixes.forEach((a, idx) => {
     const isSelected = STATE.selectedAffixIndex === idx;
     const lbl = (a.label || '').replace('X', a.value);
-    // Quality % par rapport au valueRange max scalé
+    // Quality % calculé via la formule centrale (consistent avec drop initial)
     const def = getAllAffixes()[a.type === 'prefix' ? 'prefixes' : 'suffixes'][a.id];
-    let qualityPct = 50;
-    if(def){
-      const ilvlMult = ilvlToMult(item.ilvl);
-      const minPossible = Math.max(1, Math.round(def.valueRange[0] * ilvlMult * 0.5));
-      const maxPossible = Math.round(def.valueRange[1] * ilvlMult * 2.0); // tier mult max
-      qualityPct = Math.round(((a.value - minPossible) / Math.max(1, (maxPossible - minPossible))) * 100);
-      qualityPct = Math.max(0, Math.min(100, qualityPct));
-    }
+    const qualityPct = def ? affixQualityPct(a.value, def.valueRange, item.ilvl) : 50;
+    const qualityPctRounded = Math.round(qualityPct);
     const qualColor = qualityPct >= 85 ? 'var(--good)' : qualityPct >= 60 ? '#fff200' : qualityPct >= 30 ? '#ffaa44' : 'var(--bad)';
     affixListHtml += `
       <button class="affix-row ${isSelected ? 'selected' : ''}" data-affix-idx="${idx}">
@@ -955,9 +950,9 @@ function renderReroller(){
           <div class="affix-name"><span class="tag">${a.type === 'prefix' ? 'P' : 'S'}</span> ${a.name || a.id}</div>
         </div>
         <div class="affix-quality-bar">
-          <div style="width: ${qualityPct}%; background: ${qualColor};"></div>
+          <div style="width: ${qualityPctRounded}%; background: ${qualColor};"></div>
         </div>
-        <div class="affix-quality-pct" style="color: ${qualColor}">${qualityPct}%</div>
+        <div class="affix-quality-pct" style="color: ${qualColor}">${qualityPctRounded}%</div>
       </button>
     `;
   });
@@ -1048,23 +1043,16 @@ function doReroll(){
   const owned = STATE.wallet[resource.id] || 0;
   if(owned < cost) return;
 
-  // Roll new value (même formule que rollAffixes dans items-catalog.js)
+  // Récupère la définition de l'affixe pour avoir le valueRange
   const def = getAllAffixes()[affix.type === 'prefix' ? 'prefixes' : 'suffixes'][affix.id];
   if(!def){
     alert('Définition d\'affixe introuvable, reroll annulé');
     return;
   }
-  const RARITY_VAL_MULT = {
-    common: [0.5, 0.8], magic: [0.6, 1.0], rare: [0.8, 1.3],
-    epic: [1.0, 1.6], legendary: [1.3, 2.0],
-  };
-  const ilvlMult = ilvlToMult(item.ilvl);
-  const tierMult = RARITY_VAL_MULT[item.rarity] || [0.5, 1.0];
-  const [vMin, vMax] = def.valueRange;
-  const baseVal = Math.floor(Math.random() * (vMax - vMin + 1)) + vMin;
-  const finalVal = Math.max(1, Math.round(baseVal * ilvlMult * (tierMult[0] + Math.random() * (tierMult[1] - tierMult[0]))));
 
+  // Roll via la formule centrale (skew par rareté, identique au drop initial)
   const oldValue = affix.value;
+  const finalVal = rollAffixValue(def.valueRange, item.rarity, item.ilvl);
   affix.value = finalVal;
 
   // Pay
@@ -1073,18 +1061,16 @@ function doReroll(){
   saveChest();
   saveWallet();
 
-  // Re-render avec flash
   renderReroller();
   renderWallet();
   renderGrid();
 
-  // Flash animation
+  // Flash animation : vert si meilleur, rouge si pire ou égal
   setTimeout(() => {
     const rows = document.querySelectorAll('.affix-row[data-affix-idx]');
     const flashRow = rows[STATE.selectedAffixIndex];
     if(flashRow){
-      const goodRoll = finalVal > oldValue;
-      flashRow.classList.add(goodRoll ? 'flash-good' : 'flash-meh');
+      flashRow.classList.add(finalVal > oldValue ? 'flash-good' : 'flash-meh');
       setTimeout(() => flashRow.classList.remove('flash-good', 'flash-meh'), 800);
     }
   }, 50);
