@@ -311,7 +311,10 @@ function rollLoot(rng, biomeData, dungeon, level){
       itemId: baseItem.itemId,
       rarity: guaranteedRarity,
       stats: rollItemStats(rng, baseItem.statRanges),
+      tier: level,                  // niveau du donjon où l'item a drop (1-6 = tier I-VI)
+      biomeId: biomeData.id,        // biome de provenance (utile pour filtrer/tri par origine)
       isBossDrop: true,
+      droppedAt: Date.now(),        // timestamp de drop pour tri "récent"
     });
   }
 
@@ -322,7 +325,10 @@ function rollLoot(rng, biomeData, dungeon, level){
       itemId: baseItem.itemId,
       rarity: baseItem.rarity,
       stats: rollItemStats(rng, baseItem.statRanges),
+      tier: level,
+      biomeId: biomeData.id,
       isBossDrop: false,
+      droppedAt: Date.now(),
     });
   }
 
