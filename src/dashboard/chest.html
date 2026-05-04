@@ -3,140 +3,407 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CHEST — Reactor Hollow</title>
+<title>Chest — Reactor Hollow</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     background: #0a0510;
     color: #d8c8a0;
     font-family: 'Courier New', monospace;
-    font-size: 14px;
+    font-size: 13px;
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    padding: 20px;
+    padding: 16px;
     background: radial-gradient(ellipse at top, #1a0820 0%, #0a0510 70%);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
   }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0510; }
+  ::-webkit-scrollbar-thumb { background: #3a2840; border-radius: 3px; }
 
+  /* === HEADER === */
   .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
     border: 1px solid #3a2840;
     background: #14081e;
-    margin-bottom: 24px;
+    margin-bottom: 14px;
     gap: 12px;
+    flex-wrap: wrap;
   }
+  .header__info { min-width: 0; flex: 1; }
   .header-title {
-    font-size: 16px;
+    font-size: 14px;
     color: #c8a040;
     letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(200,160,64,0.5);
+    text-shadow: 0 0 8px rgba(200,160,64,0.4);
   }
   .header-sub {
-    font-size: 10px;
+    font-size: 9px;
     color: #6a5878;
     letter-spacing: 1px;
-    margin-top: 2px;
+    margin-top: 3px;
   }
-  .back-btn {
+  .hub-btn {
+    padding: 8px 14px;
     background: transparent;
     border: 1px solid #5a4828;
     color: #d8c8a0;
-    padding: 10px 14px;
     font-family: inherit;
-    font-size: 12px;
-    cursor: pointer;
+    font-size: 11px;
     letter-spacing: 1px;
     text-decoration: none;
     transition: all 0.15s;
-    min-height: 40px;
+    min-height: 36px;
     display: inline-flex;
     align-items: center;
   }
-  .back-btn:active { border-color: #ffd060; color: #ffd060; transform: scale(0.96); }
+  .hub-btn:active { border-color: #ffd060; color: #ffd060; transform: scale(0.96); }
+  @media (hover: hover) { .hub-btn:hover { border-color: #ffd060; color: #ffd060; } }
+
+  /* === FILTERS BAR === */
+  .filters {
+    background: #14081e;
+    border: 1px solid #3a2840;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .filter-group:last-child { margin-bottom: 0; }
+  .filter-label {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .filter-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 10px;
+    background: #0a0510;
+    border: 1px solid #2a1830;
+    color: #8a7898;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-height: 32px;
+    white-space: nowrap;
+  }
+  .filter-btn.active {
+    background: var(--filter-color, #c8a040);
+    color: #0a0510;
+    border-color: var(--filter-color, #c8a040);
+    font-weight: bold;
+  }
+  .filter-btn:active:not(.active) { transform: scale(0.96); }
   @media (hover: hover) {
-    .back-btn:hover { border-color: #ffd060; color: #ffd060; }
+    .filter-btn:hover:not(.active) {
+      border-color: var(--filter-color, #c8a040);
+      color: #d8c8a0;
+    }
   }
 
-  .placeholder {
+  .search-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .search-icon { font-size: 12px; color: #6a5878; }
+  .search-input {
     flex: 1;
+    padding: 8px 10px;
+    background: #0a0510;
+    border: 1px solid #3a2840;
+    color: #d8c8a0;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    min-height: 32px;
+  }
+  .search-input::placeholder { color: #5a4860; }
+  .search-input:focus {
+    outline: none;
+    border-color: #c8a040;
+    box-shadow: 0 0 0 2px rgba(200,160,64,0.15);
+  }
+  .search-clear {
+    background: transparent;
+    border: 1px solid #3a2840;
+    color: #8a7898;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 10px;
+    cursor: pointer;
+    min-height: 32px;
+    transition: all 0.15s;
+  }
+  .search-clear:active { transform: scale(0.95); border-color: #ff8080; color: #ff8080; }
+
+  .stats-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: #6a5878;
+    letter-spacing: 1px;
+    border-bottom: 1px dashed #2a1830;
+    margin-bottom: 10px;
+  }
+  .stats-line .v { color: #d8c8a0; font-weight: bold; }
+
+  .grid-wrap { flex: 1; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .item-cell {
+    aspect-ratio: 1;
+    background: #14081e;
+    border: 1px solid var(--rarity-color, #2a1830);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
-  }
-  .placeholder-card {
-    background: #14081e;
-    border: 1px solid #3a2840;
-    padding: 40px 32px;
-    text-align: center;
-    max-width: 420px;
-    position: relative;
     overflow: hidden;
   }
-  .placeholder-card::before {
+  .item-cell.empty {
+    border-style: dashed;
+    border-color: #1a1020;
+    cursor: default;
+    background: #08040c;
+  }
+  .item-cell:not(.empty)::before {
     content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(circle at top, rgba(200,160,64,0.5), transparent 70%);
-    opacity: 0.15;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--rarity-color, #444) 0%, transparent 60%);
+    opacity: 0.12;
     pointer-events: none;
   }
-  .placeholder-card::after {
-    content: '';
-    position: absolute; top: 0; left: 0;
-    width: 14px; height: 14px;
-    border-top: 2px solid #c8a040;
-    border-left: 2px solid #c8a040;
-  }
-  .placeholder-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 0 12px rgba(200,160,64,0.5));
-  }
-  .placeholder-title {
-    font-size: 24px;
-    color: #c8a040;
-    letter-spacing: 3px;
-    text-shadow: 0 0 8px rgba(200,160,64,0.5);
-    margin-bottom: 8px;
-  }
-  .placeholder-sub {
-    font-size: 11px;
-    color: #8a7898;
-    letter-spacing: 1px;
-    margin-bottom: 24px;
-  }
-  .placeholder-msg {
-    font-size: 13px;
-    color: #d8c8a0;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-  .placeholder-status {
+  .item-cell.boss-drop::after {
+    content: '★';
+    position: absolute;
+    top: 2px; right: 4px;
     font-size: 10px;
-    color: #6a5878;
-    letter-spacing: 2px;
-    padding: 8px 14px;
-    border: 1px dashed #3a2840;
-    display: inline-block;
+    color: #ffd060;
+    text-shadow: 0 0 4px rgba(255,208,96,0.8);
   }
-  .placeholder-status .v {
-    color: #c8a040;
+  .item-cell.selected {
+    box-shadow: 0 0 0 2px #ffd060, 0 0 14px rgba(255,208,96,0.4);
+  }
+  .item-cell:active:not(.empty) { transform: scale(0.95); }
+  @media (hover: hover) {
+    .item-cell:hover:not(.empty) {
+      border-color: var(--rarity-color, #ffd060);
+      box-shadow: 0 0 12px rgba(255,255,255,0.15);
+      transform: translateY(-1px);
+    }
+  }
+  .item-icon {
+    font-size: 22px;
+    line-height: 1;
+    z-index: 1;
+  }
+  .item-tier {
+    position: absolute;
+    bottom: 2px; left: 4px;
+    font-size: 8px;
+    color: var(--rarity-color, #d8c8a0);
     font-weight: bold;
+    letter-spacing: 0.5px;
+    z-index: 1;
+    text-shadow: 0 0 3px #000;
   }
 
-  @media (max-width: 600px) {
-    body { padding: 12px; }
-    .header { padding: 10px 12px; }
-    .header-title { font-size: 14px; }
-    .placeholder-card { padding: 28px 20px; }
-    .placeholder-icon { font-size: 48px; }
-    .placeholder-title { font-size: 20px; letter-spacing: 2px; }
+  .detail-panel {
+    background: #14081e;
+    border: 1px solid #3a2840;
+    border-left: 3px solid var(--detail-rarity-color, #5a4828);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+  }
+  .detail-panel.hidden { display: none; }
+  .detail-row { display: flex; align-items: center; gap: 12px; }
+  .detail-icon {
+    font-size: 32px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0510;
+    border: 1px solid var(--detail-rarity-color, #2a1830);
+    flex-shrink: 0;
+  }
+  .detail-main { min-width: 0; flex: 1; }
+  .detail-name {
+    font-size: 14px;
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .detail-name .star { color: #ffd060; margin-left: 4px; font-size: 11px; }
+  .detail-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    flex-wrap: wrap;
+  }
+  .detail-tag {
+    padding: 2px 6px;
+    background: var(--tag-bg, #1a0a14);
+    color: var(--tag-color, #d8c8a0);
+    text-transform: uppercase;
+    font-weight: bold;
+    border: 1px solid var(--tag-border, transparent);
+  }
+  .detail-stats {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #2a1830;
+    display: flex;
+    gap: 14px 18px;
+    flex-wrap: wrap;
+    font-size: 11px;
+  }
+  .detail-stat {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+  .detail-stat .k { color: #6a5878; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+  .detail-stat .v { color: var(--detail-rarity-color, #d8c8a0); font-weight: bold; font-size: 13px; }
+
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6a5878;
+    font-size: 11px;
+    letter-spacing: 1px;
+    border: 1px dashed #2a1830;
+    margin-bottom: 14px;
+  }
+  .empty-state__icon { font-size: 36px; opacity: 0.4; margin-bottom: 12px; }
+  .empty-state__title {
+    font-size: 14px;
+    color: #d8c8a0;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 10px;
+    background: #14081e;
+    border: 1px solid #3a2840;
+  }
+  .page-btn {
+    padding: 10px 14px;
+    background: transparent;
+    border: 1px solid #5a4828;
+    color: #d8c8a0;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #2a1830;
+  }
+  .page-btn:active:not(:disabled) { border-color: #ffd060; color: #ffd060; transform: scale(0.95); }
+  @media (hover: hover) {
+    .page-btn:hover:not(:disabled) { border-color: #ffd060; color: #ffd060; }
+  }
+  .page-info {
+    font-size: 11px;
+    color: #d8c8a0;
+    letter-spacing: 1.5px;
+    min-width: 80px;
+    text-align: center;
+  }
+  .page-info .v { color: #ffd060; font-weight: bold; }
+
+  .dev-actions {
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: #14081e;
+    border: 1px dashed #3a2840;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .dev-actions__label {
+    font-size: 9px;
+    color: #6a5878;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .dev-btn {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid #3a2840;
+    color: #8a7898;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+    min-height: 30px;
+  }
+  .dev-btn:active { transform: scale(0.95); }
+  @media (hover: hover) {
+    .dev-btn:hover { border-color: #c8a040; color: #d8c8a0; }
+  }
+  .dev-btn.danger { color: #ff8080; border-color: #5a2828; }
+
+  @media (max-width: 700px) {
+    body { padding: 10px; }
+    .header { padding: 8px 10px; }
+    .header-title { font-size: 12px; }
+    .grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .item-icon { font-size: 20px; }
+    .filter-btn { font-size: 10px; padding: 6px 8px; min-height: 32px; }
+    .detail-icon { font-size: 26px; width: 36px; height: 36px; }
+    .detail-name { font-size: 13px; }
+    .detail-stats { gap: 10px 14px; font-size: 10px; }
+  }
+  @media (max-width: 400px) {
+    body { padding: 8px; }
+    .grid { grid-template-columns: repeat(3, 1fr); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -147,22 +414,391 @@
 <body>
 
 <div class="header">
-  <div>
+  <a href="../../index.html" class="hub-btn">◂ HUB</a>
+  <div class="header__info">
     <div class="header-title">📦 CHEST</div>
-    <div class="header-sub">Inventaire & loot stash</div>
+    <div class="header-sub">INVENTAIRE & LOOT STASH</div>
   </div>
-  <a href="../../index.html" class="back-btn">◂ HUB</a>
+  <div style="width: 60px;"></div>
 </div>
 
-<div class="placeholder">
-  <div class="placeholder-card">
-    <div class="placeholder-icon">📦</div>
-    <div class="placeholder-title">CHEST</div>
-    <div class="placeholder-sub">Inventaire & loot stash</div>
-    <div class="placeholder-msg">Le coffre permettra de stocker, trier et équiper le loot ramassé en donjon. Filtres par biome, rareté, slot. Comparaison directe avec l'équipement actuel.</div>
-    <div class="placeholder-status">STATUS · <span class="v">EN CONSTRUCTION</span></div>
+<div class="filters">
+  <div class="filter-group">
+    <div class="filter-label">▸ SLOT</div>
+    <div class="filter-row" id="filter-slot"></div>
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">▸ RARETÉ</div>
+    <div class="filter-row" id="filter-rarity"></div>
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">▸ TIER</div>
+    <div class="filter-row" id="filter-tier"></div>
+  </div>
+  <div class="filter-group">
+    <div class="filter-label">▸ RECHERCHE</div>
+    <div class="search-row">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="search-input" placeholder="Nom de l'item..." />
+      <button class="search-clear" id="search-clear">✕</button>
+    </div>
   </div>
 </div>
+
+<div class="stats-line" id="stats-line"></div>
+
+<div class="detail-panel hidden" id="detail-panel"></div>
+
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="pagination" id="pagination">
+  <button class="page-btn" id="page-prev">◂</button>
+  <div class="page-info">PAGE <span class="v" id="page-current">1</span>/<span class="v" id="page-total">1</span></div>
+  <button class="page-btn" id="page-next">▸</button>
+</div>
+
+<div class="dev-actions">
+  <span class="dev-actions__label">▸ DEV TOOLS</span>
+  <button class="dev-btn" id="dev-mock">🎲 MOCK 50 ITEMS</button>
+  <button class="dev-btn" id="dev-add-10">➕ +10 RANDOM</button>
+  <button class="dev-btn danger" id="dev-clear">🗑 CLEAR CHEST</button>
+  <span class="dev-actions__label" style="margin-left: auto;">localStorage : rh_player_chest</span>
+</div>
+
+<script type="module">
+import { ITEM_TEMPLATES, RARITIES, BIOMES } from './ascension-data.js';
+
+const STATE = {
+  items: [],
+  filtered: [],
+  page: 0,
+  pageSize: 40,
+  filters: { slot: 'all', rarity: 'all', tier: 'all', search: '' },
+  selectedInstanceId: null,
+};
+
+const STORAGE_KEY = 'rh_player_chest';
+
+const SLOT_OPTIONS = [
+  { id: 'all',      label: 'TOUS',     color: '#c8a040' },
+  { id: 'mainhand', label: '⚔ ARME',   color: '#ff8830' },
+  { id: 'chest',    label: '🛡 ARMURE', color: '#3df0ff' },
+  { id: 'head',     label: '⛑ HEAUME', color: '#aee6ff' },
+  { id: 'neck',     label: '📿 AMULETTE', color: '#c040ff' },
+  { id: 'ring',     label: '💍 ANNEAU', color: '#ffd060' },
+  { id: 'belt',     label: '🪢 CEINTURE', color: '#a08840' },
+  { id: 'inv',      label: '🧪 CONSO', color: '#3df068' },
+];
+
+const RARITY_OPTIONS = [
+  { id: 'all',       label: 'TOUTES',     color: '#c8a040' },
+  { id: 'common',    label: 'COMMUN',     color: '#a89878' },
+  { id: 'uncommon',  label: 'PEU COMMUN', color: '#3df068' },
+  { id: 'rare',      label: 'RARE',       color: '#3d9cf0' },
+  { id: 'epic',      label: 'ÉPIQUE',     color: '#c040ff' },
+  { id: 'legendary', label: 'LÉGENDAIRE', color: '#ffaa20' },
+];
+
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
+const TIER_OPTIONS = [
+  { id: 'all', label: 'TOUS', color: '#c8a040' },
+  ...[1,2,3,4,5,6].map(n => ({ id: String(n), label: ROMAN[n], color: '#c8a040' })),
+];
+
+const STAT_LABELS = {
+  dmg:'DMG', armor:'ARM', hp:'HP', burn:'BRN', freeze:'FRZ', slow:'SLW',
+  poison:'POI', bleed:'BLD', shock:'SHK', stun:'STN', pierce:'PRC',
+  crit:'CRT', heal:'HEAL', charge:'CHG', range:'RNG', aoe:'AOE',
+  fireRes:'FIRE_R', coldRes:'COLD_R', poisonRes:'POI_R', shockRes:'SHK_R',
+  bleedRes:'BLD_R', pull:'PULL', block:'BLOCK', lifesteal:'LS',
+  reroll:'REROLL', invSlots:'INV',
+};
+
+function loadChest(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data?.items) ? data.items : [];
+  } catch(e){ return []; }
+}
+
+function saveChest(items){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ items })); }
+  catch(e){ console.error('Failed to save chest:', e); }
+}
+
+function generateMockItems(count = 50){
+  const itemIds = Object.keys(ITEM_TEMPLATES);
+  const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+  const rarityWeights = [45, 30, 18, 6, 1];
+  const biomeIds = Object.keys(BIOMES);
+  const items = [];
+  const now = Date.now();
+  for(let i = 0; i < count; i++){
+    const itemId = itemIds[Math.floor(Math.random() * itemIds.length)];
+    let r = Math.random() * 100;
+    let rarity = 'common';
+    for(let j = 0; j < rarities.length; j++){
+      r -= rarityWeights[j];
+      if(r <= 0){ rarity = rarities[j]; break; }
+    }
+    const tier = Math.floor(Math.random() * 6) + 1;
+    const biomeId = biomeIds[Math.floor(Math.random() * biomeIds.length)];
+    const tpl = ITEM_TEMPLATES[itemId];
+    const stats = {};
+    if(tpl.cat === 'weapon'){ stats.dmg = 5 + tier * 3 + Math.floor(Math.random() * 5); stats.crit = Math.floor(Math.random() * 8); }
+    else if(tpl.cat === 'armor'){ stats.armor = 4 + tier * 2 + Math.floor(Math.random() * 4); stats.hp = tier * 5 + Math.floor(Math.random() * 8); }
+    else if(tpl.cat === 'helm'){ stats.armor = 2 + tier + Math.floor(Math.random() * 3); }
+    else if(tpl.cat === 'accessory'){ stats.crit = 1 + Math.floor(Math.random() * 5); stats.dmg = Math.floor(Math.random() * 4); }
+    else if(tpl.cat === 'consumable'){ stats.heal = 10 + tier * 5; stats.charge = 1 + Math.floor(Math.random() * 3); }
+    items.push({
+      itemId, rarity, stats, tier, biomeId,
+      isBossDrop: rarity === 'legendary' || (rarity === 'epic' && tier === 6 && Math.random() > 0.5),
+      droppedAt: now - Math.floor(Math.random() * 86400000 * 30),
+      instanceId: `mock_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+    });
+  }
+  return items;
+}
+
+function applyFilters(){
+  const { slot, rarity, tier, search } = STATE.filters;
+  const searchLower = search.trim().toLowerCase();
+  STATE.filtered = STATE.items.filter(item => {
+    const tpl = ITEM_TEMPLATES[item.itemId];
+    if(!tpl) return false;
+    if(slot !== 'all' && tpl.slot !== slot) return false;
+    if(rarity !== 'all' && item.rarity !== rarity) return false;
+    if(tier !== 'all' && String(item.tier) !== tier) return false;
+    if(searchLower && !tpl.name.toLowerCase().includes(searchLower)) return false;
+    return true;
+  });
+  STATE.filtered.sort((a, b) => {
+    const rarityRank = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
+    const dr = (rarityRank[b.rarity] || 0) - (rarityRank[a.rarity] || 0);
+    if(dr !== 0) return dr;
+    return (b.droppedAt || 0) - (a.droppedAt || 0);
+  });
+  const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / STATE.pageSize));
+  if(STATE.page >= totalPages) STATE.page = totalPages - 1;
+  if(STATE.page < 0) STATE.page = 0;
+}
+
+function renderFilterRow(containerId, options, currentValue, filterKey){
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (currentValue === opt.id ? ' active' : '');
+    btn.style.setProperty('--filter-color', opt.color);
+    btn.textContent = opt.label;
+    btn.addEventListener('click', () => {
+      STATE.filters[filterKey] = opt.id;
+      STATE.page = 0;
+      refresh();
+    });
+    container.appendChild(btn);
+  });
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const startIdx = STATE.page * STATE.pageSize;
+  const pageItems = STATE.filtered.slice(startIdx, startIdx + STATE.pageSize);
+
+  for(let i = 0; i < STATE.pageSize; i++){
+    const item = pageItems[i];
+    const cell = document.createElement('div');
+    if(!item){
+      cell.className = 'item-cell empty';
+      grid.appendChild(cell);
+      continue;
+    }
+    const tpl = ITEM_TEMPLATES[item.itemId];
+    const rar = RARITIES[item.rarity] || { color: '#a89878' };
+    cell.className = 'item-cell';
+    if(item.isBossDrop) cell.classList.add('boss-drop');
+    if(item.instanceId === STATE.selectedInstanceId) cell.classList.add('selected');
+    cell.style.setProperty('--rarity-color', rar.color);
+    cell.title = `${tpl?.name || item.itemId} [${item.rarity}] · Tier ${ROMAN[item.tier] || item.tier}`;
+    cell.innerHTML = `
+      <span class="item-icon">${tpl?.icon || '?'}</span>
+      <span class="item-tier">T${ROMAN[item.tier] || item.tier}</span>
+    `;
+    cell.addEventListener('click', () => {
+      STATE.selectedInstanceId = item.instanceId === STATE.selectedInstanceId ? null : item.instanceId;
+      renderGrid();
+      renderDetailPanel();
+    });
+    grid.appendChild(cell);
+  }
+}
+
+function renderDetailPanel(){
+  const panel = document.getElementById('detail-panel');
+  if(!STATE.selectedInstanceId){
+    panel.classList.add('hidden');
+    panel.innerHTML = '';
+    return;
+  }
+  const item = STATE.items.find(it => it.instanceId === STATE.selectedInstanceId);
+  if(!item){ panel.classList.add('hidden'); return; }
+  const tpl = ITEM_TEMPLATES[item.itemId];
+  const rar = RARITIES[item.rarity] || { label: item.rarity, color: '#a89878' };
+  if(!tpl){ panel.classList.add('hidden'); return; }
+  panel.classList.remove('hidden');
+  panel.style.setProperty('--detail-rarity-color', rar.color);
+
+  const biome = BIOMES[item.biomeId];
+  const tagsHtml = [
+    `<span class="detail-tag" style="--tag-bg:${rar.color}; --tag-color:#fff;">${rar.label || item.rarity}</span>`,
+    `<span class="detail-tag" style="--tag-color:#c8a040; --tag-border:#5a4828;">TIER ${ROMAN[item.tier] || item.tier}</span>`,
+    tpl.cat ? `<span class="detail-tag">${tpl.cat.toUpperCase()}</span>` : '',
+    tpl.slot ? `<span class="detail-tag">${tpl.slot.toUpperCase()}</span>` : '',
+    biome ? `<span class="detail-tag" style="--tag-color:${biome.color};">${biome.icon} ${biome.name.toUpperCase()}</span>` : '',
+    item.isBossDrop ? `<span class="detail-tag" style="--tag-bg:#5a3818; --tag-color:#ffd060; --tag-border:#ffd060;">★ BOSS DROP</span>` : '',
+  ].filter(Boolean).join('');
+
+  const statsHtml = Object.entries(item.stats || {})
+    .map(([k, v]) => `
+      <div class="detail-stat">
+        <span class="k">${STAT_LABELS[k] || k.toUpperCase()}</span>
+        <span class="v">${v}</span>
+      </div>
+    `).join('');
+
+  panel.innerHTML = `
+    <div class="detail-row">
+      <div class="detail-icon">${tpl.icon || '?'}</div>
+      <div class="detail-main">
+        <div class="detail-name">${tpl.name}${item.isBossDrop ? '<span class="star">★</span>' : ''}</div>
+        <div class="detail-meta">${tagsHtml}</div>
+      </div>
+    </div>
+    ${statsHtml ? `<div class="detail-stats">${statsHtml}</div>` : ''}
+  `;
+}
+
+function renderStatsLine(){
+  const total = STATE.items.length;
+  const filtered = STATE.filtered.length;
+  const line = document.getElementById('stats-line');
+  if(total === 0){ line.style.display = 'none'; return; }
+  line.style.display = 'flex';
+  const filterText = filtered === total
+    ? `<span class="v">${total}</span> items`
+    : `<span class="v">${filtered}</span>/<span class="v">${total}</span> items (filtré)`;
+  line.innerHTML = `
+    <div>▸ ${filterText}</div>
+    <div>${STATE.page * STATE.pageSize + 1}–${Math.min(STATE.filtered.length, (STATE.page + 1) * STATE.pageSize)}</div>
+  `;
+}
+
+function renderPagination(){
+  const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / STATE.pageSize));
+  document.getElementById('page-current').textContent = STATE.page + 1;
+  document.getElementById('page-total').textContent = totalPages;
+  document.getElementById('page-prev').disabled = STATE.page === 0;
+  document.getElementById('page-next').disabled = STATE.page >= totalPages - 1;
+  document.getElementById('pagination').style.display = totalPages > 1 ? 'flex' : 'none';
+}
+
+function renderEmptyState(){
+  const grid = document.getElementById('grid');
+  if(STATE.items.length === 0){
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1;" class="empty-state">
+        <div class="empty-state__icon">📦</div>
+        <div class="empty-state__title">CHEST VIDE</div>
+        <div>Clean des donjons depuis Ascension pour remplir le chest, ou utilise les dev tools en bas pour générer des items mock.</div>
+      </div>
+    `;
+    return true;
+  }
+  if(STATE.filtered.length === 0){
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1;" class="empty-state">
+        <div class="empty-state__icon">🔍</div>
+        <div class="empty-state__title">AUCUN RÉSULTAT</div>
+        <div>Aucun item ne correspond aux filtres actifs.</div>
+      </div>
+    `;
+    return true;
+  }
+  return false;
+}
+
+function refresh(){
+  applyFilters();
+  renderFilterRow('filter-slot', SLOT_OPTIONS, STATE.filters.slot, 'slot');
+  renderFilterRow('filter-rarity', RARITY_OPTIONS, STATE.filters.rarity, 'rarity');
+  renderFilterRow('filter-tier', TIER_OPTIONS, STATE.filters.tier, 'tier');
+  renderStatsLine();
+  if(!renderEmptyState()){
+    renderGrid();
+  }
+  renderDetailPanel();
+  renderPagination();
+}
+
+document.getElementById('search-input').addEventListener('input', e => {
+  STATE.filters.search = e.target.value;
+  STATE.page = 0;
+  refresh();
+});
+document.getElementById('search-clear').addEventListener('click', () => {
+  document.getElementById('search-input').value = '';
+  STATE.filters.search = '';
+  STATE.page = 0;
+  refresh();
+});
+
+document.getElementById('page-prev').addEventListener('click', () => {
+  if(STATE.page > 0){ STATE.page--; refresh(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+});
+document.getElementById('page-next').addEventListener('click', () => {
+  const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / STATE.pageSize));
+  if(STATE.page < totalPages - 1){ STATE.page++; refresh(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+});
+
+document.getElementById('dev-mock').addEventListener('click', () => {
+  if(STATE.items.length > 0 && !confirm('Remplacer le chest actuel par 50 items mock ?')) return;
+  STATE.items = generateMockItems(50);
+  saveChest(STATE.items);
+  STATE.selectedInstanceId = null;
+  refresh();
+});
+document.getElementById('dev-add-10').addEventListener('click', () => {
+  STATE.items = [...STATE.items, ...generateMockItems(10)];
+  saveChest(STATE.items);
+  refresh();
+});
+document.getElementById('dev-clear').addEventListener('click', () => {
+  if(!confirm('Vider complètement le chest ? Cette action est irréversible.')) return;
+  STATE.items = [];
+  saveChest(STATE.items);
+  STATE.selectedInstanceId = null;
+  refresh();
+});
+
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  if(e.key === 'ArrowLeft') document.getElementById('page-prev').click();
+  if(e.key === 'ArrowRight') document.getElementById('page-next').click();
+  if(e.key === 'Escape'){
+    STATE.selectedInstanceId = null;
+    renderGrid();
+    renderDetailPanel();
+  }
+});
+
+STATE.items = loadChest();
+refresh();
+</script>
 
 </body>
 </html>
