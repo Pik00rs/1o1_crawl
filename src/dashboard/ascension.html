@@ -914,7 +914,8 @@
 <script type="module">
 import { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, getDungeonStatus, ENEMY_NAMES } from './ascension-data.js';
 import { getEnemySprite } from '../js/render/enemies/index.js';
-import { generateDungeonRun } from '../js/dungeon/generator.js';
+import { generateDungeonRun, BIOME_AFFINITY, RARITY_WEIGHTS_BY_ILVL } from '../js/dungeon/generator.js';
+import { loadCatalog, getItem } from './items-catalog.js';
 
 // === STATE ===
 let currentBiome = null;
@@ -1145,11 +1146,15 @@ function openDungeonPanel(dungeon, cardEl){
   renderLootPool(dungeon);
 
   document.getElementById('close-panel').addEventListener('click', closeSidePanel);
-  document.getElementById('enter-btn').addEventListener('click', () => {
+  document.getElementById('enter-btn').addEventListener('click', async () => {
     // Génère la run et la persiste pour game.html (qui lit localStorage.rh_active_run
     // quand l'URL contient ?run=custom).
+    const btn = document.getElementById('enter-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '◇ GÉNÉRATION...';
     try {
-      const run = generateDungeonRun(currentBiome, dungeon.level);
+      const run = await generateDungeonRun(currentBiome, dungeon.level);
       // Format consommé par game.html (readPlaytestRun) :
       //   { rooms: [{width, height, walls, playerStart, enemies}], player, ...rest }
       // Notre generator produit déjà des rooms compatibles. On ajoute le bloc player
@@ -1169,6 +1174,8 @@ function openDungeonPanel(dungeon, cardEl){
     } catch(e){
       console.error('Failed to start run:', e);
       alert('Erreur au lancement du donjon : ' + e.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   });
 
@@ -1250,45 +1257,115 @@ function animateEnemyCanvases(){
 function renderLootPool(dungeon){
   const container = document.getElementById('loot-list-panel');
   container.innerHTML = '';
-  // Sort by rarity (legendary first)
-  const rarityOrder = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
-  const sorted = [...dungeon.lootPool].sort((a, b) => rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity));
 
-  // Compute total weight for percentage
-  const totalWeight = sorted.reduce((s, l) => s + l.weight, 0);
+  const ilvl = dungeon.level;
+  const biomeId = currentBiome;
+  const isBossDungeon = !!dungeon.hasBoss && ilvl === 6;
 
-  sorted.forEach(loot => {
-    const tpl = ITEM_TEMPLATES[loot.itemId];
-    const rarity = RARITIES[loot.rarity];
-    if(!tpl || !rarity) return;
+  // === 1. Header : nombre d'items + iLvl ===
+  const itemCountStr = dungeon.lootCount.min === dungeon.lootCount.max
+    ? `${dungeon.lootCount.min}`
+    : `${dungeon.lootCount.min}–${dungeon.lootCount.max}`;
+  const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  const ilvlStr = ROMAN[ilvl] || ilvl;
 
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:10px 12px; background:#1a0a14; border-left:3px solid #c8a040; margin-bottom:10px;';
+  header.innerHTML = `
+    <div style="font-size:10px; color:#c8a040; letter-spacing:2px; margin-bottom:4px;">▸ DROP INFO</div>
+    <div style="font-size:13px; color:#fff;"><b>${itemCountStr}</b> item${dungeon.lootCount.max > 1 ? 's' : ''} · iLvl <b>${ilvlStr}</b></div>
+    ${isBossDungeon ? '<div style="font-size:10px; color:#ff8800; margin-top:4px;">★ Boss : 1 drop garanti épique (95%) ou légendaire (5%)</div>' : ''}
+  `;
+  container.appendChild(header);
+
+  // === 2. Distribution de raretés ===
+  const weights = RARITY_WEIGHTS_BY_ILVL[ilvl] || RARITY_WEIGHTS_BY_ILVL[1];
+  const totalW = Object.values(weights).reduce((s, w) => s + w, 0);
+  const RARITY_INFO = {
+    common:    { label: 'Commun',    color: '#cccccc' },
+    magic:     { label: 'Magique',   color: '#6aaaff' },
+    rare:      { label: 'Rare',      color: '#ffcc44' },
+    epic:      { label: 'Épique',    color: '#cc44ff' },
+    legendary: { label: 'Légendaire',color: '#ff8800' },
+  };
+  const RARITY_AFFIXES = {
+    common: '0 affixe', magic: '1-2 affixes', rare: '2-3 affixes',
+    epic: '3-4 affixes', legendary: '4 affixes + modificateur',
+  };
+
+  const raritySection = document.createElement('div');
+  raritySection.style.cssText = 'margin-bottom:10px;';
+  raritySection.innerHTML = `
+    <div style="font-size:10px; color:#6a5878; letter-spacing:2px; margin-bottom:6px; padding:0 4px;">▸ RARETÉS POSSIBLES</div>
+  `;
+  Object.entries(weights).forEach(([rarity, w]) => {
+    if(w === 0) return;
+    const pct = ((w / totalW) * 100).toFixed(1);
+    const info = RARITY_INFO[rarity];
+    if(!info) return;
     const row = document.createElement('div');
-    row.className = 'loot-row';
-    row.style.setProperty('--rarity-color', rarity.color);
-
-    const statsHtml = Object.entries(loot.statRanges).map(([k, v]) => {
-      const range = (v[0] === v[1]) ? `${v[0]}` : `${v[0]}–${v[1]}`;
-      return `<span class="loot-stat"><span class="label">${k.toUpperCase()}</span> <span class="val">${range}</span></span>`;
-    }).join('');
-
-    const pct = ((loot.weight / totalWeight) * 100).toFixed(1);
-
+    row.style.cssText = `padding:6px 10px; margin:2px 0; background:rgba(255,255,255,0.02); border-left:3px solid ${info.color}; display:flex; align-items:center; gap:10px;`;
     row.innerHTML = `
-      <div class="loot-icon">${tpl.icon}</div>
-      <div class="loot-info">
-        <div class="loot-name-row">
-          <div class="loot-name">${tpl.name}</div>
-          <div class="loot-rarity">${rarity.label}</div>
-        </div>
-        <div class="loot-stats">${statsHtml}</div>
-        <div class="loot-weight">DROP RATE · <span class="v">${pct}%</span> dans le pool</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:12px; color:${info.color}; font-weight:bold;">${info.label}</div>
+        <div style="font-size:9px; color:#888;">${RARITY_AFFIXES[rarity]}</div>
+      </div>
+      <div style="font-size:14px; color:${info.color}; font-weight:bold; min-width:46px; text-align:right;">${pct}%</div>
+      <div style="width:60px; height:6px; background:rgba(255,255,255,0.05); border-radius:1px; overflow:hidden;">
+        <div style="width:${pct}%; height:100%; background:${info.color};"></div>
       </div>
     `;
-    container.appendChild(row);
+    raritySection.appendChild(row);
   });
+  container.appendChild(raritySection);
+
+  // === 3. Items affinitaires du biome ===
+  const affinity = BIOME_AFFINITY[biomeId] || { weapons: [], accessories: [] };
+  const affinityIds = [...affinity.weapons, ...affinity.accessories];
+
+  if(affinityIds.length > 0){
+    const affSection = document.createElement('div');
+    affSection.innerHTML = `
+      <div style="font-size:10px; color:#6a5878; letter-spacing:2px; margin-bottom:6px; padding:0 4px;">▸ ITEMS AFFINITAIRES (60% des drops)</div>
+    `;
+    affinityIds.forEach(itemId => {
+      const tpl = getItem(itemId);
+      if(!tpl) return; // catalog peut-être pas encore chargé : on skip silencieusement
+      const slotIcons = {
+        mainhand: '⚔️', head: '🪖', chest: '🦺', legs: '👖',
+        gloves: '🧤', boots: '👢', amulet: '📿', ring: '💍',
+      };
+      const slotIcon = slotIcons[tpl.slot] || tpl.icon || '?';
+      const row = document.createElement('div');
+      row.style.cssText = 'padding:5px 10px; margin:2px 0; background:rgba(255,255,255,0.02); display:flex; align-items:center; gap:10px;';
+      row.innerHTML = `
+        <div style="font-size:18px; width:22px; text-align:center;">${slotIcon}</div>
+        <div style="font-size:11px; color:#d8c8a0; flex:1;">${tpl.name}</div>
+        <div style="font-size:9px; color:#888;">${tpl.icon || ''}</div>
+      `;
+      affSection.appendChild(row);
+    });
+    // Si le catalog n'est pas chargé, on affiche un fallback texte
+    if(affSection.children.length === 1){
+      const note = document.createElement('div');
+      note.style.cssText = 'padding:8px 10px; font-size:10px; color:#666; font-style:italic;';
+      note.textContent = '(Catalog en chargement…)';
+      affSection.appendChild(note);
+    }
+    container.appendChild(affSection);
+  }
+
+  // === 4. Note sur les 40% restants ===
+  const noteRow = document.createElement('div');
+  noteRow.style.cssText = 'padding:8px 10px; margin-top:6px; font-size:9px; color:#666; font-style:italic; line-height:1.5;';
+  noteRow.textContent = '40% des drops sont des items génériques (toutes catégories). Chaque item est rollé avec préfixes/suffixes RNG selon sa rareté.';
+  container.appendChild(noteRow);
 }
 
 // === INIT ===
+// Pré-charge le catalog en arrière-plan (pour renderLootPool + generateDungeonRun)
+loadCatalog().catch(e => console.warn('Catalog preload failed (will retry on use):', e));
+
 document.getElementById('side-panel-overlay').addEventListener('click', closeSidePanel);
 
 // Esc pour fermer panel ou revenir step1
