@@ -1,12 +1,15 @@
 // src/js/dungeon/generator.js
 // Génère une run de donjon à partir de la spec d'ASCENSION_DATA.
-// SOURCE DE VÉRITÉ = ascension-data.js. Les valeurs (rooms count, enemy count,
-// pool d'ennemis, loot) sont lues depuis là. Le generator se contente de :
-//   1. Distribuer les ennemis sur les rooms
-//   2. Générer une map tile-based par room (compatible game.html)
-//   3. Roller le loot final selon la spec du donjon
+// SOURCE DE VÉRITÉ pour le contenu = ascension-data.js (rooms count, enemies)
+// SOURCE DE VÉRITÉ pour le loot = weapons.json + armor.json + amulets.json + rings.json
+//   (via items-catalog.js qui roll les vrais items avec affixes)
 
 import { ASCENSION_DATA, ENEMY_NAMES } from '../../dashboard/ascension-data.js';
+import {
+  loadCatalog,
+  getAllItems,
+  rollItem,
+} from '../../dashboard/items-catalog.js';
 
 // ============================================================
 // PRNG : Mulberry32 déterministe
@@ -45,16 +48,6 @@ function pickRandom(rng, arr){
   return arr[Math.floor(rng() * arr.length)];
 }
 
-function pickWeighted(rng, items){
-  const total = items.reduce((s, it) => s + (it.weight || 1), 0);
-  let r = rng() * total;
-  for(const it of items){
-    r -= (it.weight || 1);
-    if(r <= 0) return it;
-  }
-  return items[items.length - 1];
-}
-
 // ============================================================
 // CLASSIFICATION : déterminer si un enemyType est mob/elite/miniboss/boss
 // ============================================================
@@ -80,10 +73,13 @@ function partitionEnemyPool(enemyTypes){
 }
 
 // ============================================================
-// MAIN GENERATOR
+// MAIN GENERATOR (async — needs catalog loaded for loot)
 // ============================================================
 
-export function generateDungeonRun(biomeId, level, options = {}){
+export async function generateDungeonRun(biomeId, level, options = {}){
+  // Ensure catalog is loaded before rolling loot
+  await loadCatalog();
+
   const biomeData = ASCENSION_DATA[biomeId];
   if(!biomeData) throw new Error(`Unknown biome: ${biomeId}`);
 
@@ -126,7 +122,6 @@ export function generateDungeonRun(biomeId, level, options = {}){
     .filter(i => i >= 0);
   const eliteIdx = roomTypes.indexOf('elite');
 
-  // Calcule combien d'ennemis sont déjà "consommés" par les rooms spéciales
   let alreadyPlaced = 0;
   if(dungeon.hasBoss) alreadyPlaced += 1;
   if(dungeon.hasMiniboss) alreadyPlaced += 1;
@@ -136,17 +131,15 @@ export function generateDungeonRun(biomeId, level, options = {}){
     alreadyPlaced += 1 + eliteEscortCount;
   }
 
-  // Ennemis restants à distribuer dans les combat rooms
   let remaining = Math.max(combatRoomIndices.length, totalEnemyCount - alreadyPlaced);
 
-  // Distribution : min 1 par room, puis round-robin pour le reste
   const enemiesPerRoom = combatRoomIndices.map(() => 1);
   remaining -= combatRoomIndices.length;
   let cursor = 0;
   let safeguard = 100;
   while(remaining > 0 && safeguard-- > 0){
     const slot = cursor % combatRoomIndices.length;
-    if(enemiesPerRoom[slot] < 5){ // cap 5 ennemis par room pour la lisibilité
+    if(enemiesPerRoom[slot] < 5){
       enemiesPerRoom[slot]++;
       remaining--;
     }
@@ -161,9 +154,7 @@ export function generateDungeonRun(biomeId, level, options = {}){
       case 'combat': {
         const slotIdx = combatRoomIndices.indexOf(index);
         const count = enemiesPerRoom[slotIdx];
-        // Pioche dans pool.mobs (les ennemis non-spéciaux du dungeon.enemyTypes)
         if(pool.mobs.length === 0){
-          // Fallback improbable : pas de mobs dans le pool, on prend n'importe quel non-boss
           const nonBoss = dungeon.enemyTypes.filter(e => classifyEnemy(e) !== 'boss');
           enemyIds = Array.from({ length: count }, () => pickRandom(rng, nonBoss));
         } else {
@@ -191,20 +182,18 @@ export function generateDungeonRun(biomeId, level, options = {}){
     return {
       index,
       type,
-      // Champs consommés par game.html (readPlaytestRun)
       width: map.width,
       height: map.height,
       walls: map.walls,
       playerStart: map.playerStart,
       enemies: map.enemies,
-      // Métadonnées pour notre UI / debug
       enemyTypes: enemyIds,
       cleared: false,
     };
   });
 
-  // === 4. Loot final ===
-  const loot = rollLoot(rng, biomeData, dungeon, level);
+  // === 4. Loot final (utilise le vrai catalog + rollItem) ===
+  const loot = rollLoot(rng, biomeData, dungeon, level, biomeId);
 
   return {
     biomeId,
@@ -287,49 +276,121 @@ function generateRoomMap(rng, roomType, enemyIds){
 }
 
 // ============================================================
-// LOOT ROLLING (utilise dungeon.lootCount/lootPool/resourceDrop)
+// LOOT ROLLING (vrai catalog + rollItem avec affixes)
 // ============================================================
 
-const BOSS_DROP_LEGENDARY_CHANCE = 0.05; // 5% légendaire / 95% épique
+// Affinités par biome — itemIds favorisés selon le thème.
+// Le pool de chaque biome = items affinitaires (60%) + items génériques (40%).
+export const BIOME_AFFINITY = {
+  inferno: {
+    weapons: ['flameSword', 'axeBerserker', 'warhammer', 'maceOfHonor'],
+    accessories: ['amuletPyromancy', 'ringPyrokinesis'],
+  },
+  cryo: {
+    weapons: ['iceStaff', 'maceOfHonor', 'warhammer'],
+    accessories: ['amuletCryomancy', 'ringIceWard'],
+  },
+  toxic: {
+    weapons: ['venomFang', 'daggerSwift', 'axeBerserker'],
+    accessories: ['amuletPlague', 'ringSurvivor'],
+  },
+  voidnet: {
+    weapons: ['stormWand', 'pistolHeavy', 'daggerSwift'],
+    accessories: ['amuletStorm', 'ringStorm'],
+  },
+  crimson: {
+    weapons: ['swordRusty', 'swordIron', 'axeBerserker', 'daggerSwift', 'maceOfHonor'],
+    accessories: ['ringVampire', 'ringPredator'],
+  },
+};
 
-function rollLoot(rng, biomeData, dungeon, level){
-  const pool = dungeon.lootPool;
-  if(!pool || pool.length === 0){
-    throw new Error(`Empty loot pool for ${biomeData.id} D${level}`);
+// Distribution de raretés par iLvl du donjon.
+// iLvl 1-2 : pas d'épique. iLvl 3-4 : peu d'épique. iLvl 5-6 : un peu plus d'épique, 1% legendary
+export const RARITY_WEIGHTS_BY_ILVL = {
+  1:  { common: 70, magic: 28, rare: 2,  epic: 0,  legendary: 0 },
+  2:  { common: 60, magic: 33, rare: 6,  epic: 1,  legendary: 0 },
+  3:  { common: 50, magic: 35, rare: 12, epic: 3,  legendary: 0 },
+  4:  { common: 40, magic: 35, rare: 18, epic: 7,  legendary: 0 },
+  5:  { common: 30, magic: 35, rare: 22, epic: 12, legendary: 1 },
+  6:  { common: 20, magic: 32, rare: 28, epic: 18, legendary: 2 },
+  7:  { common: 15, magic: 30, rare: 30, epic: 22, legendary: 3 },
+  8:  { common: 10, magic: 25, rare: 32, epic: 28, legendary: 5 },
+  9:  { common: 5,  magic: 20, rare: 35, epic: 33, legendary: 7 },
+  10: { common: 0,  magic: 15, rare: 35, epic: 40, legendary: 10 },
+};
+
+function rollRarity(rng, ilvl){
+  const weights = RARITY_WEIGHTS_BY_ILVL[ilvl] || RARITY_WEIGHTS_BY_ILVL[1];
+  const total = Object.values(weights).reduce((s, w) => s + w, 0);
+  let r = rng() * total;
+  for(const [rarity, w] of Object.entries(weights)){
+    r -= w;
+    if(r <= 0) return rarity;
   }
+  return 'common';
+}
 
+// Construit le pool effectif d'itemIds piochables pour un biome.
+// 60% chance que l'item soit dans l'affinité du biome, 40% chance qu'il soit un item générique du catalog.
+function buildBiomeItemPool(rng, biomeId){
+  const catalog = getAllItems();
+  const allIds = Object.keys(catalog);
+  const affinity = BIOME_AFFINITY[biomeId] || { weapons: [], accessories: [] };
+
+  // Items affinitaires effectivement présents dans le catalog
+  const affinityIds = [...affinity.weapons, ...affinity.accessories]
+    .filter(id => catalog[id]);
+
+  // Items génériques = tout sauf l'affinity (pour ne pas double-compter)
+  const genericIds = allIds.filter(id => !affinityIds.includes(id));
+
+  return { affinityIds, genericIds };
+}
+
+function pickItemBaseId(rng, biomeId){
+  const { affinityIds, genericIds } = buildBiomeItemPool(rng, biomeId);
+  // 60% affinity / 40% generic, fallback sur l'autre si vide
+  if(affinityIds.length > 0 && (genericIds.length === 0 || rng() < 0.6)){
+    return pickRandom(rng, affinityIds);
+  }
+  return pickRandom(rng, genericIds.length > 0 ? genericIds : affinityIds);
+}
+
+function rollLootItem(rng, biomeId, ilvl, opts = {}){
+  const baseId = pickItemBaseId(rng, biomeId);
+  if(!baseId) return null;
+  // Rareté : forcée si opts.rarity, sinon roll selon l'iLvl
+  const rarity = opts.rarity || rollRarity(rng, ilvl);
+  // Pass un RNG perso à rollItem ? Non — rollItem utilise Math.random() en interne.
+  // C'est OK pour l'instant, on perd juste le déterminisme du roll seedé sur les affixes.
+  // (À refacto plus tard si besoin de runs reproductibles.)
+  return rollItem(baseId, {
+    rarity,
+    ilvl,
+    biomeId,
+    isBossDrop: !!opts.isBossDrop,
+  });
+}
+
+function rollLoot(rng, biomeData, dungeon, level, biomeId){
   const itemCount = rollInt(rng, dungeon.lootCount.min, dungeon.lootCount.max);
   const items = [];
 
-  // Boss D6 : 1 drop garanti épique (95%) ou légendaire (5%)
+  // Boss D6 : 1 drop garanti epic (95%) ou legendary (5%)
   if(level === 6 && dungeon.hasBoss){
-    const isLegendary = rng() < BOSS_DROP_LEGENDARY_CHANCE;
+    const isLegendary = rng() < 0.05;
     const guaranteedRarity = isLegendary ? 'legendary' : 'epic';
-    const rares = pool.filter(p => p.rarity === 'rare');
-    const baseItem = rares.length > 0 ? pickWeighted(rng, rares) : pickWeighted(rng, pool);
-    items.push({
-      itemId: baseItem.itemId,
+    const bossItem = rollLootItem(rng, biomeId, level, {
       rarity: guaranteedRarity,
-      stats: rollItemStats(rng, baseItem.statRanges),
-      tier: level,                  // niveau du donjon où l'item a drop (1-6 = tier I-VI)
-      biomeId: biomeData.id,        // biome de provenance (utile pour filtrer/tri par origine)
       isBossDrop: true,
-      droppedAt: Date.now(),        // timestamp de drop pour tri "récent"
     });
+    if(bossItem) items.push(bossItem);
   }
 
   const remaining = items.length > 0 ? itemCount - 1 : itemCount;
   for(let i = 0; i < remaining; i++){
-    const baseItem = pickWeighted(rng, pool);
-    items.push({
-      itemId: baseItem.itemId,
-      rarity: baseItem.rarity,
-      stats: rollItemStats(rng, baseItem.statRanges),
-      tier: level,
-      biomeId: biomeData.id,
-      isBossDrop: false,
-      droppedAt: Date.now(),
-    });
+    const item = rollLootItem(rng, biomeId, level);
+    if(item) items.push(item);
   }
 
   const resourceAmount = rollInt(rng, dungeon.resourceDrop.min, dungeon.resourceDrop.max);
@@ -344,16 +405,6 @@ function rollLoot(rng, biomeData, dungeon, level){
       amount: resourceAmount,
     },
   };
-}
-
-function rollItemStats(rng, statRanges){
-  const stats = {};
-  for(const [key, range] of Object.entries(statRanges || {})){
-    if(Array.isArray(range) && range.length === 2){
-      stats[key] = rollInt(rng, range[0], range[1]);
-    }
-  }
-  return stats;
 }
 
 // ============================================================
