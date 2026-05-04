@@ -20,13 +20,20 @@ const STATE = {
 };
 
 // Slot normalisation : weapons.json a 'weapon1H'/'weapon2H', armures sont par slot,
-// amulettes ont 'amulet', anneaux 'ring'. On unifie avec les 9 slots du héro.
+// amulettes ont 'amulet', anneaux 'ring', off-hand 'offhand'. On unifie avec les 8 slots du héro.
 //
-// Slots du héro (9) : mainhand, head, chest, legs, gloves, boots, amulet, ring1, ring2
-// (ring1/ring2 partagent le slot 'ring' côté items — l'équipement décide où poser l'item)
+// Slots du héro (8) : mainhand, offhand, head, chest, legs, gloves, boots, amulet, ring
+// Une arme 2H occupe mainhand ET offhand (l'offhand est verrouillée tant que la 2H est équipée).
+// Le champ 'handed' (1 ou 2) est ajouté à chaque item pour savoir si c'est une 2H.
 function normalizeSlot(rawSlot){
   if(rawSlot === 'weapon1H' || rawSlot === 'weapon2H') return 'mainhand';
-  return rawSlot; // head, chest, legs, gloves, boots, amulet, ring (déjà bons)
+  return rawSlot; // head, chest, legs, gloves, boots, amulet, ring, offhand (déjà bons)
+}
+
+function getHandedFromRawSlot(rawSlot){
+  if(rawSlot === 'weapon2H') return 2;
+  if(rawSlot === 'weapon1H') return 1;
+  return 0; // pas une arme
 }
 
 // === LOAD ALL JSON ===
@@ -60,6 +67,7 @@ export async function loadCatalog(){
           ...w,
           cat: 'weapon',
           slot: normalizeSlot(w.slot),
+          handed: getHandedFromRawSlot(w.slot), // 1 ou 2
         };
       });
 
@@ -116,11 +124,12 @@ export async function loadCatalog(){
 // Fallback si fetch échoue (file://, CORS, JSON manquants)
 function buildFallbackCatalog(){
   return {
-    swordRusty:   { id: 'swordRusty', name: 'Épée rouillée', icon: '🗡️', cat: 'weapon', slot: 'mainhand', damage: [6, 10], damageType: 'slash', range: 1 },
-    swordIron:    { id: 'swordIron', name: 'Épée de fer', icon: '⚔️', cat: 'weapon', slot: 'mainhand', damage: [9, 14], damageType: 'slash', range: 1 },
-    flameSword:   { id: 'flameSword', name: 'Lame Ardente', icon: '🔥', cat: 'weapon', slot: 'mainhand', damage: [8, 13], damageType: 'fire', range: 1 },
-    iceStaff:     { id: 'iceStaff', name: 'Bâton de Givre', icon: '❄️', cat: 'weapon', slot: 'mainhand', damage: [10, 15], damageType: 'ice', range: 4 },
-    daggerSwift:  { id: 'daggerSwift', name: 'Dague véloce', icon: '🔪', cat: 'weapon', slot: 'mainhand', damage: [5, 9], damageType: 'pierce', range: 1 },
+    swordRusty:   { id: 'swordRusty', name: 'Épée rouillée', icon: '🗡️', cat: 'weapon', slot: 'mainhand', handed: 1, damage: [6, 10], damageType: 'slash', range: 1 },
+    swordIron:    { id: 'swordIron', name: 'Épée de fer', icon: '⚔️', cat: 'weapon', slot: 'mainhand', handed: 1, damage: [9, 14], damageType: 'slash', range: 1 },
+    flameSword:   { id: 'flameSword', name: 'Lame Ardente', icon: '🔥', cat: 'weapon', slot: 'mainhand', handed: 1, damage: [8, 13], damageType: 'fire', range: 1 },
+    iceStaff:     { id: 'iceStaff', name: 'Bâton de Givre', icon: '❄️', cat: 'weapon', slot: 'mainhand', handed: 2, damage: [10, 15], damageType: 'ice', range: 4 },
+    axeBerserker: { id: 'axeBerserker', name: 'Hache de berserker', icon: '🪓', cat: 'weapon', slot: 'mainhand', handed: 2, damage: [13, 22], damageType: 'slash', range: 1 },
+    daggerSwift:  { id: 'daggerSwift', name: 'Dague véloce', icon: '🔪', cat: 'weapon', slot: 'mainhand', handed: 1, damage: [5, 9], damageType: 'pierce', range: 1 },
     head:         { id: 'head', name: 'Casque', icon: '⛑️', cat: 'armor', slot: 'head', implicit: { id: 'armor', valueRange: [4,8], label: '+X armure' }, tags: ['Defense'] },
     chest:        { id: 'chest', name: 'Veste', icon: '🦺', cat: 'armor', slot: 'chest', implicit: { id: 'maxHP', valueRange: [12,25], label: '+X PV max' }, tags: ['Defense'] },
     legs:         { id: 'legs', name: 'Pantalon', icon: '👖', cat: 'armor', slot: 'legs', implicit: { id: 'armor', valueRange: [3,7], label: '+X armure' }, tags: ['Defense'] },
