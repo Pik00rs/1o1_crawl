@@ -2,802 +2,892 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chest — Reactor Hollow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Coffre — REACTOR HOLLOW</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #ffb347;
+    --r-common: #cccccc;
+    --r-magic: #6aaaff;
+    --r-rare: #ffcc44;
+    --r-epic: #cc44ff;
+    --r-legendary: #ff8800;
+    --r-set: #66ff66;
+    --good: #5fff8c;
+    --bad: #ff5959;
+  }
+  * { box-sizing: border-box; }
   html, body {
-    background: #0a0510;
-    color: #d8c8a0;
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
     font-family: 'Courier New', monospace;
-    font-size: 13px;
     min-height: 100vh;
     overflow-x: hidden;
-    -webkit-tap-highlight-color: transparent;
   }
-  body {
-    padding: 16px;
-    background: radial-gradient(ellipse at top, #1a0820 0%, #0a0510 70%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #0a0510; }
-  ::-webkit-scrollbar-thumb { background: #3a2840; border-radius: 3px; }
+  a { color: inherit; text-decoration: none; }
 
-  /* === HEADER === */
   .header {
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border-2);
+    padding: 12px 16px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 14px;
-    border: 1px solid #3a2840;
-    background: #14081e;
-    margin-bottom: 14px;
     gap: 12px;
-    flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 50;
   }
-  .header__info { min-width: 0; flex: 1; }
-  .header-title {
-    font-size: 14px;
-    color: #c8a040;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(200,160,64,0.4);
-  }
-  .header-sub {
-    font-size: 9px;
-    color: #6a5878;
-    letter-spacing: 1px;
-    margin-top: 3px;
-  }
-  .hub-btn {
-    padding: 8px 14px;
-    background: transparent;
-    border: 1px solid #5a4828;
-    color: #d8c8a0;
+  .back-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 12px;
+    color: var(--text-0);
     font-family: inherit;
-    font-size: 11px;
-    letter-spacing: 1px;
-    text-decoration: none;
-    transition: all 0.15s;
-    min-height: 36px;
-    display: inline-flex;
-    align-items: center;
+    font-size: 13px;
+    cursor: pointer;
   }
-  .hub-btn:active { border-color: #ffd060; color: #ffd060; transform: scale(0.96); }
-  @media (hover: hover) { .hub-btn:hover { border-color: #ffd060; color: #ffd060; } }
+  .back-btn:hover { background: var(--bg-3); }
+  .title {
+    font-size: 16px; letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .title .acc { color: var(--accent); }
+  .stats-mini { margin-left: auto; font-size: 11px; color: var(--text-1); display: flex; gap: 12px; }
+  .stats-mini b { color: var(--text-0); }
 
-  /* === FILTERS BAR === */
-  .filters {
-    background: #14081e;
-    border: 1px solid #3a2840;
-    padding: 12px;
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  /* === COMPARISON PANEL === */
+  .comparison {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    margin-bottom: 16px;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 12px;
+  }
+  .comparison.empty {
+    text-align: center;
+    color: var(--text-2);
+    padding: 24px;
+    font-size: 12px;
+    grid-template-columns: 1fr;
+  }
+  .cmp-side {
+    display: flex; flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .cmp-side h3 {
+    margin: 0; font-size: 10px; letter-spacing: 2px;
+    color: var(--text-2); text-transform: uppercase;
+    border-bottom: 1px solid var(--border-1);
+    padding-bottom: 4px;
+  }
+  .cmp-side h3.selected { color: var(--accent); }
+  .cmp-side h3.equipped { color: var(--good); }
+  .cmp-item {
+    display: flex; gap: 10px;
+    padding: 6px 0;
+  }
+  .cmp-item-icon {
+    width: 48px; height: 48px;
+    background: var(--bg-2);
+    border: 2px solid var(--border-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+  .cmp-item-info { flex: 1; min-width: 0; }
+  .cmp-item-name {
+    font-size: 13px; font-weight: bold;
+    margin-bottom: 2px;
+    word-break: break-word;
+  }
+  .cmp-item-meta {
+    font-size: 10px; color: var(--text-1);
+  }
+  .cmp-stats { display: flex; flex-direction: column; gap: 2px; }
+  .cmp-stat {
+    display: flex; justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 2px 0;
+    gap: 8px;
+  }
+  .cmp-stat .lbl { color: var(--text-1); flex: 1; min-width: 0; }
+  .cmp-stat .lbl-name { opacity: 0.6; font-size: 9px; margin-left: 4px; }
+  .cmp-stat .val { color: var(--text-0); font-weight: bold; flex-shrink: 0; }
+  .cmp-stat.base .val { color: #fff; }
+  .cmp-stat.implicit .val { color: #aae; }
+  .cmp-stat.prefix .val { color: var(--r-magic); }
+  .cmp-stat.suffix .val { color: var(--r-epic); }
+  .cmp-empty {
+    text-align: center; color: var(--text-2);
+    font-size: 11px; padding: 28px 12px;
+    border: 1px dashed var(--border-2);
+  }
+  .cmp-divider {
+    background: var(--border-2);
+  }
+
+  /* === FILTERS === */
+  .filter-section {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
     margin-bottom: 12px;
-  }
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-  .filter-group:last-child { margin-bottom: 0; }
-  .filter-label {
-    font-size: 9px;
-    color: #6a5878;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+    padding: 10px;
   }
   .filter-row {
     display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 4px 0;
+    scrollbar-width: thin;
+    align-items: center;
+  }
+  .filter-row::-webkit-scrollbar { height: 4px; }
+  .filter-row::-webkit-scrollbar-thumb { background: var(--border-2); }
+  .filter-row + .filter-row { margin-top: 6px; }
+  .filter-label {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-2); text-transform: uppercase;
+    flex-shrink: 0;
+    padding: 6px 4px;
+    min-width: 50px;
   }
   .filter-btn {
-    padding: 6px 10px;
-    background: #0a0510;
-    border: 1px solid #2a1830;
-    color: #8a7898;
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    padding: 5px 10px;
+    color: var(--text-1);
     font-family: inherit;
     font-size: 10px;
     cursor: pointer;
-    transition: all 0.15s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    min-height: 32px;
     white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+    transition: all 0.1s;
   }
+  .filter-btn:hover { background: var(--bg-3); color: var(--text-0); }
   .filter-btn.active {
-    background: var(--filter-color, #c8a040);
-    color: #0a0510;
-    border-color: var(--filter-color, #c8a040);
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
     font-weight: bold;
   }
-  .filter-btn:active:not(.active) { transform: scale(0.96); }
-  @media (hover: hover) {
-    .filter-btn:hover:not(.active) {
-      border-color: var(--filter-color, #c8a040);
-      color: #d8c8a0;
-    }
+  .search-input {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    width: 100%;
+    margin-bottom: 8px;
   }
 
-  .search-row {
+  /* === ACTION BAR === */
+  .action-bar {
     display: flex;
     gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
     align-items: center;
   }
-  .search-icon { font-size: 12px; color: #6a5878; }
-  .search-input {
-    flex: 1;
-    padding: 8px 10px;
-    background: #0a0510;
-    border: 1px solid #3a2840;
-    color: #d8c8a0;
+  .action-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    padding: 8px 14px;
     font-family: inherit;
     font-size: 11px;
-    letter-spacing: 0.5px;
-    min-height: 32px;
-  }
-  .search-input::placeholder { color: #5a4860; }
-  .search-input:focus {
-    outline: none;
-    border-color: #c8a040;
-    box-shadow: 0 0 0 2px rgba(200,160,64,0.15);
-  }
-  .search-clear {
-    background: transparent;
-    border: 1px solid #3a2840;
-    color: #8a7898;
-    font-family: inherit;
-    font-size: 11px;
-    padding: 6px 10px;
-    cursor: pointer;
-    min-height: 32px;
-    transition: all 0.15s;
-  }
-  .search-clear:active { transform: scale(0.95); border-color: #ff8080; color: #ff8080; }
-
-  .stats-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    font-size: 10px;
-    color: #6a5878;
     letter-spacing: 1px;
-    border-bottom: 1px dashed #2a1830;
-    margin-bottom: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
   }
-  .stats-line .v { color: #d8c8a0; font-weight: bold; }
+  .action-btn:hover:not(:disabled) { background: var(--bg-3); }
+  .action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .action-btn.primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: bold;
+  }
+  .action-btn.primary:disabled {
+    background: var(--bg-2);
+    color: var(--text-2);
+    border-color: var(--border-2);
+  }
+  .action-btn.danger {
+    border-color: var(--bad);
+    color: var(--bad);
+  }
+  .action-btn.danger:hover:not(:disabled) {
+    background: var(--bad);
+    color: #000;
+  }
+  .selection-count {
+    font-size: 11px; color: var(--text-1);
+    margin-left: auto;
+  }
+  .selection-count b { color: var(--accent); }
 
-  .grid-wrap { flex: 1; }
+  /* === GRID === */
   .grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     gap: 6px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
   .item-cell {
     aspect-ratio: 1;
-    background: #14081e;
-    border: 1px solid var(--rarity-color, #2a1830);
-    position: relative;
+    background: var(--bg-2);
+    border: 2px solid var(--border-1);
     cursor: pointer;
-    transition: all 0.15s;
+    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 4px;
+    transition: all 0.1s;
     overflow: hidden;
+    color: inherit;
+    font-family: inherit;
   }
-  .item-cell.empty {
-    border-style: dashed;
-    border-color: #1a1020;
-    cursor: default;
-    background: #08040c;
-  }
-  .item-cell:not(.empty)::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, var(--rarity-color, #444) 0%, transparent 60%);
-    opacity: 0.12;
-    pointer-events: none;
-  }
-  .item-cell.boss-drop::after {
-    content: '★';
-    position: absolute;
-    top: 2px; right: 4px;
-    font-size: 10px;
-    color: #ffd060;
-    text-shadow: 0 0 4px rgba(255,208,96,0.8);
+  .item-cell:hover {
+    background: var(--bg-3);
+    border-color: var(--border-2);
   }
   .item-cell.selected {
-    box-shadow: 0 0 0 2px #ffd060, 0 0 14px rgba(255,208,96,0.4);
+    border-color: var(--accent) !important;
+    background: rgba(255, 179, 71, 0.12);
+    box-shadow: 0 0 0 1px var(--accent);
   }
-  .item-cell:active:not(.empty) { transform: scale(0.95); }
-  @media (hover: hover) {
-    .item-cell:hover:not(.empty) {
-      border-color: var(--rarity-color, #ffd060);
-      box-shadow: 0 0 12px rgba(255,255,255,0.15);
-      transform: translateY(-1px);
-    }
-  }
+  .item-cell.empty { cursor: default; opacity: 0.3; background: var(--bg-1); pointer-events: none; }
   .item-icon {
-    font-size: 22px;
+    font-size: 28px;
     line-height: 1;
-    z-index: 1;
   }
-  .item-tier {
+  .item-cell .ilvl {
     position: absolute;
-    bottom: 2px; left: 4px;
+    top: 3px; left: 4px;
     font-size: 8px;
-    color: var(--rarity-color, #d8c8a0);
-    font-weight: bold;
+    color: var(--text-2);
     letter-spacing: 0.5px;
-    z-index: 1;
-    text-shadow: 0 0 3px #000;
-  }
-
-  .detail-panel {
-    background: #14081e;
-    border: 1px solid #3a2840;
-    border-left: 3px solid var(--detail-rarity-color, #5a4828);
-    padding: 12px 14px;
-    margin-bottom: 12px;
-    transition: all 0.2s;
-  }
-  .detail-panel.hidden { display: none; }
-  .detail-row { display: flex; align-items: center; gap: 12px; }
-  .detail-icon {
-    font-size: 32px;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0a0510;
-    border: 1px solid var(--detail-rarity-color, #2a1830);
-    flex-shrink: 0;
-  }
-  .detail-main { min-width: 0; flex: 1; }
-  .detail-name {
-    font-size: 14px;
-    color: #fff;
     font-weight: bold;
-    margin-bottom: 4px;
-    line-height: 1.2;
   }
-  .detail-name .star { color: #ffd060; margin-left: 4px; font-size: 11px; }
-  .detail-meta {
-    display: flex;
-    gap: 8px;
-    font-size: 9px;
-    letter-spacing: 1px;
-    flex-wrap: wrap;
+  .item-cell .rar-dot {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
   }
-  .detail-tag {
-    padding: 2px 6px;
-    background: var(--tag-bg, #1a0a14);
-    color: var(--tag-color, #d8c8a0);
-    text-transform: uppercase;
-    font-weight: bold;
-    border: 1px solid var(--tag-border, transparent);
-  }
-  .detail-stats {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #2a1830;
-    display: flex;
-    gap: 14px 18px;
-    flex-wrap: wrap;
-    font-size: 11px;
-  }
-  .detail-stat {
-    display: flex;
-    gap: 6px;
-    align-items: baseline;
-  }
-  .detail-stat .k { color: #6a5878; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
-  .detail-stat .v { color: var(--detail-rarity-color, #d8c8a0); font-weight: bold; font-size: 13px; }
+  .item-cell.r-magic     { border-color: rgba(106, 170, 255, 0.5); }
+  .item-cell.r-rare      { border-color: rgba(255, 204, 68, 0.5); }
+  .item-cell.r-epic      { border-color: rgba(204, 68, 255, 0.5); }
+  .item-cell.r-legendary { border-color: rgba(255, 136, 0, 0.6); }
+  .item-cell.r-set       { border-color: rgba(102, 255, 102, 0.6); }
+  .rar-common    { background: var(--r-common); }
+  .rar-magic     { background: var(--r-magic); }
+  .rar-rare      { background: var(--r-rare); }
+  .rar-epic      { background: var(--r-epic); }
+  .rar-legendary { background: var(--r-legendary); }
+  .rar-set       { background: var(--r-set); }
 
-  .empty-state {
-    padding: 40px 20px;
-    text-align: center;
-    color: #6a5878;
-    font-size: 11px;
-    letter-spacing: 1px;
-    border: 1px dashed #2a1830;
-    margin-bottom: 14px;
-  }
-  .empty-state__icon { font-size: 36px; opacity: 0.4; margin-bottom: 12px; }
-  .empty-state__title {
-    font-size: 14px;
-    color: #d8c8a0;
-    letter-spacing: 2px;
-    margin-bottom: 6px;
-  }
-
+  /* === PAGINATION === */
   .pagination {
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 14px;
-    padding: 10px;
-    background: #14081e;
-    border: 1px solid #3a2840;
-  }
-  .page-btn {
-    padding: 10px 14px;
-    background: transparent;
-    border: 1px solid #5a4828;
-    color: #d8c8a0;
-    font-family: inherit;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.15s;
-    min-width: 40px;
-    min-height: 40px;
-  }
-  .page-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    border-color: #2a1830;
-  }
-  .page-btn:active:not(:disabled) { border-color: #ffd060; color: #ffd060; transform: scale(0.95); }
-  @media (hover: hover) {
-    .page-btn:hover:not(:disabled) { border-color: #ffd060; color: #ffd060; }
-  }
-  .page-info {
-    font-size: 11px;
-    color: #d8c8a0;
-    letter-spacing: 1.5px;
-    min-width: 80px;
-    text-align: center;
-  }
-  .page-info .v { color: #ffd060; font-weight: bold; }
-
-  .dev-actions {
-    margin-top: 16px;
-    padding: 10px 12px;
-    background: #14081e;
-    border: 1px dashed #3a2840;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
     align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
   }
-  .dev-actions__label {
-    font-size: 9px;
-    color: #6a5878;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+  .pag-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
   }
-  .dev-btn {
-    padding: 6px 10px;
-    background: transparent;
-    border: 1px solid #3a2840;
-    color: #8a7898;
+  .pag-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .pag-info { font-size: 12px; color: var(--text-1); }
+
+  /* === DEV TOOLS === */
+  .dev-tools {
+    background: rgba(255, 0, 100, 0.05);
+    border: 1px dashed rgba(255, 0, 100, 0.3);
+    padding: 8px 12px;
+    margin-top: 16px;
+    font-size: 10px;
+    color: rgba(255, 100, 150, 0.8);
+  }
+  .dev-tools button {
+    background: rgba(255, 0, 100, 0.1);
+    border: 1px solid rgba(255, 0, 100, 0.3);
+    color: rgba(255, 100, 150, 1);
+    padding: 4px 8px;
     font-family: inherit;
     font-size: 10px;
     cursor: pointer;
-    transition: all 0.15s;
-    letter-spacing: 0.5px;
-    min-height: 30px;
+    margin-right: 6px;
+    margin-bottom: 4px;
   }
-  .dev-btn:active { transform: scale(0.95); }
-  @media (hover: hover) {
-    .dev-btn:hover { border-color: #c8a040; color: #d8c8a0; }
-  }
-  .dev-btn.danger { color: #ff8080; border-color: #5a2828; }
 
+  /* === MOBILE === */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(6, 1fr); }
+    .item-icon { font-size: 24px; }
+  }
   @media (max-width: 700px) {
-    body { padding: 10px; }
-    .header { padding: 8px 10px; }
-    .header-title { font-size: 12px; }
-    .grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .container { padding: 8px; }
+    .grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+    .item-icon { font-size: 22px; }
+    .comparison { grid-template-columns: 1fr; }
+    .cmp-divider { display: none; height: 1px; margin: 4px 0; }
+    .stats-mini { display: none; }
+    .title { font-size: 13px; }
+    .filter-label { min-width: 40px; font-size: 8px; }
+  }
+  @media (max-width: 480px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
     .item-icon { font-size: 20px; }
-    .filter-btn { font-size: 10px; padding: 6px 8px; min-height: 32px; }
-    .detail-icon { font-size: 26px; width: 36px; height: 36px; }
-    .detail-name { font-size: 13px; }
-    .detail-stats { gap: 10px 14px; font-size: 10px; }
+    .item-cell .ilvl { font-size: 7px; }
   }
-  @media (max-width: 400px) {
-    body { padding: 8px; }
+  @media (max-width: 360px) {
     .grid { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    .item-icon { font-size: 24px; }
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <a href="../../index.html" class="hub-btn">◂ HUB</a>
-  <div class="header__info">
-    <div class="header-title">📦 CHEST</div>
-    <div class="header-sub">INVENTAIRE & LOOT STASH</div>
-  </div>
-  <div style="width: 60px;"></div>
-</div>
+<header class="header">
+  <a href="../../index.html" class="back-btn">← RETOUR</a>
+  <div class="title"><span class="acc">▣</span> COFFRE</div>
+  <div class="stats-mini" id="stats-mini"></div>
+</header>
 
-<div class="filters">
-  <div class="filter-group">
-    <div class="filter-label">▸ SLOT</div>
-    <div class="filter-row" id="filter-slot"></div>
-  </div>
-  <div class="filter-group">
-    <div class="filter-label">▸ RARETÉ</div>
-    <div class="filter-row" id="filter-rarity"></div>
-  </div>
-  <div class="filter-group">
-    <div class="filter-label">▸ TIER</div>
-    <div class="filter-row" id="filter-tier"></div>
-  </div>
-  <div class="filter-group">
-    <div class="filter-label">▸ RECHERCHE</div>
-    <div class="search-row">
-      <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="search-input" placeholder="Nom de l'item..." />
-      <button class="search-clear" id="search-clear">✕</button>
+<main class="container">
+
+  <!-- COMPARISON PANEL -->
+  <section class="comparison empty" id="comparison">
+    <div style="grid-column: 1/-1; text-align: center; color: var(--text-2); padding: 18px; font-size: 11px; letter-spacing: 1px;">
+      Sélectionne un item pour voir la comparaison
     </div>
+  </section>
+
+  <!-- FILTERS -->
+  <section class="filter-section">
+    <input type="text" class="search-input" id="search" placeholder="Rechercher un item...">
+    <div class="filter-row" id="filter-slot"></div>
+    <div class="filter-row" id="filter-rarity"></div>
+    <div class="filter-row" id="filter-ilvl"></div>
+  </section>
+
+  <!-- ACTION BAR -->
+  <div class="action-bar">
+    <button class="action-btn" id="btn-select-all">▣ TOUT SÉLECTIONNER</button>
+    <button class="action-btn" id="btn-deselect" disabled>✕ DÉSÉLECTIONNER</button>
+    <button class="action-btn primary" id="btn-equip" disabled>⚔ ÉQUIPER</button>
+    <button class="action-btn danger" id="btn-destroy" disabled>🔥 DÉTRUIRE</button>
+    <div class="selection-count" id="selection-count"></div>
   </div>
-</div>
 
-<div class="stats-line" id="stats-line"></div>
+  <!-- GRID -->
+  <section class="grid" id="grid"></section>
 
-<div class="detail-panel hidden" id="detail-panel"></div>
+  <!-- PAGINATION -->
+  <div class="pagination">
+    <button class="pag-btn" id="pag-prev">◂</button>
+    <div class="pag-info" id="pag-info">PAGE 1 / 1</div>
+    <button class="pag-btn" id="pag-next">▸</button>
+  </div>
 
-<div class="grid-wrap">
-  <div class="grid" id="grid"></div>
-</div>
+  <!-- DEV TOOLS -->
+  <div class="dev-tools">
+    [DEV] Tools : 
+    <button id="dev-add-50">+50 random</button>
+    <button id="dev-add-10-legendary">+10 légendaires</button>
+    <button id="dev-clear">Vider chest</button>
+    <button id="dev-reset-equipped">Reset équipement</button>
+  </div>
 
-<div class="pagination" id="pagination">
-  <button class="page-btn" id="page-prev">◂</button>
-  <div class="page-info">PAGE <span class="v" id="page-current">1</span>/<span class="v" id="page-total">1</span></div>
-  <button class="page-btn" id="page-next">▸</button>
-</div>
-
-<div class="dev-actions">
-  <span class="dev-actions__label">▸ DEV TOOLS</span>
-  <button class="dev-btn" id="dev-mock">🎲 MOCK 50 ITEMS</button>
-  <button class="dev-btn" id="dev-add-10">➕ +10 RANDOM</button>
-  <button class="dev-btn danger" id="dev-clear">🗑 CLEAR CHEST</button>
-  <span class="dev-actions__label" style="margin-left: auto;">localStorage : rh_player_chest</span>
-</div>
+</main>
 
 <script type="module">
-import { ITEM_TEMPLATES, RARITIES, BIOMES } from './ascension-data.js';
+import {
+  loadCatalog, getItem, getAllItems,
+  rollItem, composeItemName, describeItemStats, ilvlToRoman
+} from './items-catalog.js';
 
+// === STATE ===
 const STATE = {
-  items: [],
-  filtered: [],
-  page: 0,
-  pageSize: 40,
-  filters: { slot: 'all', rarity: 'all', tier: 'all', search: '' },
-  selectedInstanceId: null,
+  chest: [],
+  equipped: {},
+  selectedIds: new Set(),
+  filter: { slot: 'all', rarity: 'all', ilvl: 'all', search: '' },
+  page: 1,
+  itemsPerPage: 40,
+  focusedItemId: null,
 };
 
-const STORAGE_KEY = 'rh_player_chest';
+const STORAGE_CHEST = 'rh_player_chest';
+const STORAGE_EQUIPPED = 'rh_player_equipped';
 
-const SLOT_OPTIONS = [
-  { id: 'all',      label: 'TOUS',     color: '#c8a040' },
-  { id: 'mainhand', label: '⚔ ARME',   color: '#ff8830' },
-  { id: 'chest',    label: '🛡 ARMURE', color: '#3df0ff' },
-  { id: 'head',     label: '⛑ HEAUME', color: '#aee6ff' },
-  { id: 'neck',     label: '📿 AMULETTE', color: '#c040ff' },
-  { id: 'ring',     label: '💍 ANNEAU', color: '#ffd060' },
-  { id: 'belt',     label: '🪢 CEINTURE', color: '#a08840' },
-  { id: 'inv',      label: '🧪 CONSO', color: '#3df068' },
-];
+const HERO_SLOTS = ['mainhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring1', 'ring2'];
 
-const RARITY_OPTIONS = [
-  { id: 'all',       label: 'TOUTES',     color: '#c8a040' },
-  { id: 'common',    label: 'COMMUN',     color: '#a89878' },
-  { id: 'uncommon',  label: 'PEU COMMUN', color: '#3df068' },
-  { id: 'rare',      label: 'RARE',       color: '#3d9cf0' },
-  { id: 'epic',      label: 'ÉPIQUE',     color: '#c040ff' },
-  { id: 'legendary', label: 'LÉGENDAIRE', color: '#ffaa20' },
-];
-
-const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
-const TIER_OPTIONS = [
-  { id: 'all', label: 'TOUS', color: '#c8a040' },
-  ...[1,2,3,4,5,6].map(n => ({ id: String(n), label: ROMAN[n], color: '#c8a040' })),
-];
-
-const STAT_LABELS = {
-  dmg:'DMG', armor:'ARM', hp:'HP', burn:'BRN', freeze:'FRZ', slow:'SLW',
-  poison:'POI', bleed:'BLD', shock:'SHK', stun:'STN', pierce:'PRC',
-  crit:'CRT', heal:'HEAL', charge:'CHG', range:'RNG', aoe:'AOE',
-  fireRes:'FIRE_R', coldRes:'COLD_R', poisonRes:'POI_R', shockRes:'SHK_R',
-  bleedRes:'BLD_R', pull:'PULL', block:'BLOCK', lifesteal:'LS',
-  reroll:'REROLL', invSlots:'INV',
+const SLOT_LABELS = {
+  all: 'Tous',
+  mainhand: 'Arme',
+  head: 'Tête',
+  chest: 'Torse',
+  legs: 'Jambes',
+  gloves: 'Mains',
+  boots: 'Pieds',
+  amulet: 'Amulette',
+  ring: 'Anneau',
 };
 
-function loadChest(){
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return [];
-    const data = JSON.parse(raw);
-    return Array.isArray(data?.items) ? data.items : [];
-  } catch(e){ return []; }
-}
+const RARITIES = ['common', 'magic', 'rare', 'epic', 'legendary'];
+const RARITY_LABELS = {
+  all: 'Toutes', common: 'Commun', magic: 'Magique',
+  rare: 'Rare', epic: 'Épique', legendary: 'Légendaire',
+};
 
-function saveChest(items){
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ items })); }
-  catch(e){ console.error('Failed to save chest:', e); }
-}
-
-function generateMockItems(count = 50){
-  const itemIds = Object.keys(ITEM_TEMPLATES);
-  const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
-  const rarityWeights = [45, 30, 18, 6, 1];
-  const biomeIds = Object.keys(BIOMES);
-  const items = [];
-  const now = Date.now();
-  for(let i = 0; i < count; i++){
-    const itemId = itemIds[Math.floor(Math.random() * itemIds.length)];
-    let r = Math.random() * 100;
-    let rarity = 'common';
-    for(let j = 0; j < rarities.length; j++){
-      r -= rarityWeights[j];
-      if(r <= 0){ rarity = rarities[j]; break; }
-    }
-    const tier = Math.floor(Math.random() * 6) + 1;
-    const biomeId = biomeIds[Math.floor(Math.random() * biomeIds.length)];
-    const tpl = ITEM_TEMPLATES[itemId];
-    const stats = {};
-    if(tpl.cat === 'weapon'){ stats.dmg = 5 + tier * 3 + Math.floor(Math.random() * 5); stats.crit = Math.floor(Math.random() * 8); }
-    else if(tpl.cat === 'armor'){ stats.armor = 4 + tier * 2 + Math.floor(Math.random() * 4); stats.hp = tier * 5 + Math.floor(Math.random() * 8); }
-    else if(tpl.cat === 'helm'){ stats.armor = 2 + tier + Math.floor(Math.random() * 3); }
-    else if(tpl.cat === 'accessory'){ stats.crit = 1 + Math.floor(Math.random() * 5); stats.dmg = Math.floor(Math.random() * 4); }
-    else if(tpl.cat === 'consumable'){ stats.heal = 10 + tier * 5; stats.charge = 1 + Math.floor(Math.random() * 3); }
-    items.push({
-      itemId, rarity, stats, tier, biomeId,
-      isBossDrop: rarity === 'legendary' || (rarity === 'epic' && tier === 6 && Math.random() > 0.5),
-      droppedAt: now - Math.floor(Math.random() * 86400000 * 30),
-      instanceId: `mock_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`,
-    });
+// === BOOT ===
+async function boot(){
+  await loadCatalog();
+  loadFromStorage();
+  if(STATE.chest.length === 0){
+    seedChestWithMocks();
+    saveChest();
   }
-  return items;
+  if(Object.keys(STATE.equipped).length === 0){
+    seedEquipped();
+    saveEquipped();
+  }
+  buildFilterButtons();
+  attachEventHandlers();
+  render();
 }
 
-function applyFilters(){
-  const { slot, rarity, tier, search } = STATE.filters;
-  const searchLower = search.trim().toLowerCase();
-  STATE.filtered = STATE.items.filter(item => {
-    const tpl = ITEM_TEMPLATES[item.itemId];
+function loadFromStorage(){
+  try { STATE.chest = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]'); }
+  catch { STATE.chest = []; }
+  try { STATE.equipped = JSON.parse(localStorage.getItem(STORAGE_EQUIPPED) || '{}'); }
+  catch { STATE.equipped = {}; }
+}
+
+function saveChest(){ localStorage.setItem(STORAGE_CHEST, JSON.stringify(STATE.chest)); }
+function saveEquipped(){ localStorage.setItem(STORAGE_EQUIPPED, JSON.stringify(STATE.equipped)); }
+
+function seedChestWithMocks(){
+  const catalog = getAllItems();
+  const ids = Object.keys(catalog);
+  if(ids.length === 0) return;
+  const rarities = ['common', 'common', 'magic', 'magic', 'rare', 'epic'];
+  for(let i = 0; i < 25; i++){
+    const id = ids[Math.floor(Math.random() * ids.length)];
+    const rarity = rarities[Math.floor(Math.random() * rarities.length)];
+    const ilvl = 1 + Math.floor(Math.random() * 6);
+    const rolled = rollItem(id, { rarity, ilvl });
+    if(rolled) STATE.chest.push(rolled);
+  }
+}
+
+function seedEquipped(){
+  const catalog = getAllItems();
+  const findFirstForSlot = (slot) => Object.keys(catalog).find(id => catalog[id].slot === slot);
+  const seedSlot = (heroSlot, sourceSlot = heroSlot) => {
+    const id = findFirstForSlot(sourceSlot);
+    if(id){
+      const rolled = rollItem(id, { rarity: 'common', ilvl: 1 });
+      if(rolled) STATE.equipped[heroSlot] = rolled;
+    }
+  };
+  seedSlot('mainhand');
+  seedSlot('head');
+  seedSlot('chest');
+  seedSlot('legs');
+  seedSlot('gloves');
+  seedSlot('boots');
+  seedSlot('amulet');
+  seedSlot('ring1', 'ring');
+  seedSlot('ring2', 'ring');
+}
+
+// === FILTER BUILDERS ===
+function buildFilterButtons(){
+  // SLOT
+  const slotRow = document.getElementById('filter-slot');
+  slotRow.innerHTML = '<span class="filter-label">SLOT</span>';
+  ['all', 'mainhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring'].forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (s === 'all' ? ' active' : '');
+    btn.textContent = SLOT_LABELS[s];
+    btn.dataset.slot = s;
+    btn.addEventListener('click', () => {
+      STATE.filter.slot = s;
+      STATE.page = 1;
+      slotRow.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.slot === s));
+      render();
+    });
+    slotRow.appendChild(btn);
+  });
+
+  // RARITY
+  const rarRow = document.getElementById('filter-rarity');
+  rarRow.innerHTML = '<span class="filter-label">RARETÉ</span>';
+  ['all', ...RARITIES].forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (r === 'all' ? ' active' : '');
+    btn.textContent = RARITY_LABELS[r];
+    if(r !== 'all') btn.style.color = `var(--r-${r})`;
+    btn.dataset.rarity = r;
+    btn.addEventListener('click', () => {
+      STATE.filter.rarity = r;
+      STATE.page = 1;
+      rarRow.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.rarity === r));
+      render();
+    });
+    rarRow.appendChild(btn);
+  });
+
+  // ILVL
+  const ilvlRow = document.getElementById('filter-ilvl');
+  ilvlRow.innerHTML = '<span class="filter-label">ILVL</span>';
+  ['all', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(lv => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (lv === 'all' ? ' active' : '');
+    btn.textContent = lv === 'all' ? 'Tous' : ilvlToRoman(lv);
+    btn.dataset.ilvl = lv;
+    btn.addEventListener('click', () => {
+      STATE.filter.ilvl = lv;
+      STATE.page = 1;
+      ilvlRow.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.ilvl === String(lv)));
+      render();
+    });
+    ilvlRow.appendChild(btn);
+  });
+}
+
+// === EVENT HANDLERS ===
+function attachEventHandlers(){
+  document.getElementById('search').addEventListener('input', (e) => {
+    STATE.filter.search = e.target.value.toLowerCase().trim();
+    STATE.page = 1;
+    render();
+  });
+
+  document.getElementById('btn-select-all').addEventListener('click', () => {
+    const filtered = getFilteredItems();
+    filtered.forEach(item => STATE.selectedIds.add(item.instanceId));
+    if(filtered.length > 0 && !STATE.focusedItemId) STATE.focusedItemId = filtered[0].instanceId;
+    render();
+  });
+
+  document.getElementById('btn-deselect').addEventListener('click', () => {
+    STATE.selectedIds.clear();
+    STATE.focusedItemId = null;
+    render();
+  });
+
+  document.getElementById('btn-equip').addEventListener('click', () => {
+    if(STATE.selectedIds.size !== 1) return;
+    const id = [...STATE.selectedIds][0];
+    equipItem(id);
+  });
+
+  document.getElementById('btn-destroy').addEventListener('click', () => {
+    if(STATE.selectedIds.size === 0) return;
+    const count = STATE.selectedIds.size;
+    const msg = count === 1 ? 'Détruire cet item ?' : `Détruire ${count} items ?`;
+    if(!confirm(msg)) return;
+    destroySelected();
+  });
+
+  document.getElementById('pag-prev').addEventListener('click', () => {
+    if(STATE.page > 1){ STATE.page--; render(); }
+  });
+  document.getElementById('pag-next').addEventListener('click', () => {
+    const totalPages = Math.max(1, Math.ceil(getFilteredItems().length / STATE.itemsPerPage));
+    if(STATE.page < totalPages){ STATE.page++; render(); }
+  });
+
+  // DEV
+  document.getElementById('dev-add-50').addEventListener('click', () => {
+    const catalog = getAllItems();
+    const ids = Object.keys(catalog);
+    for(let i = 0; i < 50; i++){
+      const id = ids[Math.floor(Math.random() * ids.length)];
+      const rarities = ['common', 'common', 'magic', 'magic', 'rare', 'epic'];
+      const rarity = rarities[Math.floor(Math.random() * rarities.length)];
+      const ilvl = 1 + Math.floor(Math.random() * 10);
+      const rolled = rollItem(id, { rarity, ilvl });
+      if(rolled) STATE.chest.push(rolled);
+    }
+    saveChest();
+    render();
+  });
+  document.getElementById('dev-add-10-legendary').addEventListener('click', () => {
+    const catalog = getAllItems();
+    const ids = Object.keys(catalog);
+    for(let i = 0; i < 10; i++){
+      const id = ids[Math.floor(Math.random() * ids.length)];
+      const rolled = rollItem(id, { rarity: 'legendary', ilvl: 5 + Math.floor(Math.random() * 6) });
+      if(rolled) STATE.chest.push(rolled);
+    }
+    saveChest();
+    render();
+  });
+  document.getElementById('dev-clear').addEventListener('click', () => {
+    if(!confirm('Vider tout le chest ?')) return;
+    STATE.chest = [];
+    STATE.selectedIds.clear();
+    STATE.focusedItemId = null;
+    saveChest();
+    render();
+  });
+  document.getElementById('dev-reset-equipped').addEventListener('click', () => {
+    STATE.equipped = {};
+    seedEquipped();
+    saveEquipped();
+    render();
+  });
+}
+
+// === ACTIONS ===
+function equipItem(instanceId){
+  const item = STATE.chest.find(i => i.instanceId === instanceId);
+  if(!item) return;
+  const tpl = getItem(item.itemId);
+  if(!tpl) return;
+  let targetSlot = tpl.slot;
+  if(targetSlot === 'ring'){
+    if(!STATE.equipped.ring1) targetSlot = 'ring1';
+    else if(!STATE.equipped.ring2) targetSlot = 'ring2';
+    else {
+      const choice = confirm('Équiper sur l\'Anneau 1 ?\n(Annuler = Anneau 2)');
+      targetSlot = choice ? 'ring1' : 'ring2';
+    }
+  }
+  const currentlyEquipped = STATE.equipped[targetSlot];
+  if(currentlyEquipped) STATE.chest.push(currentlyEquipped);
+  STATE.chest = STATE.chest.filter(i => i.instanceId !== instanceId);
+  STATE.equipped[targetSlot] = item;
+  STATE.selectedIds.delete(instanceId);
+  STATE.focusedItemId = null;
+  saveChest();
+  saveEquipped();
+  render();
+}
+
+function destroySelected(){
+  STATE.chest = STATE.chest.filter(i => !STATE.selectedIds.has(i.instanceId));
+  STATE.selectedIds.clear();
+  STATE.focusedItemId = null;
+  saveChest();
+  render();
+}
+
+// === FILTERING ===
+function getFilteredItems(){
+  return STATE.chest.filter(item => {
+    const tpl = getItem(item.itemId);
     if(!tpl) return false;
-    if(slot !== 'all' && tpl.slot !== slot) return false;
-    if(rarity !== 'all' && item.rarity !== rarity) return false;
-    if(tier !== 'all' && String(item.tier) !== tier) return false;
-    if(searchLower && !tpl.name.toLowerCase().includes(searchLower)) return false;
+    if(STATE.filter.slot !== 'all' && tpl.slot !== STATE.filter.slot) return false;
+    if(STATE.filter.rarity !== 'all' && item.rarity !== STATE.filter.rarity) return false;
+    if(STATE.filter.ilvl !== 'all' && item.ilvl !== Number(STATE.filter.ilvl)) return false;
+    if(STATE.filter.search){
+      const name = composeItemName(item).toLowerCase();
+      const tplName = (tpl.name || '').toLowerCase();
+      if(!name.includes(STATE.filter.search) && !tplName.includes(STATE.filter.search)) return false;
+    }
     return true;
   });
-  STATE.filtered.sort((a, b) => {
-    const rarityRank = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
-    const dr = (rarityRank[b.rarity] || 0) - (rarityRank[a.rarity] || 0);
-    if(dr !== 0) return dr;
-    return (b.droppedAt || 0) - (a.droppedAt || 0);
-  });
-  const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / STATE.pageSize));
-  if(STATE.page >= totalPages) STATE.page = totalPages - 1;
-  if(STATE.page < 0) STATE.page = 0;
 }
 
-function renderFilterRow(containerId, options, currentValue, filterKey){
-  const container = document.getElementById(containerId);
-  container.innerHTML = '';
-  options.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'filter-btn' + (currentValue === opt.id ? ' active' : '');
-    btn.style.setProperty('--filter-color', opt.color);
-    btn.textContent = opt.label;
-    btn.addEventListener('click', () => {
-      STATE.filters[filterKey] = opt.id;
-      STATE.page = 0;
-      refresh();
-    });
-    container.appendChild(btn);
-  });
+// === RENDER ===
+function render(){
+  renderStatsMini();
+  renderGrid();
+  renderPagination();
+  renderActionBar();
+  renderComparison();
+}
+
+function renderStatsMini(){
+  const el = document.getElementById('stats-mini');
+  el.innerHTML = `
+    <span><b>${STATE.chest.length}</b> items</span>
+    <span><b>${getFilteredItems().length}</b> visibles</span>
+  `;
 }
 
 function renderGrid(){
   const grid = document.getElementById('grid');
+  const filtered = getFilteredItems();
+  const start = (STATE.page - 1) * STATE.itemsPerPage;
+  const pageItems = filtered.slice(start, start + STATE.itemsPerPage);
   grid.innerHTML = '';
-  const startIdx = STATE.page * STATE.pageSize;
-  const pageItems = STATE.filtered.slice(startIdx, startIdx + STATE.pageSize);
-
-  for(let i = 0; i < STATE.pageSize; i++){
-    const item = pageItems[i];
-    const cell = document.createElement('div');
-    if(!item){
-      cell.className = 'item-cell empty';
-      grid.appendChild(cell);
-      continue;
-    }
-    const tpl = ITEM_TEMPLATES[item.itemId];
-    const rar = RARITIES[item.rarity] || { color: '#a89878' };
-    cell.className = 'item-cell';
-    if(item.isBossDrop) cell.classList.add('boss-drop');
-    if(item.instanceId === STATE.selectedInstanceId) cell.classList.add('selected');
-    cell.style.setProperty('--rarity-color', rar.color);
-    cell.title = `${tpl?.name || item.itemId} [${item.rarity}] · Tier ${ROMAN[item.tier] || item.tier}`;
+  if(filtered.length === 0){
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-2); padding: 40px; font-size: 12px;">Aucun item ne correspond aux filtres</div>';
+    return;
+  }
+  pageItems.forEach(item => {
+    const tpl = getItem(item.itemId);
+    if(!tpl) return;
+    const cell = document.createElement('button');
+    cell.className = 'item-cell r-' + item.rarity;
+    if(STATE.selectedIds.has(item.instanceId)) cell.classList.add('selected');
+    cell.title = composeItemName(item);
     cell.innerHTML = `
-      <span class="item-icon">${tpl?.icon || '?'}</span>
-      <span class="item-tier">T${ROMAN[item.tier] || item.tier}</span>
+      <span class="ilvl">${ilvlToRoman(item.ilvl)}</span>
+      <span class="rar-dot rar-${item.rarity}"></span>
+      <span class="item-icon">${tpl.icon || '?'}</span>
     `;
-    cell.addEventListener('click', () => {
-      STATE.selectedInstanceId = item.instanceId === STATE.selectedInstanceId ? null : item.instanceId;
-      renderGrid();
-      renderDetailPanel();
-    });
+    cell.addEventListener('click', () => onCellClick(item));
+    grid.appendChild(cell);
+  });
+  for(let i = pageItems.length; i < STATE.itemsPerPage; i++){
+    const cell = document.createElement('div');
+    cell.className = 'item-cell empty';
     grid.appendChild(cell);
   }
 }
 
-function renderDetailPanel(){
-  const panel = document.getElementById('detail-panel');
-  if(!STATE.selectedInstanceId){
-    panel.classList.add('hidden');
-    panel.innerHTML = '';
-    return;
+function onCellClick(item){
+  if(STATE.selectedIds.has(item.instanceId)){
+    STATE.selectedIds.delete(item.instanceId);
+    if(STATE.focusedItemId === item.instanceId){
+      STATE.focusedItemId = STATE.selectedIds.size > 0 ? [...STATE.selectedIds][0] : null;
+    }
+  } else {
+    STATE.selectedIds.add(item.instanceId);
+    STATE.focusedItemId = item.instanceId;
   }
-  const item = STATE.items.find(it => it.instanceId === STATE.selectedInstanceId);
-  if(!item){ panel.classList.add('hidden'); return; }
-  const tpl = ITEM_TEMPLATES[item.itemId];
-  const rar = RARITIES[item.rarity] || { label: item.rarity, color: '#a89878' };
-  if(!tpl){ panel.classList.add('hidden'); return; }
-  panel.classList.remove('hidden');
-  panel.style.setProperty('--detail-rarity-color', rar.color);
-
-  const biome = BIOMES[item.biomeId];
-  const tagsHtml = [
-    `<span class="detail-tag" style="--tag-bg:${rar.color}; --tag-color:#fff;">${rar.label || item.rarity}</span>`,
-    `<span class="detail-tag" style="--tag-color:#c8a040; --tag-border:#5a4828;">TIER ${ROMAN[item.tier] || item.tier}</span>`,
-    tpl.cat ? `<span class="detail-tag">${tpl.cat.toUpperCase()}</span>` : '',
-    tpl.slot ? `<span class="detail-tag">${tpl.slot.toUpperCase()}</span>` : '',
-    biome ? `<span class="detail-tag" style="--tag-color:${biome.color};">${biome.icon} ${biome.name.toUpperCase()}</span>` : '',
-    item.isBossDrop ? `<span class="detail-tag" style="--tag-bg:#5a3818; --tag-color:#ffd060; --tag-border:#ffd060;">★ BOSS DROP</span>` : '',
-  ].filter(Boolean).join('');
-
-  const statsHtml = Object.entries(item.stats || {})
-    .map(([k, v]) => `
-      <div class="detail-stat">
-        <span class="k">${STAT_LABELS[k] || k.toUpperCase()}</span>
-        <span class="v">${v}</span>
-      </div>
-    `).join('');
-
-  panel.innerHTML = `
-    <div class="detail-row">
-      <div class="detail-icon">${tpl.icon || '?'}</div>
-      <div class="detail-main">
-        <div class="detail-name">${tpl.name}${item.isBossDrop ? '<span class="star">★</span>' : ''}</div>
-        <div class="detail-meta">${tagsHtml}</div>
-      </div>
-    </div>
-    ${statsHtml ? `<div class="detail-stats">${statsHtml}</div>` : ''}
-  `;
-}
-
-function renderStatsLine(){
-  const total = STATE.items.length;
-  const filtered = STATE.filtered.length;
-  const line = document.getElementById('stats-line');
-  if(total === 0){ line.style.display = 'none'; return; }
-  line.style.display = 'flex';
-  const filterText = filtered === total
-    ? `<span class="v">${total}</span> items`
-    : `<span class="v">${filtered}</span>/<span class="v">${total}</span> items (filtré)`;
-  line.innerHTML = `
-    <div>▸ ${filterText}</div>
-    <div>${STATE.page * STATE.pageSize + 1}–${Math.min(STATE.filtered.length, (STATE.page + 1) * STATE.pageSize)}</div>
-  `;
+  render();
 }
 
 function renderPagination(){
-  const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / STATE.pageSize));
-  document.getElementById('page-current').textContent = STATE.page + 1;
-  document.getElementById('page-total').textContent = totalPages;
-  document.getElementById('page-prev').disabled = STATE.page === 0;
-  document.getElementById('page-next').disabled = STATE.page >= totalPages - 1;
-  document.getElementById('pagination').style.display = totalPages > 1 ? 'flex' : 'none';
+  const filtered = getFilteredItems();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / STATE.itemsPerPage));
+  if(STATE.page > totalPages) STATE.page = totalPages;
+  document.getElementById('pag-info').textContent = `PAGE ${STATE.page} / ${totalPages}`;
+  document.getElementById('pag-prev').disabled = STATE.page <= 1;
+  document.getElementById('pag-next').disabled = STATE.page >= totalPages;
 }
 
-function renderEmptyState(){
-  const grid = document.getElementById('grid');
-  if(STATE.items.length === 0){
-    grid.innerHTML = `
-      <div style="grid-column: 1/-1;" class="empty-state">
-        <div class="empty-state__icon">📦</div>
-        <div class="empty-state__title">CHEST VIDE</div>
-        <div>Clean des donjons depuis Ascension pour remplir le chest, ou utilise les dev tools en bas pour générer des items mock.</div>
+function renderActionBar(){
+  const count = STATE.selectedIds.size;
+  document.getElementById('selection-count').innerHTML = count > 0
+    ? `<b>${count}</b> sélectionné${count > 1 ? 's' : ''}` : '';
+  document.getElementById('btn-deselect').disabled = count === 0;
+  document.getElementById('btn-equip').disabled = count !== 1;
+  document.getElementById('btn-destroy').disabled = count === 0;
+}
+
+// === COMPARISON ===
+function renderComparison(){
+  const wrap = document.getElementById('comparison');
+  if(!STATE.focusedItemId){
+    wrap.classList.add('empty');
+    wrap.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; color: var(--text-2); padding: 18px; font-size: 11px; letter-spacing: 1px;">
+        Sélectionne un item pour voir la comparaison
       </div>
     `;
-    return true;
+    return;
   }
-  if(STATE.filtered.length === 0){
-    grid.innerHTML = `
-      <div style="grid-column: 1/-1;" class="empty-state">
-        <div class="empty-state__icon">🔍</div>
-        <div class="empty-state__title">AUCUN RÉSULTAT</div>
-        <div>Aucun item ne correspond aux filtres actifs.</div>
+  const item = STATE.chest.find(i => i.instanceId === STATE.focusedItemId);
+  if(!item){
+    STATE.focusedItemId = null;
+    return renderComparison();
+  }
+  const tpl = getItem(item.itemId);
+  if(!tpl) return;
+
+  let equippedSlot = tpl.slot;
+  let equippedItem = null;
+  if(equippedSlot === 'ring'){
+    if(STATE.equipped.ring1){ equippedItem = STATE.equipped.ring1; equippedSlot = 'ring1'; }
+    else if(STATE.equipped.ring2){ equippedItem = STATE.equipped.ring2; equippedSlot = 'ring2'; }
+    else { equippedSlot = 'ring1'; }
+  } else {
+    equippedItem = STATE.equipped[equippedSlot];
+  }
+
+  wrap.classList.remove('empty');
+  wrap.innerHTML = `
+    <div class="cmp-side">
+      <h3 class="selected">▸ SÉLECTIONNÉ</h3>
+      ${renderItemCard(item)}
+    </div>
+    <div class="cmp-divider"></div>
+    <div class="cmp-side">
+      <h3 class="equipped">◆ ÉQUIPÉ — ${slotLabel(equippedSlot)}</h3>
+      ${equippedItem ? renderItemCard(equippedItem) : '<div class="cmp-empty">Aucun item équipé sur ce slot</div>'}
+    </div>
+  `;
+}
+
+function slotLabel(slot){
+  if(slot === 'ring1') return 'Anneau 1';
+  if(slot === 'ring2') return 'Anneau 2';
+  return SLOT_LABELS[slot] || slot;
+}
+
+function renderItemCard(item){
+  const tpl = getItem(item.itemId);
+  if(!tpl) return '';
+  const stats = describeItemStats(item);
+  return `
+    <div class="cmp-item">
+      <div class="cmp-item-icon" style="border-color: var(--r-${item.rarity})">${tpl.icon || '?'}</div>
+      <div class="cmp-item-info">
+        <div class="cmp-item-name" style="color: var(--r-${item.rarity})">${composeItemName(item)}</div>
+        <div class="cmp-item-meta">iLvl ${ilvlToRoman(item.ilvl)} · ${RARITY_LABELS[item.rarity] || item.rarity} · ${slotLabel(tpl.slot)}</div>
       </div>
-    `;
-    return true;
-  }
-  return false;
+    </div>
+    <div class="cmp-stats">
+      ${stats.map(s => `
+        <div class="cmp-stat ${s.kind}">
+          <span class="lbl">${s.label}${s.name ? `<span class="lbl-name">[${s.name}]</span>` : ''}</span>
+          <span class="val">${(s.kind === 'prefix' || s.kind === 'suffix' || s.kind === 'implicit') && typeof s.value === 'number' ? '+' : ''}${s.value}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
-function refresh(){
-  applyFilters();
-  renderFilterRow('filter-slot', SLOT_OPTIONS, STATE.filters.slot, 'slot');
-  renderFilterRow('filter-rarity', RARITY_OPTIONS, STATE.filters.rarity, 'rarity');
-  renderFilterRow('filter-tier', TIER_OPTIONS, STATE.filters.tier, 'tier');
-  renderStatsLine();
-  if(!renderEmptyState()){
-    renderGrid();
-  }
-  renderDetailPanel();
-  renderPagination();
-}
-
-document.getElementById('search-input').addEventListener('input', e => {
-  STATE.filters.search = e.target.value;
-  STATE.page = 0;
-  refresh();
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#ff5959;font-family:monospace;">Erreur de chargement: ${e.message}</div>`;
 });
-document.getElementById('search-clear').addEventListener('click', () => {
-  document.getElementById('search-input').value = '';
-  STATE.filters.search = '';
-  STATE.page = 0;
-  refresh();
-});
-
-document.getElementById('page-prev').addEventListener('click', () => {
-  if(STATE.page > 0){ STATE.page--; refresh(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-});
-document.getElementById('page-next').addEventListener('click', () => {
-  const totalPages = Math.max(1, Math.ceil(STATE.filtered.length / STATE.pageSize));
-  if(STATE.page < totalPages - 1){ STATE.page++; refresh(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-});
-
-document.getElementById('dev-mock').addEventListener('click', () => {
-  if(STATE.items.length > 0 && !confirm('Remplacer le chest actuel par 50 items mock ?')) return;
-  STATE.items = generateMockItems(50);
-  saveChest(STATE.items);
-  STATE.selectedInstanceId = null;
-  refresh();
-});
-document.getElementById('dev-add-10').addEventListener('click', () => {
-  STATE.items = [...STATE.items, ...generateMockItems(10)];
-  saveChest(STATE.items);
-  refresh();
-});
-document.getElementById('dev-clear').addEventListener('click', () => {
-  if(!confirm('Vider complètement le chest ? Cette action est irréversible.')) return;
-  STATE.items = [];
-  saveChest(STATE.items);
-  STATE.selectedInstanceId = null;
-  refresh();
-});
-
-document.addEventListener('keydown', e => {
-  if(e.target.tagName === 'INPUT') return;
-  if(e.key === 'ArrowLeft') document.getElementById('page-prev').click();
-  if(e.key === 'ArrowRight') document.getElementById('page-next').click();
-  if(e.key === 'Escape'){
-    STATE.selectedInstanceId = null;
-    renderGrid();
-    renderDetailPanel();
-  }
-});
-
-STATE.items = loadChest();
-refresh();
 </script>
 
 </body>
