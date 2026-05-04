@@ -2,167 +2,892 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HERO — Reactor Hollow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Héro — REACTOR HOLLOW</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #ffb347;
+    --r-common-bright: #cccccc;
+    --r-magic-bright: #6aaaff;
+    --r-rare-bright: #ffcc44;
+    --r-epic-bright: #cc44ff;
+    --r-legendary-bright: #ff8800;
+    --r-set-bright: #66ff66;
+    --good: #5fff8c;
+    --bad: #ff5959;
+  }
+  * { box-sizing: border-box; }
   html, body {
-    background: #0a0510;
-    color: #d8c8a0;
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
     font-family: 'Courier New', monospace;
-    font-size: 14px;
     min-height: 100vh;
     overflow-x: hidden;
-    -webkit-tap-highlight-color: transparent;
   }
-  body {
-    padding: 20px;
-    background: radial-gradient(ellipse at top, #1a0820 0%, #0a0510 70%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+  a { color: inherit; text-decoration: none; }
 
   .header {
-    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border-2);
     padding: 12px 16px;
-    border: 1px solid #3a2840;
-    background: #14081e;
-    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
     gap: 12px;
-  }
-  .header-title {
-    font-size: 16px;
-    color: #3df0ff;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(61,240,255,0.5);
-  }
-  .header-sub {
-    font-size: 10px;
-    color: #6a5878;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    position: sticky; top: 0; z-index: 50;
   }
   .back-btn {
-    background: transparent;
-    border: 1px solid #5a4828;
-    color: #d8c8a0;
-    padding: 10px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 12px;
+    color: var(--text-0);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
-    letter-spacing: 1px;
-    text-decoration: none;
-    transition: all 0.15s;
-    min-height: 40px;
-    display: inline-flex;
-    align-items: center;
   }
-  .back-btn:active { border-color: #ffd060; color: #ffd060; transform: scale(0.96); }
-  @media (hover: hover) {
-    .back-btn:hover { border-color: #ffd060; color: #ffd060; }
+  .back-btn:hover { background: var(--bg-3); }
+  .title {
+    font-size: 16px; letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .title .acc { color: var(--accent); }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px;
   }
 
-  .placeholder {
-    flex: 1;
+  /* === EQUIPMENT PANEL === */
+  .equipment-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 24px;
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .equipment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    justify-items: center;
+    position: relative;
+  }
+  .grid-spacer {
+    aspect-ratio: 1;
+    width: 80px;
+    position: relative;
+  }
+  /* Silhouette derrière la colonne centrale (head/chest/gloves/legs/boots) */
+  .silhouette-bg {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 100%;
+    width: calc(33% + 24px); /* couvre la colonne centrale */
+    pointer-events: none;
+    z-index: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    opacity: 0.18;
   }
-  .placeholder-card {
-    background: #14081e;
-    border: 1px solid #3a2840;
-    padding: 40px 32px;
-    text-align: center;
-    max-width: 420px;
+  .silhouette-bg canvas {
+    height: 90%;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+  }
+
+  /* === SLOT === */
+  .slot {
+    aspect-ratio: 1;
+    width: 80px;
+    background: var(--bg-2);
+    border: 2px solid var(--border-2);
+    cursor: pointer;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
     overflow: hidden;
+    z-index: 1;
   }
-  .placeholder-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(circle at top, rgba(61,240,255,0.5), transparent 70%);
-    opacity: 0.15;
+  .slot:hover { border-color: var(--accent); transform: scale(1.05); }
+  .slot.empty {
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(10, 13, 18, 0.7);
+    cursor: pointer;
+  }
+  .slot.empty:hover {
+    border-color: var(--accent);
+    transform: scale(1.05);
+  }
+  .slot.empty .slot-icon-bg {
+    font-size: 32px;
+    opacity: 0.25;
+  }
+  /* Slot OFFHAND verrouillé par 2H */
+  .slot.locked-2h {
+    border-style: dashed;
+    border-color: rgba(255, 179, 71, 0.4);
+    background: rgba(10, 13, 18, 0.85);
+    cursor: default;
+  }
+  .slot.locked-2h:hover {
+    transform: none;
+    border-color: rgba(255, 179, 71, 0.4);
+  }
+  .slot.locked-2h .slot-icon-bg {
+    font-size: 24px;
+    opacity: 0.5;
+    color: var(--accent);
+  }
+  .slot.locked-2h .lock-label {
+    position: absolute;
+    bottom: 4px; left: 0; right: 0;
+    text-align: center;
+    font-size: 8px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    font-weight: bold;
+    text-shadow: 0 0 3px rgba(0,0,0,1);
+  }
+
+  .slot-label {
+    position: absolute;
+    top: 3px; left: 0; right: 0;
+    text-align: center;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .slot-icon-bg {
+    font-size: 36px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+  }
+  .slot-ilvl {
+    position: absolute;
+    bottom: 3px; left: 0; right: 0;
+    text-align: center;
+    font-size: 9px;
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 3px rgba(0,0,0,1), 0 0 2px rgba(0,0,0,1);
     pointer-events: none;
   }
-  .placeholder-card::after {
-    content: '';
-    position: absolute; top: 0; left: 0;
-    width: 14px; height: 14px;
-    border-top: 2px solid #3df0ff;
-    border-left: 2px solid #3df0ff;
-  }
-  .placeholder-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 0 12px rgba(61,240,255,0.5));
-  }
-  .placeholder-title {
-    font-size: 24px;
-    color: #3df0ff;
-    letter-spacing: 3px;
-    text-shadow: 0 0 8px rgba(61,240,255,0.5);
-    margin-bottom: 8px;
-  }
-  .placeholder-sub {
-    font-size: 11px;
-    color: #8a7898;
-    letter-spacing: 1px;
-    margin-bottom: 24px;
-  }
-  .placeholder-msg {
-    font-size: 13px;
-    color: #d8c8a0;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-  .placeholder-status {
-    font-size: 10px;
-    color: #6a5878;
-    letter-spacing: 2px;
-    padding: 8px 14px;
-    border: 1px dashed #3a2840;
-    display: inline-block;
-  }
-  .placeholder-status .v {
-    color: #3df0ff;
+  .slot-2h-badge {
+    position: absolute;
+    top: 3px; right: 3px;
+    font-size: 7px;
     font-weight: bold;
+    color: var(--accent);
+    background: rgba(0,0,0,0.7);
+    padding: 1px 3px;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    z-index: 2;
+  }
+  /* Rarity backgrounds for filled slots */
+  .slot.r-common    { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); border-color: #444; }
+  .slot.r-magic     { background: linear-gradient(135deg, #1a3a6a 0%, #0a2040 100%); border-color: var(--r-magic-bright); }
+  .slot.r-rare      { background: linear-gradient(135deg, #6a4a0a 0%, #3a2800 100%); border-color: var(--r-rare-bright); }
+  .slot.r-epic      { background: linear-gradient(135deg, #4a1a6a 0%, #2a0a3a 100%); border-color: var(--r-epic-bright); }
+  .slot.r-legendary { background: linear-gradient(135deg, #8a3a00 0%, #4a1a00 100%); border-color: var(--r-legendary-bright); }
+  .slot.r-set       { background: linear-gradient(135deg, #1a5a2a 0%, #0a2a1a 100%); border-color: var(--r-set-bright); }
+
+  /* === STATS PANEL === */
+  .stats-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 16px;
+  }
+  .stats-panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-1);
+    padding-bottom: 6px;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 16px;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 3px 0;
+  }
+  .stat-row .lbl { color: var(--text-1); }
+  .stat-row .val { color: var(--text-0); font-weight: bold; }
+
+  /* === MODAL === */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-1);
+    border: 2px solid var(--border-2);
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  }
+  .modal-header {
+    padding: 12px 16px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h2 {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text-1);
+    text-transform: uppercase;
+  }
+  .modal-close {
+    background: none;
+    border: 1px solid var(--border-2);
+    color: var(--text-1);
+    font-family: inherit;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .modal-close:hover { background: var(--bg-3); color: var(--text-0); }
+
+  .modal-body { padding: 16px; }
+  .modal-item-header {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-1);
+  }
+  .modal-item-icon {
+    width: 64px; height: 64px;
+    background: var(--bg-2);
+    border: 2px solid var(--border-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+  .modal-item-info { flex: 1; min-width: 0; }
+  .modal-item-name {
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+  .modal-item-meta {
+    font-size: 10px;
+    color: var(--text-1);
+    letter-spacing: 1px;
+  }
+  .modal-section {
+    margin-bottom: 14px;
+  }
+  .modal-section h4 {
+    margin: 0 0 6px 0;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-2);
+    text-transform: uppercase;
+  }
+  .modal-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+    gap: 8px;
+  }
+  .modal-stat .lbl { color: var(--text-1); flex: 1; min-width: 0; }
+  .modal-stat .lbl-name {
+    opacity: 0.6; font-size: 9px;
+    margin-left: 6px;
+    color: var(--text-2);
+  }
+  .modal-stat .val { color: var(--text-0); font-weight: bold; flex-shrink: 0; }
+  .modal-stat.base .val { color: #fff; }
+  .modal-stat.implicit .val { color: #aae; }
+  .modal-stat.prefix .val { color: var(--r-magic-bright); }
+  .modal-stat.suffix .val { color: var(--r-epic-bright); }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-1);
+  }
+  .modal-action-btn {
+    flex: 1;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    padding: 10px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .modal-action-btn:hover { background: var(--bg-3); }
+  .modal-action-btn.danger {
+    border-color: var(--bad);
+    color: var(--bad);
+  }
+  .modal-action-btn.danger:hover { background: var(--bad); color: #000; }
+
+  .modal-empty {
+    text-align: center;
+    color: var(--text-2);
+    font-size: 12px;
+    padding: 30px 16px;
+    font-style: italic;
   }
 
+  .modal-info-block {
+    text-align: center;
+    padding: 18px 12px;
+    background: rgba(255, 179, 71, 0.05);
+    border: 1px dashed rgba(255, 179, 71, 0.3);
+    color: var(--accent);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  /* === MOBILE === */
   @media (max-width: 600px) {
-    body { padding: 12px; }
-    .header { padding: 10px 12px; }
-    .header-title { font-size: 14px; }
-    .placeholder-card { padding: 28px 20px; }
-    .placeholder-icon { font-size: 48px; }
-    .placeholder-title { font-size: 20px; letter-spacing: 2px; }
+    .container { padding: 12px 8px; }
+    .equipment-panel { padding: 14px; }
+    .equipment-grid { gap: 8px; }
+    .slot, .grid-spacer { width: 64px; }
+    .slot-icon-bg { font-size: 28px; }
+    .slot.empty .slot-icon-bg { font-size: 24px; }
+    .slot-label { font-size: 7px; }
+    .slot-ilvl { font-size: 8px; }
+    .stats-grid { grid-template-columns: 1fr; }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  @media (max-width: 380px) {
+    .slot, .grid-spacer { width: 56px; }
+    .slot-icon-bg { font-size: 24px; }
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <div class="header-title">⚔ HERO</div>
-    <div class="header-sub">Personnage & équipement</div>
+<header class="header">
+  <a href="../../index.html" class="back-btn">← RETOUR</a>
+  <div class="title"><span class="acc">◆</span> HÉRO</div>
+</header>
+
+<main class="container">
+
+  <!-- EQUIPMENT PANEL -->
+  <section class="equipment-panel">
+    <!-- Silhouette en background derrière la colonne centrale -->
+    <div class="silhouette-bg">
+      <canvas id="hero-canvas" width="64" height="160"></canvas>
+    </div>
+
+    <div class="equipment-grid">
+      <!-- Ligne 1 : AMULET HEAD RING -->
+      <button class="slot empty" data-slot="amulet"></button>
+      <button class="slot empty" data-slot="head"></button>
+      <button class="slot empty" data-slot="ring"></button>
+
+      <!-- Ligne 2 : MAINHAND CHEST OFFHAND -->
+      <button class="slot empty" data-slot="mainhand"></button>
+      <button class="slot empty" data-slot="chest"></button>
+      <button class="slot empty" data-slot="offhand"></button>
+
+      <!-- Ligne 3 : . GLOVES . -->
+      <div class="grid-spacer"></div>
+      <button class="slot empty" data-slot="gloves"></button>
+      <div class="grid-spacer"></div>
+
+      <!-- Ligne 4 : . LEGS . -->
+      <div class="grid-spacer"></div>
+      <button class="slot empty" data-slot="legs"></button>
+      <div class="grid-spacer"></div>
+
+      <!-- Ligne 5 : . BOOTS . -->
+      <div class="grid-spacer"></div>
+      <button class="slot empty" data-slot="boots"></button>
+      <div class="grid-spacer"></div>
+    </div>
+  </section>
+
+  <!-- STATS AGGREGATE -->
+  <section class="stats-panel">
+    <h3>▸ STATISTIQUES TOTALES</h3>
+    <div class="stats-grid" id="stats-aggregate"></div>
+  </section>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">SLOT</h2>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
   </div>
-  <a href="../../index.html" class="back-btn">◂ HUB</a>
 </div>
 
-<div class="placeholder">
-  <div class="placeholder-card">
-    <div class="placeholder-icon">⚔</div>
-    <div class="placeholder-title">HERO</div>
-    <div class="placeholder-sub">Personnage & équipement</div>
-    <div class="placeholder-msg">Vue détaillée du personnage : stats, équipement actif, talents, résistances par dégât type. Drag & drop d'items depuis le Chest. Preview des bonus d'ensemble.</div>
-    <div class="placeholder-status">STATUS · <span class="v">EN CONSTRUCTION</span></div>
-  </div>
-</div>
+<script type="module">
+import {
+  loadCatalog, getItem,
+  composeItemName, describeItemStats, ilvlToRoman
+} from './items-catalog.js';
+
+// === STATE ===
+const STATE = {
+  equipped: {},
+};
+
+const STORAGE_EQUIPPED = 'rh_player_equipped';
+const STORAGE_CHEST = 'rh_player_chest';
+
+const SLOT_LABELS = {
+  mainhand: 'Arme',
+  offhand: 'Off-hand',
+  head: 'Tête',
+  chest: 'Torse',
+  legs: 'Jambes',
+  gloves: 'Mains',
+  boots: 'Pieds',
+  amulet: 'Amulette',
+  ring: 'Anneau',
+};
+
+const SLOT_ICONS = {
+  mainhand: '⚔️',
+  offhand: '🛡️',
+  head: '🪖',
+  chest: '🦺',
+  legs: '👖',
+  gloves: '🧤',
+  boots: '👢',
+  amulet: '📿',
+  ring: '💍',
+};
+
+const RARITY_LABELS = {
+  common: 'Commun', magic: 'Magique', rare: 'Rare',
+  epic: 'Épique', legendary: 'Légendaire', set: 'Set',
+};
+
+// === BOOT ===
+async function boot(){
+  await loadCatalog();
+  loadEquipped();
+  drawHeroSilhouette();
+  renderAllSlots();
+  renderStatsAggregate();
+  attachHandlers();
+}
+
+function loadEquipped(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_EQUIPPED) || '{}');
+    if(raw && typeof raw === 'object' && !Array.isArray(raw)){
+      STATE.equipped = raw;
+    } else {
+      STATE.equipped = {};
+    }
+  } catch {
+    STATE.equipped = {};
+  }
+}
+
+function saveEquipped(){
+  localStorage.setItem(STORAGE_EQUIPPED, JSON.stringify(STATE.equipped));
+}
+
+// Vrai mainhand est-il une arme 2H ?
+function isMainhand2H(){
+  const mh = STATE.equipped.mainhand;
+  if(!mh) return false;
+  const tpl = getItem(mh.itemId);
+  return !!(tpl && tpl.handed === 2);
+}
+
+// === HERO PIXEL ART (silhouette de face, plus grande pour le bg) ===
+function drawHeroSilhouette(){
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 16x40 logique (plus grand que la version chest), scale x4 → 64x160
+  const scale = 4;
+  const px = (x, y, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * scale, y * scale, scale, scale);
+  };
+
+  const SKIN = '#d4a574';
+  const SKIN_DARK = '#a87a4a';
+  const HAIR = '#3a2418';
+  const TUNIC = '#5a4232';
+  const TUNIC_DARK = '#3a2820';
+  const BELT = '#2a1810';
+  const PANTS = '#3a3024';
+  const BOOTS = '#1a1410';
+  const OUTLINE = '#1a0e08';
+
+  // Tête (rangées 2-8, plus haute pour silhouette taille perso entier)
+  for(let x = 6; x <= 9; x++) px(x, 2, HAIR);
+  px(5, 3, HAIR); for(let x = 6; x <= 9; x++) px(x, 3, HAIR); px(10, 3, HAIR);
+  px(5, 4, HAIR); px(6, 4, SKIN); px(7, 4, SKIN); px(8, 4, SKIN); px(9, 4, SKIN); px(10, 4, HAIR);
+  px(5, 5, HAIR); px(6, 5, SKIN); px(7, 5, SKIN); px(8, 5, SKIN); px(9, 5, SKIN); px(10, 5, HAIR);
+  px(5, 6, OUTLINE); px(6, 6, SKIN); px(7, 6, OUTLINE); px(8, 6, OUTLINE); px(9, 6, SKIN); px(10, 6, OUTLINE);
+  px(6, 7, SKIN_DARK); px(7, 7, SKIN); px(8, 7, SKIN); px(9, 7, SKIN_DARK);
+  px(7, 8, SKIN_DARK); px(8, 8, SKIN_DARK);
+
+  // Torse (rangées 9-18)
+  px(4, 9, TUNIC_DARK); for(let x = 5; x <= 10; x++) px(x, 9, TUNIC); px(11, 9, TUNIC_DARK);
+  for(let y = 10; y <= 15; y++){
+    px(4, y, y === 10 || y === 15 ? TUNIC_DARK : (y === 11 ? SKIN_DARK : SKIN));
+    for(let x = 5; x <= 10; x++) px(x, y, TUNIC);
+    px(11, y, y === 10 || y === 15 ? TUNIC_DARK : (y === 11 ? SKIN_DARK : SKIN));
+  }
+  // Mains
+  for(let y = 16; y <= 17; y++){
+    px(4, y, SKIN); for(let x = 5; x <= 10; x++) px(x, y, TUNIC); px(11, y, SKIN);
+  }
+  // Ceinture
+  for(let x = 5; x <= 10; x++) px(x, 18, BELT);
+
+  // Jambes (rangées 19-31)
+  for(let y = 19; y <= 30; y++){
+    px(6, y, PANTS); px(7, y, PANTS); px(8, y, PANTS); px(9, y, PANTS);
+    if(y >= 19 && y <= 21){ px(5, y, PANTS); px(10, y, PANTS); }
+  }
+  // Séparation centrale
+  for(let y = 22; y <= 30; y++){
+    px(7, y, OUTLINE); px(8, y, OUTLINE);
+  }
+
+  // Bottes (rangées 31-34)
+  for(let y = 31; y <= 34; y++){
+    px(5, y, BOOTS); px(6, y, BOOTS); px(7, y, BOOTS);
+    px(8, y, BOOTS); px(9, y, BOOTS); px(10, y, BOOTS);
+  }
+}
+
+// === RENDER SLOTS ===
+function renderAllSlots(){
+  document.querySelectorAll('.slot').forEach(slotEl => {
+    const slot = slotEl.dataset.slot;
+    renderSlot(slotEl, slot);
+  });
+}
+
+function renderSlot(slotEl, slotKey){
+  const item = STATE.equipped[slotKey];
+  const is2H = isMainhand2H();
+  // Reset
+  slotEl.className = 'slot';
+  slotEl.innerHTML = '';
+
+  // Cas spécial : offhand verrouillée par 2H mainhand
+  if(slotKey === 'offhand' && is2H){
+    slotEl.classList.add('locked-2h');
+    slotEl.innerHTML = `
+      <div class="slot-label">Off-hand</div>
+      <div class="slot-icon-bg">🔒</div>
+      <div class="lock-label">2H ÉQUIPÉE</div>
+    `;
+    return;
+  }
+
+  if(!item){
+    slotEl.classList.add('empty');
+    slotEl.innerHTML = `
+      <div class="slot-label">${SLOT_LABELS[slotKey]}</div>
+      <div class="slot-icon-bg">${SLOT_ICONS[slotKey]}</div>
+    `;
+    return;
+  }
+
+  const tpl = getItem(item.itemId);
+  if(!tpl){
+    slotEl.classList.add('empty');
+    slotEl.innerHTML = `
+      <div class="slot-label">${SLOT_LABELS[slotKey]}</div>
+      <div class="slot-icon-bg">?</div>
+    `;
+    return;
+  }
+
+  slotEl.classList.add('r-' + (item.rarity || 'common'));
+  // Badge "2H" sur mainhand si 2H
+  const handBadge = (slotKey === 'mainhand' && tpl.handed === 2) ? '<div class="slot-2h-badge">2H</div>' : '';
+  slotEl.innerHTML = `
+    ${handBadge}
+    <div class="slot-label">${SLOT_LABELS[slotKey]}</div>
+    <div class="slot-icon-bg">${SLOT_ICONS[slotKey]}</div>
+    <div class="slot-ilvl">${ilvlToRoman(item.ilvl)}</div>
+  `;
+}
+
+// === STATS AGGREGATE ===
+function aggregateStats(){
+  const totals = {};
+  Object.entries(STATE.equipped).forEach(([slot, item]) => {
+    if(!item) return;
+    const tpl = getItem(item.itemId);
+    if(!tpl) return;
+    if(tpl.damage){
+      const ilvlMult = ilvlToMult(item.ilvl);
+      totals['Dégâts'] = totals['Dégâts'] || 0;
+      const avgDmg = Math.round(((tpl.damage[0] + tpl.damage[1]) / 2) * ilvlMult);
+      totals['Dégâts'] += avgDmg;
+    }
+    if(item.implicit){
+      const key = item.implicit.label?.replace('+X ', '').replace('+X% ', '').trim() || item.implicit.id;
+      totals[key] = (totals[key] || 0) + item.implicit.value;
+    }
+    if(tpl.passive){
+      Object.entries(tpl.passive).forEach(([k, v]) => {
+        const ilvlMult = ilvlToMult(item.ilvl);
+        const scaled = Math.round(v * ilvlMult);
+        totals[k] = (totals[k] || 0) + scaled;
+      });
+    }
+    (item.affixes || []).forEach(a => {
+      const key = a.label?.replace('+X ', '').replace('+X% ', '').trim() || a.stat;
+      totals[key] = (totals[key] || 0) + a.value;
+    });
+  });
+  return totals;
+}
+
+function ilvlToMult(ilvl){
+  const ILVL_MULT = {
+    1: 0.50, 2: 0.65, 3: 0.80, 4: 0.95, 5: 1.00,
+    6: 1.15, 7: 1.30, 8: 1.50, 9: 1.75, 10: 2.10,
+  };
+  return ILVL_MULT[ilvl] || 1;
+}
+
+function renderStatsAggregate(){
+  const grid = document.getElementById('stats-aggregate');
+  const totals = aggregateStats();
+  const entries = Object.entries(totals).filter(([_, v]) => v !== 0);
+  if(entries.length === 0){
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-2); font-size:11px; padding:14px;">Aucun équipement</div>';
+    return;
+  }
+  grid.innerHTML = entries.map(([k, v]) => `
+    <div class="stat-row">
+      <span class="lbl">${k}</span>
+      <span class="val">+${v}</span>
+    </div>
+  `).join('');
+}
+
+// === MODAL ===
+function openModal(slotKey){
+  const overlay = document.getElementById('modal-overlay');
+  const titleEl = document.getElementById('modal-title');
+  const bodyEl = document.getElementById('modal-body');
+
+  titleEl.textContent = `▸ ${SLOT_LABELS[slotKey]}`;
+
+  // Cas spécial : offhand verrouillée par 2H
+  if(slotKey === 'offhand' && isMainhand2H()){
+    const mh = STATE.equipped.mainhand;
+    const tpl = getItem(mh.itemId);
+    const name = tpl ? composeItemName(mh) : mh.itemId;
+    bodyEl.innerHTML = `
+      <div class="modal-info-block">
+        🔒 OFF-HAND VERROUILLÉE<br><br>
+        <span style="color: var(--text-1); font-size: 11px;">L'arme à 2 mains <b style="color: var(--accent);">${name}</b><br>occupe les deux slots de mains.</span><br><br>
+        <span style="color: var(--text-2); font-size: 10px;">Pour libérer l'off-hand, déséquipe d'abord l'arme.</span>
+      </div>
+    `;
+    overlay.classList.add('active');
+    return;
+  }
+
+  const item = STATE.equipped[slotKey];
+
+  if(!item){
+    bodyEl.innerHTML = `
+      <div class="modal-empty">
+        ◇ Aucun item équipé sur ce slot<br><br>
+        <span style="font-size:10px;">Va dans le Coffre pour équiper un item</span>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-action-btn" onclick="window.location.href='./chest.html'">▣ OUVRIR LE COFFRE</button>
+      </div>
+    `;
+    overlay.classList.add('active');
+    return;
+  }
+
+  const tpl = getItem(item.itemId);
+  if(!tpl){
+    bodyEl.innerHTML = `<div class="modal-empty">Item invalide (${item.itemId})</div>`;
+    overlay.classList.add('active');
+    return;
+  }
+
+  const stats = describeItemStats(item);
+  const baseStats = stats.filter(s => s.kind === 'base');
+  const implicitStats = stats.filter(s => s.kind === 'implicit');
+  const prefixStats = stats.filter(s => s.kind === 'prefix');
+  const suffixStats = stats.filter(s => s.kind === 'suffix');
+
+  const renderStatList = (list) => list.map(s => `
+    <div class="modal-stat ${s.kind}">
+      <span class="lbl">${s.label}${s.name ? `<span class="lbl-name">[${s.name}]</span>` : ''}</span>
+      <span class="val">${(s.kind === 'prefix' || s.kind === 'suffix' || s.kind === 'implicit') && typeof s.value === 'number' ? '+' : ''}${s.value}</span>
+    </div>
+  `).join('');
+
+  // Mention 2H si applicable
+  const handedTag = (slotKey === 'mainhand' && tpl.handed === 2)
+    ? ' · <span style="color: var(--accent); font-weight: bold;">2 MAINS</span>'
+    : (slotKey === 'mainhand' && tpl.handed === 1) ? ' · 1 main' : '';
+
+  bodyEl.innerHTML = `
+    <div class="modal-item-header">
+      <div class="modal-item-icon" style="border-color: var(--r-${item.rarity}-bright);">${tpl.icon || '?'}</div>
+      <div class="modal-item-info">
+        <div class="modal-item-name" style="color: var(--r-${item.rarity}-bright);">${composeItemName(item)}</div>
+        <div class="modal-item-meta">iLvl ${ilvlToRoman(item.ilvl)} · ${RARITY_LABELS[item.rarity] || item.rarity}${handedTag}</div>
+      </div>
+    </div>
+
+    ${baseStats.length > 0 ? `
+      <div class="modal-section">
+        <h4>STATS DE BASE</h4>
+        ${renderStatList(baseStats)}
+      </div>
+    ` : ''}
+
+    ${implicitStats.length > 0 ? `
+      <div class="modal-section">
+        <h4>IMPLICITES</h4>
+        ${renderStatList(implicitStats)}
+      </div>
+    ` : ''}
+
+    ${prefixStats.length > 0 ? `
+      <div class="modal-section">
+        <h4>PRÉFIXES</h4>
+        ${renderStatList(prefixStats)}
+      </div>
+    ` : ''}
+
+    ${suffixStats.length > 0 ? `
+      <div class="modal-section">
+        <h4>SUFFIXES</h4>
+        ${renderStatList(suffixStats)}
+      </div>
+    ` : ''}
+
+    <div class="modal-actions">
+      <button class="modal-action-btn danger" id="btn-unequip">▽ DÉSÉQUIPER</button>
+    </div>
+  `;
+
+  document.getElementById('btn-unequip').addEventListener('click', () => unequipSlot(slotKey));
+  overlay.classList.add('active');
+}
+
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+function unequipSlot(slotKey){
+  const item = STATE.equipped[slotKey];
+  if(!item) return;
+  if(!confirm(`Déséquiper ${composeItemName(item)} et le mettre dans le Coffre ?`)) return;
+
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]');
+    const chest = Array.isArray(raw) ? raw : [];
+    chest.push(item);
+    localStorage.setItem(STORAGE_CHEST, JSON.stringify(chest));
+  } catch(e){
+    console.error('Failed to push to chest:', e);
+  }
+
+  delete STATE.equipped[slotKey];
+  saveEquipped();
+  renderAllSlots();
+  renderStatsAggregate();
+  closeModal();
+}
+
+// === HANDLERS ===
+function attachHandlers(){
+  document.querySelectorAll('.slot').forEach(slotEl => {
+    slotEl.addEventListener('click', () => {
+      const slot = slotEl.dataset.slot;
+      openModal(slot);
+    });
+  });
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if(e.target.id === 'modal-overlay') closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeModal();
+  });
+}
+
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#ff5959;font-family:monospace;">Erreur de chargement: ${e.message}</div>`;
+});
+</script>
 
 </body>
 </html>

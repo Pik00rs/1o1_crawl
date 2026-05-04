@@ -548,11 +548,12 @@ const STATE = {
 const STORAGE_CHEST = 'rh_player_chest';
 const STORAGE_EQUIPPED = 'rh_player_equipped';
 
-const HERO_SLOTS = ['mainhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring1', 'ring2'];
+const HERO_SLOTS = ['mainhand', 'offhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring'];
 
 const SLOT_LABELS = {
   all: 'Tous',
   mainhand: 'Arme',
+  offhand: 'Off-hand',
   head: 'Tête',
   chest: 'Torse',
   legs: 'Jambes',
@@ -565,6 +566,7 @@ const SLOT_LABELS = {
 // Icône qui représente le SLOT (pas l'item lui-même)
 const SLOT_ICONS = {
   mainhand: '⚔️',
+  offhand: '🛡️',
   head: '🪖',
   chest: '🦺',
   legs: '👖',
@@ -648,8 +650,8 @@ function seedChestWithMocks(){
 function seedEquipped(){
   const catalog = getAllItems();
   const findFirstForSlot = (slot) => Object.keys(catalog).find(id => catalog[id].slot === slot);
-  const seedSlot = (heroSlot, sourceSlot = heroSlot) => {
-    const id = findFirstForSlot(sourceSlot);
+  const seedSlot = (heroSlot) => {
+    const id = findFirstForSlot(heroSlot);
     if(id){
       const rolled = rollItem(id, { rarity: 'common', ilvl: 1 });
       if(rolled) STATE.equipped[heroSlot] = rolled;
@@ -662,8 +664,7 @@ function seedEquipped(){
   seedSlot('gloves');
   seedSlot('boots');
   seedSlot('amulet');
-  seedSlot('ring1', 'ring');
-  seedSlot('ring2', 'ring');
+  seedSlot('ring');
 }
 
 // === FILTER BUILDERS ===
@@ -680,7 +681,7 @@ function buildFilterButtons(){
   allBtn.addEventListener('click', () => onSlotFilterClick('all'));
   slotRow.appendChild(allBtn);
   // Slot icons
-  ['mainhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring'].forEach(s => {
+  ['mainhand', 'offhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring'].forEach(s => {
     const btn = document.createElement('button');
     btn.className = 'slot-btn';
     btn.innerHTML = SLOT_ICONS[s];
@@ -841,19 +842,39 @@ function equipItem(instanceId){
   if(!item) return;
   const tpl = getItem(item.itemId);
   if(!tpl) return;
-  let targetSlot = tpl.slot;
-  if(targetSlot === 'ring'){
-    if(!STATE.equipped.ring1) targetSlot = 'ring1';
-    else if(!STATE.equipped.ring2) targetSlot = 'ring2';
-    else {
-      const choice = confirm('Équiper sur l\'Anneau 1 ?\n(Annuler = Anneau 2)');
-      targetSlot = choice ? 'ring1' : 'ring2';
-    }
+  const targetSlot = tpl.slot; // 'mainhand', 'offhand', 'head', 'ring', etc.
+
+  // Cas spécial : équiper une arme 2H — déséquipe AUSSI l'offhand
+  if(targetSlot === 'mainhand' && tpl.handed === 2){
+    const currentMainhand = STATE.equipped.mainhand;
+    const currentOffhand = STATE.equipped.offhand;
+    if(currentMainhand) STATE.chest.push(currentMainhand);
+    if(currentOffhand) STATE.chest.push(currentOffhand);
+    STATE.chest = STATE.chest.filter(i => i.instanceId !== instanceId);
+    STATE.equipped.mainhand = item;
+    delete STATE.equipped.offhand;
   }
-  const currentlyEquipped = STATE.equipped[targetSlot];
-  if(currentlyEquipped) STATE.chest.push(currentlyEquipped);
-  STATE.chest = STATE.chest.filter(i => i.instanceId !== instanceId);
-  STATE.equipped[targetSlot] = item;
+  // Cas spécial : équiper une offhand alors qu'une 2H est en mainhand → bloque
+  else if(targetSlot === 'offhand'){
+    const currentMainhand = STATE.equipped.mainhand;
+    const mhTpl = currentMainhand ? getItem(currentMainhand.itemId) : null;
+    if(mhTpl && mhTpl.handed === 2){
+      alert(`Impossible : ton arme actuelle (${composeItemName(currentMainhand)}) est à 2 mains et occupe l'off-hand.\n\nDéséquipe d'abord l'arme depuis la page Héro.`);
+      return;
+    }
+    const currentOffhand = STATE.equipped.offhand;
+    if(currentOffhand) STATE.chest.push(currentOffhand);
+    STATE.chest = STATE.chest.filter(i => i.instanceId !== instanceId);
+    STATE.equipped.offhand = item;
+  }
+  // Cas standard : swap de l'item équipé sur le slot cible
+  else {
+    const currentlyEquipped = STATE.equipped[targetSlot];
+    if(currentlyEquipped) STATE.chest.push(currentlyEquipped);
+    STATE.chest = STATE.chest.filter(i => i.instanceId !== instanceId);
+    STATE.equipped[targetSlot] = item;
+  }
+
   STATE.selectedIds.delete(instanceId);
   STATE.focusedItemId = null;
   saveChest();
@@ -989,15 +1010,8 @@ function renderComparison(){
   const tpl = getItem(item.itemId);
   if(!tpl) return;
 
-  let equippedSlot = tpl.slot;
-  let equippedItem = null;
-  if(equippedSlot === 'ring'){
-    if(STATE.equipped.ring1){ equippedItem = STATE.equipped.ring1; equippedSlot = 'ring1'; }
-    else if(STATE.equipped.ring2){ equippedItem = STATE.equipped.ring2; equippedSlot = 'ring2'; }
-    else { equippedSlot = 'ring1'; }
-  } else {
-    equippedItem = STATE.equipped[equippedSlot];
-  }
+  const equippedSlot = tpl.slot;
+  const equippedItem = STATE.equipped[equippedSlot] || null;
 
   wrap.classList.remove('empty');
   wrap.innerHTML = `
@@ -1014,8 +1028,6 @@ function renderComparison(){
 }
 
 function slotLabel(slot){
-  if(slot === 'ring1') return 'Anneau 1';
-  if(slot === 'ring2') return 'Anneau 2';
   return SLOT_LABELS[slot] || slot;
 }
 
