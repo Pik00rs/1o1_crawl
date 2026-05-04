@@ -432,8 +432,15 @@
     .grid { gap: 3px; }
     .item-icon { font-size: 24px; }
     .item-cell .ilvl-badge { font-size: 8px; }
-    .comparison { grid-template-columns: 1fr; }
-    .cmp-divider { display: none; height: 1px; margin: 4px 0; }
+    /* Comparison reste horizontale - shrink les éléments */
+    .comparison { padding: 8px; gap: 6px; }
+    .cmp-item { gap: 6px; padding: 2px 0; }
+    .cmp-item-icon { width: 36px; height: 36px; font-size: 22px; }
+    .cmp-item-name { font-size: 11px; }
+    .cmp-item-meta { font-size: 9px; }
+    .cmp-stat { font-size: 9px; padding: 1px 0; }
+    .cmp-stat .lbl-name { display: none; }
+    .cmp-side h3 { font-size: 8px; }
     .stats-mini { display: none; }
     .title { font-size: 13px; }
     .filter-label { width: 32px; font-size: 7px; }
@@ -444,6 +451,14 @@
     .grid { gap: 2px; }
     .item-icon { font-size: 20px; }
     .item-cell .ilvl-badge { font-size: 7px; }
+    /* Très petit écran : compact extreme mais reste horizontal */
+    .comparison { padding: 6px; gap: 4px; }
+    .cmp-item-icon { width: 32px; height: 32px; font-size: 18px; }
+    .cmp-item-name { font-size: 10px; line-height: 1.1; }
+    .cmp-item-meta { font-size: 8px; }
+    .cmp-stat { font-size: 8px; }
+    .cmp-stat .lbl { font-size: 8px; }
+    .cmp-side h3 { font-size: 7px; padding-bottom: 2px; }
   }
   @media (max-width: 360px) {
     .item-icon { font-size: 18px; }
@@ -459,13 +474,6 @@
 </header>
 
 <main class="container">
-
-  <!-- COMPARISON PANEL -->
-  <section class="comparison empty" id="comparison">
-    <div style="grid-column: 1/-1; text-align: center; color: var(--text-2); padding: 18px; font-size: 11px; letter-spacing: 1px;">
-      Sélectionne un item pour voir la comparaison
-    </div>
-  </section>
 
   <!-- FILTERS -->
   <section class="filter-section">
@@ -483,6 +491,13 @@
     <button class="action-btn danger" id="btn-destroy" disabled>🔥 DÉTRUIRE</button>
     <div class="selection-count" id="selection-count"></div>
   </div>
+
+  <!-- COMPARISON PANEL (entre filtres et grid) -->
+  <section class="comparison empty" id="comparison">
+    <div style="grid-column: 1/-1; text-align: center; color: var(--text-2); padding: 14px; font-size: 11px; letter-spacing: 1px;">
+      Sélectionne un item pour voir la comparaison
+    </div>
+  </section>
 
   <!-- GRID -->
   <section class="grid" id="grid"></section>
