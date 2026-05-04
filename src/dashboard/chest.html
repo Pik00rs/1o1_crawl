@@ -16,12 +16,18 @@
     --text-1: #a0a0a0;
     --text-2: #606060;
     --accent: #ffb347;
-    --r-common: #cccccc;
-    --r-magic: #6aaaff;
-    --r-rare: #ffcc44;
-    --r-epic: #cc44ff;
-    --r-legendary: #ff8800;
-    --r-set: #66ff66;
+    --r-common: #888888;
+    --r-magic: #2a5a9c;
+    --r-rare: #b88a1a;
+    --r-epic: #6a1a8a;
+    --r-legendary: #b85800;
+    --r-set: #2a8a4a;
+    --r-common-bright: #cccccc;
+    --r-magic-bright: #6aaaff;
+    --r-rare-bright: #ffcc44;
+    --r-epic-bright: #cc44ff;
+    --r-legendary-bright: #ff8800;
+    --r-set-bright: #66ff66;
     --good: #5fff8c;
     --bad: #ff5959;
   }
@@ -64,7 +70,7 @@
   .stats-mini b { color: var(--text-0); }
 
   .container {
-    max-width: 1400px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 16px;
   }
@@ -73,26 +79,26 @@
   .comparison {
     background: var(--bg-1);
     border: 1px solid var(--border-2);
-    margin-bottom: 16px;
-    padding: 14px;
+    margin-bottom: 12px;
+    padding: 12px;
     display: grid;
     grid-template-columns: 1fr 1px 1fr;
-    gap: 12px;
+    gap: 10px;
   }
   .comparison.empty {
     text-align: center;
     color: var(--text-2);
-    padding: 24px;
-    font-size: 12px;
+    padding: 20px;
+    font-size: 11px;
     grid-template-columns: 1fr;
   }
   .cmp-side {
     display: flex; flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
   }
   .cmp-side h3 {
-    margin: 0; font-size: 10px; letter-spacing: 2px;
+    margin: 0; font-size: 9px; letter-spacing: 2px;
     color: var(--text-2); text-transform: uppercase;
     border-bottom: 1px solid var(--border-1);
     padding-bottom: 4px;
@@ -100,22 +106,23 @@
   .cmp-side h3.selected { color: var(--accent); }
   .cmp-side h3.equipped { color: var(--good); }
   .cmp-item {
-    display: flex; gap: 10px;
-    padding: 6px 0;
+    display: flex; gap: 8px;
+    padding: 4px 0;
   }
   .cmp-item-icon {
-    width: 48px; height: 48px;
+    width: 44px; height: 44px;
     background: var(--bg-2);
     border: 2px solid var(--border-2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 28px;
+    font-size: 26px;
     flex-shrink: 0;
   }
   .cmp-item-info { flex: 1; min-width: 0; }
   .cmp-item-name {
-    font-size: 13px; font-weight: bold;
+    font-size: 12px; font-weight: bold;
     margin-bottom: 2px;
     word-break: break-word;
+    line-height: 1.2;
   }
   .cmp-item-meta {
     font-size: 10px; color: var(--text-1);
@@ -124,7 +131,7 @@
   .cmp-stat {
     display: flex; justify-content: space-between;
     align-items: center;
-    font-size: 11px;
+    font-size: 10px;
     padding: 2px 0;
     gap: 8px;
   }
@@ -133,11 +140,11 @@
   .cmp-stat .val { color: var(--text-0); font-weight: bold; flex-shrink: 0; }
   .cmp-stat.base .val { color: #fff; }
   .cmp-stat.implicit .val { color: #aae; }
-  .cmp-stat.prefix .val { color: var(--r-magic); }
-  .cmp-stat.suffix .val { color: var(--r-epic); }
+  .cmp-stat.prefix .val { color: var(--r-magic-bright); }
+  .cmp-stat.suffix .val { color: var(--r-epic-bright); }
   .cmp-empty {
     text-align: center; color: var(--text-2);
-    font-size: 11px; padding: 28px 12px;
+    font-size: 10px; padding: 20px 8px;
     border: 1px dashed var(--border-2);
   }
   .cmp-divider {
@@ -148,65 +155,125 @@
   .filter-section {
     background: var(--bg-1);
     border: 1px solid var(--border-2);
-    margin-bottom: 12px;
-    padding: 10px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
   }
   .filter-row {
     display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 6px;
-    padding: 4px 0;
-    scrollbar-width: thin;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 3px 0;
     align-items: center;
   }
-  .filter-row::-webkit-scrollbar { height: 4px; }
-  .filter-row::-webkit-scrollbar-thumb { background: var(--border-2); }
-  .filter-row + .filter-row { margin-top: 6px; }
+  .filter-row + .filter-row { margin-top: 4px; }
   .filter-label {
-    font-size: 9px; letter-spacing: 2px;
+    font-size: 8px; letter-spacing: 1.5px;
     color: var(--text-2); text-transform: uppercase;
     flex-shrink: 0;
-    padding: 6px 4px;
-    min-width: 50px;
+    width: 38px;
   }
-  .filter-btn {
+  /* SLOT btn — with emoji icon */
+  .slot-btn {
     background: var(--bg-2);
     border: 1px solid var(--border-1);
-    padding: 5px 10px;
     color: var(--text-1);
     font-family: inherit;
-    font-size: 10px;
     cursor: pointer;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 1px;
     flex-shrink: 0;
     transition: all 0.1s;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    padding: 0;
   }
-  .filter-btn:hover { background: var(--bg-3); color: var(--text-0); }
-  .filter-btn.active {
+  .slot-btn:hover { background: var(--bg-3); border-color: var(--border-2); }
+  .slot-btn.active {
     background: var(--accent);
-    color: #000;
     border-color: var(--accent);
+    color: #000;
+  }
+  .slot-btn.all {
+    width: auto; padding: 0 8px;
+    font-size: 9px;
+    letter-spacing: 1px;
     font-weight: bold;
+  }
+  /* RARITY btn — colored square, no text */
+  .rarity-btn {
+    width: 28px; height: 28px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.1s;
+    padding: 0;
+    position: relative;
+  }
+  .rarity-btn.r-all {
+    background: linear-gradient(135deg,
+      var(--r-common-bright) 0%, var(--r-common-bright) 20%,
+      var(--r-magic-bright) 20%, var(--r-magic-bright) 40%,
+      var(--r-rare-bright) 40%, var(--r-rare-bright) 60%,
+      var(--r-epic-bright) 60%, var(--r-epic-bright) 80%,
+      var(--r-legendary-bright) 80%);
+  }
+  .rarity-btn.r-common    { background: var(--r-common-bright); }
+  .rarity-btn.r-magic     { background: var(--r-magic-bright); }
+  .rarity-btn.r-rare      { background: var(--r-rare-bright); }
+  .rarity-btn.r-epic      { background: var(--r-epic-bright); }
+  .rarity-btn.r-legendary { background: var(--r-legendary-bright); }
+  .rarity-btn:hover { transform: scale(1.1); }
+  .rarity-btn.active {
+    border-color: var(--text-0);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  /* ILVL btn — small square with roman numeral */
+  .ilvl-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.1s;
+    width: 26px;
+    height: 26px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ilvl-btn:hover { background: var(--bg-3); border-color: var(--border-2); }
+  .ilvl-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .ilvl-btn.all {
+    width: auto; padding: 0 6px;
+    font-size: 9px;
   }
   .search-input {
     background: var(--bg-2);
     border: 1px solid var(--border-2);
     color: var(--text-0);
-    padding: 6px 10px;
+    padding: 5px 8px;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 11px;
     width: 100%;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   /* === ACTION BAR === */
   .action-bar {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
     align-items: center;
   }
@@ -214,9 +281,9 @@
     background: var(--bg-2);
     border: 1px solid var(--border-2);
     color: var(--text-0);
-    padding: 8px 14px;
+    padding: 6px 10px;
     font-family: inherit;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 1px;
     cursor: pointer;
     text-transform: uppercase;
@@ -246,73 +313,75 @@
     color: #000;
   }
   .selection-count {
-    font-size: 11px; color: var(--text-1);
+    font-size: 10px; color: var(--text-1);
     margin-left: auto;
   }
   .selection-count b { color: var(--accent); }
 
-  /* === GRID === */
+  /* === GRID === 8 COLS, COLORED BG, SLOT ICON */
   .grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 6px;
-    margin-bottom: 16px;
+    gap: 4px;
+    margin-bottom: 12px;
   }
   .item-cell {
     aspect-ratio: 1;
-    background: var(--bg-2);
-    border: 2px solid var(--border-1);
+    border: 2px solid rgba(0, 0, 0, 0.3);
     cursor: pointer;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    padding: 0;
     transition: all 0.1s;
     overflow: hidden;
     color: inherit;
     font-family: inherit;
   }
   .item-cell:hover {
-    background: var(--bg-3);
-    border-color: var(--border-2);
+    transform: scale(1.05);
+    z-index: 2;
   }
   .item-cell.selected {
     border-color: var(--accent) !important;
-    background: rgba(255, 179, 71, 0.12);
-    box-shadow: 0 0 0 1px var(--accent);
+    box-shadow: 0 0 0 2px var(--accent), 0 0 12px rgba(255, 179, 71, 0.6);
+    z-index: 3;
   }
-  .item-cell.empty { cursor: default; opacity: 0.3; background: var(--bg-1); pointer-events: none; }
+  .item-cell.empty {
+    cursor: default;
+    background: var(--bg-1);
+    border-color: var(--border-1);
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  /* Rarity backgrounds (darker, matte) */
+  .item-cell.r-common    { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); border-color: #444; }
+  .item-cell.r-magic     { background: linear-gradient(135deg, #1a3a6a 0%, #0a2040 100%); border-color: var(--r-magic-bright); }
+  .item-cell.r-rare      { background: linear-gradient(135deg, #6a4a0a 0%, #3a2800 100%); border-color: var(--r-rare-bright); }
+  .item-cell.r-epic      { background: linear-gradient(135deg, #4a1a6a 0%, #2a0a3a 100%); border-color: var(--r-epic-bright); }
+  .item-cell.r-legendary { background: linear-gradient(135deg, #8a3a00 0%, #4a1a00 100%); border-color: var(--r-legendary-bright); }
+  .item-cell.r-set       { background: linear-gradient(135deg, #1a5a2a 0%, #0a2a1a 100%); border-color: var(--r-set-bright); }
+
   .item-icon {
     font-size: 28px;
     line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
   }
-  .item-cell .ilvl {
+  .item-cell .ilvl-badge {
     position: absolute;
-    top: 3px; left: 4px;
-    font-size: 8px;
-    color: var(--text-2);
-    letter-spacing: 0.5px;
+    bottom: 2px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 9px;
     font-weight: bold;
+    color: #fff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 3px rgba(0,0,0,1), 0 0 2px rgba(0,0,0,1);
+    line-height: 1;
   }
-  .item-cell .rar-dot {
-    position: absolute;
-    top: 4px; right: 4px;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-  }
-  .item-cell.r-magic     { border-color: rgba(106, 170, 255, 0.5); }
-  .item-cell.r-rare      { border-color: rgba(255, 204, 68, 0.5); }
-  .item-cell.r-epic      { border-color: rgba(204, 68, 255, 0.5); }
-  .item-cell.r-legendary { border-color: rgba(255, 136, 0, 0.6); }
-  .item-cell.r-set       { border-color: rgba(102, 255, 102, 0.6); }
-  .rar-common    { background: var(--r-common); }
-  .rar-magic     { background: var(--r-magic); }
-  .rar-rare      { background: var(--r-rare); }
-  .rar-epic      { background: var(--r-epic); }
-  .rar-legendary { background: var(--r-legendary); }
-  .rar-set       { background: var(--r-set); }
+  .item-cell.r-common .ilvl-badge { color: #ddd; }
 
   /* === PAGINATION === */
   .pagination {
@@ -320,7 +389,7 @@
     justify-content: center;
     align-items: center;
     gap: 16px;
-    padding: 12px;
+    padding: 10px;
     background: var(--bg-1);
     border: 1px solid var(--border-2);
   }
@@ -328,58 +397,56 @@
     background: var(--bg-2);
     border: 1px solid var(--border-2);
     color: var(--text-0);
-    padding: 6px 14px;
+    padding: 5px 12px;
     font-family: inherit;
     font-size: 12px;
     cursor: pointer;
   }
   .pag-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-  .pag-info { font-size: 12px; color: var(--text-1); }
+  .pag-info { font-size: 11px; color: var(--text-1); }
 
   /* === DEV TOOLS === */
   .dev-tools {
     background: rgba(255, 0, 100, 0.05);
     border: 1px dashed rgba(255, 0, 100, 0.3);
-    padding: 8px 12px;
-    margin-top: 16px;
-    font-size: 10px;
+    padding: 6px 10px;
+    margin-top: 12px;
+    font-size: 9px;
     color: rgba(255, 100, 150, 0.8);
   }
   .dev-tools button {
     background: rgba(255, 0, 100, 0.1);
     border: 1px solid rgba(255, 0, 100, 0.3);
     color: rgba(255, 100, 150, 1);
-    padding: 4px 8px;
+    padding: 3px 6px;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 9px;
     cursor: pointer;
-    margin-right: 6px;
+    margin-right: 4px;
     margin-bottom: 4px;
   }
 
   /* === MOBILE === */
-  @media (max-width: 900px) {
-    .grid { grid-template-columns: repeat(6, 1fr); }
-    .item-icon { font-size: 24px; }
-  }
   @media (max-width: 700px) {
-    .container { padding: 8px; }
-    .grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
-    .item-icon { font-size: 22px; }
+    .container { padding: 8px; max-width: 100%; }
+    .grid { gap: 3px; }
+    .item-icon { font-size: 24px; }
+    .item-cell .ilvl-badge { font-size: 8px; }
     .comparison { grid-template-columns: 1fr; }
     .cmp-divider { display: none; height: 1px; margin: 4px 0; }
     .stats-mini { display: none; }
     .title { font-size: 13px; }
-    .filter-label { min-width: 40px; font-size: 8px; }
+    .filter-label { width: 32px; font-size: 7px; }
+    .slot-btn, .rarity-btn { width: 26px; height: 26px; }
+    .ilvl-btn { width: 24px; height: 24px; }
   }
   @media (max-width: 480px) {
-    .grid { grid-template-columns: repeat(4, 1fr); }
+    .grid { gap: 2px; }
     .item-icon { font-size: 20px; }
-    .item-cell .ilvl { font-size: 7px; }
+    .item-cell .ilvl-badge { font-size: 7px; }
   }
   @media (max-width: 360px) {
-    .grid { grid-template-columns: repeat(3, 1fr); }
-    .item-icon { font-size: 24px; }
+    .item-icon { font-size: 18px; }
   }
 </style>
 </head>
@@ -402,7 +469,7 @@
 
   <!-- FILTERS -->
   <section class="filter-section">
-    <input type="text" class="search-input" id="search" placeholder="Rechercher un item...">
+    <input type="text" class="search-input" id="search" placeholder="Rechercher...">
     <div class="filter-row" id="filter-slot"></div>
     <div class="filter-row" id="filter-rarity"></div>
     <div class="filter-row" id="filter-ilvl"></div>
@@ -410,8 +477,8 @@
 
   <!-- ACTION BAR -->
   <div class="action-bar">
-    <button class="action-btn" id="btn-select-all">▣ TOUT SÉLECTIONNER</button>
-    <button class="action-btn" id="btn-deselect" disabled>✕ DÉSÉLECTIONNER</button>
+    <button class="action-btn" id="btn-select-all">▣ TOUT SÉLECT.</button>
+    <button class="action-btn" id="btn-deselect" disabled>✕ DÉSÉL.</button>
     <button class="action-btn primary" id="btn-equip" disabled>⚔ ÉQUIPER</button>
     <button class="action-btn danger" id="btn-destroy" disabled>🔥 DÉTRUIRE</button>
     <div class="selection-count" id="selection-count"></div>
@@ -429,11 +496,11 @@
 
   <!-- DEV TOOLS -->
   <div class="dev-tools">
-    [DEV] Tools : 
+    [DEV] :
     <button id="dev-add-50">+50 random</button>
     <button id="dev-add-10-legendary">+10 légendaires</button>
     <button id="dev-clear">Vider chest</button>
-    <button id="dev-reset-equipped">Reset équipement</button>
+    <button id="dev-reset-equipped">Reset équip.</button>
   </div>
 
 </main>
@@ -472,6 +539,18 @@ const SLOT_LABELS = {
   ring: 'Anneau',
 };
 
+// Icône qui représente le SLOT (pas l'item lui-même)
+const SLOT_ICONS = {
+  mainhand: '⚔️',
+  head: '🪖',
+  chest: '🦺',
+  legs: '👖',
+  gloves: '🧤',
+  boots: '👢',
+  amulet: '📿',
+  ring: '💍',
+};
+
 const RARITIES = ['common', 'magic', 'rare', 'epic', 'legendary'];
 const RARITY_LABELS = {
   all: 'Toutes', common: 'Commun', magic: 'Magique',
@@ -496,13 +575,13 @@ async function boot(){
 }
 
 function loadFromStorage(){
-  // Chest = array d'instances. Si shape invalide (ancien format objet, null, etc.) → reset.
+  // Chest = array. Validation stricte du format.
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]');
     if(Array.isArray(raw) && raw.every(it => it && typeof it === 'object' && it.instanceId && it.itemId)){
       STATE.chest = raw;
     } else {
-      console.warn('[chest] Format invalide dans localStorage, reset.');
+      console.warn('[chest] Format invalide, reset.');
       STATE.chest = [];
       localStorage.removeItem(STORAGE_CHEST);
     }
@@ -510,13 +589,13 @@ function loadFromStorage(){
     STATE.chest = [];
     localStorage.removeItem(STORAGE_CHEST);
   }
-  // Equipped = objet {slot: instance}. Si shape invalide → reset.
+  // Equipped = objet {slot: instance}.
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_EQUIPPED) || '{}');
     if(raw && typeof raw === 'object' && !Array.isArray(raw)){
       STATE.equipped = raw;
     } else {
-      console.warn('[equipped] Format invalide dans localStorage, reset.');
+      console.warn('[equipped] Format invalide, reset.');
       STATE.equipped = {};
       localStorage.removeItem(STORAGE_EQUIPPED);
     }
@@ -566,57 +645,84 @@ function seedEquipped(){
 
 // === FILTER BUILDERS ===
 function buildFilterButtons(){
-  // SLOT
+  // SLOT — icons only (with "all" as text)
   const slotRow = document.getElementById('filter-slot');
   slotRow.innerHTML = '<span class="filter-label">SLOT</span>';
-  ['all', 'mainhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring'].forEach(s => {
+  // 'all' button first
+  const allBtn = document.createElement('button');
+  allBtn.className = 'slot-btn all active';
+  allBtn.textContent = 'TOUS';
+  allBtn.dataset.slot = 'all';
+  allBtn.addEventListener('click', () => onSlotFilterClick('all'));
+  slotRow.appendChild(allBtn);
+  // Slot icons
+  ['mainhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring'].forEach(s => {
     const btn = document.createElement('button');
-    btn.className = 'filter-btn' + (s === 'all' ? ' active' : '');
-    btn.textContent = SLOT_LABELS[s];
+    btn.className = 'slot-btn';
+    btn.innerHTML = SLOT_ICONS[s];
     btn.dataset.slot = s;
-    btn.addEventListener('click', () => {
-      STATE.filter.slot = s;
-      STATE.page = 1;
-      slotRow.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.slot === s));
-      render();
-    });
+    btn.title = SLOT_LABELS[s];
+    btn.addEventListener('click', () => onSlotFilterClick(s));
     slotRow.appendChild(btn);
   });
 
-  // RARITY
+  // RARITY — colored squares only
   const rarRow = document.getElementById('filter-rarity');
   rarRow.innerHTML = '<span class="filter-label">RARETÉ</span>';
-  ['all', ...RARITIES].forEach(r => {
+  const rarAll = document.createElement('button');
+  rarAll.className = 'rarity-btn r-all active';
+  rarAll.dataset.rarity = 'all';
+  rarAll.title = 'Toutes';
+  rarAll.addEventListener('click', () => onRarityFilterClick('all'));
+  rarRow.appendChild(rarAll);
+  RARITIES.forEach(r => {
     const btn = document.createElement('button');
-    btn.className = 'filter-btn' + (r === 'all' ? ' active' : '');
-    btn.textContent = RARITY_LABELS[r];
-    if(r !== 'all') btn.style.color = `var(--r-${r})`;
+    btn.className = `rarity-btn r-${r}`;
     btn.dataset.rarity = r;
-    btn.addEventListener('click', () => {
-      STATE.filter.rarity = r;
-      STATE.page = 1;
-      rarRow.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.rarity === r));
-      render();
-    });
+    btn.title = RARITY_LABELS[r];
+    btn.addEventListener('click', () => onRarityFilterClick(r));
     rarRow.appendChild(btn);
   });
 
-  // ILVL
+  // ILVL — small squares with roman numerals
   const ilvlRow = document.getElementById('filter-ilvl');
   ilvlRow.innerHTML = '<span class="filter-label">ILVL</span>';
-  ['all', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(lv => {
+  const ilvlAll = document.createElement('button');
+  ilvlAll.className = 'ilvl-btn all active';
+  ilvlAll.textContent = 'TOUS';
+  ilvlAll.dataset.ilvl = 'all';
+  ilvlAll.addEventListener('click', () => onIlvlFilterClick('all'));
+  ilvlRow.appendChild(ilvlAll);
+  for(let lv = 1; lv <= 10; lv++){
     const btn = document.createElement('button');
-    btn.className = 'filter-btn' + (lv === 'all' ? ' active' : '');
-    btn.textContent = lv === 'all' ? 'Tous' : ilvlToRoman(lv);
+    btn.className = 'ilvl-btn';
+    btn.textContent = ilvlToRoman(lv);
     btn.dataset.ilvl = lv;
-    btn.addEventListener('click', () => {
-      STATE.filter.ilvl = lv;
-      STATE.page = 1;
-      ilvlRow.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.ilvl === String(lv)));
-      render();
-    });
+    btn.addEventListener('click', () => onIlvlFilterClick(lv));
     ilvlRow.appendChild(btn);
-  });
+  }
+}
+
+function onSlotFilterClick(s){
+  STATE.filter.slot = s;
+  STATE.page = 1;
+  document.querySelectorAll('#filter-slot .slot-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.slot === String(s)));
+  render();
+}
+function onRarityFilterClick(r){
+  STATE.filter.rarity = r;
+  STATE.page = 1;
+  document.querySelectorAll('#filter-rarity .rarity-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.rarity === String(r)));
+  render();
+}
+function onIlvlFilterClick(lv){
+  STATE.filter.ilvl = lv;
+  STATE.page = 1;
+  document.querySelectorAll('#filter-ilvl .ilvl-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.ilvl === String(lv)));
+  render();
 }
 
 // === EVENT HANDLERS ===
@@ -789,10 +895,11 @@ function renderGrid(){
     cell.className = 'item-cell r-' + item.rarity;
     if(STATE.selectedIds.has(item.instanceId)) cell.classList.add('selected');
     cell.title = composeItemName(item);
+    // Slot icon (pas l'icon de l'item lui-même)
+    const slotIcon = SLOT_ICONS[tpl.slot] || tpl.icon || '?';
     cell.innerHTML = `
-      <span class="ilvl">${ilvlToRoman(item.ilvl)}</span>
-      <span class="rar-dot rar-${item.rarity}"></span>
-      <span class="item-icon">${tpl.icon || '?'}</span>
+      <span class="item-icon">${slotIcon}</span>
+      <span class="ilvl-badge">${ilvlToRoman(item.ilvl)}</span>
     `;
     cell.addEventListener('click', () => onCellClick(item));
     grid.appendChild(cell);
@@ -804,13 +911,15 @@ function renderGrid(){
   }
 }
 
+// SINGLE-SELECT au clic. Le multi se fait UNIQUEMENT via "Tout sélectionner".
 function onCellClick(item){
-  if(STATE.selectedIds.has(item.instanceId)){
-    STATE.selectedIds.delete(item.instanceId);
-    if(STATE.focusedItemId === item.instanceId){
-      STATE.focusedItemId = STATE.selectedIds.size > 0 ? [...STATE.selectedIds][0] : null;
-    }
+  if(STATE.selectedIds.has(item.instanceId) && STATE.selectedIds.size === 1){
+    // Re-clic sur l'unique sélectionné = déselection
+    STATE.selectedIds.clear();
+    STATE.focusedItemId = null;
   } else {
+    // Sinon : remplace TOUTE la sélection par cet item
+    STATE.selectedIds.clear();
     STATE.selectedIds.add(item.instanceId);
     STATE.focusedItemId = item.instanceId;
   }
@@ -829,7 +938,7 @@ function renderPagination(){
 function renderActionBar(){
   const count = STATE.selectedIds.size;
   document.getElementById('selection-count').innerHTML = count > 0
-    ? `<b>${count}</b> sélectionné${count > 1 ? 's' : ''}` : '';
+    ? `<b>${count}</b> sél.${count > 1 ? '' : ''}` : '';
   document.getElementById('btn-deselect').disabled = count === 0;
   document.getElementById('btn-equip').disabled = count !== 1;
   document.getElementById('btn-destroy').disabled = count === 0;
@@ -874,7 +983,7 @@ function renderComparison(){
     <div class="cmp-divider"></div>
     <div class="cmp-side">
       <h3 class="equipped">◆ ÉQUIPÉ — ${slotLabel(equippedSlot)}</h3>
-      ${equippedItem ? renderItemCard(equippedItem) : '<div class="cmp-empty">Aucun item équipé sur ce slot</div>'}
+      ${equippedItem ? renderItemCard(equippedItem) : '<div class="cmp-empty">Aucun item équipé</div>'}
     </div>
   `;
 }
@@ -891,9 +1000,9 @@ function renderItemCard(item){
   const stats = describeItemStats(item);
   return `
     <div class="cmp-item">
-      <div class="cmp-item-icon" style="border-color: var(--r-${item.rarity})">${tpl.icon || '?'}</div>
+      <div class="cmp-item-icon" style="border-color: var(--r-${item.rarity}-bright)">${tpl.icon || '?'}</div>
       <div class="cmp-item-info">
-        <div class="cmp-item-name" style="color: var(--r-${item.rarity})">${composeItemName(item)}</div>
+        <div class="cmp-item-name" style="color: var(--r-${item.rarity}-bright)">${composeItemName(item)}</div>
         <div class="cmp-item-meta">iLvl ${ilvlToRoman(item.ilvl)} · ${RARITY_LABELS[item.rarity] || item.rarity} · ${slotLabel(tpl.slot)}</div>
       </div>
     </div>
