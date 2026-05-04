@@ -177,13 +177,30 @@ const RARITY_AFFIX_COUNT = {
   legendary: [4, 4],
 };
 
-const RARITY_VALUE_MULTIPLIERS = {
-  common: [0.5, 0.8],
-  magic: [0.6, 1.0],
-  rare: [0.8, 1.3],
-  epic: [1.0, 1.6],
-  legendary: [1.3, 2.0],
+// Anciens multiplicateurs gardés en référence pour le legacy / forge-config.json,
+// mais NON utilisés pour le roll (qui passe par RARITY_SKEW + TIER_MULT_RANGE).
+// const RARITY_VALUE_MULTIPLIERS = {
+//   common: [0.5, 0.8], magic: [0.6, 1.0], rare: [0.8, 1.3], epic: [1.0, 1.6], legendary: [1.3, 2.0],
+// };
+
+// === SKEW DISTRIBUTION (Hardcore) ===
+// La qualité d'un roll va de 0% (vMin nu) à 100% (vMax × 2.0).
+// Toutes les raretés peuvent atteindre 100%, mais les hauts rolls sont biaisés vers le haut
+// pour les raretés élevées via une transformation u^skew :
+//   - skew > 1 : la distribution penche vers le BAS (mauvais rolls plus probables)
+//   - skew = 1 : distribution uniforme
+//   - skew < 1 : penche vers le HAUT (bons rolls plus probables)
+const RARITY_SKEW = {
+  common:    4.0,  // 1.1% chance excellent (≥85%) — 1 reroll/87
+  magic:     2.5,  // 1.8% — 1/56
+  rare:      1.5,  // 2.9% — 1/34
+  epic:      1.0,  // 4.3% — 1/23
+  legendary: 0.6,  // 6.6% — 1/15
 };
+
+// Range absolu du multiplicateur de tier (peu importe la rareté).
+// Toutes les raretés tirent dans [0.5, 2.0], mais le skew déforme la distribution.
+const TIER_MULT_RANGE = [0.5, 2.0];
 
 const ILVL_MULTIPLIER = {
   1: 0.50, 2: 0.65, 3: 0.80, 4: 0.95, 5: 1.00,
@@ -191,6 +208,47 @@ const ILVL_MULTIPLIER = {
 };
 
 function randomInRange(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+/**
+ * Roll la valeur d'un affixe en appliquant la distribution skewée par rareté.
+ * Centralisé ici pour que drop initial ET reroll utilisent la MÊME formule.
+ *
+ * @param {[number, number]} valueRange - [vMin, vMax] de la définition de l'affixe
+ * @param {string} rarity - 'common'|'magic'|'rare'|'epic'|'legendary'
+ * @param {number} ilvl - 1-10
+ * @returns {number} La valeur rollée (entier ≥ 1)
+ */
+export function rollAffixValue(valueRange, rarity, ilvl){
+  const [vMin, vMax] = valueRange;
+  const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
+  const skew = RARITY_SKEW[rarity] ?? 1.0;
+  // u ∈ [0,1] uniforme → t = u^skew biaisé selon la rareté
+  const u = Math.random();
+  const t = Math.pow(u, skew);
+  // Mappe t ∈ [0,1] vers le range absolu du multiplicateur de tier
+  const tierMult = TIER_MULT_RANGE[0] + t * (TIER_MULT_RANGE[1] - TIER_MULT_RANGE[0]);
+  const baseVal = randomInRange(vMin, vMax);
+  return Math.max(1, Math.round(baseVal * ilvlMult * tierMult));
+}
+
+/**
+ * Calcule le % de qualité d'un roll par rapport au range absolu max possible.
+ * Utilisé pour afficher la "barre de qualité" dans le rerolleur.
+ *
+ * @param {number} value - La valeur rollée actuelle
+ * @param {[number, number]} valueRange - [vMin, vMax] de la définition de l'affixe
+ * @param {number} ilvl
+ * @returns {number} Pourcentage 0-100
+ */
+export function affixQualityPct(value, valueRange, ilvl){
+  const [vMin, vMax] = valueRange;
+  const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
+  const minPossible = Math.max(1, Math.round(vMin * ilvlMult * TIER_MULT_RANGE[0]));
+  const maxPossible = Math.round(vMax * ilvlMult * TIER_MULT_RANGE[1]);
+  const range = Math.max(1, maxPossible - minPossible);
+  const pct = ((value - minPossible) / range) * 100;
+  return Math.max(0, Math.min(100, pct));
+}
 
 /**
  * Roll un item complet avec affixes, à partir d'un itemId du catalog.
@@ -213,7 +271,8 @@ export function rollItem(itemId, opts = {}){
   // Roll affixes
   const affixes = rollAffixes(affixCount, tpl.slot, rarity, ilvl);
 
-  // Implicit (pour armures)
+  // Implicit (pour armures) — pas de skew ici, juste random uniforme dans le range
+  // L'implicit est garanti et n'est pas un "roll" comparable à un affixe
   let implicit = null;
   if(tpl.implicit){
     const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
@@ -255,9 +314,6 @@ function rollAffixes(count, itemSlot, rarity, ilvl){
   const validPrefixes = allPrefixes.filter(isValidForSlot);
   const validSuffixes = allSuffixes.filter(isValidForSlot);
 
-  const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
-  const tierMult = RARITY_VALUE_MULTIPLIERS[rarity] || [0.5, 1.0];
-
   // Alterne prefix/suffix pour la diversité
   let preferPrefix = Math.random() < 0.5;
   let safety = 0;
@@ -274,10 +330,8 @@ function rollAffixes(count, itemSlot, rarity, ilvl){
       continue;
     }
     usedStats.add(candidate.stat);
-    // Roll value
-    const [vMin, vMax] = candidate.valueRange;
-    const baseVal = randomInRange(vMin, vMax);
-    const finalVal = Math.max(1, Math.round(baseVal * ilvlMult * (tierMult[0] + Math.random() * (tierMult[1] - tierMult[0]))));
+    // Roll value via la formule centralisée (skew par rareté)
+    const finalVal = rollAffixValue(candidate.valueRange, rarity, ilvl);
     affixes.push({
       id: candidate.id,
       type: candidate.type,
