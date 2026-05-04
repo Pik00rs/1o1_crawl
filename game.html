@@ -1966,17 +1966,52 @@ function showDungeonDefeatScreen(run){
 }
 
 function saveDungeonProgress(run){
-  // Sauvegarde la progression dans localStorage pour qu'Ascension reflète le clear.
+  // Sauvegarde la progression dans localStorage pour qu'Ascension reflète le clear,
+  // et pousse les items du loot dans le chest + ressources dans le wallet.
   try {
-    const KEY = 'rh_player_progress';
-    const raw = localStorage.getItem(KEY);
-    const progress = raw ? JSON.parse(raw) : {};
+    // 1. Marquer le donjon comme cleared
+    const PROGRESS_KEY = 'rh_player_progress';
+    const progressRaw = localStorage.getItem(PROGRESS_KEY);
+    const progress = progressRaw ? JSON.parse(progressRaw) : {};
     if(!progress[run.biomeId]) progress[run.biomeId] = { tier: 1, clearedDungeons: [] };
     if(!progress[run.biomeId].clearedDungeons.includes(run.level)){
       progress[run.biomeId].clearedDungeons.push(run.level);
     }
-    localStorage.setItem(KEY, JSON.stringify(progress));
-    // TODO : ajouter les items au chest et les ressources au wallet quand ces systèmes seront implémentés
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+
+    // 2. Pousser les items du loot dans le chest
+    // Format identique à ce que chest-data.js consomme :
+    // tableau d'items { uid, itemId, rarity, stats, tier, biome, isBossDrop, droppedAt }
+    if(run.finalLoot && Array.isArray(run.finalLoot.items) && run.finalLoot.items.length > 0){
+      const CHEST_KEY = 'rh_chest_items';
+      const chestRaw = localStorage.getItem(CHEST_KEY);
+      let chest = chestRaw ? JSON.parse(chestRaw) : [];
+      if(!Array.isArray(chest)) chest = [];
+      const now = Date.now();
+      run.finalLoot.items.forEach((item, idx) => {
+        chest.push({
+          uid: `${now.toString(36)}_${idx}_${Math.random().toString(36).slice(2, 7)}`,
+          itemId: item.itemId,
+          rarity: item.rarity,
+          stats: { ...(item.stats || {}) },
+          tier: run.level || 1,
+          biome: run.biomeId || 'unknown',
+          isBossDrop: !!item.isBossDrop,
+          droppedAt: now,
+        });
+      });
+      localStorage.setItem(CHEST_KEY, JSON.stringify(chest));
+    }
+
+    // 3. Crédit ressources au wallet
+    if(run.finalLoot && run.finalLoot.resource){
+      const WALLET_KEY = 'rh_player_wallet';
+      const walletRaw = localStorage.getItem(WALLET_KEY);
+      const wallet = walletRaw ? JSON.parse(walletRaw) : {};
+      const resId = run.finalLoot.resource.id;
+      wallet[resId] = (wallet[resId] || 0) + (run.finalLoot.resource.amount || 0);
+      localStorage.setItem(WALLET_KEY, JSON.stringify(wallet));
+    }
   } catch(e){
     console.error('Failed to save dungeon progress:', e);
   }
