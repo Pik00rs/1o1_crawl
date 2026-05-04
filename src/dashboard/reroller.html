@@ -2,167 +2,1099 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>REROLLER — Reactor Hollow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Rerolleur — REACTOR HOLLOW</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #ffb347;
+    --r-common-bright: #cccccc;
+    --r-magic-bright: #6aaaff;
+    --r-rare-bright: #ffcc44;
+    --r-epic-bright: #cc44ff;
+    --r-legendary-bright: #ff8800;
+    --r-set-bright: #66ff66;
+    --good: #5fff8c;
+    --bad: #ff5959;
+  }
+  * { box-sizing: border-box; }
   html, body {
-    background: #0a0510;
-    color: #d8c8a0;
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
     font-family: 'Courier New', monospace;
-    font-size: 14px;
     min-height: 100vh;
     overflow-x: hidden;
-    -webkit-tap-highlight-color: transparent;
   }
-  body {
-    padding: 20px;
-    background: radial-gradient(ellipse at top, #1a0820 0%, #0a0510 70%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+  a { color: inherit; text-decoration: none; }
 
   .header {
-    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border-2);
     padding: 12px 16px;
-    border: 1px solid #3a2840;
-    background: #14081e;
-    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
     gap: 12px;
-  }
-  .header-title {
-    font-size: 16px;
-    color: #c040ff;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(192,64,255,0.5);
-  }
-  .header-sub {
-    font-size: 10px;
-    color: #6a5878;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    position: sticky; top: 0; z-index: 50;
   }
   .back-btn {
-    background: transparent;
-    border: 1px solid #5a4828;
-    color: #d8c8a0;
-    padding: 10px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 12px;
+    color: var(--text-0);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
-    letter-spacing: 1px;
-    text-decoration: none;
-    transition: all 0.15s;
-    min-height: 40px;
-    display: inline-flex;
-    align-items: center;
   }
-  .back-btn:active { border-color: #ffd060; color: #ffd060; transform: scale(0.96); }
-  @media (hover: hover) {
-    .back-btn:hover { border-color: #ffd060; color: #ffd060; }
+  .back-btn:hover { background: var(--bg-3); }
+  .title {
+    font-size: 16px; letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .title .acc { color: var(--accent); }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px;
   }
 
-  .placeholder {
+  /* === REROLLER PANEL (TOP) === */
+  .reroller-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    margin-bottom: 16px;
+    padding: 14px;
+  }
+  .reroller-panel h3 {
+    margin: 0 0 10px 0;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-1);
+    padding-bottom: 6px;
+  }
+  .reroller-empty {
+    text-align: center;
+    color: var(--text-2);
+    padding: 30px 16px;
+    font-size: 12px;
+    font-style: italic;
+  }
+  .reroller-content {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+  }
+  .reroller-item-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 110px;
+    flex-shrink: 0;
+  }
+  .reroller-item-icon {
+    width: 90px; height: 90px;
+    background: var(--bg-2);
+    border: 2px solid var(--border-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 50px;
+    flex-shrink: 0;
+  }
+  .reroller-item-name {
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .reroller-item-meta {
+    font-size: 9px;
+    color: var(--text-1);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .reroller-essence-tag {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 6px;
+    background: rgba(255, 179, 71, 0.08);
+    border: 1px solid rgba(255, 179, 71, 0.2);
+    font-size: 10px;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+  .essence-icon { font-size: 12px; }
+
+  /* === AFFIX LIST === */
+  .affix-list {
+    display: flex; flex-direction: column;
+    gap: 6px;
     flex: 1;
+    min-width: 0;
+  }
+  .affix-row {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .affix-row:hover {
+    background: var(--bg-3);
+    border-color: var(--border-2);
+  }
+  .affix-row.selected {
+    border-color: var(--accent);
+    background: rgba(255, 179, 71, 0.08);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .affix-row.implicit-row {
+    border-left: 3px solid #aae;
+    cursor: default;
+    opacity: 0.7;
+  }
+  .affix-row.implicit-row:hover {
+    background: var(--bg-2);
+    border-color: var(--border-1);
+    border-left-color: #aae;
+  }
+  .affix-row.base-row {
+    border-left: 3px solid #fff;
+    cursor: default;
+    opacity: 0.7;
+  }
+  .affix-row.base-row:hover {
+    background: var(--bg-2);
+    border-color: var(--border-1);
+    border-left-color: #fff;
+  }
+  .affix-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .affix-label {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .affix-label.prefix { color: var(--r-magic-bright); }
+  .affix-label.suffix { color: var(--r-epic-bright); }
+  .affix-label.base { color: #fff; }
+  .affix-label.implicit { color: #aae; }
+  .affix-name {
+    font-size: 9px;
+    color: var(--text-2);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .affix-name .tag {
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .affix-quality-bar {
+    width: 60px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .affix-quality-bar > div {
+    height: 100%;
+    transition: width 0.3s;
+  }
+  .affix-quality-pct {
+    font-size: 10px;
+    color: var(--text-1);
+    width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* === REROLL ACTION BAR === */
+  .reroll-action {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-1);
+  }
+  .reroll-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: var(--text-1);
+  }
+  .reroll-info b { color: var(--accent); }
+  .reroll-cost-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+  }
+  .reroll-cost-display.affordable { border-color: var(--good); color: var(--good); }
+  .reroll-cost-display.broke { border-color: var(--bad); color: var(--bad); }
+  .reroll-btn {
+    width: 100%;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #000;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .reroll-btn:hover:not(:disabled) {
+    background: #ffd790;
+  }
+  .reroll-btn:disabled {
+    background: var(--bg-2);
+    color: var(--text-2);
+    border-color: var(--border-2);
+    cursor: not-allowed;
+  }
+
+  /* === WALLET DISPLAY === */
+  .wallet {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    font-size: 11px;
+  }
+  .wallet-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-2);
+    text-transform: uppercase;
+  }
+  .wallet-item {
+    display: flex; align-items: center; gap: 4px;
+    color: var(--text-1);
+  }
+  .wallet-item .ico { font-size: 14px; }
+  .wallet-item b { color: var(--text-0); }
+
+  /* === FILTERS (réutilise le style chest) === */
+  .filter-section {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    margin-bottom: 10px;
+    padding: 8px 10px;
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 3px 0;
+    align-items: center;
+    overflow: hidden;
+  }
+  .filter-row + .filter-row { margin-top: 4px; }
+  .filter-label {
+    font-size: 8px; letter-spacing: 1.5px;
+    color: var(--text-2); text-transform: uppercase;
+    flex-shrink: 0;
+    width: 38px;
+  }
+  .slot-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.1s;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    font-size: 14px;
+    padding: 0;
   }
-  .placeholder-card {
-    background: #14081e;
-    border: 1px solid #3a2840;
-    padding: 40px 32px;
-    text-align: center;
-    max-width: 420px;
+  .slot-btn:hover { background: var(--bg-3); border-color: var(--border-2); }
+  .slot-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .slot-btn.all { font-size: 12px; font-weight: bold; }
+  .rarity-btn {
+    width: 28px; height: 28px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.1s;
+    padding: 0;
+  }
+  .rarity-btn.r-all {
+    background: linear-gradient(135deg,
+      var(--r-common-bright) 0%, var(--r-common-bright) 20%,
+      var(--r-magic-bright) 20%, var(--r-magic-bright) 40%,
+      var(--r-rare-bright) 40%, var(--r-rare-bright) 60%,
+      var(--r-epic-bright) 60%, var(--r-epic-bright) 80%,
+      var(--r-legendary-bright) 80%);
+  }
+  .rarity-btn.r-common    { background: var(--r-common-bright); }
+  .rarity-btn.r-magic     { background: var(--r-magic-bright); }
+  .rarity-btn.r-rare      { background: var(--r-rare-bright); }
+  .rarity-btn.r-epic      { background: var(--r-epic-bright); }
+  .rarity-btn.r-legendary { background: var(--r-legendary-bright); }
+  .rarity-btn.active {
+    border-color: var(--text-0);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .ilvl-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 1;
+    flex-grow: 0;
+    flex-basis: 26px;
+    transition: all 0.1s;
+    width: 26px;
+    height: 26px;
+    min-width: 0;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ilvl-btn:hover { background: var(--bg-3); border-color: var(--border-2); }
+  .ilvl-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .ilvl-btn.all { font-size: 11px; }
+
+  /* === GRID === */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .item-cell {
+    aspect-ratio: 1;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    cursor: pointer;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.1s;
     overflow: hidden;
+    color: inherit;
+    font-family: inherit;
   }
-  .placeholder-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(circle at top, rgba(192,64,255,0.5), transparent 70%);
-    opacity: 0.15;
+  .item-cell:hover { transform: scale(1.05); z-index: 2; }
+  .item-cell.selected {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px var(--accent), 0 0 12px rgba(255, 179, 71, 0.6);
+    z-index: 3;
+  }
+  .item-cell.empty {
+    cursor: default;
+    background: var(--bg-1);
+    border-color: var(--border-1);
+    opacity: 0.3;
     pointer-events: none;
   }
-  .placeholder-card::after {
-    content: '';
-    position: absolute; top: 0; left: 0;
-    width: 14px; height: 14px;
-    border-top: 2px solid #c040ff;
-    border-left: 2px solid #c040ff;
+  .item-cell.r-common    { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); border-color: #444; }
+  .item-cell.r-magic     { background: linear-gradient(135deg, #1a3a6a 0%, #0a2040 100%); border-color: var(--r-magic-bright); }
+  .item-cell.r-rare      { background: linear-gradient(135deg, #6a4a0a 0%, #3a2800 100%); border-color: var(--r-rare-bright); }
+  .item-cell.r-epic      { background: linear-gradient(135deg, #4a1a6a 0%, #2a0a3a 100%); border-color: var(--r-epic-bright); }
+  .item-cell.r-legendary { background: linear-gradient(135deg, #8a3a00 0%, #4a1a00 100%); border-color: var(--r-legendary-bright); }
+  .item-icon {
+    font-size: 28px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
   }
-  .placeholder-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 0 12px rgba(192,64,255,0.5));
-  }
-  .placeholder-title {
-    font-size: 24px;
-    color: #c040ff;
-    letter-spacing: 3px;
-    text-shadow: 0 0 8px rgba(192,64,255,0.5);
-    margin-bottom: 8px;
-  }
-  .placeholder-sub {
-    font-size: 11px;
-    color: #8a7898;
-    letter-spacing: 1px;
-    margin-bottom: 24px;
-  }
-  .placeholder-msg {
-    font-size: 13px;
-    color: #d8c8a0;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-  .placeholder-status {
-    font-size: 10px;
-    color: #6a5878;
-    letter-spacing: 2px;
-    padding: 8px 14px;
-    border: 1px dashed #3a2840;
-    display: inline-block;
-  }
-  .placeholder-status .v {
-    color: #c040ff;
+  .item-cell .ilvl-badge {
+    position: absolute;
+    bottom: 2px; left: 0; right: 0;
+    text-align: center;
+    font-size: 9px;
     font-weight: bold;
+    color: #fff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 3px rgba(0,0,0,1);
+    line-height: 1;
   }
 
-  @media (max-width: 600px) {
-    body { padding: 12px; }
-    .header { padding: 10px 12px; }
-    .header-title { font-size: 14px; }
-    .placeholder-card { padding: 28px 20px; }
-    .placeholder-icon { font-size: 48px; }
-    .placeholder-title { font-size: 20px; letter-spacing: 2px; }
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 10px;
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+  }
+  .pag-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    padding: 5px 12px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .pag-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .pag-info { font-size: 11px; color: var(--text-1); }
+
+  /* === FLASH ANIMATION === */
+  @keyframes flash-good {
+    0% { background: rgba(95, 255, 140, 0.4); }
+    100% { background: transparent; }
+  }
+  @keyframes flash-meh {
+    0% { background: rgba(255, 89, 89, 0.3); }
+    100% { background: transparent; }
+  }
+  .affix-row.flash-good { animation: flash-good 0.8s ease-out; }
+  .affix-row.flash-meh { animation: flash-meh 0.8s ease-out; }
+
+  /* === DEV TOOLS === */
+  .dev-tools {
+    background: rgba(255, 0, 100, 0.05);
+    border: 1px dashed rgba(255, 0, 100, 0.3);
+    padding: 6px 10px;
+    margin-top: 12px;
+    font-size: 9px;
+    color: rgba(255, 100, 150, 0.8);
+  }
+  .dev-tools button {
+    background: rgba(255, 0, 100, 0.1);
+    border: 1px solid rgba(255, 0, 100, 0.3);
+    color: rgba(255, 100, 150, 1);
+    padding: 3px 6px;
+    font-family: inherit;
+    font-size: 9px;
+    cursor: pointer;
+    margin-right: 4px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  /* === MOBILE === */
+  @media (max-width: 700px) {
+    .container { padding: 8px; }
+    .reroller-content { grid-template-columns: 1fr; }
+    .reroller-item-card { flex-direction: row; width: 100%; align-items: center; }
+    .reroller-item-icon { width: 60px; height: 60px; font-size: 32px; }
+    .item-icon { font-size: 24px; }
+    .item-cell .ilvl-badge { font-size: 8px; }
+    .filter-label { width: 32px; font-size: 7px; }
+    .slot-btn, .rarity-btn { width: 24px; height: 24px; }
+    .ilvl-btn { width: 22px; height: 22px; flex-basis: 22px; font-size: 9px; }
+    .title { font-size: 13px; }
+  }
+  @media (max-width: 480px) {
+    .grid { gap: 2px; }
+    .item-icon { font-size: 20px; }
+    .filter-label { width: 26px; font-size: 6px; }
+    .slot-btn, .rarity-btn { width: 22px; height: 22px; font-size: 12px; }
+    .ilvl-btn { width: 20px; height: 20px; flex-basis: 20px; font-size: 8px; }
+    .reroller-item-icon { width: 50px; height: 50px; font-size: 28px; }
+    .affix-row { padding: 6px 8px; gap: 6px; }
+    .affix-quality-bar { width: 40px; }
+    .affix-quality-pct { width: 30px; font-size: 9px; }
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <div class="header-title">🎲 REROLLER</div>
-    <div class="header-sub">Reroll des stats d'items</div>
-  </div>
-  <a href="../../index.html" class="back-btn">◂ HUB</a>
-</div>
+<header class="header">
+  <a href="../../index.html" class="back-btn">← RETOUR</a>
+  <div class="title"><span class="acc">⟳</span> REROLLEUR</div>
+</header>
 
-<div class="placeholder">
-  <div class="placeholder-card">
-    <div class="placeholder-icon">🎲</div>
-    <div class="placeholder-title">REROLLER</div>
-    <div class="placeholder-sub">Reroll des stats d'items</div>
-    <div class="placeholder-msg">Consomme des charges de reroll pour relancer les stats d'un item. Plus la rareté de l'item est haute, plus le coût est élevé. Les charges drop dans les donjons high-tier.</div>
-    <div class="placeholder-status">STATUS · <span class="v">EN CONSTRUCTION</span></div>
+<main class="container">
+
+  <!-- WALLET -->
+  <section class="wallet" id="wallet"></section>
+
+  <!-- REROLLER PANEL -->
+  <section class="reroller-panel">
+    <h3>▸ ITEM SÉLECTIONNÉ</h3>
+    <div id="reroller-body">
+      <div class="reroller-empty">
+        Sélectionne un item dans le coffre ci-dessous pour le re-roller
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTERS -->
+  <section class="filter-section">
+    <div class="filter-row" id="filter-slot"></div>
+    <div class="filter-row" id="filter-rarity"></div>
+    <div class="filter-row" id="filter-ilvl"></div>
+  </section>
+
+  <!-- GRID -->
+  <section class="grid" id="grid"></section>
+
+  <!-- PAGINATION -->
+  <div class="pagination">
+    <button class="pag-btn" id="pag-prev">◂</button>
+    <div class="pag-info" id="pag-info">PAGE 1 / 1</div>
+    <button class="pag-btn" id="pag-next">▸</button>
   </div>
-</div>
+
+  <!-- DEV -->
+  <div class="dev-tools">
+    [DEV] :
+    <button id="dev-add-essences">+50 toutes essences</button>
+    <button id="dev-clear-wallet">Vider wallet</button>
+  </div>
+
+</main>
+
+<script type="module">
+import {
+  loadCatalog, getItem, getAllItems, getAllAffixes,
+  composeItemName, ilvlToRoman
+} from './items-catalog.js';
+
+// === STATE ===
+const STATE = {
+  chest: [],
+  wallet: {},
+  selectedItemId: null,        // instanceId de l'item dans le rerolleur
+  selectedAffixIndex: null,    // index de l'affixe à reroll
+  filter: { slot: 'all', rarity: 'all', ilvl: 'all' },
+  page: 1,
+  itemsPerPage: 40,
+};
+
+const STORAGE_CHEST = 'rh_player_chest';
+const STORAGE_WALLET = 'rh_player_wallet';
+
+const SLOT_LABELS = {
+  all: 'Tous', mainhand: 'Arme', offhand: 'Off-hand',
+  head: 'Tête', chest: 'Torse', legs: 'Jambes',
+  gloves: 'Mains', boots: 'Pieds', amulet: 'Amulette', ring: 'Anneau',
+};
+const SLOT_ICONS = {
+  mainhand: '⚔️', offhand: '🛡️', head: '🪖', chest: '🦺',
+  legs: '👖', gloves: '🧤', boots: '👢', amulet: '📿', ring: '💍',
+};
+const RARITIES = ['common', 'magic', 'rare', 'epic', 'legendary'];
+const RARITY_LABELS = {
+  all: 'Toutes', common: 'Commun', magic: 'Magique',
+  rare: 'Rare', epic: 'Épique', legendary: 'Légendaire',
+};
+
+// Mapping biome → resource (lu depuis biomes.json mais inline pour l'instant)
+const BIOME_RESOURCES = {
+  inferno:  { id: 'ashEmber',         name: 'Cendres ardentes',    icon: '🔥', color: '#ff6644' },
+  cryo:     { id: 'frostShard',       name: 'Éclats glacés',       icon: '❄️', color: '#66bbff' },
+  toxic:    { id: 'acidBile',         name: 'Bave acide',          icon: '☠️', color: '#88dd44' },
+  voidnet:  { id: 'digitalFragment',  name: 'Fragments numériques',icon: '⚡', color: '#aa66ff' },
+  crimson:  { id: 'coagulatedBlood',  name: 'Sang coagulé',        icon: '🩸', color: '#ff4488' },
+};
+
+// Mapping tag d'affixe → biome (pour déterminer l'essence à payer)
+const TAG_TO_BIOME = {
+  Fire: 'inferno', Stun: 'inferno', Rage: 'inferno',
+  Ice: 'cryo', Slow: 'cryo', Shield: 'cryo',
+  Poison: 'toxic', Bleed: 'toxic', Lifesteal: 'toxic',
+  Shock: 'voidnet', Crit: 'voidnet', Echo: 'voidnet',
+  Execute: 'crimson',
+};
+
+// === BOOT ===
+async function boot(){
+  await loadCatalog();
+  loadFromStorage();
+  buildFilterButtons();
+  attachHandlers();
+  render();
+}
+
+function loadFromStorage(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]');
+    STATE.chest = Array.isArray(raw) && raw.every(i => i?.instanceId && i?.itemId) ? raw : [];
+  } catch { STATE.chest = []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_WALLET) || '{}');
+    STATE.wallet = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+  } catch { STATE.wallet = {}; }
+}
+function saveChest(){ localStorage.setItem(STORAGE_CHEST, JSON.stringify(STATE.chest)); }
+function saveWallet(){ localStorage.setItem(STORAGE_WALLET, JSON.stringify(STATE.wallet)); }
+
+// === RESOURCE LOOKUP ===
+// Pour un item donné, retourne { biomeId, resource } à utiliser pour le coût.
+// Logique : 1) regarde l'item.biomeId du roll, 2) sinon utilise le biome favori du tag.
+function getItemBiome(item, affix){
+  // Si on regarde l'affixe spécifique : utilise son tag d'abord
+  if(affix && affix.id){
+    const affixDef = getAllAffixes();
+    const def = affixDef.prefixes[affix.id] || affixDef.suffixes[affix.id];
+    if(def && def.tags){
+      for(const tag of def.tags){
+        if(TAG_TO_BIOME[tag]) return TAG_TO_BIOME[tag];
+      }
+    }
+  }
+  // Sinon biome de l'item
+  if(item && item.biomeId && BIOME_RESOURCES[item.biomeId]) return item.biomeId;
+  // Sinon : check les tags de l'item entier
+  const tpl = item ? getItem(item.itemId) : null;
+  if(tpl && tpl.tags){
+    for(const tag of tpl.tags){
+      if(TAG_TO_BIOME[tag]) return TAG_TO_BIOME[tag];
+    }
+  }
+  // Default : inferno (cendres = essence générique)
+  return 'inferno';
+}
+
+// === COST CALCULATION (exponentiel par iLvl) ===
+function calcRerollCost(item, affix){
+  const ilvl = item.ilvl || 1;
+  const base = 5;
+  const cost = Math.round(base * Math.pow(1.5, ilvl - 1));
+  return cost;
+}
+
+// === FILTER BUILDERS ===
+function buildFilterButtons(){
+  const slotRow = document.getElementById('filter-slot');
+  slotRow.innerHTML = '<span class="filter-label">SLOT</span>';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'slot-btn all active';
+  allBtn.textContent = 'A';
+  allBtn.dataset.slot = 'all';
+  allBtn.addEventListener('click', () => onSlotFilterClick('all'));
+  slotRow.appendChild(allBtn);
+  ['mainhand', 'offhand', 'head', 'chest', 'legs', 'gloves', 'boots', 'amulet', 'ring'].forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'slot-btn';
+    btn.innerHTML = SLOT_ICONS[s];
+    btn.dataset.slot = s;
+    btn.title = SLOT_LABELS[s];
+    btn.addEventListener('click', () => onSlotFilterClick(s));
+    slotRow.appendChild(btn);
+  });
+
+  const rarRow = document.getElementById('filter-rarity');
+  rarRow.innerHTML = '<span class="filter-label">RARETÉ</span>';
+  const rarAll = document.createElement('button');
+  rarAll.className = 'rarity-btn r-all active';
+  rarAll.dataset.rarity = 'all';
+  rarAll.title = 'Toutes';
+  rarAll.addEventListener('click', () => onRarityFilterClick('all'));
+  rarRow.appendChild(rarAll);
+  RARITIES.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = `rarity-btn r-${r}`;
+    btn.dataset.rarity = r;
+    btn.title = RARITY_LABELS[r];
+    btn.addEventListener('click', () => onRarityFilterClick(r));
+    rarRow.appendChild(btn);
+  });
+
+  const ilvlRow = document.getElementById('filter-ilvl');
+  ilvlRow.innerHTML = '<span class="filter-label">ILVL</span>';
+  const ilvlAll = document.createElement('button');
+  ilvlAll.className = 'ilvl-btn all active';
+  ilvlAll.textContent = 'A';
+  ilvlAll.dataset.ilvl = 'all';
+  ilvlAll.addEventListener('click', () => onIlvlFilterClick('all'));
+  ilvlRow.appendChild(ilvlAll);
+  for(let lv = 1; lv <= 10; lv++){
+    const btn = document.createElement('button');
+    btn.className = 'ilvl-btn';
+    btn.textContent = ilvlToRoman(lv);
+    btn.dataset.ilvl = lv;
+    btn.addEventListener('click', () => onIlvlFilterClick(lv));
+    ilvlRow.appendChild(btn);
+  }
+}
+
+function onSlotFilterClick(s){
+  STATE.filter.slot = s; STATE.page = 1;
+  document.querySelectorAll('#filter-slot .slot-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.slot === String(s)));
+  render();
+}
+function onRarityFilterClick(r){
+  STATE.filter.rarity = r; STATE.page = 1;
+  document.querySelectorAll('#filter-rarity .rarity-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.rarity === String(r)));
+  render();
+}
+function onIlvlFilterClick(lv){
+  STATE.filter.ilvl = lv; STATE.page = 1;
+  document.querySelectorAll('#filter-ilvl .ilvl-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.ilvl === String(lv)));
+  render();
+}
+
+// === HANDLERS ===
+function attachHandlers(){
+  document.getElementById('pag-prev').addEventListener('click', () => {
+    if(STATE.page > 1){ STATE.page--; render(); }
+  });
+  document.getElementById('pag-next').addEventListener('click', () => {
+    const totalPages = Math.max(1, Math.ceil(getFilteredItems().length / STATE.itemsPerPage));
+    if(STATE.page < totalPages){ STATE.page++; render(); }
+  });
+  // DEV
+  document.getElementById('dev-add-essences').addEventListener('click', () => {
+    Object.values(BIOME_RESOURCES).forEach(r => {
+      STATE.wallet[r.id] = (STATE.wallet[r.id] || 0) + 50;
+    });
+    saveWallet(); renderWallet();
+  });
+  document.getElementById('dev-clear-wallet').addEventListener('click', () => {
+    if(!confirm('Vider toutes les essences du wallet ?')) return;
+    STATE.wallet = {}; saveWallet(); renderWallet(); render();
+  });
+}
+
+// === FILTERING ===
+function getFilteredItems(){
+  return STATE.chest.filter(item => {
+    const tpl = getItem(item.itemId);
+    if(!tpl) return false;
+    if(STATE.filter.slot !== 'all' && tpl.slot !== STATE.filter.slot) return false;
+    if(STATE.filter.rarity !== 'all' && item.rarity !== STATE.filter.rarity) return false;
+    if(STATE.filter.ilvl !== 'all' && item.ilvl !== Number(STATE.filter.ilvl)) return false;
+    return true;
+  });
+}
+
+// === RENDER ===
+function render(){
+  renderWallet();
+  renderReroller();
+  renderGrid();
+  renderPagination();
+}
+
+function renderWallet(){
+  const el = document.getElementById('wallet');
+  el.innerHTML = '<span class="wallet-label">▸ ESSENCES</span>';
+  Object.values(BIOME_RESOURCES).forEach(r => {
+    const amount = STATE.wallet[r.id] || 0;
+    const item = document.createElement('div');
+    item.className = 'wallet-item';
+    item.innerHTML = `<span class="ico" style="color:${r.color}">${r.icon}</span> <b>${amount}</b>`;
+    item.title = r.name;
+    el.appendChild(item);
+  });
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  const filtered = getFilteredItems();
+  const start = (STATE.page - 1) * STATE.itemsPerPage;
+  const pageItems = filtered.slice(start, start + STATE.itemsPerPage);
+  grid.innerHTML = '';
+  if(filtered.length === 0){
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-2); padding:30px; font-size:12px;">Aucun item dans le coffre</div>';
+    return;
+  }
+  pageItems.forEach(item => {
+    const tpl = getItem(item.itemId);
+    if(!tpl) return;
+    const cell = document.createElement('button');
+    cell.className = 'item-cell r-' + item.rarity;
+    if(STATE.selectedItemId === item.instanceId) cell.classList.add('selected');
+    cell.title = composeItemName(item);
+    cell.innerHTML = `
+      <span class="item-icon">${SLOT_ICONS[tpl.slot] || tpl.icon || '?'}</span>
+      <span class="ilvl-badge">${ilvlToRoman(item.ilvl)}</span>
+    `;
+    cell.addEventListener('click', () => {
+      // Single-select : remplace l'item dans le rerolleur
+      if(STATE.selectedItemId === item.instanceId){
+        // Déselect
+        STATE.selectedItemId = null;
+        STATE.selectedAffixIndex = null;
+      } else {
+        STATE.selectedItemId = item.instanceId;
+        STATE.selectedAffixIndex = null; // reset affixe sélectionné quand on change d'item
+      }
+      render();
+    });
+    grid.appendChild(cell);
+  });
+  for(let i = pageItems.length; i < STATE.itemsPerPage; i++){
+    const cell = document.createElement('div');
+    cell.className = 'item-cell empty';
+    grid.appendChild(cell);
+  }
+}
+
+function renderPagination(){
+  const filtered = getFilteredItems();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / STATE.itemsPerPage));
+  if(STATE.page > totalPages) STATE.page = totalPages;
+  document.getElementById('pag-info').textContent = `PAGE ${STATE.page} / ${totalPages}`;
+  document.getElementById('pag-prev').disabled = STATE.page <= 1;
+  document.getElementById('pag-next').disabled = STATE.page >= totalPages;
+}
+
+// === REROLLER PANEL ===
+function renderReroller(){
+  const body = document.getElementById('reroller-body');
+  if(!STATE.selectedItemId){
+    body.innerHTML = `
+      <div class="reroller-empty">
+        Sélectionne un item dans le coffre ci-dessous pour le re-roller
+      </div>
+    `;
+    return;
+  }
+  const item = STATE.chest.find(i => i.instanceId === STATE.selectedItemId);
+  if(!item){
+    STATE.selectedItemId = null;
+    STATE.selectedAffixIndex = null;
+    return renderReroller();
+  }
+  const tpl = getItem(item.itemId);
+  if(!tpl){
+    body.innerHTML = `<div class="reroller-empty">Item invalide</div>`;
+    return;
+  }
+
+  const affixes = item.affixes || [];
+
+  // Card item à gauche
+  const itemCard = `
+    <div class="reroller-item-card">
+      <div class="reroller-item-icon" style="border-color: var(--r-${item.rarity}-bright);">
+        ${tpl.icon || '?'}
+      </div>
+      <div class="reroller-item-name" style="color: var(--r-${item.rarity}-bright);">
+        ${composeItemName(item)}
+      </div>
+      <div class="reroller-item-meta">
+        iLvl ${ilvlToRoman(item.ilvl)} · ${RARITY_LABELS[item.rarity] || item.rarity}
+      </div>
+    </div>
+  `;
+
+  // Affix list à droite
+  let affixListHtml = '';
+  // Stats de base (pour weapons) — non rerollable
+  if(tpl.damage){
+    const ilvlMult = ilvlToMult(item.ilvl);
+    affixListHtml += `
+      <div class="affix-row base-row">
+        <div class="affix-info">
+          <div class="affix-label base">DGT ${tpl.damageType?.toUpperCase() || ''} : ${Math.round(tpl.damage[0]*ilvlMult)}-${Math.round(tpl.damage[1]*ilvlMult)}</div>
+          <div class="affix-name">stat de base · non rerollable</div>
+        </div>
+      </div>
+    `;
+  }
+  // Implicit (pour armures) — non rerollable
+  if(item.implicit){
+    const lbl = (item.implicit.label || '').replace('X', item.implicit.value);
+    affixListHtml += `
+      <div class="affix-row implicit-row">
+        <div class="affix-info">
+          <div class="affix-label implicit">◆ ${lbl}</div>
+          <div class="affix-name">implicite · non rerollable</div>
+        </div>
+      </div>
+    `;
+  }
+  // Affixes (rerollables)
+  affixes.forEach((a, idx) => {
+    const isSelected = STATE.selectedAffixIndex === idx;
+    const lbl = (a.label || '').replace('X', a.value);
+    // Quality % par rapport au valueRange max scalé
+    const def = getAllAffixes()[a.type === 'prefix' ? 'prefixes' : 'suffixes'][a.id];
+    let qualityPct = 50;
+    if(def){
+      const ilvlMult = ilvlToMult(item.ilvl);
+      const minPossible = Math.max(1, Math.round(def.valueRange[0] * ilvlMult * 0.5));
+      const maxPossible = Math.round(def.valueRange[1] * ilvlMult * 2.0); // tier mult max
+      qualityPct = Math.round(((a.value - minPossible) / Math.max(1, (maxPossible - minPossible))) * 100);
+      qualityPct = Math.max(0, Math.min(100, qualityPct));
+    }
+    const qualColor = qualityPct >= 85 ? 'var(--good)' : qualityPct >= 60 ? '#fff200' : qualityPct >= 30 ? '#ffaa44' : 'var(--bad)';
+    affixListHtml += `
+      <button class="affix-row ${isSelected ? 'selected' : ''}" data-affix-idx="${idx}">
+        <div class="affix-info">
+          <div class="affix-label ${a.type}">${a.type === 'prefix' ? '+' : '+'} ${lbl}</div>
+          <div class="affix-name"><span class="tag">${a.type === 'prefix' ? 'P' : 'S'}</span> ${a.name || a.id}</div>
+        </div>
+        <div class="affix-quality-bar">
+          <div style="width: ${qualityPct}%; background: ${qualColor};"></div>
+        </div>
+        <div class="affix-quality-pct" style="color: ${qualColor}">${qualityPct}%</div>
+      </button>
+    `;
+  });
+
+  if(affixes.length === 0){
+    affixListHtml += `
+      <div style="padding: 20px; text-align: center; color: var(--text-2); font-size: 11px; font-style: italic;">
+        Cet item n'a pas d'affixes à reroll<br>
+        <span style="font-size: 10px;">(Items communs ont 0 affixes)</span>
+      </div>
+    `;
+  }
+
+  // Action bar
+  let actionHtml = '';
+  if(STATE.selectedAffixIndex !== null && affixes[STATE.selectedAffixIndex]){
+    const selectedAffix = affixes[STATE.selectedAffixIndex];
+    const biomeId = getItemBiome(item, selectedAffix);
+    const resource = BIOME_RESOURCES[biomeId];
+    const cost = calcRerollCost(item, selectedAffix);
+    const owned = STATE.wallet[resource.id] || 0;
+    const affordable = owned >= cost;
+    actionHtml = `
+      <div class="reroll-action">
+        <div class="reroll-info">
+          <span>Reroll <b>${selectedAffix.name || selectedAffix.id}</b></span>
+          <div class="reroll-cost-display ${affordable ? 'affordable' : 'broke'}">
+            <span style="font-size:12px;">${resource.icon}</span>
+            <b>${cost}</b> / ${owned}
+          </div>
+        </div>
+        <button class="reroll-btn" id="btn-reroll" ${affordable ? '' : 'disabled'}>
+          ${affordable ? `⟳ REROLL (${cost} ${resource.name})` : `❌ ESSENCES INSUFFISANTES`}
+        </button>
+      </div>
+    `;
+  } else if(affixes.length > 0){
+    actionHtml = `
+      <div class="reroll-action">
+        <div class="reroll-info" style="justify-content: center; color: var(--text-2);">
+          Sélectionne un affixe ci-dessus pour le re-roller
+        </div>
+      </div>
+    `;
+  }
+
+  body.innerHTML = `
+    <div class="reroller-content">
+      ${itemCard}
+      <div class="affix-list">
+        ${affixListHtml}
+      </div>
+    </div>
+    ${actionHtml}
+  `;
+
+  // Attach affix click handlers
+  body.querySelectorAll('.affix-row[data-affix-idx]').forEach(row => {
+    row.addEventListener('click', () => {
+      const idx = Number(row.dataset.affixIdx);
+      STATE.selectedAffixIndex = STATE.selectedAffixIndex === idx ? null : idx;
+      renderReroller();
+    });
+  });
+
+  const rerollBtn = document.getElementById('btn-reroll');
+  if(rerollBtn) rerollBtn.addEventListener('click', () => doReroll());
+}
+
+function ilvlToMult(ilvl){
+  const ILVL_MULT = {
+    1: 0.50, 2: 0.65, 3: 0.80, 4: 0.95, 5: 1.00,
+    6: 1.15, 7: 1.30, 8: 1.50, 9: 1.75, 10: 2.10,
+  };
+  return ILVL_MULT[ilvl] || 1;
+}
+
+// === REROLL EXECUTION ===
+function doReroll(){
+  const item = STATE.chest.find(i => i.instanceId === STATE.selectedItemId);
+  if(!item) return;
+  const affix = item.affixes?.[STATE.selectedAffixIndex];
+  if(!affix) return;
+
+  const biomeId = getItemBiome(item, affix);
+  const resource = BIOME_RESOURCES[biomeId];
+  const cost = calcRerollCost(item, affix);
+  const owned = STATE.wallet[resource.id] || 0;
+  if(owned < cost) return;
+
+  // Roll new value (même formule que rollAffixes dans items-catalog.js)
+  const def = getAllAffixes()[affix.type === 'prefix' ? 'prefixes' : 'suffixes'][affix.id];
+  if(!def){
+    alert('Définition d\'affixe introuvable, reroll annulé');
+    return;
+  }
+  const RARITY_VAL_MULT = {
+    common: [0.5, 0.8], magic: [0.6, 1.0], rare: [0.8, 1.3],
+    epic: [1.0, 1.6], legendary: [1.3, 2.0],
+  };
+  const ilvlMult = ilvlToMult(item.ilvl);
+  const tierMult = RARITY_VAL_MULT[item.rarity] || [0.5, 1.0];
+  const [vMin, vMax] = def.valueRange;
+  const baseVal = Math.floor(Math.random() * (vMax - vMin + 1)) + vMin;
+  const finalVal = Math.max(1, Math.round(baseVal * ilvlMult * (tierMult[0] + Math.random() * (tierMult[1] - tierMult[0]))));
+
+  const oldValue = affix.value;
+  affix.value = finalVal;
+
+  // Pay
+  STATE.wallet[resource.id] = owned - cost;
+
+  saveChest();
+  saveWallet();
+
+  // Re-render avec flash
+  renderReroller();
+  renderWallet();
+  renderGrid();
+
+  // Flash animation
+  setTimeout(() => {
+    const rows = document.querySelectorAll('.affix-row[data-affix-idx]');
+    const flashRow = rows[STATE.selectedAffixIndex];
+    if(flashRow){
+      const goodRoll = finalVal > oldValue;
+      flashRow.classList.add(goodRoll ? 'flash-good' : 'flash-meh');
+      setTimeout(() => flashRow.classList.remove('flash-good', 'flash-meh'), 800);
+    }
+  }, 50);
+}
+
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#ff5959;font-family:monospace;">Erreur de chargement: ${e.message}</div>`;
+});
+</script>
 
 </body>
 </html>
