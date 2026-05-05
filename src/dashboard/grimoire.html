@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Grimoire — REACTOR HOLLOW</title>
+<style>
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #ffb347;
+    --r-magic-bright: #6aaaff;
+    --r-epic-bright: #cc44ff;
+    --good: #5fff8c;
+    --bad: #ff5959;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .header {
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border-2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .back-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 12px;
+    color: var(--text-0);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .back-btn:hover { background: var(--bg-3); }
+  .title {
+    font-size: 16px; letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .title .acc { color: var(--accent); }
+  .stats-mini { margin-left: auto; font-size: 11px; color: var(--text-1); }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  /* === GLOBAL CONTROLS === */
+  .controls {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 47px;
+    z-index: 40;
+  }
+  .control-section {
+    margin-bottom: 10px;
+  }
+  .control-section:last-child { margin-bottom: 0; }
+  .control-label {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-2); text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .control-label .val {
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 13px;
+  }
+
+  /* iLvl row */
+  .ilvl-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .ilvl-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    flex: 1 1 32px;
+    min-width: 0;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 0;
+  }
+  .ilvl-btn:hover { background: var(--bg-3); border-color: var(--border-2); }
+  .ilvl-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* Quality slider */
+  .slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .slider-track {
+    flex: 1;
+    position: relative;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  .slider-bg {
+    position: absolute;
+    inset: 0;
+    margin: auto 0;
+    height: 8px;
+    background: linear-gradient(to right,
+      var(--bad) 0%,
+      var(--bad) 30%,
+      #ffaa44 30%,
+      #fff200 60%,
+      var(--good) 85%,
+      var(--good) 100%);
+    border-radius: 0;
+  }
+  input[type="range"].quality-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 36px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    margin: 0;
+  }
+  input[type="range"].quality-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 28px;
+    background: var(--text-0);
+    border: 2px solid var(--accent);
+    cursor: grab;
+    box-shadow: 0 0 8px rgba(255, 179, 71, 0.5);
+  }
+  input[type="range"].quality-slider::-moz-range-thumb {
+    width: 18px;
+    height: 28px;
+    background: var(--text-0);
+    border: 2px solid var(--accent);
+    cursor: grab;
+    box-shadow: 0 0 8px rgba(255, 179, 71, 0.5);
+    border-radius: 0;
+  }
+  .quality-display {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 10px;
+    min-width: 60px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--accent);
+  }
+
+  /* Preset quality buttons */
+  .preset-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .preset-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .preset-btn:hover { background: var(--bg-3); }
+  .preset-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* === FILTERS === */
+  .filters {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .filter-label {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-2); text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .cat-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .cat-btn:hover { background: var(--bg-3); }
+  .cat-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: bold;
+  }
+  .cat-btn.prefix.active { background: var(--r-magic-bright); border-color: var(--r-magic-bright); }
+  .cat-btn.suffix.active { background: var(--r-epic-bright); border-color: var(--r-epic-bright); }
+
+  /* === AFFIX LIST === */
+  .affixes-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 10px;
+  }
+  .affix-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 12px 14px;
+    transition: border-color 0.15s;
+  }
+  .affix-card.prefix { border-left: 3px solid var(--r-magic-bright); }
+  .affix-card.suffix { border-left: 3px solid var(--r-epic-bright); }
+
+  .affix-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    gap: 8px;
+  }
+  .affix-name {
+    font-size: 13px;
+    font-weight: bold;
+  }
+  .affix-name.prefix { color: var(--r-magic-bright); }
+  .affix-name.suffix { color: var(--r-epic-bright); }
+  .affix-type-badge {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-2);
+    flex-shrink: 0;
+  }
+
+  .affix-label {
+    font-size: 11px;
+    color: var(--text-1);
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  /* Live computed value */
+  .affix-value-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 179, 71, 0.05);
+    border: 1px solid rgba(255, 179, 71, 0.3);
+    padding: 8px 10px;
+    margin: 8px 0;
+  }
+  .affix-value-display .lbl {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-1);
+    text-transform: uppercase;
+  }
+  .affix-value-display .val {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--accent);
+  }
+
+  .affix-info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    padding: 2px 0;
+    gap: 8px;
+  }
+  .info-row .lbl { color: var(--text-2); }
+  .info-row .val { color: var(--text-0); text-align: right; }
+  .info-row .val .biome-tag {
+    display: inline-block;
+    padding: 1px 4px;
+    margin-right: 2px;
+    font-size: 9px;
+    border: 1px solid;
+  }
+  .info-row .val .slot-mini {
+    display: inline-block;
+    padding: 1px 4px;
+    margin-right: 2px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    font-size: 9px;
+    color: var(--text-1);
+  }
+  .info-row .val .tag-pill {
+    display: inline-block;
+    padding: 1px 4px;
+    margin-right: 2px;
+    background: rgba(255, 179, 71, 0.1);
+    color: var(--accent);
+    font-size: 9px;
+  }
+
+  /* Range mini-bar visualization */
+  .range-mini {
+    margin-top: 6px;
+    padding: 6px 0;
+    border-top: 1px solid var(--border-1);
+  }
+  .range-mini-label {
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .range-bar {
+    position: relative;
+    height: 6px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    margin: 4px 0;
+  }
+  .range-bar-fill {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, var(--bad), #ffaa44, var(--good));
+    width: 100%;
+    opacity: 0.4;
+  }
+  .range-bar-marker {
+    position: absolute;
+    top: -2px;
+    width: 2px;
+    height: 10px;
+    background: var(--accent);
+    transform: translateX(-1px);
+    z-index: 2;
+  }
+  .range-bounds {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--text-2);
+  }
+
+  /* === MOBILE === */
+  @media (max-width: 600px) {
+    .container { padding: 8px; }
+    .affixes-list { grid-template-columns: 1fr; gap: 6px; }
+    .ilvl-btn { width: 26px; height: 26px; flex-basis: 26px; font-size: 10px; }
+    .title { font-size: 13px; }
+    .stats-mini { display: none; }
+    .quality-display { font-size: 12px; min-width: 50px; padding: 4px 6px; }
+    .affix-value-display .val { font-size: 16px; }
+    .controls { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="../../index.html" class="back-btn">← RETOUR</a>
+  <div class="title"><span class="acc">📜</span> GRIMOIRE</div>
+  <div class="stats-mini" id="stats-mini"></div>
+</header>
+
+<main class="container">
+
+  <!-- CONTROLS : iLvl + Quality slider -->
+  <section class="controls">
+    <div class="control-section">
+      <div class="control-label">
+        <span>▸ NIVEAU D'OBJET (ILVL)</span>
+        <span class="val" id="ilvl-display">V</span>
+      </div>
+      <div class="ilvl-row" id="ilvl-row"></div>
+    </div>
+    <div class="control-section">
+      <div class="control-label">
+        <span>▸ SIMULATEUR DE QUALITÉ</span>
+        <span class="val"><span id="quality-display">50</span>%</span>
+      </div>
+      <div class="slider-container">
+        <div class="slider-track">
+          <div class="slider-bg"></div>
+          <input type="range" class="quality-slider" id="quality-slider" min="0" max="100" value="50" step="1">
+        </div>
+        <div class="quality-display" id="quality-display-side">50%</div>
+      </div>
+      <div class="preset-row">
+        <button class="preset-btn" data-q="0">0% (Min)</button>
+        <button class="preset-btn" data-q="25">25%</button>
+        <button class="preset-btn active" data-q="50">50%</button>
+        <button class="preset-btn" data-q="75">75%</button>
+        <button class="preset-btn" data-q="85">85% (Excel.)</button>
+        <button class="preset-btn" data-q="100">100% (Max)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTERS -->
+  <section class="filters">
+    <span class="filter-label">TYPE</span>
+    <button class="cat-btn active" data-cat="all">Tous</button>
+    <button class="cat-btn prefix" data-cat="prefix">Préfixes</button>
+    <button class="cat-btn suffix" data-cat="suffix">Suffixes</button>
+  </section>
+
+  <!-- AFFIXES GRID -->
+  <section class="affixes-list" id="affixes-list"></section>
+
+</main>
+
+<script type="module">
+import { loadCatalog, getAllAffixes, ilvlToRoman } from './items-catalog.js';
+
+// === STATE ===
+const STATE = {
+  selectedIlvl: 5,
+  qualityPct: 50,
+  filterCat: 'all',
+};
+
+// === MAPPINGS ===
+const BIOME_DATA = {
+  inferno:  { id: 'inferno', name: 'Inferno', icon: '🔥', color: '#ff6644' },
+  cryo:     { id: 'cryo',    name: 'Cryo',    icon: '❄️', color: '#66bbff' },
+  toxic:    { id: 'toxic',   name: 'Toxic',   icon: '☠️', color: '#88dd44' },
+  voidnet:  { id: 'voidnet', name: 'Voidnet', icon: '⚡', color: '#aa66ff' },
+  crimson:  { id: 'crimson', name: 'Crimson', icon: '🩸', color: '#ff4488' },
+};
+
+const SLOT_LABELS = {
+  mainhand: 'Arme', offhand: 'Off-hand', head: 'Tête',
+  chest: 'Torse', legs: 'Jambes', gloves: 'Mains',
+  boots: 'Pieds', amulet: 'Amulette', ring: 'Anneau',
+};
+
+const ILVL_MULT = {
+  1: 0.50, 2: 0.65, 3: 0.80, 4: 0.95, 5: 1.00,
+  6: 1.15, 7: 1.30, 8: 1.50, 9: 1.75, 10: 2.10,
+};
+
+function rangeIsInt(range){
+  return Number.isInteger(range[0]) && Number.isInteger(range[1]);
+}
+
+/**
+ * Calcule la valeur d'un affixe à un % de qualité donné.
+ * Inverse de affixQualityPct du catalog.
+ *   - 0% → vMin × ilvlMult
+ *   - 100% → vMax × ilvlMult
+ *   - Floor selon le format du valueRange
+ */
+function valueAtQuality(qualityPct, valueRange, ilvl){
+  const [vMin, vMax] = valueRange;
+  const ilvlMult = ILVL_MULT[ilvl] || 1;
+  const t = qualityPct / 100; // 0..1
+  const rawVal = (vMin + t * (vMax - vMin)) * ilvlMult;
+  if(rangeIsInt(valueRange)){
+    return Math.max(1, Math.floor(rawVal));
+  }
+  return Math.max(0.1, Math.floor(rawVal * 10) / 10);
+}
+
+// === BOOT ===
+async function boot(){
+  await loadCatalog();
+  buildIlvlButtons();
+  attachHandlers();
+  render();
+}
+
+function buildIlvlButtons(){
+  const row = document.getElementById('ilvl-row');
+  for(let lv = 1; lv <= 10; lv++){
+    const btn = document.createElement('button');
+    btn.className = 'ilvl-btn' + (lv === STATE.selectedIlvl ? ' active' : '');
+    btn.textContent = ilvlToRoman(lv);
+    btn.dataset.ilvl = lv;
+    btn.addEventListener('click', () => {
+      STATE.selectedIlvl = lv;
+      document.querySelectorAll('.ilvl-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.ilvl) === lv));
+      document.getElementById('ilvl-display').textContent = ilvlToRoman(lv);
+      render();
+    });
+    row.appendChild(btn);
+  }
+}
+
+function attachHandlers(){
+  // Quality slider
+  const slider = document.getElementById('quality-slider');
+  slider.addEventListener('input', () => {
+    STATE.qualityPct = Number(slider.value);
+    document.getElementById('quality-display').textContent = STATE.qualityPct;
+    document.getElementById('quality-display-side').textContent = STATE.qualityPct + '%';
+    // Sync preset buttons
+    document.querySelectorAll('.preset-btn').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.q) === STATE.qualityPct);
+    });
+    render();
+  });
+  // Preset buttons
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const q = Number(btn.dataset.q);
+      STATE.qualityPct = q;
+      slider.value = q;
+      document.getElementById('quality-display').textContent = q;
+      document.getElementById('quality-display-side').textContent = q + '%';
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b === btn));
+      render();
+    });
+  });
+  // Category filters
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STATE.filterCat = btn.dataset.cat;
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === STATE.filterCat));
+      render();
+    });
+  });
+}
+
+// === RENDER ===
+function render(){
+  renderStatsMini();
+  renderAffixes();
+}
+
+function renderStatsMini(){
+  const a = getAllAffixes();
+  const total = Object.keys(a.prefixes).length + Object.keys(a.suffixes).length;
+  document.getElementById('stats-mini').textContent = `${total} affixes`;
+}
+
+function renderAffixes(){
+  const list = document.getElementById('affixes-list');
+  const a = getAllAffixes();
+  const ilvl = STATE.selectedIlvl;
+  const q = STATE.qualityPct;
+
+  let entries = [];
+  if(STATE.filterCat === 'all' || STATE.filterCat === 'prefix'){
+    entries = entries.concat(Object.values(a.prefixes).map(x => ({ ...x, _kind: 'prefix' })));
+  }
+  if(STATE.filterCat === 'all' || STATE.filterCat === 'suffix'){
+    entries = entries.concat(Object.values(a.suffixes).map(x => ({ ...x, _kind: 'suffix' })));
+  }
+
+  // Sort: prefixes first then suffixes, alphabetic by name
+  entries.sort((x, y) => {
+    if(x._kind !== y._kind) return x._kind === 'prefix' ? -1 : 1;
+    return x.name.localeCompare(y.name);
+  });
+
+  list.innerHTML = entries.map(affix => renderAffixCard(affix, ilvl, q)).join('');
+}
+
+function renderAffixCard(affix, ilvl, q){
+  const kind = affix._kind;
+  const value = valueAtQuality(q, affix.valueRange, ilvl);
+  const minVal = valueAtQuality(0, affix.valueRange, ilvl);
+  const maxVal = valueAtQuality(100, affix.valueRange, ilvl);
+  const labelWithValue = (affix.label || '').replace('X', value);
+
+  // Slot list
+  let slotList = '';
+  if(affix.validSlots && affix.validSlots.length > 0){
+    slotList = affix.validSlots.map(s => `<span class="slot-mini">${SLOT_LABELS[s] || s}</span>`).join('');
+  } else {
+    slotList = '<span style="color:var(--text-2); font-size:10px;">Tous slots</span>';
+  }
+
+  // Tags
+  let tagsList = '';
+  if(affix.tags && affix.tags.length > 0){
+    tagsList = affix.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
+  } else {
+    tagsList = '<span style="color:var(--text-2); font-size:10px;">—</span>';
+  }
+
+  // Biome favori
+  let biomeBlock = '<span style="color:var(--text-2); font-size:10px;">Aucun</span>';
+  if(affix.biome && BIOME_DATA[affix.biome]){
+    const b = BIOME_DATA[affix.biome];
+    biomeBlock = `<span class="biome-tag" style="color: ${b.color}; border-color: ${b.color};">${b.icon} ${b.name}</span>`;
+  }
+
+  // Quality marker position on range bar
+  const markerLeft = q + '%';
+
+  return `
+    <div class="affix-card ${kind}">
+      <div class="affix-header">
+        <div class="affix-name ${kind}">${affix.name}</div>
+        <div class="affix-type-badge">${kind === 'prefix' ? 'PRÉFIXE' : 'SUFFIXE'}</div>
+      </div>
+      <div class="affix-label">${affix.label}</div>
+
+      <div class="affix-value-display">
+        <span class="lbl">À ${q}% qualité</span>
+        <span class="val">${labelWithValue.replace(/^\+/, '+')}</span>
+      </div>
+
+      <div class="range-mini">
+        <div class="range-mini-label">Range possible (iLvl ${ilvlToRoman(ilvl)})</div>
+        <div class="range-bar">
+          <div class="range-bar-fill"></div>
+          <div class="range-bar-marker" style="left: ${markerLeft};"></div>
+        </div>
+        <div class="range-bounds">
+          <span>${minVal} (0%)</span>
+          <span>${maxVal} (100%)</span>
+        </div>
+      </div>
+
+      <div class="affix-info-grid">
+        <div class="info-row">
+          <span class="lbl">Stat</span>
+          <span class="val" style="color: var(--text-1); font-size: 10px;">${affix.stat}</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Slots valides</span>
+          <span class="val">${slotList}</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Tags</span>
+          <span class="val">${tagsList}</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Biome favori</span>
+          <span class="val">${biomeBlock}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#ff5959;font-family:monospace;">Erreur de chargement: ${e.message}</div>`;
+});
+</script>
+
+</body>
+</html>

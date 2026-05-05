@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Arsenal — REACTOR HOLLOW</title>
+<style>
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #ffb347;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .header {
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border-2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .back-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 12px;
+    color: var(--text-0);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .back-btn:hover { background: var(--bg-3); }
+  .title {
+    font-size: 16px; letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .title .acc { color: var(--accent); }
+  .stats-mini { margin-left: auto; font-size: 11px; color: var(--text-1); }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  /* === ILVL SELECTOR === */
+  .ilvl-selector {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 47px;
+    z-index: 40;
+  }
+  .ilvl-selector-label {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-2); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .ilvl-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    align-items: center;
+    overflow: hidden;
+  }
+  .ilvl-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    flex: 1 1 32px;
+    min-width: 0;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ilvl-btn:hover { background: var(--bg-3); border-color: var(--border-2); }
+  .ilvl-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* === FILTERS === */
+  .filters {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .filter-label {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-2); text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .cat-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .cat-btn:hover { background: var(--bg-3); border-color: var(--border-2); }
+  .cat-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: bold;
+  }
+
+  /* === ITEMS LIST === */
+  .items-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  .item-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 14px;
+    transition: border-color 0.15s;
+  }
+  .item-card:hover { border-color: var(--accent); }
+  .item-header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-1);
+  }
+  .item-icon {
+    width: 56px; height: 56px;
+    background: var(--bg-2);
+    border: 2px solid var(--border-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--accent);
+    margin-bottom: 2px;
+    word-break: break-word;
+  }
+  .item-meta {
+    font-size: 9px;
+    color: var(--text-1);
+    letter-spacing: 1px;
+    line-height: 1.4;
+  }
+  .item-meta .badge {
+    display: inline-block;
+    padding: 1px 5px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    margin-right: 4px;
+    color: var(--text-0);
+  }
+  .item-meta .badge.handed-2 { color: var(--accent); border-color: var(--accent); }
+
+  .item-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 3px 6px;
+    background: rgba(255, 255, 255, 0.02);
+    gap: 8px;
+  }
+  .stat-line .lbl { color: var(--text-1); flex: 1; min-width: 0; }
+  .stat-line .val { color: var(--text-0); font-weight: bold; flex-shrink: 0; }
+  .stat-line.base { border-left: 2px solid #fff; }
+  .stat-line.implicit { border-left: 2px solid #aae; }
+  .stat-line.spell { border-left: 2px solid var(--accent); }
+  .stat-line.passive { border-left: 2px solid #66ff66; }
+
+  .item-meta-block {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-1);
+  }
+  .meta-row .meta-lbl {
+    color: var(--text-2);
+    letter-spacing: 1px;
+    font-size: 9px;
+    text-transform: uppercase;
+    min-width: 70px;
+  }
+  .meta-row .meta-val {
+    color: var(--text-0);
+    flex: 1;
+  }
+  .biome-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-right: 4px;
+    margin-bottom: 2px;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+
+  /* === MOBILE === */
+  @media (max-width: 600px) {
+    .container { padding: 8px; }
+    .items-list { grid-template-columns: 1fr; gap: 8px; }
+    .item-card { padding: 10px; }
+    .ilvl-btn { width: 26px; height: 26px; flex-basis: 26px; font-size: 10px; }
+    .title { font-size: 13px; }
+    .stats-mini { display: none; }
+    .item-icon { width: 48px; height: 48px; font-size: 26px; }
+    .item-name { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="../../index.html" class="back-btn">← RETOUR</a>
+  <div class="title"><span class="acc">▤</span> ARSENAL</div>
+  <div class="stats-mini" id="stats-mini"></div>
+</header>
+
+<main class="container">
+
+  <!-- ILVL SELECTOR -->
+  <section class="ilvl-selector">
+    <div class="ilvl-selector-label">▸ NIVEAU D'OBJET (ILVL)</div>
+    <div class="ilvl-row" id="ilvl-row"></div>
+  </section>
+
+  <!-- FILTERS -->
+  <section class="filters">
+    <span class="filter-label">CATÉGORIE</span>
+    <button class="cat-btn active" data-cat="all">Tous</button>
+    <button class="cat-btn" data-cat="weapon">⚔️ Armes</button>
+    <button class="cat-btn" data-cat="armor">🦺 Armures</button>
+    <button class="cat-btn" data-cat="amulet">📿 Amulettes</button>
+    <button class="cat-btn" data-cat="ring">💍 Anneaux</button>
+  </section>
+
+  <!-- ITEMS GRID -->
+  <section class="items-list" id="items-list"></section>
+
+</main>
+
+<script type="module">
+import { loadCatalog, getAllItems, ilvlToRoman } from './items-catalog.js';
+import { BIOME_AFFINITY } from '../js/dungeon/generator.js';
+
+// === STATE ===
+const STATE = {
+  selectedIlvl: 5,
+  filterCat: 'all',
+};
+
+// === MAPPINGS ===
+const BIOME_DATA = {
+  inferno:  { id: 'inferno',  name: 'Inferno',  icon: '🔥', color: '#ff6644', resourceName: 'Cendres ardentes',     resourceIcon: '🔥' },
+  cryo:     { id: 'cryo',     name: 'Cryo',     icon: '❄️', color: '#66bbff', resourceName: 'Éclats glacés',         resourceIcon: '❄️' },
+  toxic:    { id: 'toxic',    name: 'Toxic',    icon: '☠️', color: '#88dd44', resourceName: 'Bave acide',            resourceIcon: '☠️' },
+  voidnet:  { id: 'voidnet',  name: 'Voidnet',  icon: '⚡', color: '#aa66ff', resourceName: 'Fragments numériques',  resourceIcon: '⚡' },
+  crimson:  { id: 'crimson',  name: 'Crimson',  icon: '🩸', color: '#ff4488', resourceName: 'Sang coagulé',          resourceIcon: '🩸' },
+};
+
+// Mapping tag d'item → biome (pour déterminer la ressource associée)
+const TAG_TO_BIOME = {
+  Fire: 'inferno', Stun: 'inferno', Rage: 'inferno', Pyromage: 'inferno',
+  Ice: 'cryo', Slow: 'cryo', Shield: 'cryo', Tank: 'cryo',
+  Poison: 'toxic', Bleed: 'toxic', Lifesteal: 'toxic', Decay: 'toxic',
+  Shock: 'voidnet', Crit: 'voidnet', Echo: 'voidnet', Caster: 'voidnet',
+  Execute: 'crimson', Brute: 'crimson',
+};
+
+// Mapping damageType → biome (pour les armes sans tags explicites)
+const DAMAGE_TYPE_TO_BIOME = {
+  fire: 'inferno', ice: 'cryo', poison: 'toxic',
+  shock: 'voidnet', slash: 'crimson', pierce: 'crimson', blunt: 'crimson',
+};
+
+const SLOT_LABELS = {
+  mainhand: 'Arme', offhand: 'Off-hand', head: 'Tête',
+  chest: 'Torse', legs: 'Jambes', gloves: 'Mains',
+  boots: 'Pieds', amulet: 'Amulette', ring: 'Anneau',
+};
+
+const ILVL_MULT = {
+  1: 0.50, 2: 0.65, 3: 0.80, 4: 0.95, 5: 1.00,
+  6: 1.15, 7: 1.30, 8: 1.50, 9: 1.75, 10: 2.10,
+};
+
+// === BOOT ===
+async function boot(){
+  await loadCatalog();
+  buildIlvlButtons();
+  attachHandlers();
+  render();
+}
+
+function buildIlvlButtons(){
+  const row = document.getElementById('ilvl-row');
+  for(let lv = 1; lv <= 10; lv++){
+    const btn = document.createElement('button');
+    btn.className = 'ilvl-btn' + (lv === STATE.selectedIlvl ? ' active' : '');
+    btn.textContent = ilvlToRoman(lv);
+    btn.dataset.ilvl = lv;
+    btn.addEventListener('click', () => {
+      STATE.selectedIlvl = lv;
+      document.querySelectorAll('.ilvl-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.ilvl) === lv));
+      render();
+    });
+    row.appendChild(btn);
+  }
+}
+
+function attachHandlers(){
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STATE.filterCat = btn.dataset.cat;
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === STATE.filterCat));
+      render();
+    });
+  });
+}
+
+// === ITEM ↔ BIOME MAPPING ===
+// Pour un itemId, détermine le biome principal associé.
+// Logique : 1) regarde si l'itemId apparaît dans BIOME_AFFINITY ; 2) sinon utilise tags ; 3) sinon damageType.
+function getItemBiomes(itemId, tpl){
+  const result = new Set();
+
+  // 1. Cherche dans BIOME_AFFINITY (biome favori = drop le plus probable)
+  for(const [biomeId, affinity] of Object.entries(BIOME_AFFINITY)){
+    const ids = [...(affinity.weapons || []), ...(affinity.accessories || [])];
+    if(ids.includes(itemId)) result.add(biomeId);
+  }
+
+  // 2. Si rien trouvé, fallback sur tags
+  if(result.size === 0 && tpl.tags){
+    for(const tag of tpl.tags){
+      if(TAG_TO_BIOME[tag]) result.add(TAG_TO_BIOME[tag]);
+    }
+  }
+
+  // 3. Si toujours rien, fallback sur damageType
+  if(result.size === 0 && tpl.damageType && DAMAGE_TYPE_TO_BIOME[tpl.damageType]){
+    result.add(DAMAGE_TYPE_TO_BIOME[tpl.damageType]);
+  }
+
+  return [...result];
+}
+
+// === RENDER ===
+function render(){
+  renderStatsMini();
+  renderItems();
+}
+
+function renderStatsMini(){
+  const catalog = getAllItems();
+  const total = Object.keys(catalog).length;
+  document.getElementById('stats-mini').textContent = `${total} items`;
+}
+
+function renderItems(){
+  const list = document.getElementById('items-list');
+  const catalog = getAllItems();
+  const ilvl = STATE.selectedIlvl;
+  const mult = ILVL_MULT[ilvl] || 1;
+
+  let items = Object.values(catalog);
+  if(STATE.filterCat !== 'all'){
+    items = items.filter(i => i.cat === STATE.filterCat);
+  }
+
+  if(items.length === 0){
+    list.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-2); padding:40px;">Aucun item dans cette catégorie</div>';
+    return;
+  }
+
+  // Sort: par catégorie puis par nom
+  items.sort((a, b) => {
+    if(a.cat !== b.cat) return a.cat.localeCompare(b.cat);
+    return a.name.localeCompare(b.name);
+  });
+
+  list.innerHTML = items.map(tpl => renderItemCard(tpl, ilvl, mult)).join('');
+}
+
+function renderItemCard(tpl, ilvl, mult){
+  const biomes = getItemBiomes(tpl.id, tpl);
+  const slotLabel = SLOT_LABELS[tpl.slot] || tpl.slot;
+
+  // Header badges
+  const handedBadge = tpl.handed === 2 ? '<span class="badge handed-2">2 MAINS</span>'
+                    : tpl.handed === 1 ? '<span class="badge">1 MAIN</span>' : '';
+  const slotBadge = `<span class="badge">${slotLabel}</span>`;
+
+  // Stats
+  let statsHtml = '';
+  if(tpl.damage){
+    const dMin = Math.round(tpl.damage[0] * mult);
+    const dMax = Math.round(tpl.damage[1] * mult);
+    statsHtml += `
+      <div class="stat-line base">
+        <span class="lbl">Dégâts ${tpl.damageType?.toUpperCase() || ''}</span>
+        <span class="val">${dMin}-${dMax}</span>
+      </div>
+    `;
+    if(tpl.range){
+      statsHtml += `
+        <div class="stat-line base">
+          <span class="lbl">Portée</span>
+          <span class="val">${tpl.range}</span>
+        </div>
+      `;
+    }
+  }
+  if(tpl.implicit){
+    const value = Math.round(((tpl.implicit.valueRange[0] + tpl.implicit.valueRange[1]) / 2) * mult);
+    const label = (tpl.implicit.label || '').replace('X', value);
+    statsHtml += `
+      <div class="stat-line implicit">
+        <span class="lbl">◆ ${label}</span>
+        <span class="val">~${value}</span>
+      </div>
+    `;
+    // Range complet
+    const minVal = Math.floor(tpl.implicit.valueRange[0] * mult);
+    const maxVal = Math.floor(tpl.implicit.valueRange[1] * mult);
+    statsHtml += `
+      <div class="stat-line implicit" style="opacity:0.7;">
+        <span class="lbl" style="font-size:9px;">Range possible (${tpl.implicit.id})</span>
+        <span class="val" style="font-size:10px;">${minVal} → ${maxVal}</span>
+      </div>
+    `;
+  }
+  if(tpl.spell){
+    statsHtml += `
+      <div class="stat-line spell">
+        <span class="lbl">⚡ Sort actif</span>
+        <span class="val">${tpl.spell}</span>
+      </div>
+    `;
+  }
+  if(tpl.passive){
+    Object.entries(tpl.passive).forEach(([k, v]) => {
+      const scaled = Math.round(v * mult);
+      statsHtml += `
+        <div class="stat-line passive">
+          <span class="lbl">${k}</span>
+          <span class="val">+${scaled}</span>
+        </div>
+      `;
+    });
+  }
+
+  // Meta : ressource + drop
+  let metaHtml = '';
+  if(biomes.length > 0){
+    // Ressource principale = première biome trouvée
+    const primaryBiome = biomes[0];
+    const biomeData = BIOME_DATA[primaryBiome];
+    if(biomeData){
+      metaHtml += `
+        <div class="meta-row">
+          <span class="meta-lbl">Ressource</span>
+          <span class="meta-val" style="color: ${biomeData.color};">
+            ${biomeData.resourceIcon} ${biomeData.resourceName}
+          </span>
+        </div>
+      `;
+    }
+    // Drop biomes
+    const biomeTags = biomes.map(bId => {
+      const b = BIOME_DATA[bId];
+      if(!b) return '';
+      return `<span class="biome-tag" style="color: ${b.color}; border: 1px solid ${b.color};">${b.icon} ${b.name}</span>`;
+    }).join('');
+    metaHtml += `
+      <div class="meta-row">
+        <span class="meta-lbl">Drop</span>
+        <span class="meta-val">${biomeTags}</span>
+      </div>
+    `;
+  } else {
+    metaHtml += `
+      <div class="meta-row">
+        <span class="meta-lbl">Drop</span>
+        <span class="meta-val" style="color: var(--text-2);">Tous biomes (générique)</span>
+      </div>
+    `;
+  }
+
+  // Tags
+  if(tpl.tags && tpl.tags.length > 0){
+    metaHtml += `
+      <div class="meta-row">
+        <span class="meta-lbl">Tags</span>
+        <span class="meta-val" style="color: var(--text-2);">${tpl.tags.join(' · ')}</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="item-card">
+      <div class="item-header">
+        <div class="item-icon">${tpl.icon || '?'}</div>
+        <div class="item-info">
+          <div class="item-name">${tpl.name}</div>
+          <div class="item-meta">
+            ${slotBadge}${handedBadge}
+            <br><span style="opacity:0.6;">${tpl.id}</span>
+          </div>
+        </div>
+      </div>
+      <div class="item-stats">${statsHtml}</div>
+      <div class="item-meta-block">${metaHtml}</div>
+    </div>
+  `;
+}
+
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#ff5959;font-family:monospace;">Erreur de chargement: ${e.message}</div>`;
+});
+</script>
+
+</body>
+</html>
