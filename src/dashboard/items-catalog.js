@@ -262,10 +262,16 @@ function randomInRange(min, max){ return Math.floor(Math.random() * (max - min +
 function rangeIsInt(valueRange){
   return Number.isInteger(valueRange[0]) && Number.isInteger(valueRange[1]);
 }
-function floorByRange(rawVal, valueRange){
-  if(rangeIsInt(valueRange)) return Math.max(1, Math.floor(rawVal));
-  return Math.max(0.1, Math.floor(rawVal * 10) / 10);
+// Note: on utilise ROUND et pas FLOOR. Sur de petits ranges entiers comme [1,2] avec ilvlMult=1.0,
+// floor donnerait toujours 1 car atteindre 2 demande u=1 strictement (Math.random renvoie [0,1)).
+// Round donne une distribution propre où common→biaisé vMin, legendary→biaisé vMax,
+// et les bornes vMin/vMax sont toutes les deux atteignables.
+function roundByRange(rawVal, valueRange){
+  if(rangeIsInt(valueRange)) return Math.max(1, Math.round(rawVal));
+  return Math.max(0.1, Math.round(rawVal * 10) / 10);
 }
+// Alias gardé pour rétro-compat avec le reste du code (au cas où)
+function floorByRange(rawVal, valueRange){ return roundByRange(rawVal, valueRange); }
 
 /**
  * Roll la valeur d'un affixe avec skew par rareté.

@@ -496,10 +496,12 @@ function valueAtQuality(qualityPct, valueRange, ilvl){
   const ilvlMult = ILVL_MULT[ilvl] || 1;
   const t = qualityPct / 100;
   const rawVal = (vMin + t * (vMax - vMin)) * ilvlMult;
+  // Round (pas floor) pour cohérence avec items-catalog.js : sur petits ranges comme [1,2]
+  // floor donnerait toujours vMin sauf à u=1 strict, ce qui rend vMax inatteignable.
   if(rangeIsInt(valueRange)){
-    return Math.max(1, Math.floor(rawVal));
+    return Math.max(1, Math.round(rawVal));
   }
-  return Math.max(0.1, Math.floor(rawVal * 10) / 10);
+  return Math.max(0.1, Math.round(rawVal * 10) / 10);
 }
 
 // === BOOT ===
