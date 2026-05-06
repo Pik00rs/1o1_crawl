@@ -16,10 +16,9 @@
     --text-1: #a0a0a0;
     --text-2: #606060;
     --accent: #ffb347;
-    --r-magic-bright: #6aaaff;
-    --r-epic-bright: #cc44ff;
     --good: #5fff8c;
     --bad: #ff5959;
+    --fixed: #b78cff;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -61,27 +60,27 @@
   .container {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 16px;
+    padding: 12px;
   }
 
   /* === GLOBAL CONTROLS === */
   .controls {
     background: var(--bg-1);
     border: 1px solid var(--border-2);
-    padding: 12px 14px;
-    margin-bottom: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
     position: sticky;
     top: 47px;
     z-index: 40;
   }
   .control-section {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .control-section:last-child { margin-bottom: 0; }
   .control-label {
     font-size: 9px; letter-spacing: 2px;
     color: var(--text-2); text-transform: uppercase;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -95,7 +94,7 @@
   /* iLvl row */
   .ilvl-row {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     flex-wrap: nowrap;
     overflow: hidden;
   }
@@ -105,11 +104,11 @@
     color: var(--text-1);
     font-family: inherit;
     cursor: pointer;
-    width: 32px;
-    height: 32px;
-    flex: 1 1 32px;
+    width: 30px;
+    height: 28px;
+    flex: 1 1 30px;
     min-width: 0;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     padding: 0;
   }
@@ -124,12 +123,12 @@
   .slider-container {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
   .slider-track {
     flex: 1;
     position: relative;
-    height: 36px;
+    height: 32px;
     display: flex;
     align-items: center;
   }
@@ -137,7 +136,7 @@
     position: absolute;
     inset: 0;
     margin: auto 0;
-    height: 8px;
+    height: 6px;
     background: linear-gradient(to right,
       var(--bad) 0%,
       var(--bad) 30%,
@@ -145,13 +144,12 @@
       #fff200 60%,
       var(--good) 85%,
       var(--good) 100%);
-    border-radius: 0;
   }
   input[type="range"].quality-slider {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 36px;
+    height: 32px;
     background: transparent;
     cursor: pointer;
     position: relative;
@@ -161,16 +159,16 @@
   input[type="range"].quality-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 28px;
+    width: 16px;
+    height: 24px;
     background: var(--text-0);
     border: 2px solid var(--accent);
     cursor: grab;
     box-shadow: 0 0 8px rgba(255, 179, 71, 0.5);
   }
   input[type="range"].quality-slider::-moz-range-thumb {
-    width: 18px;
-    height: 28px;
+    width: 16px;
+    height: 24px;
     background: var(--text-0);
     border: 2px solid var(--accent);
     cursor: grab;
@@ -180,19 +178,19 @@
   .quality-display {
     background: var(--bg-2);
     border: 1px solid var(--border-2);
-    padding: 6px 10px;
-    min-width: 60px;
+    padding: 5px 8px;
+    min-width: 54px;
     text-align: center;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--accent);
   }
 
   /* Preset quality buttons */
   .preset-row {
     display: flex;
-    gap: 4px;
-    margin-top: 6px;
+    gap: 3px;
+    margin-top: 5px;
     flex-wrap: wrap;
   }
   .preset-btn {
@@ -201,7 +199,7 @@
     color: var(--text-1);
     font-family: inherit;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 3px 7px;
     font-size: 9px;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -213,83 +211,69 @@
     color: #000;
   }
 
-  /* === FILTERS === */
-  .filters {
-    background: var(--bg-1);
-    border: 1px solid var(--border-2);
-    padding: 8px 12px;
-    margin-bottom: 12px;
+  /* === SECTION HEADER === */
+  .section-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
     align-items: center;
+    gap: 10px;
+    margin: 14px 0 6px 0;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-2);
   }
-  .filter-label {
-    font-size: 9px; letter-spacing: 2px;
-    color: var(--text-2); text-transform: uppercase;
-    margin-right: 4px;
+  .section-header .section-icon {
+    font-size: 16px;
   }
-  .cat-btn {
-    background: var(--bg-2);
-    border: 1px solid var(--border-1);
-    color: var(--text-1);
-    font-family: inherit;
-    cursor: pointer;
-    padding: 6px 12px;
-    font-size: 10px;
-    letter-spacing: 1px;
+  .section-header .section-title {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    font-weight: bold;
     text-transform: uppercase;
   }
-  .cat-btn:hover { background: var(--bg-3); }
-  .cat-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-    font-weight: bold;
+  .section-header .section-count {
+    color: var(--text-2);
+    font-size: 10px;
+    margin-left: auto;
   }
-  .cat-btn.prefix.active { background: var(--r-magic-bright); border-color: var(--r-magic-bright); }
-  .cat-btn.suffix.active { background: var(--r-epic-bright); border-color: var(--r-epic-bright); }
+  .section-header.fixed .section-title { color: var(--fixed); }
 
-  /* === AFFIX LIST === */
+  /* === AFFIX LIST — compact cards === */
   .affixes-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 6px;
   }
   .affix-card {
     background: var(--bg-1);
     border: 1px solid var(--border-2);
-    padding: 12px 14px;
+    padding: 8px 10px;
     transition: border-color 0.15s;
+    border-left: 3px solid var(--text-2);
   }
-  .affix-card.prefix { border-left: 3px solid var(--r-magic-bright); }
-  .affix-card.suffix { border-left: 3px solid var(--r-epic-bright); }
+  .affix-card:hover { border-color: var(--accent); }
+  .affix-card.fixed { border-left-color: var(--fixed); }
 
   .affix-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 6px;
-    gap: 8px;
+    gap: 6px;
+    margin-bottom: 4px;
   }
   .affix-name {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bold;
+    color: var(--text-0);
   }
-  .affix-name.prefix { color: var(--r-magic-bright); }
-  .affix-name.suffix { color: var(--r-epic-bright); }
-  .affix-type-badge {
-    font-size: 9px;
+  .affix-pool-badge {
+    font-size: 8px;
     letter-spacing: 1px;
     color: var(--text-2);
+    text-transform: uppercase;
     flex-shrink: 0;
-  }
-
-  .affix-label {
-    font-size: 11px;
-    color: var(--text-1);
-    margin-bottom: 8px;
-    font-style: italic;
+    background: var(--bg-2);
+    padding: 1px 4px;
+    border: 1px solid var(--border-1);
   }
 
   /* Live computed value */
@@ -299,8 +283,12 @@
     align-items: center;
     background: rgba(255, 179, 71, 0.05);
     border: 1px solid rgba(255, 179, 71, 0.3);
-    padding: 8px 10px;
-    margin: 8px 0;
+    padding: 4px 8px;
+    margin: 4px 0;
+  }
+  .affix-card.fixed .affix-value-display {
+    background: rgba(183, 140, 255, 0.05);
+    border-color: rgba(183, 140, 255, 0.3);
   }
   .affix-value-display .lbl {
     font-size: 9px;
@@ -309,70 +297,22 @@
     text-transform: uppercase;
   }
   .affix-value-display .val {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     color: var(--accent);
   }
-
-  .affix-info-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 4px;
-    margin-top: 6px;
-  }
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    padding: 2px 0;
-    gap: 8px;
-  }
-  .info-row .lbl { color: var(--text-2); }
-  .info-row .val { color: var(--text-0); text-align: right; }
-  .info-row .val .biome-tag {
-    display: inline-block;
-    padding: 1px 4px;
-    margin-right: 2px;
-    font-size: 9px;
-    border: 1px solid;
-  }
-  .info-row .val .slot-mini {
-    display: inline-block;
-    padding: 1px 4px;
-    margin-right: 2px;
-    background: var(--bg-2);
-    border: 1px solid var(--border-2);
-    font-size: 9px;
-    color: var(--text-1);
-  }
-  .info-row .val .tag-pill {
-    display: inline-block;
-    padding: 1px 4px;
-    margin-right: 2px;
-    background: rgba(255, 179, 71, 0.1);
-    color: var(--accent);
-    font-size: 9px;
-  }
+  .affix-card.fixed .affix-value-display .val { color: var(--fixed); }
 
   /* Range mini-bar visualization */
   .range-mini {
-    margin-top: 6px;
-    padding: 6px 0;
-    border-top: 1px solid var(--border-1);
-  }
-  .range-mini-label {
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: var(--text-2);
-    text-transform: uppercase;
-    margin-bottom: 3px;
+    margin-top: 4px;
   }
   .range-bar {
     position: relative;
-    height: 6px;
+    height: 4px;
     background: var(--bg-2);
     border: 1px solid var(--border-2);
-    margin: 4px 0;
+    margin-top: 2px;
   }
   .range-bar-fill {
     position: absolute;
@@ -385,7 +325,7 @@
     position: absolute;
     top: -2px;
     width: 2px;
-    height: 10px;
+    height: 8px;
     background: var(--accent);
     transform: translateX(-1px);
     z-index: 2;
@@ -393,20 +333,55 @@
   .range-bounds {
     display: flex;
     justify-content: space-between;
+    font-size: 8px;
+    color: var(--text-2);
+    margin-top: 2px;
+  }
+
+  /* Compact info row */
+  .affix-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
     font-size: 9px;
     color: var(--text-2);
+  }
+  .affix-meta .meta-item {
+    background: var(--bg-2);
+    padding: 1px 5px;
+    border: 1px solid var(--border-1);
+  }
+  .affix-meta .biome-tag {
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .empty-section {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-2);
+    font-size: 11px;
+    grid-column: 1 / -1;
   }
 
   /* === MOBILE === */
   @media (max-width: 600px) {
-    .container { padding: 8px; }
-    .affixes-list { grid-template-columns: 1fr; gap: 6px; }
-    .ilvl-btn { width: 26px; height: 26px; flex-basis: 26px; font-size: 10px; }
+    .container { padding: 6px; }
+    .affixes-list { grid-template-columns: 1fr 1fr; gap: 4px; }
+    .ilvl-btn { width: 24px; height: 24px; flex-basis: 24px; font-size: 9px; }
     .title { font-size: 13px; }
     .stats-mini { display: none; }
-    .quality-display { font-size: 12px; min-width: 50px; padding: 4px 6px; }
-    .affix-value-display .val { font-size: 16px; }
-    .controls { padding: 10px; }
+    .quality-display { font-size: 11px; min-width: 46px; padding: 3px 5px; }
+    .affix-value-display .val { font-size: 13px; }
+    .controls { padding: 8px; }
+    .affix-card { padding: 6px 8px; }
+    .affix-name { font-size: 11px; }
+    .affix-pool-badge { display: none; }
+  }
+
+  @media (max-width: 380px) {
+    .affixes-list { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -442,37 +417,41 @@
         <div class="quality-display" id="quality-display-side">50%</div>
       </div>
       <div class="preset-row">
-        <button class="preset-btn" data-q="0">0% (Min)</button>
+        <button class="preset-btn" data-q="0">0%</button>
         <button class="preset-btn" data-q="25">25%</button>
         <button class="preset-btn active" data-q="50">50%</button>
         <button class="preset-btn" data-q="75">75%</button>
-        <button class="preset-btn" data-q="85">85% (Excel.)</button>
-        <button class="preset-btn" data-q="100">100% (Max)</button>
+        <button class="preset-btn" data-q="85">85%</button>
+        <button class="preset-btn" data-q="100">100%</button>
       </div>
     </div>
   </section>
 
-  <!-- FILTERS -->
-  <section class="filters">
-    <span class="filter-label">TYPE</span>
-    <button class="cat-btn active" data-cat="all">Tous</button>
-    <button class="cat-btn prefix" data-cat="prefix">Préfixes</button>
-    <button class="cat-btn suffix" data-cat="suffix">Suffixes</button>
+  <!-- ROLLABLES SECTION -->
+  <section class="section-header">
+    <span class="section-icon">🎲</span>
+    <span class="section-title">Affixes Rollables</span>
+    <span class="section-count" id="rollable-count"></span>
   </section>
+  <section class="affixes-list" id="rollable-list"></section>
 
-  <!-- AFFIXES GRID -->
-  <section class="affixes-list" id="affixes-list"></section>
+  <!-- FIXED SECTION -->
+  <section class="section-header fixed">
+    <span class="section-icon">🔒</span>
+    <span class="section-title">Affixes Fixes</span>
+    <span class="section-count" id="fixed-count"></span>
+  </section>
+  <section class="affixes-list" id="fixed-list"></section>
 
 </main>
 
 <script type="module">
-import { loadCatalog, getAllAffixes, ilvlToRoman } from './items-catalog.js';
+import { loadCatalog, getAllAffixes, getAffixesByPool, ilvlToRoman } from './items-catalog.js';
 
 // === STATE ===
 const STATE = {
   selectedIlvl: 5,
   qualityPct: 50,
-  filterCat: 'all',
 };
 
 // === MAPPINGS ===
@@ -484,10 +463,18 @@ const BIOME_DATA = {
   crimson:  { id: 'crimson', name: 'Crimson', icon: '🩸', color: '#ff4488' },
 };
 
-const SLOT_LABELS = {
-  mainhand: 'Arme', offhand: 'Off-hand', head: 'Tête',
-  chest: 'Torse', legs: 'Jambes', gloves: 'Mains',
-  boots: 'Pieds', amulet: 'Amulette', ring: 'Anneau',
+const POOL_LABELS = {
+  elemental: 'Élém',
+  physical: 'Phys',
+  armor: 'Armure',
+  boots: 'Bottes',
+  ring: 'Anneau',
+  amulet_specific: 'Amulette',
+  tome: 'Tome',
+  quiver: 'Carquois',
+  charger: 'Chargeur',
+  shield: 'Bouclier',
+  elite: 'Élite',
 };
 
 const ILVL_MULT = {
@@ -501,15 +488,13 @@ function rangeIsInt(range){
 
 /**
  * Calcule la valeur d'un affixe à un % de qualité donné.
- * Inverse de affixQualityPct du catalog.
- *   - 0% → vMin × ilvlMult
- *   - 100% → vMax × ilvlMult
- *   - Floor selon le format du valueRange
+ * 0% → vMin × ilvlMult ; 100% → vMax × ilvlMult.
+ * Floor selon format du valueRange.
  */
 function valueAtQuality(qualityPct, valueRange, ilvl){
   const [vMin, vMax] = valueRange;
   const ilvlMult = ILVL_MULT[ilvl] || 1;
-  const t = qualityPct / 100; // 0..1
+  const t = qualityPct / 100;
   const rawVal = (vMin + t * (vMax - vMin)) * ilvlMult;
   if(rangeIsInt(valueRange)){
     return Math.max(1, Math.floor(rawVal));
@@ -549,7 +534,6 @@ function attachHandlers(){
     STATE.qualityPct = Number(slider.value);
     document.getElementById('quality-display').textContent = STATE.qualityPct;
     document.getElementById('quality-display-side').textContent = STATE.qualityPct + '%';
-    // Sync preset buttons
     document.querySelectorAll('.preset-btn').forEach(b => {
       b.classList.toggle('active', Number(b.dataset.q) === STATE.qualityPct);
     });
@@ -567,126 +551,95 @@ function attachHandlers(){
       render();
     });
   });
-  // Category filters
-  document.querySelectorAll('.cat-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      STATE.filterCat = btn.dataset.cat;
-      document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === STATE.filterCat));
-      render();
-    });
-  });
 }
 
 // === RENDER ===
 function render(){
-  renderStatsMini();
-  renderAffixes();
-}
-
-function renderStatsMini(){
-  const a = getAllAffixes();
-  const total = Object.keys(a.prefixes).length + Object.keys(a.suffixes).length;
-  document.getElementById('stats-mini').textContent = `${total} affixes`;
-}
-
-function renderAffixes(){
-  const list = document.getElementById('affixes-list');
-  const a = getAllAffixes();
-  const ilvl = STATE.selectedIlvl;
-  const q = STATE.qualityPct;
-
-  let entries = [];
-  if(STATE.filterCat === 'all' || STATE.filterCat === 'prefix'){
-    entries = entries.concat(Object.values(a.prefixes).map(x => ({ ...x, _kind: 'prefix' })));
-  }
-  if(STATE.filterCat === 'all' || STATE.filterCat === 'suffix'){
-    entries = entries.concat(Object.values(a.suffixes).map(x => ({ ...x, _kind: 'suffix' })));
-  }
-
-  // Sort: prefixes first then suffixes, alphabetic by name
-  entries.sort((x, y) => {
-    if(x._kind !== y._kind) return x._kind === 'prefix' ? -1 : 1;
-    return x.name.localeCompare(y.name);
+  // Récupère tous les affixes via getAffixesByPool (organisé par pool)
+  const byPool = getAffixesByPool();
+  const allAffixes = [];
+  Object.entries(byPool).forEach(([poolName, entries]) => {
+    Object.values(entries).forEach(a => {
+      allAffixes.push({ ...a, _pool: poolName });
+    });
   });
 
-  list.innerHTML = entries.map(affix => renderAffixCard(affix, ilvl, q)).join('');
+  // Split rollable / fixed (rollable === false → fixed)
+  const rollables = allAffixes.filter(a => a.rollable !== false);
+  const fixed = allAffixes.filter(a => a.rollable === false);
+
+  // Sort alpha by name
+  rollables.sort((a, b) => a.name.localeCompare(b.name));
+  fixed.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Update header counts
+  document.getElementById('stats-mini').textContent = `${allAffixes.length} affixes (${rollables.length} ⚙ + ${fixed.length} 🔒)`;
+  document.getElementById('rollable-count').textContent = `${rollables.length} affixes`;
+  document.getElementById('fixed-count').textContent = `${fixed.length} affixes`;
+
+  // Render
+  renderList('rollable-list', rollables, false);
+  renderList('fixed-list', fixed, true);
 }
 
-function renderAffixCard(affix, ilvl, q){
-  const kind = affix._kind;
+function renderList(elId, affixes, isFixed){
+  const list = document.getElementById(elId);
+  if(affixes.length === 0){
+    list.innerHTML = '<div class="empty-section">Aucun affixe dans cette catégorie</div>';
+    return;
+  }
+  list.innerHTML = affixes.map(a => renderAffixCard(a, isFixed)).join('');
+}
+
+function renderAffixCard(affix, isFixed){
+  const ilvl = STATE.selectedIlvl;
+  const q = isFixed ? 100 : STATE.qualityPct; // Fixe toujours affiché à 100%
   const value = valueAtQuality(q, affix.valueRange, ilvl);
   const minVal = valueAtQuality(0, affix.valueRange, ilvl);
   const maxVal = valueAtQuality(100, affix.valueRange, ilvl);
   const labelWithValue = (affix.label || '').replace('X', value);
+  const poolLbl = POOL_LABELS[affix._pool] || affix._pool;
 
-  // Slot list
-  let slotList = '';
-  if(affix.validSlots && affix.validSlots.length > 0){
-    slotList = affix.validSlots.map(s => `<span class="slot-mini">${SLOT_LABELS[s] || s}</span>`).join('');
-  } else {
-    slotList = '<span style="color:var(--text-2); font-size:10px;">Tous slots</span>';
-  }
-
-  // Tags
-  let tagsList = '';
-  if(affix.tags && affix.tags.length > 0){
-    tagsList = affix.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
-  } else {
-    tagsList = '<span style="color:var(--text-2); font-size:10px;">—</span>';
-  }
-
-  // Biome favori
-  let biomeBlock = '<span style="color:var(--text-2); font-size:10px;">Aucun</span>';
+  // Biome
+  let biomeTag = '';
   if(affix.biome && BIOME_DATA[affix.biome]){
     const b = BIOME_DATA[affix.biome];
-    biomeBlock = `<span class="biome-tag" style="color: ${b.color}; border-color: ${b.color};">${b.icon} ${b.name}</span>`;
+    biomeTag = `<span class="meta-item biome-tag" style="color: ${b.color}; border-color: ${b.color};">${b.icon} ${b.name}</span>`;
   }
 
-  // Quality marker position on range bar
-  const markerLeft = q + '%';
+  const eliteBadge = affix.isElite ? `<span class="meta-item" style="color: var(--accent); border-color: var(--accent);">★ Élite</span>` : '';
 
-  return `
-    <div class="affix-card ${kind}">
-      <div class="affix-header">
-        <div class="affix-name ${kind}">${affix.name}</div>
-        <div class="affix-type-badge">${kind === 'prefix' ? 'PRÉFIXE' : 'SUFFIXE'}</div>
-      </div>
-      <div class="affix-label">${affix.label}</div>
-
-      <div class="affix-value-display">
-        <span class="lbl">À ${q}% qualité</span>
-        <span class="val">${labelWithValue.replace(/^\+/, '+')}</span>
-      </div>
-
+  // Range bar (only for rollables)
+  let rangeBar = '';
+  if(!isFixed){
+    rangeBar = `
       <div class="range-mini">
-        <div class="range-mini-label">Range possible (iLvl ${ilvlToRoman(ilvl)})</div>
         <div class="range-bar">
           <div class="range-bar-fill"></div>
-          <div class="range-bar-marker" style="left: ${markerLeft};"></div>
+          <div class="range-bar-marker" style="left: ${q}%;"></div>
         </div>
         <div class="range-bounds">
-          <span>${minVal} (0%)</span>
-          <span>${maxVal} (100%)</span>
+          <span>${minVal}</span>
+          <span>${maxVal}</span>
         </div>
       </div>
+    `;
+  }
 
-      <div class="affix-info-grid">
-        <div class="info-row">
-          <span class="lbl">Stat</span>
-          <span class="val" style="color: var(--text-1); font-size: 10px;">${affix.stat}</span>
-        </div>
-        <div class="info-row">
-          <span class="lbl">Slots valides</span>
-          <span class="val">${slotList}</span>
-        </div>
-        <div class="info-row">
-          <span class="lbl">Tags</span>
-          <span class="val">${tagsList}</span>
-        </div>
-        <div class="info-row">
-          <span class="lbl">Biome favori</span>
-          <span class="val">${biomeBlock}</span>
-        </div>
+  return `
+    <div class="affix-card ${isFixed ? 'fixed' : ''}">
+      <div class="affix-header">
+        <div class="affix-name">${affix.name}</div>
+        <span class="affix-pool-badge">${poolLbl}</span>
+      </div>
+      <div class="affix-value-display">
+        <span class="lbl">${isFixed ? 'Effet' : `À ${q}%`}</span>
+        <span class="val">${labelWithValue}</span>
+      </div>
+      ${rangeBar}
+      <div class="affix-meta">
+        ${biomeTag}
+        ${eliteBadge}
       </div>
     </div>
   `;

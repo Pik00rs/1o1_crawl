@@ -624,7 +624,7 @@
 
 <script type="module">
 import {
-  loadCatalog, getItem, getAllItems, getAllAffixes,
+  loadCatalog, getItem, getAllItems, getAllAffixes, getAffix,
   composeItemName, ilvlToRoman,
   rollAffixValue, affixQualityPct,
 } from './items-catalog.js';
@@ -983,8 +983,23 @@ function renderReroller(){
   affixes.forEach((a, idx) => {
     const isSelected = STATE.selectedAffixIndex === idx;
     const lbl = (a.label || '').replace('X', a.value);
+    const def = getAffix(a.id);
+    const isRollable = def ? def.rollable !== false : true;
+
+    if(!isRollable){
+      // Affixe FIXE : non sélectionnable, badge 🔒, pas de quality bar
+      affixListHtml += `
+        <div class="affix-row" style="cursor: default; opacity: 0.85; border-left: 3px solid var(--fixed, #b78cff); pointer-events: none;">
+          <div class="affix-info">
+            <div class="affix-label" style="color: var(--fixed, #b78cff);">🔒 ${lbl}</div>
+          </div>
+          <div class="affix-quality-pct" style="color: var(--text-2); font-size: 9px;">FIXE</div>
+        </div>
+      `;
+      return;
+    }
+
     // Quality % calculé via la formule centrale (consistent avec drop initial)
-    const def = getAllAffixes()[a.type === 'prefix' ? 'prefixes' : 'suffixes'][a.id];
     const qualityPct = def ? affixQualityPct(a.value, def.valueRange, item.ilvl) : 50;
     const qualityPctRounded = Math.round(qualityPct);
     const qualColor = qualityPct >= 85 ? 'var(--good)' : qualityPct >= 60 ? '#fff200' : qualityPct >= 30 ? '#ffaa44' : 'var(--bad)';
@@ -1082,18 +1097,22 @@ function doReroll(){
   const affix = item.affixes?.[STATE.selectedAffixIndex];
   if(!affix) return;
 
+  // Récupère la définition de l'affixe
+  const def = getAffix(affix.id);
+  if(!def){
+    alert('Définition d\'affixe introuvable, reroll annulé');
+    return;
+  }
+  // Sécurité : ne JAMAIS rerouler les affixes non-rollables
+  if(def.rollable === false){
+    return;
+  }
+
   const biomeId = getItemBiome(item, affix);
   const resource = BIOME_RESOURCES[biomeId];
   const cost = calcRerollCost(item, affix);
   const owned = STATE.wallet[resource.id] || 0;
   if(owned < cost) return;
-
-  // Récupère la définition de l'affixe pour avoir le valueRange
-  const def = getAllAffixes()[affix.type === 'prefix' ? 'prefixes' : 'suffixes'][affix.id];
-  if(!def){
-    alert('Définition d\'affixe introuvable, reroll annulé');
-    return;
-  }
 
   // Roll via la formule centrale (skew par rareté, identique au drop initial)
   const oldValue = affix.value;
