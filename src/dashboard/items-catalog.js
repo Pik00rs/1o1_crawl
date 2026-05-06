@@ -194,13 +194,14 @@ function buildFallbackCatalog(){
     bow:        { id: 'bow', name: 'Arc', icon: '🏹', cat: 'weapon', slot: 'mainhand', handed: 1, damage: [7, 12], damageType: 'pierce', range: 4, biome: 'voidnet', affixPools: ['physical'] },
     pistol:     { id: 'pistol', name: 'Pistolet', icon: '🔫', cat: 'weapon', slot: 'mainhand', handed: 1, damage: [7, 12], damageType: 'slash', range: 5, biome: 'voidnet', affixPools: ['physical'] },
     staffPyro:  { id: 'staffPyro', name: 'Bâton Pyromantique', icon: '🔥', cat: 'weapon', slot: 'mainhand', handed: 1, damage: [8, 13], damageType: 'fire', range: 3, element: 'fire', biome: 'inferno', affixPools: ['elemental'] },
-    head:       { id: 'head', name: 'Casque', icon: '🪖', cat: 'armor', slot: 'head', biome: 'cryo', affixPools: ['armor'], implicitRollable: true },
-    chest:      { id: 'chest', name: 'Veste', icon: '🦺', cat: 'armor', slot: 'chest', biome: 'cryo', affixPools: ['armor'], implicitRollable: true },
-    legs:       { id: 'legs', name: 'Pantalon', icon: '👖', cat: 'armor', slot: 'legs', biome: 'cryo', affixPools: ['armor'], implicitRollable: true },
-    gloves:     { id: 'gloves', name: 'Gants', icon: '🧤', cat: 'armor', slot: 'gloves', biome: 'crimson', affixPools: ['armor'], implicitRollable: true },
+    headHp:     { id: 'headHp', name: 'Casque de Vitalité', icon: '🪖', cat: 'armor', slot: 'head', defenseType: 'hp', biome: 'cryo', implicit: { id: 'maxHp', valueRange: [12, 25], label: '+X PV max' }, affixPools: ['armor'] },
+    headArmor:  { id: 'headArmor', name: 'Casque d\'Acier', icon: '🪖', cat: 'armor', slot: 'head', defenseType: 'armor', biome: 'cryo', implicit: { id: 'armor', valueRange: [4, 9], label: '+X armure' }, affixPools: ['armor'] },
+    chestHp:    { id: 'chestHp', name: 'Veste de Vitalité', icon: '🦺', cat: 'armor', slot: 'chest', defenseType: 'hp', biome: 'cryo', implicit: { id: 'maxHp', valueRange: [15, 30], label: '+X PV max' }, affixPools: ['armor'] },
+    legsArmor:  { id: 'legsArmor', name: 'Pantalon d\'Acier', icon: '👖', cat: 'armor', slot: 'legs', defenseType: 'armor', biome: 'cryo', implicit: { id: 'armor', valueRange: [3, 7], label: '+X armure' }, affixPools: ['armor'] },
+    glovesArmor:{ id: 'glovesArmor', name: 'Gants d\'Acier', icon: '🧤', cat: 'armor', slot: 'gloves', defenseType: 'armor', biome: 'crimson', implicit: { id: 'armor', valueRange: [3, 6], label: '+X armure' }, affixPools: ['armor'] },
     boots:      { id: 'boots', name: 'Bottes', icon: '👢', cat: 'boots', slot: 'boots', biome: 'voidnet', implicit: { id: 'freeMovement', valueRange: [1, 1], label: '+X case mouvement gratuit/tour' }, affixPools: ['boots'] },
     amuletPyro: { id: 'amuletPyromancy', name: 'Amulette Pyromantique', icon: '🔥', cat: 'amulet', slot: 'amulet', spell: 'fireball', element: 'fire', biome: 'inferno', affixPools: ['physical', 'armor', 'amulet_specific'] },
-    ringSimple: { id: 'ringSimple', name: 'Anneau', icon: '💍', cat: 'ring', slot: 'ring', biome: 'crimson', affixPools: ['ring'], guaranteedAffixCount: 2 },
+    ring:       { id: 'ring', name: 'Anneau', icon: '💍', cat: 'ring', slot: 'ring', biome: 'crimson', affixPools: ['ring'], guaranteedAffixCount: 2 },
   };
 }
 

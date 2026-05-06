@@ -188,10 +188,11 @@
   .affix-label {
     font-size: 11px;
     line-height: 1.3;
+    color: #e8e8e8;
   }
-  .affix-label.prefix { color: var(--text-0); }
-  .affix-label.suffix { color: var(--text-0); }
-  .affix-label.base { color: #fff; }
+  .affix-label.prefix { color: #e8e8e8; }
+  .affix-label.suffix { color: #e8e8e8; }
+  .affix-label.base { color: #ffffff; }
   .affix-label.implicit { color: #aae; }
   .affix-name {
     font-size: 9px;
@@ -482,6 +483,89 @@
   }
   .affix-row.flash-good { animation: flash-good 0.8s ease-out; }
   .affix-row.flash-meh { animation: flash-meh 0.8s ease-out; }
+
+  /* === REROLL POPUP — affichage cool de la valeur rollée === */
+  @keyframes reroll-pop-in {
+    0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+    40%  { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    60%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+    85%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+  }
+  @keyframes reroll-shake {
+    0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+    25% { transform: translate(-50%, -50%) translateX(-4px); }
+    75% { transform: translate(-50%, -50%) translateX(4px); }
+  }
+  .reroll-popup {
+    position: fixed;
+    left: 50%;
+    top: 35%;
+    transform: translate(-50%, -50%);
+    z-index: 200;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.92);
+    border: 2px solid var(--accent);
+    padding: 18px 26px;
+    box-shadow: 0 0 30px rgba(255, 179, 71, 0.5);
+    text-align: center;
+    min-width: 260px;
+    animation: reroll-pop-in 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  .reroll-popup.bad {
+    border-color: var(--bad);
+    box-shadow: 0 0 30px rgba(255, 89, 89, 0.4);
+  }
+  .reroll-popup.good {
+    border-color: var(--good);
+    box-shadow: 0 0 40px rgba(95, 255, 140, 0.6);
+  }
+  .reroll-popup-header {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .reroll-popup-values {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .reroll-old-val {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--text-1);
+    text-decoration: line-through;
+    text-decoration-color: var(--bad);
+  }
+  .reroll-new-val {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--accent);
+  }
+  .reroll-popup.good .reroll-new-val { color: var(--good); }
+  .reroll-popup.bad .reroll-new-val { color: var(--bad); }
+  .reroll-popup-arrow {
+    font-size: 20px;
+    color: var(--text-2);
+  }
+  .reroll-popup-result {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .reroll-popup.good .reroll-popup-result { color: var(--good); }
+  .reroll-popup.bad .reroll-popup-result { color: var(--bad); }
+  .reroll-popup-stat {
+    font-size: 10px;
+    color: var(--text-1);
+    margin-top: 4px;
+    font-style: italic;
+  }
 
   /* === DEV TOOLS === */
   .dev-tools {
@@ -1060,7 +1144,6 @@ function doReroll(){
   if(kept){
     affix.value = newValue;
   }
-  // Si pire ou égal : affix.value reste à oldValue (rien à faire)
 
   // Paye toujours
   STATE.wallet[resource.id] = owned - cost;
@@ -1072,7 +1155,15 @@ function doReroll(){
   renderWallet();
   renderGrid();
 
-  // Flash animation : vert si on a gardé le nouveau (meilleur), rouge si on garde l'ancien (pire)
+  // POPUP cool montrant le résultat du reroll
+  showRerollPopup({
+    oldValue,
+    newValue,
+    kept,
+    statLabel: (affix.label || affix.stat || '').replace('X', kept ? newValue : oldValue),
+  });
+
+  // Flash animation sur la row
   setTimeout(() => {
     const rows = document.querySelectorAll('.affix-row[data-affix-idx]');
     const flashRow = rows[STATE.selectedAffixIndex];
@@ -1081,6 +1172,51 @@ function doReroll(){
       setTimeout(() => flashRow.classList.remove('flash-good', 'flash-meh'), 800);
     }
   }, 50);
+}
+
+/**
+ * Affiche un popup centré qui montre l'ancien → nouveau et le résultat du reroll.
+ * Auto-disparaît après 1.8s.
+ */
+function showRerollPopup({ oldValue, newValue, kept, statLabel }){
+  // Remove any existing popup
+  document.querySelectorAll('.reroll-popup').forEach(p => p.remove());
+
+  const popup = document.createElement('div');
+  popup.className = 'reroll-popup ' + (kept ? 'good' : 'bad');
+
+  let valuesHtml;
+  if(kept){
+    // Nouveau > ancien : montre l'amélioration
+    valuesHtml = `
+      <div class="reroll-popup-values">
+        <span class="reroll-old-val">${oldValue}</span>
+        <span class="reroll-popup-arrow">→</span>
+        <span class="reroll-new-val">${newValue}</span>
+      </div>
+      <div class="reroll-popup-result">✓ AMÉLIORATION GARDÉE</div>
+    `;
+  } else {
+    // Ancien gardé : montre quand même le roll perdu
+    valuesHtml = `
+      <div class="reroll-popup-values">
+        <span class="reroll-new-val" style="text-decoration: line-through; opacity: 0.6;">${newValue}</span>
+        <span class="reroll-popup-arrow">×</span>
+        <span class="reroll-old-val" style="text-decoration: none; color: var(--text-0);">${oldValue}</span>
+      </div>
+      <div class="reroll-popup-result">✗ ANCIEN CONSERVÉ</div>
+    `;
+  }
+
+  popup.innerHTML = `
+    <div class="reroll-popup-header">${kept ? '⟳ REROLL RÉUSSI' : '⟳ REROLL TENTÉ'}</div>
+    ${valuesHtml}
+    <div class="reroll-popup-stat">${statLabel}</div>
+  `;
+  document.body.appendChild(popup);
+
+  // Auto-cleanup après l'animation
+  setTimeout(() => popup.remove(), 1900);
 }
 
 boot().catch(e => {
