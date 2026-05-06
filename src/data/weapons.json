@@ -1,86 +1,72 @@
 {
   "_meta": {
-    "description": "Armes v2. Champ 'category' classifie pour le pool d'affixes : sword/dagger/hammer/bow/pistol/staff. handed = 1 ou 2.",
+    "description": "Armes v2 (slim). 1 seule arme par (catégorie × handed). Total : 6 mêlée (3 catégories × 2 handed) + 1 arc + 1 pistolet + 4 staffs = 12 armes.",
     "rules": {
       "appliedStatus": "Statut appliqué automatiquement à chaque touche (100% chance)",
-      "innateMult": "Multiplicateurs innés selon catégorie (ex: dague +100% armure, marteau -1 AP)",
-      "2HBonus": "Armes 2H = ~1.75× dégâts d'une 1H équivalente, portée 2 (mêlée), effets innés ×2",
-      "staffElement": "Pour staffs: élément déterminé par staff.element (fire/ice/shock/poison)"
+      "innateMult": "Multiplicateurs innés selon catégorie (dague +%armure, marteau -AP, etc.)",
+      "2HBonus": "2H = ~1.75× dégâts d'1H, portée 2 (mêlée), effets innés ×2",
+      "staffElement": "Pour staffs: élément déterminé par staff.element"
     }
   },
 
-  "swordRusty": {
-    "id": "swordRusty", "name": "Épée rouillée", "icon": "🗡️",
-    "slot": "weapon1H", "category": "sword", "handed": 1,
-    "damage": [6, 10], "damageType": "slash", "range": 1,
-    "appliedStatus": "bleeding", "biome": "crimson",
-    "affixPools": ["physical"]
-  },
-  "swordIron": {
-    "id": "swordIron", "name": "Épée de fer", "icon": "⚔️",
+  "sword1H": {
+    "id": "sword1H", "name": "Épée", "icon": "⚔️",
     "slot": "weapon1H", "category": "sword", "handed": 1,
     "damage": [9, 14], "damageType": "slash", "range": 1,
     "appliedStatus": "bleeding", "biome": "crimson",
     "affixPools": ["physical"]
   },
-  "swordSteel": {
-    "id": "swordSteel", "name": "Épée d'acier", "icon": "⚔️",
-    "slot": "weapon1H", "category": "sword", "handed": 1,
-    "damage": [11, 17], "damageType": "slash", "range": 1,
-    "appliedStatus": "bleeding", "biome": "crimson",
-    "affixPools": ["physical"]
-  },
 
-  "espadon": {
-    "id": "espadon", "name": "Espadon", "icon": "⚔️",
+  "sword2H": {
+    "id": "sword2H", "name": "Espadon", "icon": "⚔️",
     "slot": "weapon2H", "category": "sword", "handed": 2,
     "damage": [16, 25], "damageType": "slash", "range": 2,
     "appliedStatus": "bleeding", "bleedDamageMult": 2.0, "biome": "crimson",
     "affixPools": ["physical"]
   },
 
-  "daggerSwift": {
-    "id": "daggerSwift", "name": "Dague véloce", "icon": "🔪",
+  "dagger1H": {
+    "id": "dagger1H", "name": "Dague", "icon": "🔪",
     "slot": "weapon1H", "category": "dagger", "handed": 1,
     "damage": [5, 9], "damageType": "pierce", "range": 1,
     "armorDamageBonusPct": 100, "biome": "crimson",
     "affixPools": ["physical"]
   },
 
-  "picCoeur": {
-    "id": "picCoeur", "name": "Pic-Cœur", "icon": "🗡️",
+  "dagger2H": {
+    "id": "dagger2H", "name": "Pic-Cœur", "icon": "🗡️",
     "slot": "weapon2H", "category": "dagger", "handed": 2,
     "damage": [10, 16], "damageType": "pierce", "range": 2,
     "armorDamageBonusPct": 200, "biome": "crimson",
     "affixPools": ["physical"]
   },
 
-  "maceOfHonor": {
-    "id": "maceOfHonor", "name": "Masse d'honneur", "icon": "🔨",
+  "hammer1H": {
+    "id": "hammer1H", "name": "Marteau", "icon": "🔨",
     "slot": "weapon1H", "category": "hammer", "handed": 1,
     "damage": [8, 13], "damageType": "blunt", "range": 1,
     "apReductionOnHit": 1, "biome": "inferno",
     "affixPools": ["physical"]
   },
 
-  "warhammer": {
-    "id": "warhammer", "name": "Marteau de guerre", "icon": "🛠️",
+  "hammer2H": {
+    "id": "hammer2H", "name": "Marteau de Guerre", "icon": "🛠️",
     "slot": "weapon2H", "category": "hammer", "handed": 2,
     "damage": [14, 22], "damageType": "blunt", "range": 2,
     "apReductionOnHit": 2, "biome": "inferno",
     "affixPools": ["physical"]
   },
 
-  "shortbow": {
-    "id": "shortbow", "name": "Arc court", "icon": "🏹",
+  "bow": {
+    "id": "bow", "name": "Arc", "icon": "🏹",
     "slot": "weapon1H", "category": "bow", "handed": 1,
     "damage": [7, 12], "damageType": "pierce", "range": 4,
     "armorDamageBonusPct": 100, "biome": "voidnet",
     "affixPools": ["physical"]
   },
 
-  "pistolHeavy": {
-    "id": "pistolHeavy", "name": "Pistolet lourd", "icon": "🔫",
+  "pistol": {
+    "id": "pistol", "name": "Pistolet", "icon": "🔫",
     "slot": "weapon1H", "category": "pistol", "handed": 1,
     "damage": [7, 12], "damageType": "slash", "range": 5,
     "biome": "voidnet",
