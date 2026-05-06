@@ -385,17 +385,17 @@
 
   "tome": {
     "tomeElemDamagePct": {
-      "id": "tomeElemDamagePct", "name": "Tome Magique", "type": "prefix",
+      "id": "tomeElemDamagePct", "name": "Magique", "type": "prefix",
       "stat": "elemDamagePct", "label": "+X% dégâts élémentaires globaux",
       "valueRange": [10, 25], "pool": "tome", "biome": "inferno"
     },
     "tomeSpellRange": {
-      "id": "tomeSpellRange", "name": "Tome de Vision", "type": "prefix",
+      "id": "tomeSpellRange", "name": "de Vision", "type": "prefix",
       "stat": "spellRange", "label": "+X portée des sorts",
       "valueRange": [1, 2], "pool": "tome", "biome": "voidnet"
     },
     "tomeAPCost": {
-      "id": "tomeAPCost", "name": "Tome Économe", "type": "suffix",
+      "id": "tomeAPCost", "name": "Économe", "type": "suffix",
       "stat": "spellAPCostReduction", "label": "-X% coût AP des sorts",
       "valueRange": [5, 15], "pool": "tome", "biome": "inferno"
     }
@@ -403,22 +403,22 @@
 
   "quiver": {
     "quiverBowRange": {
-      "id": "quiverBowRange", "name": "Carquois Long", "type": "prefix",
+      "id": "quiverBowRange", "name": "Long", "type": "prefix",
       "stat": "bowRangeBonus", "label": "+1 portée à l'arc",
       "valueRange": [1, 1], "pool": "quiver", "biome": "voidnet"
     },
     "quiverPierceDmg": {
-      "id": "quiverPierceDmg", "name": "Carquois Perce", "type": "prefix",
+      "id": "quiverPierceDmg", "name": "Perce", "type": "prefix",
       "stat": "pierceDamagePct", "label": "+X% dégâts perce",
       "valueRange": [10, 25], "pool": "quiver", "biome": "crimson"
     },
     "quiverMaxRangeDmg": {
-      "id": "quiverMaxRangeDmg", "name": "Carquois de Précision", "type": "prefix",
+      "id": "quiverMaxRangeDmg", "name": "de Précision", "type": "prefix",
       "stat": "maxRangeDamage", "label": "+X dégâts à portée max",
       "valueRange": [3, 8], "pool": "quiver", "biome": "voidnet"
     },
     "quiverMultishot": {
-      "id": "quiverMultishot", "name": "Carquois Multishot", "type": "suffix",
+      "id": "quiverMultishot", "name": "Multishot", "type": "suffix",
       "stat": "multishotChance", "label": "+X% chance tirer 2 flèches",
       "valueRange": [10, 25], "pool": "quiver", "biome": "voidnet"
     }
@@ -426,17 +426,17 @@
 
   "charger": {
     "chargerFreeShot": {
-      "id": "chargerFreeShot", "name": "Chargeur Allégé", "type": "prefix",
+      "id": "chargerFreeShot", "name": "Allégé", "type": "prefix",
       "stat": "freeShotChance", "label": "+X% chance tir sans coût AP",
       "valueRange": [5, 15], "pool": "charger", "biome": "voidnet"
     },
     "chargerKillReload": {
-      "id": "chargerKillReload", "name": "Chargeur Recharge", "type": "suffix",
+      "id": "chargerKillReload", "name": "de Recharge", "type": "suffix",
       "stat": "killReloadChance", "label": "+X% chance tir gratis après un kill",
       "valueRange": [15, 35], "pool": "charger", "biome": "voidnet"
     },
     "chargerHeadshot": {
-      "id": "chargerHeadshot", "name": "Chargeur Sniper", "type": "prefix",
+      "id": "chargerHeadshot", "name": "Sniper", "type": "prefix",
       "stat": "headshotDamagePct", "label": "+X% dégâts headshot (crit ranged)",
       "valueRange": [15, 35], "pool": "charger", "biome": "voidnet"
     }
@@ -444,22 +444,22 @@
 
   "shield": {
     "shieldParry": {
-      "id": "shieldParry", "name": "Bouclier de Parade", "type": "prefix",
+      "id": "shieldParry", "name": "de Parade", "type": "prefix",
       "stat": "parryChance", "label": "+X% chance bloquer (parry)",
       "valueRange": [5, 15], "pool": "shield", "biome": "cryo"
     },
     "shieldThorns": {
-      "id": "shieldThorns", "name": "Bouclier Épineux", "type": "prefix",
+      "id": "shieldThorns", "name": "Épineux", "type": "prefix",
       "stat": "blockThornsDamage", "label": "+X dégâts retournés sur block",
       "valueRange": [3, 10], "pool": "shield", "biome": "crimson"
     },
     "shieldFortify": {
-      "id": "shieldFortify", "name": "Bouclier de Fortification", "type": "suffix",
+      "id": "shieldFortify", "name": "de Fortification", "type": "suffix",
       "stat": "fortifyPct", "label": "+X% réduction dégâts pour 2 tours après un coup",
       "valueRange": [10, 25], "pool": "shield", "biome": "cryo"
     },
     "shieldRiposte": {
-      "id": "shieldRiposte", "name": "Bouclier de Riposte", "type": "suffix",
+      "id": "shieldRiposte", "name": "de Riposte", "type": "suffix",
       "stat": "riposteChance", "label": "+X% chance riposter quand on prend un coup",
       "valueRange": [10, 25], "pool": "shield", "biome": "crimson"
     }
