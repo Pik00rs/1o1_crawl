@@ -189,8 +189,8 @@
     font-size: 11px;
     line-height: 1.3;
   }
-  .affix-label.prefix { color: var(--r-magic-bright); }
-  .affix-label.suffix { color: var(--r-epic-bright); }
+  .affix-label.prefix { color: var(--text-0); }
+  .affix-label.suffix { color: var(--text-0); }
   .affix-label.base { color: #fff; }
   .affix-label.implicit { color: #aae; }
   .affix-name {
@@ -946,8 +946,7 @@ function renderReroller(){
     affixListHtml += `
       <button class="affix-row ${isSelected ? 'selected' : ''}" data-affix-idx="${idx}">
         <div class="affix-info">
-          <div class="affix-label ${a.type}">${a.type === 'prefix' ? '+' : '+'} ${lbl}</div>
-          <div class="affix-name"><span class="tag">${a.type === 'prefix' ? 'P' : 'S'}</span> ${a.name || a.id}</div>
+          <div class="affix-label">+ ${lbl}</div>
         </div>
         <div class="affix-quality-bar">
           <div style="width: ${qualityPctRounded}%; background: ${qualColor};"></div>
@@ -975,10 +974,11 @@ function renderReroller(){
     const cost = calcRerollCost(item, selectedAffix);
     const owned = STATE.wallet[resource.id] || 0;
     const affordable = owned >= cost;
+    const affixDisplayLabel = (selectedAffix.label || '').replace('X', selectedAffix.value);
     actionHtml = `
       <div class="reroll-action">
         <div class="reroll-info">
-          <span>Reroll <b>${selectedAffix.name || selectedAffix.id}</b></span>
+          <span>Reroll : <b>${affixDisplayLabel}</b></span>
           <div class="reroll-cost-display ${affordable ? 'affordable' : 'broke'}">
             <span style="font-size:12px;">${resource.icon}</span>
             <b>${cost}</b> / ${owned}
@@ -1052,10 +1052,17 @@ function doReroll(){
 
   // Roll via la formule centrale (skew par rareté, identique au drop initial)
   const oldValue = affix.value;
-  const finalVal = rollAffixValue(def.valueRange, item.rarity, item.ilvl);
-  affix.value = finalVal;
+  const newValue = rollAffixValue(def.valueRange, item.rarity, item.ilvl);
 
-  // Pay
+  // GARDE LE MEILLEUR : si nouveau roll < ancien, on garde l'ancien
+  // L'essence est consommée dans TOUS les cas (tu paies pour la chance d'améliorer)
+  const kept = newValue > oldValue;
+  if(kept){
+    affix.value = newValue;
+  }
+  // Si pire ou égal : affix.value reste à oldValue (rien à faire)
+
+  // Paye toujours
   STATE.wallet[resource.id] = owned - cost;
 
   saveChest();
@@ -1065,12 +1072,12 @@ function doReroll(){
   renderWallet();
   renderGrid();
 
-  // Flash animation : vert si meilleur, rouge si pire ou égal
+  // Flash animation : vert si on a gardé le nouveau (meilleur), rouge si on garde l'ancien (pire)
   setTimeout(() => {
     const rows = document.querySelectorAll('.affix-row[data-affix-idx]');
     const flashRow = rows[STATE.selectedAffixIndex];
     if(flashRow){
-      flashRow.classList.add(finalVal > oldValue ? 'flash-good' : 'flash-meh');
+      flashRow.classList.add(kept ? 'flash-good' : 'flash-meh');
       setTimeout(() => flashRow.classList.remove('flash-good', 'flash-meh'), 800);
     }
   }, 50);
