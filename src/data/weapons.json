@@ -1,134 +1,122 @@
 {
   "_meta": {
-    "description": "Armes du jeu. Format simplifié : chaque arme dérive automatiquement 2 attaques (light + heavy) via weapon-attacks.js, basées sur son damageType.",
-    "format": {
-      "id": "ID unique",
-      "name": "Nom affiché",
-      "icon": "Emoji",
-      "slot": "weapon1H | weapon2H",
-      "damage": "[min, max]",
-      "damageType": "slash | pierce | blunt | fire | ice | shock | poison | magic",
-      "range": "Portée en cases (1 = CaC, 4-6 = ranged)",
-      "lightAttack (optionnel)": { "name": "Override nom", "statusChance": "Override % chance statut" },
-      "heavyAttack (optionnel)": { "name": "...", "statusChance": "...", "damageMult": "..." }
+    "description": "Armes v2. Champ 'category' classifie pour le pool d'affixes : sword/dagger/hammer/bow/pistol/staff. handed = 1 ou 2.",
+    "rules": {
+      "appliedStatus": "Statut appliqué automatiquement à chaque touche (100% chance)",
+      "innateMult": "Multiplicateurs innés selon catégorie (ex: dague +100% armure, marteau -1 AP)",
+      "2HBonus": "Armes 2H = ~1.75× dégâts d'une 1H équivalente, portée 2 (mêlée), effets innés ×2",
+      "staffElement": "Pour staffs: élément déterminé par staff.element (fire/ice/shock/poison)"
     }
   },
 
   "swordRusty": {
-    "id": "swordRusty",
-    "name": "Épée rouillée",
-    "icon": "🗡️",
-    "slot": "weapon1H",
-    "damage": [6, 10],
-    "damageType": "slash",
-    "range": 1
+    "id": "swordRusty", "name": "Épée rouillée", "icon": "🗡️",
+    "slot": "weapon1H", "category": "sword", "handed": 1,
+    "damage": [6, 10], "damageType": "slash", "range": 1,
+    "appliedStatus": "bleeding", "biome": "crimson",
+    "affixPools": ["physical"]
   },
-
   "swordIron": {
-    "id": "swordIron",
-    "name": "Épée de fer",
-    "icon": "⚔️",
-    "slot": "weapon1H",
-    "damage": [9, 14],
-    "damageType": "slash",
-    "range": 1
+    "id": "swordIron", "name": "Épée de fer", "icon": "⚔️",
+    "slot": "weapon1H", "category": "sword", "handed": 1,
+    "damage": [9, 14], "damageType": "slash", "range": 1,
+    "appliedStatus": "bleeding", "biome": "crimson",
+    "affixPools": ["physical"]
+  },
+  "swordSteel": {
+    "id": "swordSteel", "name": "Épée d'acier", "icon": "⚔️",
+    "slot": "weapon1H", "category": "sword", "handed": 1,
+    "damage": [11, 17], "damageType": "slash", "range": 1,
+    "appliedStatus": "bleeding", "biome": "crimson",
+    "affixPools": ["physical"]
   },
 
-  "axeBerserker": {
-    "id": "axeBerserker",
-    "name": "Hache de berserker",
-    "icon": "🪓",
-    "slot": "weapon2H",
-    "damage": [13, 22],
-    "damageType": "slash",
-    "range": 1,
-    "lightAttack": { "statusChance": 25 },
-    "heavyAttack": { "name": "Sang et fureur", "statusChance": 80 }
+  "espadon": {
+    "id": "espadon", "name": "Espadon", "icon": "⚔️",
+    "slot": "weapon2H", "category": "sword", "handed": 2,
+    "damage": [16, 25], "damageType": "slash", "range": 2,
+    "appliedStatus": "bleeding", "bleedDamageMult": 2.0, "biome": "crimson",
+    "affixPools": ["physical"]
   },
 
   "daggerSwift": {
-    "id": "daggerSwift",
-    "name": "Dague véloce",
-    "icon": "🔪",
-    "slot": "weapon1H",
-    "damage": [5, 9],
-    "damageType": "pierce",
-    "range": 1,
-    "heavyAttack": { "damageMult": 1.8 }
+    "id": "daggerSwift", "name": "Dague véloce", "icon": "🔪",
+    "slot": "weapon1H", "category": "dagger", "handed": 1,
+    "damage": [5, 9], "damageType": "pierce", "range": 1,
+    "armorDamageBonusPct": 100, "biome": "crimson",
+    "affixPools": ["physical"]
   },
 
-  "pistolHeavy": {
-    "id": "pistolHeavy",
-    "name": "Pistolet lourd",
-    "icon": "🔫",
-    "slot": "weapon1H",
-    "damage": [7, 12],
-    "damageType": "pierce",
-    "range": 5
+  "picCoeur": {
+    "id": "picCoeur", "name": "Pic-Cœur", "icon": "🗡️",
+    "slot": "weapon2H", "category": "dagger", "handed": 2,
+    "damage": [10, 16], "damageType": "pierce", "range": 2,
+    "armorDamageBonusPct": 200, "biome": "crimson",
+    "affixPools": ["physical"]
   },
 
   "maceOfHonor": {
-    "id": "maceOfHonor",
-    "name": "Masse d'honneur",
-    "icon": "🔨",
-    "slot": "weapon1H",
-    "damage": [8, 13],
-    "damageType": "blunt",
-    "range": 1,
-    "heavyAttack": { "name": "Brise-crâne", "statusChance": 60 }
+    "id": "maceOfHonor", "name": "Masse d'honneur", "icon": "🔨",
+    "slot": "weapon1H", "category": "hammer", "handed": 1,
+    "damage": [8, 13], "damageType": "blunt", "range": 1,
+    "apReductionOnHit": 1, "biome": "inferno",
+    "affixPools": ["physical"]
   },
 
   "warhammer": {
-    "id": "warhammer",
-    "name": "Marteau de guerre",
-    "icon": "🛠️",
-    "slot": "weapon2H",
-    "damage": [14, 22],
-    "damageType": "blunt",
-    "range": 1,
-    "lightAttack": { "statusChance": 20 },
-    "heavyAttack": { "statusChance": 70, "damageMult": 1.7 }
+    "id": "warhammer", "name": "Marteau de guerre", "icon": "🛠️",
+    "slot": "weapon2H", "category": "hammer", "handed": 2,
+    "damage": [14, 22], "damageType": "blunt", "range": 2,
+    "apReductionOnHit": 2, "biome": "inferno",
+    "affixPools": ["physical"]
   },
 
-  "flameSword": {
-    "id": "flameSword",
-    "name": "Lame Ardente",
-    "icon": "🔥",
-    "slot": "weapon1H",
-    "damage": [8, 13],
-    "damageType": "fire",
-    "range": 1
+  "shortbow": {
+    "id": "shortbow", "name": "Arc court", "icon": "🏹",
+    "slot": "weapon1H", "category": "bow", "handed": 1,
+    "damage": [7, 12], "damageType": "pierce", "range": 4,
+    "armorDamageBonusPct": 100, "biome": "voidnet",
+    "affixPools": ["physical"]
   },
 
-  "iceStaff": {
-    "id": "iceStaff",
-    "name": "Bâton de Givre",
-    "icon": "❄️",
-    "slot": "weapon2H",
-    "damage": [10, 15],
-    "damageType": "ice",
-    "range": 4
+  "pistolHeavy": {
+    "id": "pistolHeavy", "name": "Pistolet lourd", "icon": "🔫",
+    "slot": "weapon1H", "category": "pistol", "handed": 1,
+    "damage": [7, 12], "damageType": "slash", "range": 5,
+    "biome": "voidnet",
+    "affixPools": ["physical"]
   },
 
-  "stormWand": {
-    "id": "stormWand",
-    "name": "Baguette d'orage",
-    "icon": "⚡",
-    "slot": "weapon1H",
-    "damage": [9, 14],
-    "damageType": "shock",
-    "range": 4
+  "staffPyro": {
+    "id": "staffPyro", "name": "Bâton Pyromantique", "icon": "🔥",
+    "slot": "weapon1H", "category": "staff", "handed": 1,
+    "damage": [8, 13], "damageType": "fire", "range": 3,
+    "appliedStatus": "burning", "element": "fire", "biome": "inferno",
+    "affixPools": ["elemental"]
   },
 
-  "venomFang": {
-    "id": "venomFang",
-    "name": "Croc venimeux",
-    "icon": "☣️",
-    "slot": "weapon1H",
-    "damage": [6, 10],
-    "damageType": "poison",
-    "range": 1,
-    "lightAttack": { "statusChance": 35 },
-    "heavyAttack": { "statusChance": 75 }
+  "staffCryo": {
+    "id": "staffCryo", "name": "Bâton Cryomantique", "icon": "❄️",
+    "slot": "weapon1H", "category": "staff", "handed": 1,
+    "damage": [7, 12], "damageType": "ice", "range": 3,
+    "appliedStatus": "chilled", "element": "ice", "biome": "cryo",
+    "affixPools": ["elemental"]
+  },
+
+  "staffStorm": {
+    "id": "staffStorm", "name": "Bâton de Foudre", "icon": "⚡",
+    "slot": "weapon1H", "category": "staff", "handed": 1,
+    "damage": [6, 11], "damageType": "shock", "range": 3,
+    "appliedStatus": "shocked", "element": "shock",
+    "aoeRadius": 1, "aoeFalloff": 0.5, "biome": "voidnet",
+    "affixPools": ["elemental"]
+  },
+
+  "staffPlague": {
+    "id": "staffPlague", "name": "Bâton de Plague", "icon": "☠️",
+    "slot": "weapon1H", "category": "staff", "handed": 1,
+    "damage": [7, 12], "damageType": "poison", "range": 3,
+    "appliedStatus": "poisoned", "element": "poison", "biome": "toxic",
+    "affixPools": ["elemental"]
   }
 }

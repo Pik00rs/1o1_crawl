@@ -1,0 +1,82 @@
+{
+  "_meta": {
+    "description": "Off-hands v2. 4 catégories : tome (staff), shield (mêlée 1H sauf arc/pistolet/staff), quiver (arc), charger (pistolet).",
+    "compatRules": {
+      "tome": "Compatible: staff",
+      "shield": "Compatible: sword, dagger, hammer (mêlée 1H)",
+      "quiver": "Compatible: bow",
+      "charger": "Compatible: pistol"
+    },
+    "affixPools": "Tome = elemental + tome ; Shield = armor + shield ; Quiver = physical + quiver ; Charger = physical + charger"
+  },
+
+  "tomeFlame": {
+    "id": "tomeFlame", "name": "Tome des Flammes", "icon": "🔥",
+    "slot": "offhand", "category": "tome", "compatibleWith": ["staff"],
+    "biome": "inferno",
+    "affixPools": ["elemental", "tome"]
+  },
+  "tomeFrost": {
+    "id": "tomeFrost", "name": "Tome de Givre", "icon": "❄️",
+    "slot": "offhand", "category": "tome", "compatibleWith": ["staff"],
+    "biome": "cryo",
+    "affixPools": ["elemental", "tome"]
+  },
+  "tomeStorm": {
+    "id": "tomeStorm", "name": "Tome d'Orage", "icon": "⚡",
+    "slot": "offhand", "category": "tome", "compatibleWith": ["staff"],
+    "biome": "voidnet",
+    "affixPools": ["elemental", "tome"]
+  },
+  "tomePlague": {
+    "id": "tomePlague", "name": "Tome de Plague", "icon": "☠️",
+    "slot": "offhand", "category": "tome", "compatibleWith": ["staff"],
+    "biome": "toxic",
+    "affixPools": ["elemental", "tome"]
+  },
+
+  "shieldWooden": {
+    "id": "shieldWooden", "name": "Bouclier en bois", "icon": "🛡️",
+    "slot": "offhand", "category": "shield", "compatibleWith": ["sword", "dagger", "hammer"],
+    "biome": "crimson",
+    "affixPools": ["armor", "shield"]
+  },
+  "shieldIron": {
+    "id": "shieldIron", "name": "Bouclier en fer", "icon": "🛡️",
+    "slot": "offhand", "category": "shield", "compatibleWith": ["sword", "dagger", "hammer"],
+    "biome": "cryo",
+    "affixPools": ["armor", "shield"]
+  },
+  "shieldTower": {
+    "id": "shieldTower", "name": "Tour bouclier", "icon": "🏰",
+    "slot": "offhand", "category": "shield", "compatibleWith": ["sword", "dagger", "hammer"],
+    "biome": "cryo",
+    "affixPools": ["armor", "shield"]
+  },
+
+  "quiverLeather": {
+    "id": "quiverLeather", "name": "Carquois de cuir", "icon": "🎯",
+    "slot": "offhand", "category": "quiver", "compatibleWith": ["bow"],
+    "biome": "voidnet",
+    "affixPools": ["physical", "quiver"]
+  },
+  "quiverHunter": {
+    "id": "quiverHunter", "name": "Carquois du chasseur", "icon": "🏹",
+    "slot": "offhand", "category": "quiver", "compatibleWith": ["bow"],
+    "biome": "voidnet",
+    "affixPools": ["physical", "quiver"]
+  },
+
+  "chargerStandard": {
+    "id": "chargerStandard", "name": "Chargeur standard", "icon": "🔋",
+    "slot": "offhand", "category": "charger", "compatibleWith": ["pistol"],
+    "biome": "voidnet",
+    "affixPools": ["physical", "charger"]
+  },
+  "chargerExtended": {
+    "id": "chargerExtended", "name": "Chargeur étendu", "icon": "🔫",
+    "slot": "offhand", "category": "charger", "compatibleWith": ["pistol"],
+    "biome": "voidnet",
+    "affixPools": ["physical", "charger"]
+  }
+}

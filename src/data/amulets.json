@@ -1,44 +1,34 @@
 {
   "_meta": {
-    "description": "Amulettes : chaque amulette donne 1 sort actif (référence dans spells.json). Le sort est ajouté automatiquement aux actions du joueur.",
-    "format": {
-      "id": "ID unique",
-      "name": "Nom affiché",
-      "icon": "Emoji",
-      "slot": "amulet",
-      "spell": "ID du sort dans spells.json"
-    }
+    "description": "Amulettes v2. Chaque amulette donne le 3ème sort du joueur (un par élément). Pool d'affixes large : physical + armor + amulet_specific.",
+    "rule": "Le sort donné par l'amulette s'ajoute aux 2 spells de base du joueur."
   },
 
   "amuletPyromancy": {
-    "id": "amuletPyromancy",
-    "name": "Amulette Pyromantique",
-    "icon": "🔥",
-    "slot": "amulet",
-    "spell": "fireball"
+    "id": "amuletPyromancy", "name": "Amulette Pyromantique", "icon": "🔥",
+    "slot": "amulet", "category": "amulet", "biome": "inferno",
+    "spell": "fireball", "element": "fire",
+    "affixPools": ["physical", "armor", "amulet_specific"]
   },
 
   "amuletCryomancy": {
-    "id": "amuletCryomancy",
-    "name": "Amulette Cryomantique",
-    "icon": "❄️",
-    "slot": "amulet",
-    "spell": "frostBolt"
+    "id": "amuletCryomancy", "name": "Amulette Cryomantique", "icon": "❄️",
+    "slot": "amulet", "category": "amulet", "biome": "cryo",
+    "spell": "frostBolt", "element": "ice",
+    "affixPools": ["physical", "armor", "amulet_specific"]
   },
 
   "amuletStorm": {
-    "id": "amuletStorm",
-    "name": "Amulette d'orage",
-    "icon": "⚡",
-    "slot": "amulet",
-    "spell": "lightningStrike"
+    "id": "amuletStorm", "name": "Amulette d'orage", "icon": "⚡",
+    "slot": "amulet", "category": "amulet", "biome": "voidnet",
+    "spell": "lightningStrike", "element": "shock",
+    "affixPools": ["physical", "armor", "amulet_specific"]
   },
 
   "amuletPlague": {
-    "id": "amuletPlague",
-    "name": "Amulette de peste",
-    "icon": "☣️",
-    "slot": "amulet",
-    "spell": "toxicCloud"
+    "id": "amuletPlague", "name": "Amulette de Plague", "icon": "☠️",
+    "slot": "amulet", "category": "amulet", "biome": "toxic",
+    "spell": "toxicCloud", "element": "poison",
+    "affixPools": ["physical", "armor", "amulet_specific"]
   }
 }

@@ -1,316 +1,490 @@
 {
   "_meta": {
-    "description": "Pool d'affixes (préfixes et suffixes) qui peuvent être rollés sur les items.",
+    "description": "Pool d'affixes v2. Chaque affixe est rattaché à un POOL (élem, physical, armor, boots, ring, amulet_specific, tome, quiver, charger, shield, elite). Un item ne pioche que dans les pools compatibles avec sa catégorie.",
     "rules": {
-      "ranges": "Les valueRange définies sont les BASES (à iLvl 5). Le générateur applique ensuite multiplicateur d'iLvl.",
-      "tierRanges": {
-        "magic": "60-100% du base",
-        "rare": "80-130% du base",
-        "epic": "100-160% du base",
-        "legendary": "130-200% du base",
-        "set": "90-140% du base"
-      },
-      "validSlots": "Liste de slots où l'affixe peut apparaître. Vide = tous slots.",
-      "tags": "Tags servent aux synergies (Resonance, sets, biomes)."
+      "valueRange": "Bornes du roll (à iLvl 5, base). Multiplié par ilvlMult selon iLvl.",
+      "biome": "Biome dont l'essence est requise pour le reroll (mapping ressources)",
+      "type": "prefix ou suffix (cosmétique pour le nom composé)",
+      "pool": "Détermine quels items peuvent recevoir cet affixe",
+      "isElite": "Si true, ne roll que sur Epic ou Legendary"
     }
   },
-  "prefixes": {
-    "flaming": {
-      "id": "flaming",
-      "name": "Enflammée",
-      "type": "prefix",
-      "stat": "bonusFireDamage",
-      "label": "+X dégâts Feu",
-      "valueRange": [3, 8],
-      "tags": ["Fire"],
-      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
-      "biome": "inferno"
+
+  "elemental": {
+    "elemDamageFlat": {
+      "id": "elemDamageFlat", "name": "Élémentaire", "type": "prefix",
+      "stat": "bonusElemDamage", "label": "+X dégâts élémentaires",
+      "valueRange": [3, 8], "pool": "elemental", "biome": "inferno"
     },
-    "freezing": {
-      "id": "freezing",
-      "name": "Glaciale",
-      "type": "prefix",
-      "stat": "bonusIceDamage",
-      "label": "+X dégâts Glace",
-      "valueRange": [3, 8],
-      "tags": ["Ice"],
-      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
-      "biome": "cryo"
+    "elemDamagePct": {
+      "id": "elemDamagePct", "name": "Magique", "type": "prefix",
+      "stat": "elemDamagePct", "label": "+X% dégâts élémentaires",
+      "valueRange": [8, 20], "pool": "elemental", "biome": "inferno"
     },
-    "venomous": {
-      "id": "venomous",
-      "name": "Venimeuse",
-      "type": "prefix",
-      "stat": "bonusPoisonDamage",
-      "label": "+X dégâts Poison",
-      "valueRange": [3, 7],
-      "tags": ["Poison"],
-      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
-      "biome": "toxic"
+    "elemCritChance": {
+      "id": "elemCritChance", "name": "Aiguisée", "type": "prefix",
+      "stat": "elemCritChance", "label": "+X% crit chance élémentaire",
+      "valueRange": [3, 8], "pool": "elemental", "biome": "voidnet"
     },
-    "shocking": {
-      "id": "shocking",
-      "name": "Foudroyante",
-      "type": "prefix",
-      "stat": "bonusShockDamage",
-      "label": "+X dégâts Foudre",
-      "valueRange": [3, 8],
-      "tags": ["Shock"],
-      "validSlots": ["mainhand", "ring", "amulet", "gloves"],
-      "biome": "voidnet"
+    "elemCritDamage": {
+      "id": "elemCritDamage", "name": "Foudroyante", "type": "prefix",
+      "stat": "elemCritDamage", "label": "+X% crit damage élémentaire",
+      "valueRange": [10, 25], "pool": "elemental", "biome": "voidnet"
     },
-    "bloody": {
-      "id": "bloody",
-      "name": "Sanglante",
-      "type": "prefix",
-      "stat": "bleedChance",
-      "label": "+X% chance Saignement",
-      "valueRange": [8, 18],
-      "tags": ["Bleed"],
-      "validSlots": ["mainhand"],
-      "biome": "crimson"
+    "elemLifesteal": {
+      "id": "elemLifesteal", "name": "Vampirique", "type": "suffix",
+      "stat": "elemLifesteal", "label": "+X% lifesteal élémentaire",
+      "valueRange": [3, 8], "pool": "elemental", "biome": "toxic"
     },
-    "sharp": {
-      "id": "sharp",
-      "name": "Tranchante",
-      "type": "prefix",
-      "stat": "bonusSlashDamage",
-      "label": "+X dégâts Tranchants",
-      "valueRange": [3, 7],
-      "tags": ["Slash"],
-      "validSlots": ["mainhand", "gloves"]
+    "elemDuration": {
+      "id": "elemDuration", "name": "Persistante", "type": "suffix",
+      "stat": "elemStatusDuration", "label": "+X% durée statuts élémentaires",
+      "valueRange": [10, 30], "pool": "elemental", "biome": "inferno"
     },
-    "piercing": {
-      "id": "piercing",
-      "name": "Perçante",
-      "type": "prefix",
-      "stat": "bonusPierceDamage",
-      "label": "+X dégâts Perforants",
-      "valueRange": [3, 7],
-      "tags": ["Pierce"],
-      "validSlots": ["mainhand", "gloves"]
+    "comboParalyzed": {
+      "id": "comboParalyzed", "name": "de Paralysie", "type": "suffix",
+      "stat": "triggerParalyzed", "label": "Gelé→Paralysé sur re-frappe",
+      "valueRange": [1, 1], "pool": "elemental", "biome": "cryo"
     },
-    "crushing": {
-      "id": "crushing",
-      "name": "Écrasante",
-      "type": "prefix",
-      "stat": "bonusBluntDamage",
-      "label": "+X dégâts Contondants",
-      "valueRange": [3, 7],
-      "tags": ["Blunt"],
-      "validSlots": ["mainhand", "gloves"]
+    "comboExplosion": {
+      "id": "comboExplosion", "name": "Explosive", "type": "suffix",
+      "stat": "triggerExplosion", "label": "Brûlé→Explosion AOE 3×3 sur re-frappe",
+      "valueRange": [1, 1], "pool": "elemental", "biome": "inferno"
     },
-    "vicious": {
-      "id": "vicious",
-      "name": "Vicieuse",
-      "type": "prefix",
-      "stat": "critChance",
-      "label": "+X% chance crit",
-      "valueRange": [3, 8],
-      "tags": ["Crit"],
-      "validSlots": ["mainhand", "offhand", "gloves", "ring", "amulet"]
+    "comboSick": {
+      "id": "comboSick", "name": "Pestiférée", "type": "suffix",
+      "stat": "triggerSick", "label": "Empoisonné→Silencé sur re-frappe",
+      "valueRange": [1, 1], "pool": "elemental", "biome": "toxic"
     },
-    "deadly": {
-      "id": "deadly",
-      "name": "Mortelle",
-      "type": "prefix",
-      "stat": "critMultiplier",
-      "label": "+X% multiplicateur crit",
-      "valueRange": [10, 25],
-      "tags": ["Crit"],
-      "validSlots": ["mainhand", "offhand", "gloves", "ring", "amulet"]
+    "comboElectrocuted": {
+      "id": "comboElectrocuted", "name": "Électrocutante", "type": "suffix",
+      "stat": "triggerElectrocuted", "label": "Électrifié→Électrocuté sur re-frappe",
+      "valueRange": [1, 1], "pool": "elemental", "biome": "voidnet"
     },
-    "swift": {
-      "id": "swift",
-      "name": "Rapide",
-      "type": "prefix",
-      "stat": "bonusAP",
-      "label": "+X AP par tour",
-      "valueRange": [1, 1],
-      "tags": ["Mobility"],
-      "validSlots": ["boots", "amulet", "ring"]
+    "afflictedBonus": {
+      "id": "afflictedBonus", "name": "Implacable", "type": "prefix",
+      "stat": "afflictedDamageBonus", "label": "+X% dégâts contre cibles afflictées",
+      "valueRange": [10, 25], "pool": "elemental", "biome": "inferno"
     },
-    "reinforced": {
-      "id": "reinforced",
-      "name": "Renforcée",
-      "type": "prefix",
-      "stat": "armor",
-      "label": "+X armure",
-      "valueRange": [3, 8],
-      "tags": ["Defense"],
-      "validSlots": ["head", "chest", "legs", "gloves", "boots", "offhand"]
+    "spellEcho": {
+      "id": "spellEcho", "name": "d'Écho", "type": "suffix",
+      "stat": "spellEchoChance", "label": "+X% chance sort se relance gratis",
+      "valueRange": [5, 15], "pool": "elemental", "biome": "inferno"
     },
-    "vital": {
-      "id": "vital",
-      "name": "Vitale",
-      "type": "prefix",
-      "stat": "maxHP",
-      "label": "+X PV max",
-      "valueRange": [8, 18],
-      "tags": ["Defense"],
-      "validSlots": ["chest", "legs", "amulet", "ring"]
-    },
-    "regenerating": {
-      "id": "regenerating",
-      "name": "Régénérante",
-      "type": "prefix",
-      "stat": "hpRegen",
-      "label": "+X PV/tour",
-      "valueRange": [1, 3],
-      "tags": ["Heal"],
-      "validSlots": ["chest", "amulet", "ring"]
-    },
-    "lifestealing": {
-      "id": "lifestealing",
-      "name": "Vampirique",
-      "type": "prefix",
-      "stat": "lifesteal",
-      "label": "+X% lifesteal",
-      "valueRange": [3, 8],
-      "tags": ["Lifesteal"],
-      "validSlots": ["mainhand", "ring", "amulet"]
-    },
-    "magicFinder": {
-      "id": "magicFinder",
-      "name": "du Découvreur",
-      "type": "prefix",
-      "stat": "magicFind",
-      "label": "+X% Magic Find",
-      "valueRange": [5, 15],
-      "tags": ["Loot"],
-      "validSlots": ["head", "chest", "boots", "ring", "amulet"]
+    "aoeSize": {
+      "id": "aoeSize", "name": "Expansive", "type": "prefix",
+      "stat": "aoeRadius", "label": "+X cases AOE",
+      "valueRange": [1, 1], "pool": "elemental", "biome": "voidnet"
     }
   },
-  "suffixes": {
-    "ofTheWind": {
-      "id": "ofTheWind",
-      "name": "du Vent",
-      "type": "suffix",
-      "stat": "freeMovement",
-      "label": "+X case mouvement gratuit",
-      "valueRange": [1, 2],
-      "tags": ["Mobility"],
-      "validSlots": ["boots", "amulet"]
+
+  "physical": {
+    "critChance": {
+      "id": "critChance", "name": "Vicieuse", "type": "prefix",
+      "stat": "critChance", "label": "+X% chance crit",
+      "valueRange": [3, 8], "pool": "physical", "biome": "crimson"
     },
-    "ofVigor": {
-      "id": "ofVigor",
-      "name": "de Vigueur",
-      "type": "suffix",
-      "stat": "maxHP",
-      "label": "+X PV max",
-      "valueRange": [10, 20],
-      "tags": ["Defense"],
-      "validSlots": ["chest", "amulet", "ring"]
+    "critDamage": {
+      "id": "critDamage", "name": "Mortelle", "type": "prefix",
+      "stat": "critDamage", "label": "+X crit damage",
+      "valueRange": [5, 15], "pool": "physical", "biome": "crimson"
     },
-    "ofShadow": {
-      "id": "ofShadow",
-      "name": "des Ombres",
-      "type": "suffix",
-      "stat": "dodgeChance",
-      "label": "+X% esquive",
-      "valueRange": [3, 10],
-      "tags": ["Defense", "Shadow"],
-      "validSlots": ["boots", "gloves", "ring"]
+    "lifesteal": {
+      "id": "lifesteal", "name": "Sanguinaire", "type": "prefix",
+      "stat": "lifesteal", "label": "+X% lifesteal",
+      "valueRange": [3, 8], "pool": "physical", "biome": "toxic"
     },
-    "ofFortitude": {
-      "id": "ofFortitude",
-      "name": "de Robustesse",
-      "type": "suffix",
-      "stat": "armor",
-      "label": "+X armure",
-      "valueRange": [3, 7],
-      "tags": ["Defense"],
-      "validSlots": ["head", "chest", "legs", "gloves", "boots"]
+    "bleedDamage": {
+      "id": "bleedDamage", "name": "Sanglante", "type": "prefix",
+      "stat": "bleedDamage", "label": "+X dégâts Bleed",
+      "valueRange": [2, 6], "pool": "physical", "biome": "crimson"
     },
-    "ofFireResist": {
-      "id": "ofFireResist",
-      "name": "Pyro-Résistante",
-      "type": "suffix",
-      "stat": "fireResist",
-      "label": "+X% résistance Feu",
-      "valueRange": [10, 25],
-      "tags": ["Defense"],
-      "validSlots": ["head", "chest", "legs", "gloves", "boots", "ring", "amulet"]
+    "armorDamage": {
+      "id": "armorDamage", "name": "Perforante", "type": "prefix",
+      "stat": "armorDamageMult", "label": "+X% dégâts contre armure",
+      "valueRange": [10, 25], "pool": "physical", "biome": "crimson"
     },
-    "ofFrostResist": {
-      "id": "ofFrostResist",
-      "name": "Cryo-Résistante",
-      "type": "suffix",
-      "stat": "iceResist",
-      "label": "+X% résistance Glace",
-      "valueRange": [10, 25],
-      "tags": ["Defense"],
-      "validSlots": ["head", "chest", "legs", "gloves", "boots", "ring", "amulet"]
+    "backstabDamage": {
+      "id": "backstabDamage", "name": "Sournoise", "type": "prefix",
+      "stat": "backstabDamageMult", "label": "+X% dégâts attaque de dos",
+      "valueRange": [15, 35], "pool": "physical", "biome": "crimson"
     },
-    "ofShockResist": {
-      "id": "ofShockResist",
-      "name": "Anti-Foudre",
-      "type": "suffix",
-      "stat": "shockResist",
-      "label": "+X% résistance Foudre",
-      "valueRange": [10, 25],
-      "tags": ["Defense"],
-      "validSlots": ["head", "chest", "legs", "gloves", "boots", "ring", "amulet"]
+    "executeDamage": {
+      "id": "executeDamage", "name": "d'Exécution", "type": "suffix",
+      "stat": "executeDamageMult", "label": "+X% dégâts si cible <30% PV",
+      "valueRange": [15, 30], "pool": "physical", "biome": "crimson"
     },
-    "ofPenetration": {
-      "id": "ofPenetration",
-      "name": "Perforante",
-      "type": "suffix",
-      "stat": "armorPenetration",
-      "label": "+X pénétration armure",
-      "valueRange": [2, 6],
-      "tags": ["Offense"],
-      "validSlots": ["mainhand", "gloves", "ring"]
+    "armorPen": {
+      "id": "armorPen", "name": "Acérée", "type": "prefix",
+      "stat": "armorPen", "label": "+X pénétration armure",
+      "valueRange": [2, 6], "pool": "physical", "biome": "crimson"
     },
-    "ofTheBeast": {
-      "id": "ofTheBeast",
-      "name": "de la Bête",
-      "type": "suffix",
-      "stat": "rageOnHit",
-      "label": "+X% chance Rage en attaquant",
-      "valueRange": [5, 15],
-      "tags": ["Rage", "Buff"],
-      "validSlots": ["mainhand", "amulet"]
+    "doubleStrike": {
+      "id": "doubleStrike", "name": "Jumelle", "type": "prefix",
+      "stat": "doubleStrikeChance", "label": "+X% chance double frappe",
+      "valueRange": [5, 12], "pool": "physical", "biome": "crimson"
     },
-    "ofExecution": {
-      "id": "ofExecution",
-      "name": "d'Exécution",
-      "type": "suffix",
-      "stat": "executeBonus",
-      "label": "+X% dégâts sur cibles <30% PV",
-      "valueRange": [10, 25],
-      "tags": ["Execute"],
-      "validSlots": ["mainhand", "ring", "amulet"]
+    "firstStrikeDamage": {
+      "id": "firstStrikeDamage", "name": "d'Ouverture", "type": "suffix",
+      "stat": "firstStrikeDamageMult", "label": "+X% dégâts au 1er coup du combat",
+      "valueRange": [20, 50], "pool": "physical", "biome": "crimson"
     },
-    "ofConcentration": {
-      "id": "ofConcentration",
-      "name": "de Concentration",
-      "type": "suffix",
-      "stat": "cooldownReduction",
-      "label": "-X% cooldowns",
-      "valueRange": [5, 12],
-      "tags": ["Caster"],
-      "validSlots": ["amulet", "ring", "offhand"]
+    "stunOnCrit": {
+      "id": "stunOnCrit", "name": "Sismique", "type": "prefix",
+      "stat": "stunOnCritChance", "label": "+X% chance étourdir au crit",
+      "valueRange": [10, 25], "pool": "physical", "biome": "crimson"
     },
-    "ofTheStudent": {
-      "id": "ofTheStudent",
-      "name": "de l'Érudit",
-      "type": "suffix",
-      "stat": "spellCritChance",
-      "label": "+X% crit sorts",
-      "valueRange": [4, 10],
-      "tags": ["Caster", "Crit"],
-      "validSlots": ["amulet", "ring", "offhand"]
+    "stillStanceDamage": {
+      "id": "stillStanceDamage", "name": "Posée", "type": "prefix",
+      "stat": "noMoveDamageMult", "label": "+X% dégâts si pas bougé ce tour",
+      "valueRange": [15, 30], "pool": "physical", "biome": "cryo"
     },
-    "ofResonance": {
-      "id": "ofResonance",
-      "name": "de Résonance",
-      "type": "suffix",
-      "stat": "tagResonance",
-      "label": "+X% dégâts par item au même tag équipé",
-      "valueRange": [3, 7],
-      "tags": ["Resonance"],
-      "validSlots": ["amulet", "ring"]
+    "cleave": {
+      "id": "cleave", "name": "Faucheuse", "type": "prefix",
+      "stat": "cleavePct", "label": "+X% dégâts en zone aux ennemis adjacents",
+      "valueRange": [15, 30], "pool": "physical", "biome": "crimson"
+    },
+    "fullHpDamage": {
+      "id": "fullHpDamage", "name": "Berserker", "type": "prefix",
+      "stat": "fullHpDamageMult", "label": "+X% dégâts à HP plein",
+      "valueRange": [15, 30], "pool": "physical", "biome": "crimson"
+    },
+    "perBleedStackDamage": {
+      "id": "perBleedStackDamage", "name": "Hémorragique", "type": "suffix",
+      "stat": "perBleedStackDamage", "label": "+X% dégâts par stack bleed sur la cible",
+      "valueRange": [5, 12], "pool": "physical", "biome": "crimson"
+    }
+  },
+
+  "armor": {
+    "armorFlat": {
+      "id": "armorFlat", "name": "Renforcée", "type": "prefix",
+      "stat": "armor", "label": "+X armure",
+      "valueRange": [3, 8], "pool": "armor", "biome": "cryo"
+    },
+    "hpFlat": {
+      "id": "hpFlat", "name": "Vitale", "type": "prefix",
+      "stat": "maxHp", "label": "+X PV max",
+      "valueRange": [10, 25], "pool": "armor", "biome": "cryo"
+    },
+    "divineShieldFlat": {
+      "id": "divineShieldFlat", "name": "Sacrée", "type": "prefix",
+      "stat": "divineShield", "label": "+X% réduction dégâts élémentaires",
+      "valueRange": [3, 8], "pool": "armor", "biome": "cryo"
+    },
+    "divineShieldFire": {
+      "id": "divineShieldFire", "name": "Igniphobe", "type": "prefix",
+      "stat": "divineShieldFire", "label": "+X% réduction dégâts Feu",
+      "valueRange": [5, 12], "pool": "armor", "biome": "inferno"
+    },
+    "divineShieldIce": {
+      "id": "divineShieldIce", "name": "Cryophobe", "type": "prefix",
+      "stat": "divineShieldIce", "label": "+X% réduction dégâts Glace",
+      "valueRange": [5, 12], "pool": "armor", "biome": "cryo"
+    },
+    "divineShieldShock": {
+      "id": "divineShieldShock", "name": "Anti-Foudre", "type": "prefix",
+      "stat": "divineShieldShock", "label": "+X% réduction dégâts Foudre",
+      "valueRange": [5, 12], "pool": "armor", "biome": "voidnet"
+    },
+    "divineShieldPoison": {
+      "id": "divineShieldPoison", "name": "Antidote", "type": "prefix",
+      "stat": "divineShieldPoison", "label": "+X% réduction dégâts Poison",
+      "valueRange": [5, 12], "pool": "armor", "biome": "toxic"
+    },
+    "lifestealArmor": {
+      "id": "lifestealArmor", "name": "Vampirique", "type": "prefix",
+      "stat": "lifesteal", "label": "+X% lifesteal",
+      "valueRange": [2, 6], "pool": "armor", "biome": "toxic"
+    },
+    "bleedResist": {
+      "id": "bleedResist", "name": "Coriace", "type": "suffix",
+      "stat": "bleedResist", "label": "+X% résistance Bleed",
+      "valueRange": [10, 25], "pool": "armor", "biome": "toxic"
+    },
+    "hpRegenArmor": {
+      "id": "hpRegenArmor", "name": "Régénérante", "type": "suffix",
+      "stat": "hpRegen", "label": "+X PV/tour",
+      "valueRange": [1, 3], "pool": "armor", "biome": "toxic"
+    },
+    "lowHpReduction": {
+      "id": "lowHpReduction", "name": "de Désespoir", "type": "suffix",
+      "stat": "lowHpReductionPct", "label": "+X% réduction dégâts si HP <30%",
+      "valueRange": [10, 25], "pool": "armor", "biome": "cryo"
+    },
+    "blockChance": {
+      "id": "blockChance", "name": "Bloquante", "type": "prefix",
+      "stat": "blockChance", "label": "+X% chance bloquer un coup",
+      "valueRange": [3, 8], "pool": "armor", "biome": "cryo"
+    },
+    "thornsMelee": {
+      "id": "thornsMelee", "name": "Épineuse", "type": "suffix",
+      "stat": "thornsMeleePct", "label": "Reflect X% des dégâts mêlée subis",
+      "valueRange": [10, 25], "pool": "armor", "biome": "crimson"
+    },
+    "armorAdjacent": {
+      "id": "armorAdjacent", "name": "Frontale", "type": "suffix",
+      "stat": "armorAdjacent", "label": "+X armure si adjacent à un ennemi",
+      "valueRange": [4, 10], "pool": "armor", "biome": "cryo"
+    },
+    "firstHitReduction": {
+      "id": "firstHitReduction", "name": "Vigilante", "type": "suffix",
+      "stat": "firstHitReductionPct", "label": "-X% dégâts subis du 1er coup ennemi",
+      "valueRange": [20, 50], "pool": "armor", "biome": "cryo"
+    }
+  },
+
+  "boots": {
+    "freeMovement": {
+      "id": "freeMovement", "name": "du Vent", "type": "suffix",
+      "stat": "freeMovement", "label": "+X case mouvement gratuit/tour",
+      "valueRange": [1, 2], "pool": "boots", "biome": "voidnet"
+    },
+    "fly": {
+      "id": "fly", "name": "Aérienne", "type": "prefix",
+      "stat": "fly", "label": "Vol (passe au-dessus des obstacles)",
+      "valueRange": [1, 1], "pool": "boots", "biome": "voidnet"
+    },
+    "teleport": {
+      "id": "teleport", "name": "Téléporteuse", "type": "prefix",
+      "stat": "teleport", "label": "Sort TP (1 AP, CD 2T, plus de mouvement après)",
+      "valueRange": [1, 1], "pool": "boots", "biome": "voidnet"
+    },
+    "dodgeChance": {
+      "id": "dodgeChance", "name": "des Ombres", "type": "suffix",
+      "stat": "dodgeChance", "label": "+X% chance esquiver",
+      "valueRange": [3, 10], "pool": "boots", "biome": "voidnet"
+    },
+    "afterMoveDamage": {
+      "id": "afterMoveDamage", "name": "Furtive", "type": "prefix",
+      "stat": "afterMoveDamageMult", "label": "+X% dégâts au prochain coup après mouvement",
+      "valueRange": [15, 35], "pool": "boots", "biome": "voidnet"
+    },
+    "longMoveDamage": {
+      "id": "longMoveDamage", "name": "Sprinteuse", "type": "prefix",
+      "stat": "longMoveDamageMult", "label": "+X% dégâts si bougé 3+ cases ce tour",
+      "valueRange": [15, 30], "pool": "boots", "biome": "voidnet"
+    }
+  },
+
+  "ring": {
+    "ringDmgFire": {
+      "id": "ringDmgFire", "name": "de Pyrokinèse", "type": "prefix",
+      "stat": "bonusFireDamage", "label": "+X dégâts Feu",
+      "valueRange": [3, 8], "pool": "ring", "biome": "inferno"
+    },
+    "ringDmgIce": {
+      "id": "ringDmgIce", "name": "de Cryokinèse", "type": "prefix",
+      "stat": "bonusIceDamage", "label": "+X dégâts Glace",
+      "valueRange": [3, 8], "pool": "ring", "biome": "cryo"
+    },
+    "ringDmgShock": {
+      "id": "ringDmgShock", "name": "de Foudre", "type": "prefix",
+      "stat": "bonusShockDamage", "label": "+X dégâts Foudre",
+      "valueRange": [3, 8], "pool": "ring", "biome": "voidnet"
+    },
+    "ringDmgPoison": {
+      "id": "ringDmgPoison", "name": "de Plague", "type": "prefix",
+      "stat": "bonusPoisonDamage", "label": "+X dégâts Poison",
+      "valueRange": [3, 8], "pool": "ring", "biome": "toxic"
+    },
+    "ringResFire": {
+      "id": "ringResFire", "name": "Igniphobe", "type": "suffix",
+      "stat": "fireResist", "label": "+X% résistance Feu",
+      "valueRange": [5, 15], "pool": "ring", "biome": "inferno"
+    },
+    "ringResIce": {
+      "id": "ringResIce", "name": "Cryophobe", "type": "suffix",
+      "stat": "iceResist", "label": "+X% résistance Glace",
+      "valueRange": [5, 15], "pool": "ring", "biome": "cryo"
+    },
+    "ringResShock": {
+      "id": "ringResShock", "name": "Isolée", "type": "suffix",
+      "stat": "shockResist", "label": "+X% résistance Foudre",
+      "valueRange": [5, 15], "pool": "ring", "biome": "voidnet"
+    },
+    "ringResPoison": {
+      "id": "ringResPoison", "name": "Antidote", "type": "suffix",
+      "stat": "poisonResist", "label": "+X% résistance Poison",
+      "valueRange": [5, 15], "pool": "ring", "biome": "toxic"
+    },
+    "ringBleedResist": {
+      "id": "ringBleedResist", "name": "Coriace", "type": "suffix",
+      "stat": "bleedResist", "label": "+X% résistance Bleed",
+      "valueRange": [10, 25], "pool": "ring", "biome": "toxic"
+    },
+    "ringArmor": {
+      "id": "ringArmor", "name": "Renforcé", "type": "prefix",
+      "stat": "armor", "label": "+X armure",
+      "valueRange": [2, 6], "pool": "ring", "biome": "cryo"
+    },
+    "ringHp": {
+      "id": "ringHp", "name": "Vital", "type": "prefix",
+      "stat": "maxHp", "label": "+X PV max",
+      "valueRange": [8, 18], "pool": "ring", "biome": "cryo"
+    },
+    "ringGlobalDmg": {
+      "id": "ringGlobalDmg", "name": "Brutal", "type": "prefix",
+      "stat": "globalDamagePct", "label": "+X% dégâts globaux",
+      "valueRange": [3, 8], "pool": "ring", "biome": "crimson"
+    },
+    "ringFirstStrike": {
+      "id": "ringFirstStrike", "name": "Vélocien", "type": "prefix",
+      "stat": "firstStrikeChance", "label": "+X% chance attaquer en premier",
+      "valueRange": [10, 30], "pool": "ring", "biome": "voidnet"
+    },
+    "ringLifesteal": {
+      "id": "ringLifesteal", "name": "Vampirique", "type": "prefix",
+      "stat": "lifesteal", "label": "+X% lifesteal",
+      "valueRange": [2, 6], "pool": "ring", "biome": "toxic"
+    },
+    "ringCrit": {
+      "id": "ringCrit", "name": "Aiguisé", "type": "prefix",
+      "stat": "critChance", "label": "+X% chance crit",
+      "valueRange": [2, 6], "pool": "ring", "biome": "crimson"
+    },
+    "ringMagicFind": {
+      "id": "ringMagicFind", "name": "du Découvreur", "type": "suffix",
+      "stat": "magicFind", "label": "+X% Magic Find",
+      "valueRange": [5, 15], "pool": "ring", "biome": "voidnet"
+    },
+    "ringHpRegen": {
+      "id": "ringHpRegen", "name": "Régénérant", "type": "suffix",
+      "stat": "hpRegen", "label": "+X PV/tour",
+      "valueRange": [1, 3], "pool": "ring", "biome": "toxic"
+    },
+    "ringEssenceFind": {
+      "id": "ringEssenceFind", "name": "Aspirant", "type": "suffix",
+      "stat": "essenceFind", "label": "+X% essence drop",
+      "valueRange": [10, 25], "pool": "ring", "biome": "voidnet"
+    }
+  },
+
+  "amulet_specific": {
+    "amuletElemDmg": {
+      "id": "amuletElemDmg", "name": "Channeleuse", "type": "prefix",
+      "stat": "amuletElemDamage", "label": "+X dégâts élém de l'amulette",
+      "valueRange": [3, 8], "pool": "amulet_specific", "biome": "inferno"
+    },
+    "amuletSpellPower": {
+      "id": "amuletSpellPower", "name": "Amplificatrice", "type": "prefix",
+      "stat": "amuletSpellPower", "label": "+X% efficacité du sort de l'amulette",
+      "valueRange": [10, 25], "pool": "amulet_specific", "biome": "inferno"
+    },
+    "amuletSpellRange": {
+      "id": "amuletSpellRange", "name": "à Longue Portée", "type": "suffix",
+      "stat": "spellRange", "label": "+X portée des sorts",
+      "valueRange": [1, 2], "pool": "amulet_specific", "biome": "voidnet"
+    },
+    "amuletFreeOpener": {
+      "id": "amuletFreeOpener", "name": "Préemptive", "type": "suffix",
+      "stat": "freeOpenerChance", "label": "+X% chance sort gratuit en début de combat",
+      "valueRange": [10, 30], "pool": "amulet_specific", "biome": "voidnet"
+    }
+  },
+
+  "tome": {
+    "tomeElemDamagePct": {
+      "id": "tomeElemDamagePct", "name": "Tome Magique", "type": "prefix",
+      "stat": "elemDamagePct", "label": "+X% dégâts élémentaires globaux",
+      "valueRange": [10, 25], "pool": "tome", "biome": "inferno"
+    },
+    "tomeSpellRange": {
+      "id": "tomeSpellRange", "name": "Tome de Vision", "type": "prefix",
+      "stat": "spellRange", "label": "+X portée des sorts",
+      "valueRange": [1, 2], "pool": "tome", "biome": "voidnet"
+    },
+    "tomeAPCost": {
+      "id": "tomeAPCost", "name": "Tome Économe", "type": "suffix",
+      "stat": "spellAPCostReduction", "label": "-X% coût AP des sorts",
+      "valueRange": [5, 15], "pool": "tome", "biome": "inferno"
+    }
+  },
+
+  "quiver": {
+    "quiverBowRange": {
+      "id": "quiverBowRange", "name": "Carquois Long", "type": "prefix",
+      "stat": "bowRangeBonus", "label": "+1 portée à l'arc",
+      "valueRange": [1, 1], "pool": "quiver", "biome": "voidnet"
+    },
+    "quiverPierceDmg": {
+      "id": "quiverPierceDmg", "name": "Carquois Perce", "type": "prefix",
+      "stat": "pierceDamagePct", "label": "+X% dégâts perce",
+      "valueRange": [10, 25], "pool": "quiver", "biome": "crimson"
+    },
+    "quiverMaxRangeDmg": {
+      "id": "quiverMaxRangeDmg", "name": "Carquois de Précision", "type": "prefix",
+      "stat": "maxRangeDamage", "label": "+X dégâts à portée max",
+      "valueRange": [3, 8], "pool": "quiver", "biome": "voidnet"
+    },
+    "quiverMultishot": {
+      "id": "quiverMultishot", "name": "Carquois Multishot", "type": "suffix",
+      "stat": "multishotChance", "label": "+X% chance tirer 2 flèches",
+      "valueRange": [10, 25], "pool": "quiver", "biome": "voidnet"
+    }
+  },
+
+  "charger": {
+    "chargerFreeShot": {
+      "id": "chargerFreeShot", "name": "Chargeur Allégé", "type": "prefix",
+      "stat": "freeShotChance", "label": "+X% chance tir sans coût AP",
+      "valueRange": [5, 15], "pool": "charger", "biome": "voidnet"
+    },
+    "chargerKillReload": {
+      "id": "chargerKillReload", "name": "Chargeur Recharge", "type": "suffix",
+      "stat": "killReloadChance", "label": "+X% chance tir gratis après un kill",
+      "valueRange": [15, 35], "pool": "charger", "biome": "voidnet"
+    },
+    "chargerHeadshot": {
+      "id": "chargerHeadshot", "name": "Chargeur Sniper", "type": "prefix",
+      "stat": "headshotDamagePct", "label": "+X% dégâts headshot (crit ranged)",
+      "valueRange": [15, 35], "pool": "charger", "biome": "voidnet"
+    }
+  },
+
+  "shield": {
+    "shieldParry": {
+      "id": "shieldParry", "name": "Bouclier de Parade", "type": "prefix",
+      "stat": "parryChance", "label": "+X% chance bloquer (parry)",
+      "valueRange": [5, 15], "pool": "shield", "biome": "cryo"
+    },
+    "shieldThorns": {
+      "id": "shieldThorns", "name": "Bouclier Épineux", "type": "prefix",
+      "stat": "blockThornsDamage", "label": "+X dégâts retournés sur block",
+      "valueRange": [3, 10], "pool": "shield", "biome": "crimson"
+    },
+    "shieldFortify": {
+      "id": "shieldFortify", "name": "Bouclier de Fortification", "type": "suffix",
+      "stat": "fortifyPct", "label": "+X% réduction dégâts pour 2 tours après un coup",
+      "valueRange": [10, 25], "pool": "shield", "biome": "cryo"
+    },
+    "shieldRiposte": {
+      "id": "shieldRiposte", "name": "Bouclier de Riposte", "type": "suffix",
+      "stat": "riposteChance", "label": "+X% chance riposter quand on prend un coup",
+      "valueRange": [10, 25], "pool": "shield", "biome": "crimson"
+    }
+  },
+
+  "elite": {
+    "eliteApBonus": {
+      "id": "eliteApBonus", "name": "★ Suprême", "type": "prefix",
+      "stat": "bonusAP", "label": "+1 AP par tour",
+      "valueRange": [1, 1], "pool": "elite", "biome": "voidnet", "isElite": true
+    },
+    "eliteSpellOnKill": {
+      "id": "eliteSpellOnKill", "name": "★ Cataclysmique", "type": "suffix",
+      "stat": "freeSpellOnKillChance", "label": "+X% chance prochain sort gratuit après un kill",
+      "valueRange": [15, 35], "pool": "elite", "biome": "inferno", "isElite": true
+    },
+    "eliteCdReducOnKill": {
+      "id": "eliteCdReducOnKill", "name": "★ Cyclonique", "type": "suffix",
+      "stat": "cdReducOnKill", "label": "Chaque kill réduit cooldowns de X tours",
+      "valueRange": [1, 2], "pool": "elite", "biome": "voidnet", "isElite": true
+    },
+    "eliteGlassCannon": {
+      "id": "eliteGlassCannon", "name": "★ Cannon de Verre", "type": "suffix",
+      "stat": "missingHpDamagePct", "label": "+X% dégâts par % HP manquant",
+      "valueRange": [1, 2], "pool": "elite", "biome": "crimson", "isElite": true
     }
   }
 }

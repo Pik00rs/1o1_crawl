@@ -1,67 +1,62 @@
 {
   "_meta": {
-    "description": "Anneaux : passifs uniquement. Le champ 'passive' contient des stats appliquées au joueur quand l'anneau est équipé.",
-    "format": {
-      "id": "ID unique",
-      "name": "Nom affiché",
-      "icon": "Emoji",
-      "slot": "ring",
-      "passive": "{ stat: value, ... } - voir player-stats.js pour les stats valides"
-    },
-    "validStats": [
-      "lifesteal", "armorPen", "hpRegen", "critChance", "critMultiplier",
-      "dodgeChance", "blockChance",
-      "bonusFire", "bonusIce", "bonusShock", "bonusPoison",
-      "fireResist", "iceResist", "shockResist", "poisonResist", "magicResist",
-      "ccReduction"
-    ]
+    "description": "Anneaux v2. Plus de 'passive' fixe. À chaque drop, l'anneau roll TOUJOURS 2 affixes du pool 'ring' (peu importe la rareté). La rareté n'affecte que la qualité des rolls (skew).",
+    "rule": "rollItem detecte tpl.guaranteedAffixCount = 2 → force 2 affixes garantis"
   },
 
-  "ringVampire": {
-    "id": "ringVampire",
-    "name": "Anneau du Vampire",
-    "icon": "🩸",
-    "slot": "ring",
-    "passive": { "lifesteal": 8 }
+  "ringSimple": {
+    "id": "ringSimple", "name": "Anneau", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "crimson",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
   },
 
-  "ringPyrokinesis": {
-    "id": "ringPyrokinesis",
-    "name": "Anneau de Pyrokinèse",
-    "icon": "🔥",
-    "slot": "ring",
-    "passive": { "bonusFire": 6, "fireResist": 15 }
+  "ringSilver": {
+    "id": "ringSilver", "name": "Anneau d'argent", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "voidnet",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
   },
 
-  "ringIceWard": {
-    "id": "ringIceWard",
-    "name": "Anneau de Givre",
-    "icon": "❄️",
-    "slot": "ring",
-    "passive": { "iceResist": 25, "ccReduction": 10 }
+  "ringGold": {
+    "id": "ringGold", "name": "Anneau d'or", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "inferno",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
   },
 
-  "ringStorm": {
-    "id": "ringStorm",
-    "name": "Anneau de l'orage",
-    "icon": "⚡",
-    "slot": "ring",
-    "passive": { "bonusShock": 5, "critChance": 4 }
+  "ringObsidian": {
+    "id": "ringObsidian", "name": "Anneau d'obsidienne", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "voidnet",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
   },
 
-  "ringPredator": {
-    "id": "ringPredator",
-    "name": "Anneau du Prédateur",
-    "icon": "🦂",
-    "slot": "ring",
-    "passive": { "critChance": 6, "critMultiplier": 25, "armorPen": 4 }
+  "ringEmerald": {
+    "id": "ringEmerald", "name": "Anneau d'émeraude", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "toxic",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
   },
 
-  "ringSurvivor": {
-    "id": "ringSurvivor",
-    "name": "Anneau du Survivant",
-    "icon": "🛡️",
-    "slot": "ring",
-    "passive": { "hpRegen": 2, "magicResist": 12, "dodgeChance": 4 }
+  "ringRuby": {
+    "id": "ringRuby", "name": "Anneau de rubis", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "inferno",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
+  },
+
+  "ringSapphire": {
+    "id": "ringSapphire", "name": "Anneau de saphir", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "cryo",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
+  },
+
+  "ringOnyx": {
+    "id": "ringOnyx", "name": "Anneau d'onyx", "icon": "💍",
+    "slot": "ring", "category": "ring", "biome": "crimson",
+    "affixPools": ["ring"],
+    "guaranteedAffixCount": 2
   }
 }
