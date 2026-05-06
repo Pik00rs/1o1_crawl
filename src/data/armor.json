@@ -1,37 +1,90 @@
 {
   "_meta": {
-    "description": "Armures v2. L'implicit n'est plus fixé par slot, il est ROLLÉ au drop entre hp / armor / divineShield. Pour bottes : implicit fixe = freeMovement, pool d'affixes = boots seulement.",
-    "implicitChoices": {
-      "_doc": "Au drop, le générateur choisit aléatoirement parmi ces 3 implicits pour head/chest/legs/gloves",
-      "hp":           { "id": "maxHp",        "valueRange": [12, 25], "label": "+X PV max" },
-      "armor":        { "id": "armor",        "valueRange": [4, 9],   "label": "+X armure" },
-      "divineShield": { "id": "divineShield", "valueRange": [4, 9],   "label": "+X% réduction dégâts élémentaires" }
-    }
+    "description": "Armures v3. 13 items distincts : pour chaque slot armure (head/chest/legs/gloves) il y a 3 variantes selon le type de défense (PV / Armure / Bouclier divin). Bottes restent unique. Au drop, le générateur choisit aléatoirement une variante pour le slot.",
+    "defenseTypes": {
+      "hp":           { "id": "maxHp",        "label": "+X PV max",                            "icon": "❤️" },
+      "armor":        { "id": "armor",        "label": "+X armure",                            "icon": "🛡️" },
+      "divineShield": { "id": "divineShield", "label": "+X% réduction dégâts élémentaires",   "icon": "✨" }
+    },
+    "dropRule": "Au drop d'une armure, le système choisit 1 variante au hasard parmi les 3 du slot ciblé."
   },
-  "head": {
-    "id": "head", "name": "Casque", "icon": "🪖",
-    "slot": "head", "category": "armor", "biome": "cryo",
-    "affixPools": ["armor"],
-    "implicitRollable": true
+
+  "headHp": {
+    "id": "headHp", "name": "Casque de Vitalité", "icon": "🪖",
+    "slot": "head", "category": "armor", "defenseType": "hp", "biome": "cryo",
+    "implicit": { "id": "maxHp", "valueRange": [12, 25], "label": "+X PV max" },
+    "affixPools": ["armor"]
   },
-  "chest": {
-    "id": "chest", "name": "Veste", "icon": "🦺",
-    "slot": "chest", "category": "armor", "biome": "cryo",
-    "affixPools": ["armor"],
-    "implicitRollable": true
+  "headArmor": {
+    "id": "headArmor", "name": "Casque d'Acier", "icon": "🪖",
+    "slot": "head", "category": "armor", "defenseType": "armor", "biome": "cryo",
+    "implicit": { "id": "armor", "valueRange": [4, 9], "label": "+X armure" },
+    "affixPools": ["armor"]
   },
-  "legs": {
-    "id": "legs", "name": "Pantalon", "icon": "👖",
-    "slot": "legs", "category": "armor", "biome": "cryo",
-    "affixPools": ["armor"],
-    "implicitRollable": true
+  "headDivine": {
+    "id": "headDivine", "name": "Casque Sacré", "icon": "🪖",
+    "slot": "head", "category": "armor", "defenseType": "divineShield", "biome": "cryo",
+    "implicit": { "id": "divineShield", "valueRange": [4, 9], "label": "+X% réduction dégâts élémentaires" },
+    "affixPools": ["armor"]
   },
-  "gloves": {
-    "id": "gloves", "name": "Gants", "icon": "🧤",
-    "slot": "gloves", "category": "armor", "biome": "crimson",
-    "affixPools": ["armor"],
-    "implicitRollable": true
+
+  "chestHp": {
+    "id": "chestHp", "name": "Veste de Vitalité", "icon": "🦺",
+    "slot": "chest", "category": "armor", "defenseType": "hp", "biome": "cryo",
+    "implicit": { "id": "maxHp", "valueRange": [15, 30], "label": "+X PV max" },
+    "affixPools": ["armor"]
   },
+  "chestArmor": {
+    "id": "chestArmor", "name": "Plastron d'Acier", "icon": "🦺",
+    "slot": "chest", "category": "armor", "defenseType": "armor", "biome": "cryo",
+    "implicit": { "id": "armor", "valueRange": [5, 11], "label": "+X armure" },
+    "affixPools": ["armor"]
+  },
+  "chestDivine": {
+    "id": "chestDivine", "name": "Plastron Sacré", "icon": "🦺",
+    "slot": "chest", "category": "armor", "defenseType": "divineShield", "biome": "cryo",
+    "implicit": { "id": "divineShield", "valueRange": [5, 11], "label": "+X% réduction dégâts élémentaires" },
+    "affixPools": ["armor"]
+  },
+
+  "legsHp": {
+    "id": "legsHp", "name": "Pantalon de Vitalité", "icon": "👖",
+    "slot": "legs", "category": "armor", "defenseType": "hp", "biome": "cryo",
+    "implicit": { "id": "maxHp", "valueRange": [10, 20], "label": "+X PV max" },
+    "affixPools": ["armor"]
+  },
+  "legsArmor": {
+    "id": "legsArmor", "name": "Pantalon d'Acier", "icon": "👖",
+    "slot": "legs", "category": "armor", "defenseType": "armor", "biome": "cryo",
+    "implicit": { "id": "armor", "valueRange": [3, 7], "label": "+X armure" },
+    "affixPools": ["armor"]
+  },
+  "legsDivine": {
+    "id": "legsDivine", "name": "Pantalon Sacré", "icon": "👖",
+    "slot": "legs", "category": "armor", "defenseType": "divineShield", "biome": "cryo",
+    "implicit": { "id": "divineShield", "valueRange": [3, 7], "label": "+X% réduction dégâts élémentaires" },
+    "affixPools": ["armor"]
+  },
+
+  "glovesHp": {
+    "id": "glovesHp", "name": "Gants de Vitalité", "icon": "🧤",
+    "slot": "gloves", "category": "armor", "defenseType": "hp", "biome": "crimson",
+    "implicit": { "id": "maxHp", "valueRange": [8, 16], "label": "+X PV max" },
+    "affixPools": ["armor"]
+  },
+  "glovesArmor": {
+    "id": "glovesArmor", "name": "Gants d'Acier", "icon": "🧤",
+    "slot": "gloves", "category": "armor", "defenseType": "armor", "biome": "crimson",
+    "implicit": { "id": "armor", "valueRange": [3, 6], "label": "+X armure" },
+    "affixPools": ["armor"]
+  },
+  "glovesDivine": {
+    "id": "glovesDivine", "name": "Gants Sacrés", "icon": "🧤",
+    "slot": "gloves", "category": "armor", "defenseType": "divineShield", "biome": "crimson",
+    "implicit": { "id": "divineShield", "valueRange": [3, 6], "label": "+X% réduction dégâts élémentaires" },
+    "affixPools": ["armor"]
+  },
+
   "boots": {
     "id": "boots", "name": "Bottes", "icon": "👢",
     "slot": "boots", "category": "boots", "biome": "voidnet",

@@ -1,60 +1,11 @@
 {
   "_meta": {
-    "description": "Anneaux v2. Plus de 'passive' fixe. À chaque drop, l'anneau roll TOUJOURS 2 affixes du pool 'ring' (peu importe la rareté). La rareté n'affecte que la qualité des rolls (skew).",
+    "description": "Anneaux v3. UN seul anneau, mais à chaque drop il roll TOUJOURS 2 affixes du pool 'ring' (peu importe la rareté). La rareté n'affecte que la qualité des rolls (skew).",
     "rule": "rollItem detecte tpl.guaranteedAffixCount = 2 → force 2 affixes garantis"
   },
 
-  "ringSimple": {
-    "id": "ringSimple", "name": "Anneau", "icon": "💍",
-    "slot": "ring", "category": "ring", "biome": "crimson",
-    "affixPools": ["ring"],
-    "guaranteedAffixCount": 2
-  },
-
-  "ringSilver": {
-    "id": "ringSilver", "name": "Anneau d'argent", "icon": "💍",
-    "slot": "ring", "category": "ring", "biome": "voidnet",
-    "affixPools": ["ring"],
-    "guaranteedAffixCount": 2
-  },
-
-  "ringGold": {
-    "id": "ringGold", "name": "Anneau d'or", "icon": "💍",
-    "slot": "ring", "category": "ring", "biome": "inferno",
-    "affixPools": ["ring"],
-    "guaranteedAffixCount": 2
-  },
-
-  "ringObsidian": {
-    "id": "ringObsidian", "name": "Anneau d'obsidienne", "icon": "💍",
-    "slot": "ring", "category": "ring", "biome": "voidnet",
-    "affixPools": ["ring"],
-    "guaranteedAffixCount": 2
-  },
-
-  "ringEmerald": {
-    "id": "ringEmerald", "name": "Anneau d'émeraude", "icon": "💍",
-    "slot": "ring", "category": "ring", "biome": "toxic",
-    "affixPools": ["ring"],
-    "guaranteedAffixCount": 2
-  },
-
-  "ringRuby": {
-    "id": "ringRuby", "name": "Anneau de rubis", "icon": "💍",
-    "slot": "ring", "category": "ring", "biome": "inferno",
-    "affixPools": ["ring"],
-    "guaranteedAffixCount": 2
-  },
-
-  "ringSapphire": {
-    "id": "ringSapphire", "name": "Anneau de saphir", "icon": "💍",
-    "slot": "ring", "category": "ring", "biome": "cryo",
-    "affixPools": ["ring"],
-    "guaranteedAffixCount": 2
-  },
-
-  "ringOnyx": {
-    "id": "ringOnyx", "name": "Anneau d'onyx", "icon": "💍",
+  "ring": {
+    "id": "ring", "name": "Anneau", "icon": "💍",
     "slot": "ring", "category": "ring", "biome": "crimson",
     "affixPools": ["ring"],
     "guaranteedAffixCount": 2
