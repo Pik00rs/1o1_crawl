@@ -238,7 +238,7 @@
     "freeMovement": {
       "id": "freeMovement", "name": "du Vent", "type": "suffix",
       "stat": "freeMovement", "label": "+X case mouvement gratuit/tour",
-      "valueRange": [1, 2], "pool": "boots", "biome": "voidnet"
+      "valueRange": [1, 2], "pool": "boots", "biome": "voidnet", "rollable": false
     },
     "fly": {
       "id": "fly", "name": "Aérienne", "type": "prefix",
@@ -374,7 +374,7 @@
     "amuletSpellRange": {
       "id": "amuletSpellRange", "name": "à Longue Portée", "type": "suffix",
       "stat": "spellRange", "label": "+X portée des sorts",
-      "valueRange": [1, 2], "pool": "amulet_specific", "biome": "voidnet"
+      "valueRange": [1, 2], "pool": "amulet_specific", "biome": "voidnet", "rollable": false
     },
     "amuletFreeOpener": {
       "id": "amuletFreeOpener", "name": "Préemptive", "type": "suffix",
@@ -392,7 +392,7 @@
     "tomeSpellRange": {
       "id": "tomeSpellRange", "name": "de Vision", "type": "prefix",
       "stat": "spellRange", "label": "+X portée des sorts",
-      "valueRange": [1, 2], "pool": "tome", "biome": "voidnet"
+      "valueRange": [1, 2], "pool": "tome", "biome": "voidnet", "rollable": false
     },
     "tomeAPCost": {
       "id": "tomeAPCost", "name": "Économe", "type": "suffix",
@@ -479,12 +479,12 @@
     "eliteCdReducOnKill": {
       "id": "eliteCdReducOnKill", "name": "★ Cyclonique", "type": "suffix",
       "stat": "cdReducOnKill", "label": "Chaque kill réduit cooldowns de X tours",
-      "valueRange": [1, 2], "pool": "elite", "biome": "voidnet", "isElite": true
+      "valueRange": [1, 2], "pool": "elite", "biome": "voidnet", "isElite": true, "rollable": false
     },
     "eliteGlassCannon": {
       "id": "eliteGlassCannon", "name": "★ Cannon de Verre", "type": "suffix",
       "stat": "missingHpDamagePct", "label": "+X% dégâts par % HP manquant",
-      "valueRange": [1, 2], "pool": "elite", "biome": "crimson", "isElite": true
+      "valueRange": [1, 2], "pool": "elite", "biome": "crimson", "isElite": true, "rollable": false
     }
   }
 }
