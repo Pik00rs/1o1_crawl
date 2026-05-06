@@ -44,22 +44,22 @@
     "comboParalyzed": {
       "id": "comboParalyzed", "name": "de Paralysie", "type": "suffix",
       "stat": "triggerParalyzed", "label": "Gelé→Paralysé sur re-frappe",
-      "valueRange": [1, 1], "pool": "elemental", "biome": "cryo"
+      "valueRange": [1, 1], "pool": "elemental", "biome": "cryo", "rollable": false
     },
     "comboExplosion": {
       "id": "comboExplosion", "name": "Explosive", "type": "suffix",
       "stat": "triggerExplosion", "label": "Brûlé→Explosion AOE 3×3 sur re-frappe",
-      "valueRange": [1, 1], "pool": "elemental", "biome": "inferno"
+      "valueRange": [1, 1], "pool": "elemental", "biome": "inferno", "rollable": false
     },
     "comboSick": {
       "id": "comboSick", "name": "Pestiférée", "type": "suffix",
       "stat": "triggerSick", "label": "Empoisonné→Silencé sur re-frappe",
-      "valueRange": [1, 1], "pool": "elemental", "biome": "toxic"
+      "valueRange": [1, 1], "pool": "elemental", "biome": "toxic", "rollable": false
     },
     "comboElectrocuted": {
       "id": "comboElectrocuted", "name": "Électrocutante", "type": "suffix",
       "stat": "triggerElectrocuted", "label": "Électrifié→Électrocuté sur re-frappe",
-      "valueRange": [1, 1], "pool": "elemental", "biome": "voidnet"
+      "valueRange": [1, 1], "pool": "elemental", "biome": "voidnet", "rollable": false
     },
     "afflictedBonus": {
       "id": "afflictedBonus", "name": "Implacable", "type": "prefix",
@@ -74,7 +74,7 @@
     "aoeSize": {
       "id": "aoeSize", "name": "Expansive", "type": "prefix",
       "stat": "aoeRadius", "label": "+X cases AOE",
-      "valueRange": [1, 1], "pool": "elemental", "biome": "voidnet"
+      "valueRange": [1, 1], "pool": "elemental", "biome": "voidnet", "rollable": false
     }
   },
 
@@ -243,12 +243,12 @@
     "fly": {
       "id": "fly", "name": "Aérienne", "type": "prefix",
       "stat": "fly", "label": "Vol (passe au-dessus des obstacles)",
-      "valueRange": [1, 1], "pool": "boots", "biome": "voidnet"
+      "valueRange": [1, 1], "pool": "boots", "biome": "voidnet", "rollable": false
     },
     "teleport": {
       "id": "teleport", "name": "Téléporteuse", "type": "prefix",
       "stat": "teleport", "label": "Sort TP (1 AP, CD 2T, plus de mouvement après)",
-      "valueRange": [1, 1], "pool": "boots", "biome": "voidnet"
+      "valueRange": [1, 1], "pool": "boots", "biome": "voidnet", "rollable": false
     },
     "dodgeChance": {
       "id": "dodgeChance", "name": "des Ombres", "type": "suffix",
@@ -405,7 +405,7 @@
     "quiverBowRange": {
       "id": "quiverBowRange", "name": "Long", "type": "prefix",
       "stat": "bowRangeBonus", "label": "+1 portée à l'arc",
-      "valueRange": [1, 1], "pool": "quiver", "biome": "voidnet"
+      "valueRange": [1, 1], "pool": "quiver", "biome": "voidnet", "rollable": false
     },
     "quiverPierceDmg": {
       "id": "quiverPierceDmg", "name": "Perce", "type": "prefix",
@@ -469,7 +469,7 @@
     "eliteApBonus": {
       "id": "eliteApBonus", "name": "★ Suprême", "type": "prefix",
       "stat": "bonusAP", "label": "+1 AP par tour",
-      "valueRange": [1, 1], "pool": "elite", "biome": "voidnet", "isElite": true
+      "valueRange": [1, 1], "pool": "elite", "biome": "voidnet", "isElite": true, "rollable": false
     },
     "eliteSpellOnKill": {
       "id": "eliteSpellOnKill", "name": "★ Cataclysmique", "type": "suffix",
