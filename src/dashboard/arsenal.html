@@ -451,8 +451,8 @@ function renderItemCard(tpl, ilvl, mult){
     const dMin = Math.round(tpl.damage[0] * mult);
     const dMax = Math.round(tpl.damage[1] * mult);
     statsHtml += `
-      <div class="stat-line base">
-        <span class="lbl">Dégâts ${tpl.damageType?.toUpperCase() || ''}</span>
+      <div class="stat-line base" title="Dégâts variables à chaque attaque entre min et max. Fixe pour l'arme, random au coup.">
+        <span class="lbl">Dégâts ${tpl.damageType?.toUpperCase() || ''} <span style="opacity:0.5; font-size:9px;">(par coup)</span></span>
         <span class="val">${dMin}-${dMax}</span>
       </div>
     `;
@@ -466,21 +466,14 @@ function renderItemCard(tpl, ilvl, mult){
     }
   }
   if(tpl.implicit){
-    const value = Math.round(((tpl.implicit.valueRange[0] + tpl.implicit.valueRange[1]) / 2) * mult);
+    // Valeur FIXE = floor(milieu_du_range × ilvlMult). Plus de RNG sur l'implicit.
+    const midRange = (tpl.implicit.valueRange[0] + tpl.implicit.valueRange[1]) / 2;
+    const value = Math.max(1, Math.floor(midRange * mult));
     const label = (tpl.implicit.label || '').replace('X', value);
     statsHtml += `
       <div class="stat-line implicit">
         <span class="lbl">◆ ${label}</span>
-        <span class="val">~${value}</span>
-      </div>
-    `;
-    // Range complet
-    const minVal = Math.floor(tpl.implicit.valueRange[0] * mult);
-    const maxVal = Math.floor(tpl.implicit.valueRange[1] * mult);
-    statsHtml += `
-      <div class="stat-line implicit" style="opacity:0.7;">
-        <span class="lbl" style="font-size:9px;">Range possible (${tpl.implicit.id})</span>
-        <span class="val" style="font-size:10px;">${minVal} → ${maxVal}</span>
+        <span class="val">${value}</span>
       </div>
     `;
   }

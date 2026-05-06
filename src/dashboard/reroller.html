@@ -484,88 +484,49 @@
   .affix-row.flash-good { animation: flash-good 0.8s ease-out; }
   .affix-row.flash-meh { animation: flash-meh 0.8s ease-out; }
 
-  /* === REROLL POPUP — affichage cool de la valeur rollée === */
-  @keyframes reroll-pop-in {
-    0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-    40%  { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
-    60%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-    85%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+  /* === REROLL MINI-BADGE — petit popup à côté de la stat rerollée === */
+  @keyframes reroll-badge-pop {
+    0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+    20%  { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    40%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+    80%  { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
   }
-  @keyframes reroll-shake {
-    0%, 100% { transform: translate(-50%, -50%) translateX(0); }
-    25% { transform: translate(-50%, -50%) translateX(-4px); }
-    75% { transform: translate(-50%, -50%) translateX(4px); }
-  }
-  .reroll-popup {
-    position: fixed;
-    left: 50%;
-    top: 35%;
+  .reroll-mini-badge {
+    position: absolute;
+    right: -4px;
+    top: 50%;
     transform: translate(-50%, -50%);
-    z-index: 200;
+    z-index: 30;
     pointer-events: none;
-    background: rgba(0, 0, 0, 0.92);
+    background: #11151c;
     border: 2px solid var(--accent);
-    padding: 18px 26px;
-    box-shadow: 0 0 30px rgba(255, 179, 71, 0.5);
+    padding: 4px 8px;
+    min-width: 44px;
     text-align: center;
-    min-width: 260px;
-    animation: reroll-pop-in 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-  .reroll-popup.bad {
-    border-color: var(--bad);
-    box-shadow: 0 0 30px rgba(255, 89, 89, 0.4);
-  }
-  .reroll-popup.good {
-    border-color: var(--good);
-    box-shadow: 0 0 40px rgba(95, 255, 140, 0.6);
-  }
-  .reroll-popup-header {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-2);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .reroll-popup-values {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin-bottom: 10px;
-  }
-  .reroll-old-val {
-    font-size: 22px;
     font-weight: bold;
-    color: var(--text-1);
-    text-decoration: line-through;
-    text-decoration-color: var(--bad);
-  }
-  .reroll-new-val {
-    font-size: 32px;
-    font-weight: bold;
+    font-size: 13px;
     color: var(--accent);
+    box-shadow: 0 0 12px rgba(255, 179, 71, 0.5);
+    animation: reroll-badge-pop 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    white-space: nowrap;
   }
-  .reroll-popup.good .reroll-new-val { color: var(--good); }
-  .reroll-popup.bad .reroll-new-val { color: var(--bad); }
-  .reroll-popup-arrow {
-    font-size: 20px;
-    color: var(--text-2);
+  .reroll-mini-badge.good {
+    border-color: var(--good);
+    color: var(--good);
+    box-shadow: 0 0 14px rgba(95, 255, 140, 0.6);
   }
-  .reroll-popup-result {
+  .reroll-mini-badge.bad {
+    border-color: var(--bad);
+    color: var(--bad);
+    box-shadow: 0 0 12px rgba(255, 89, 89, 0.4);
+  }
+  .reroll-mini-badge .icon {
     font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: bold;
+    margin-right: 2px;
   }
-  .reroll-popup.good .reroll-popup-result { color: var(--good); }
-  .reroll-popup.bad .reroll-popup-result { color: var(--bad); }
-  .reroll-popup-stat {
-    font-size: 10px;
-    color: var(--text-1);
-    margin-top: 4px;
-    font-style: italic;
-  }
+  /* La row d'affixe doit pouvoir héberger un badge en absolute */
+  .affix-row { position: relative; }
 
   /* === DEV TOOLS === */
   .dev-tools {
@@ -1155,68 +1116,36 @@ function doReroll(){
   renderWallet();
   renderGrid();
 
-  // POPUP cool montrant le résultat du reroll
-  showRerollPopup({
-    oldValue,
-    newValue,
-    kept,
-    statLabel: (affix.label || affix.stat || '').replace('X', kept ? newValue : oldValue),
-  });
+  // Calcule la qualité % du roll qu'on vient de tirer (nouveau, pas celui gardé)
+  const rolledPct = Math.round(affixQualityPct(newValue, def.valueRange, item.ilvl));
 
-  // Flash animation sur la row
+  // Mini-badge inline à droite de la row + flash sur la row
   setTimeout(() => {
     const rows = document.querySelectorAll('.affix-row[data-affix-idx]');
-    const flashRow = rows[STATE.selectedAffixIndex];
-    if(flashRow){
-      flashRow.classList.add(kept ? 'flash-good' : 'flash-meh');
-      setTimeout(() => flashRow.classList.remove('flash-good', 'flash-meh'), 800);
+    const targetRow = rows[STATE.selectedAffixIndex];
+    if(targetRow){
+      showRerollMiniBadge(targetRow, { rolledPct, kept });
+      targetRow.classList.add(kept ? 'flash-good' : 'flash-meh');
+      setTimeout(() => targetRow.classList.remove('flash-good', 'flash-meh'), 800);
     }
   }, 50);
 }
 
 /**
- * Affiche un popup centré qui montre l'ancien → nouveau et le résultat du reroll.
- * Auto-disparaît après 1.8s.
+ * Affiche un mini-badge collé à la row de l'affixe rerollé.
+ * Montre le % rollé (qualité du nouveau roll), couleur selon réussite.
+ * Auto-disparaît après 1.4s.
  */
-function showRerollPopup({ oldValue, newValue, kept, statLabel }){
-  // Remove any existing popup
-  document.querySelectorAll('.reroll-popup').forEach(p => p.remove());
+function showRerollMiniBadge(rowEl, { rolledPct, kept }){
+  // Vire les anciens badges sur cette row
+  rowEl.querySelectorAll('.reroll-mini-badge').forEach(b => b.remove());
 
-  const popup = document.createElement('div');
-  popup.className = 'reroll-popup ' + (kept ? 'good' : 'bad');
+  const badge = document.createElement('div');
+  badge.className = 'reroll-mini-badge ' + (kept ? 'good' : 'bad');
+  badge.innerHTML = `<span class="icon">${kept ? '✓' : '✗'}</span>${rolledPct}%`;
+  rowEl.appendChild(badge);
 
-  let valuesHtml;
-  if(kept){
-    // Nouveau > ancien : montre l'amélioration
-    valuesHtml = `
-      <div class="reroll-popup-values">
-        <span class="reroll-old-val">${oldValue}</span>
-        <span class="reroll-popup-arrow">→</span>
-        <span class="reroll-new-val">${newValue}</span>
-      </div>
-      <div class="reroll-popup-result">✓ AMÉLIORATION GARDÉE</div>
-    `;
-  } else {
-    // Ancien gardé : montre quand même le roll perdu
-    valuesHtml = `
-      <div class="reroll-popup-values">
-        <span class="reroll-new-val" style="text-decoration: line-through; opacity: 0.6;">${newValue}</span>
-        <span class="reroll-popup-arrow">×</span>
-        <span class="reroll-old-val" style="text-decoration: none; color: var(--text-0);">${oldValue}</span>
-      </div>
-      <div class="reroll-popup-result">✗ ANCIEN CONSERVÉ</div>
-    `;
-  }
-
-  popup.innerHTML = `
-    <div class="reroll-popup-header">${kept ? '⟳ REROLL RÉUSSI' : '⟳ REROLL TENTÉ'}</div>
-    ${valuesHtml}
-    <div class="reroll-popup-stat">${statLabel}</div>
-  `;
-  document.body.appendChild(popup);
-
-  // Auto-cleanup après l'animation
-  setTimeout(() => popup.remove(), 1900);
+  setTimeout(() => badge.remove(), 1500);
 }
 
 boot().catch(e => {

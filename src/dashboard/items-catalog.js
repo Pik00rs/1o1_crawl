@@ -338,9 +338,24 @@ export function rollItem(itemId, opts = {}){
   );
 
   // === IMPLICIT ===
+  // L'implicit est maintenant FIXE par item × iLvl (plus de RNG).
+  // Valeur = floor( ((vMin + vMax) / 2) × ilvlMult ).
+  // Le RNG ne s'applique qu'aux affixes du pool, pas à l'implicit.
   let implicit = null;
-  if(tpl.implicitRollable){
-    // Armures qui peuvent roller hp/armor/divineShield au drop
+  const tplImplicit = tpl.implicit;
+  if(tplImplicit){
+    const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
+    const [vMin, vMax] = tplImplicit.valueRange;
+    const midRange = (vMin + vMax) / 2;
+    const value = Math.max(1, Math.floor(midRange * ilvlMult));
+    implicit = {
+      id: tplImplicit.id,
+      label: tplImplicit.label,
+      value,
+    };
+  } else if(tpl.implicitRollable){
+    // Legacy fallback : si jamais un ancien item utilise encore implicitRollable,
+    // on choisit une variante au hasard et applique aussi la formule fixe.
     const choices = STATE.armorImplicitChoices;
     const choiceKeys = Object.keys(choices);
     if(choiceKeys.length > 0){
@@ -348,23 +363,13 @@ export function rollItem(itemId, opts = {}){
       const pickedDef = choices[pickedKey];
       const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
       const [vMin, vMax] = pickedDef.valueRange;
-      const value = Math.max(1, Math.floor(randomInRange(vMin, vMax) * ilvlMult));
+      const value = Math.max(1, Math.floor(((vMin + vMax) / 2) * ilvlMult));
       implicit = {
         id: pickedDef.id,
         label: pickedDef.label,
         value,
       };
     }
-  } else if(tpl.implicit){
-    // Implicit fixe (ex: bottes = freeMovement)
-    const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
-    const [vMin, vMax] = tpl.implicit.valueRange;
-    const value = Math.max(1, Math.floor(randomInRange(vMin, vMax) * ilvlMult));
-    implicit = {
-      id: tpl.implicit.id,
-      label: tpl.implicit.label,
-      value,
-    };
   }
 
   return {
