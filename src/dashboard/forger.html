@@ -2,167 +2,1282 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FORGER — Reactor Hollow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Forge — REACTOR HOLLOW</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #ff8830;
+    --good: #5fff8c;
+    --bad: #ff5959;
+    --r-common-bright: #c0c0c0;
+    --r-magic-bright: #6aaaff;
+    --r-rare-bright: #ffd84d;
+    --r-epic-bright: #cc44ff;
+    --r-legendary-bright: #ff7a00;
+  }
+  * { box-sizing: border-box; }
   html, body {
-    background: #0a0510;
-    color: #d8c8a0;
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
     font-family: 'Courier New', monospace;
-    font-size: 14px;
     min-height: 100vh;
     overflow-x: hidden;
-    -webkit-tap-highlight-color: transparent;
   }
-  body {
-    padding: 20px;
-    background: radial-gradient(ellipse at top, #1a0820 0%, #0a0510 70%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+  a { color: inherit; text-decoration: none; }
 
   .header {
-    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border-2);
     padding: 12px 16px;
-    border: 1px solid #3a2840;
-    background: #14081e;
-    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
     gap: 12px;
-  }
-  .header-title {
-    font-size: 16px;
-    color: #ff8830;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(255,136,48,0.5);
-  }
-  .header-sub {
-    font-size: 10px;
-    color: #6a5878;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    position: sticky; top: 0; z-index: 50;
   }
   .back-btn {
-    background: transparent;
-    border: 1px solid #5a4828;
-    color: #d8c8a0;
-    padding: 10px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 12px;
+    color: var(--text-0);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
-    letter-spacing: 1px;
-    text-decoration: none;
-    transition: all 0.15s;
-    min-height: 40px;
-    display: inline-flex;
-    align-items: center;
   }
-  .back-btn:active { border-color: #ffd060; color: #ffd060; transform: scale(0.96); }
-  @media (hover: hover) {
-    .back-btn:hover { border-color: #ffd060; color: #ffd060; }
+  .back-btn:hover { background: var(--bg-3); }
+  .title {
+    font-size: 16px; letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .title .acc { color: var(--accent); }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px;
   }
 
-  .placeholder {
+  /* === MODE TABS === */
+  .mode-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .mode-tab {
+    flex: 1;
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    color: var(--text-1);
+    padding: 12px;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .mode-tab:hover { background: var(--bg-2); }
+  .mode-tab.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  /* === WALLET === */
+  .wallet {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+  }
+  .wallet-pill {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    padding: 4px 8px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* === SECTIONS === */
+  .section {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  /* === TRANSFER LAYOUT === */
+  .transfer-grid {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .transfer-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .item-slot {
+    background: var(--bg-2);
+    border: 2px dashed var(--border-2);
+    padding: 12px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .item-slot.has-item {
+    border-style: solid;
+    border-color: var(--accent);
+  }
+  .item-slot-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .item-slot-empty {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
-  }
-  .placeholder-card {
-    background: #14081e;
-    border: 1px solid #3a2840;
-    padding: 40px 32px;
+    color: var(--text-2);
+    font-size: 11px;
     text-align: center;
-    max-width: 420px;
-    position: relative;
-    overflow: hidden;
   }
-  .placeholder-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(circle at top, rgba(255,136,48,0.5), transparent 70%);
-    opacity: 0.15;
+  .item-slot-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .item-slot-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-1);
+  }
+  .item-slot-header .icon { font-size: 24px; }
+  .item-slot-header .name {
+    font-size: 11px;
+    font-weight: bold;
+    flex: 1;
+    line-height: 1.2;
+  }
+  .item-slot-header .ilvl {
+    font-size: 10px;
+    color: var(--text-1);
+  }
+  .item-slot-affixes {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+  .affix-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 6px;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 2px solid var(--text-2);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .affix-item:hover { background: rgba(255, 136, 48, 0.1); }
+  .affix-item.selectable { border-left-color: var(--accent); }
+  .affix-item.selected {
+    background: rgba(255, 136, 48, 0.25);
+    border-left-color: var(--good);
+  }
+  .affix-item.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-left-color: var(--text-2);
+  }
+  .affix-item.locked:hover { background: rgba(255, 255, 255, 0.02); }
+  .affix-item .lbl { color: var(--text-0); flex: 1; }
+  .affix-item .pct { color: var(--accent); font-weight: bold; }
+  .affix-item-pool-tag {
+    display: inline-block;
+    font-size: 8px;
+    color: var(--text-2);
+    margin-right: 4px;
+    background: var(--bg-3);
+    padding: 0 3px;
+  }
+  .change-btn {
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    color: var(--text-1);
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .change-btn:hover { background: var(--accent); color: #000; }
+
+  /* === ACTION BAR === */
+  .action-area {
+    margin-top: 12px;
+    text-align: center;
+  }
+  .action-btn {
+    width: 100%;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #000;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .action-btn:hover:not(:disabled) { background: #ffaa66; }
+  .action-btn:disabled {
+    background: var(--bg-2);
+    color: var(--text-2);
+    border-color: var(--border-2);
+    cursor: not-allowed;
+  }
+  .action-status {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text-1);
+    line-height: 1.4;
+  }
+  .action-status.error { color: var(--bad); }
+  .action-status.warn { color: #ffaa44; }
+
+  /* === ITEM PICKER MODAL === */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-1);
+    border: 1px solid var(--accent);
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-2);
+  }
+  .modal-header .title {
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .modal-close {
+    background: transparent;
+    border: 0;
+    color: var(--text-1);
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .modal-body {
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 6px;
+  }
+  .pick-cell {
+    aspect-ratio: 1;
+    background: var(--bg-2);
+    border: 2px solid;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 22px;
+    transition: transform 0.1s;
+  }
+  .pick-cell:hover { transform: scale(1.05); }
+  .pick-cell.r-common { border-color: var(--r-common-bright); background: rgba(192,192,192,0.05); }
+  .pick-cell.r-magic { border-color: var(--r-magic-bright); background: rgba(106,170,255,0.08); }
+  .pick-cell.r-rare { border-color: var(--r-rare-bright); background: rgba(255,216,77,0.08); }
+  .pick-cell.r-epic { border-color: var(--r-epic-bright); background: rgba(204,68,255,0.08); }
+  .pick-cell.r-legendary { border-color: var(--r-legendary-bright); background: rgba(255,122,0,0.10); }
+  .pick-cell.dimmed {
+    opacity: 0.25;
     pointer-events: none;
   }
-  .placeholder-card::after {
-    content: '';
-    position: absolute; top: 0; left: 0;
-    width: 14px; height: 14px;
-    border-top: 2px solid #ff8830;
-    border-left: 2px solid #ff8830;
+  .pick-cell .ilvl-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    font-size: 8px;
+    padding: 1px 3px;
+    color: var(--text-0);
   }
-  .placeholder-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 0 12px rgba(255,136,48,0.5));
-  }
-  .placeholder-title {
-    font-size: 24px;
-    color: #ff8830;
-    letter-spacing: 3px;
-    text-shadow: 0 0 8px rgba(255,136,48,0.5);
-    margin-bottom: 8px;
-  }
-  .placeholder-sub {
-    font-size: 11px;
-    color: #8a7898;
-    letter-spacing: 1px;
-    margin-bottom: 24px;
-  }
-  .placeholder-msg {
-    font-size: 13px;
-    color: #d8c8a0;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-  .placeholder-status {
-    font-size: 10px;
-    color: #6a5878;
-    letter-spacing: 2px;
-    padding: 8px 14px;
-    border: 1px dashed #3a2840;
-    display: inline-block;
-  }
-  .placeholder-status .v {
-    color: #ff8830;
+  .pick-cell .equipped-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: var(--good);
+    color: #000;
+    font-size: 8px;
+    padding: 1px 3px;
     font-weight: bold;
   }
-
-  @media (max-width: 600px) {
-    body { padding: 12px; }
-    .header { padding: 10px 12px; }
-    .header-title { font-size: 14px; }
-    .placeholder-card { padding: 28px 20px; }
-    .placeholder-icon { font-size: 48px; }
-    .placeholder-title { font-size: 20px; letter-spacing: 2px; }
+  .modal-empty {
+    text-align: center;
+    color: var(--text-2);
+    padding: 30px;
+    font-size: 11px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  /* === TIER UPGRADE === */
+  .upgrade-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .upgrade-side {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 12px;
+  }
+  .upgrade-side-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .upgrade-side .item-slot-card { gap: 2px; }
+
+  .upgrade-arrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--accent);
+    margin: 6px 0;
+  }
+  .ilvl-badge-big {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--bg-3);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .cost-display {
+    background: rgba(255, 136, 48, 0.05);
+    border: 1px solid rgba(255, 136, 48, 0.3);
+    padding: 8px 10px;
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+  .cost-display.broke {
+    border-color: rgba(255, 89, 89, 0.4);
+    background: rgba(255, 89, 89, 0.05);
+  }
+  .cost-display .resource {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .cost-display .cost-value {
+    font-weight: bold;
+    font-size: 13px;
+  }
+  .cost-display.broke .cost-value { color: var(--bad); }
+  .cost-display:not(.broke) .cost-value { color: var(--accent); }
+
+  /* === MOBILE === */
+  @media (max-width: 600px) {
+    .container { padding: 8px; }
+    .transfer-grid {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .transfer-arrow {
+      transform: rotate(90deg);
+    }
+    .upgrade-card { grid-template-columns: 1fr; }
+    .title { font-size: 13px; }
+    .pick-cell { font-size: 18px; }
+    .modal-grid { grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 4px; }
+    .item-slot { padding: 8px; min-height: 160px; }
+    .section { padding: 10px; }
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <div class="header-title">🔨 FORGER</div>
-    <div class="header-sub">Craft & upgrade items</div>
+<header class="header">
+  <a href="../../index.html" class="back-btn">← RETOUR</a>
+  <div class="title"><span class="acc">⚒</span> FORGE</div>
+</header>
+
+<main class="container">
+
+  <!-- WALLET -->
+  <div class="wallet" id="wallet"></div>
+
+  <!-- MODE TABS -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="transfer">⇄ Transfert d'affixe</button>
+    <button class="mode-tab" data-mode="upgrade">▲ Augmenter tier</button>
   </div>
-  <a href="../../index.html" class="back-btn">◂ HUB</a>
+
+  <!-- TRANSFER MODE -->
+  <section class="section" id="transfer-section">
+    <div class="section-title">▸ Transfert d'affixe</div>
+    <div style="font-size:10px; color:var(--text-1); margin-bottom:10px; line-height:1.4;">
+      Sélectionne un affixe émetteur (sera transféré, l'item est <b style="color:var(--bad)">détruit</b>) et un slot affixe récepteur (sera <b>écrasé</b>).
+      <br>Les 2 items doivent partager au moins un pool d'affixes et avoir le <b>même iLvl</b>. Pas de coût.
+    </div>
+
+    <div class="transfer-grid">
+      <!-- ÉMETTEUR -->
+      <div class="item-slot" id="slot-source">
+        <div class="item-slot-label">▸ ÉMETTEUR (détruit)</div>
+        <div class="item-slot-empty" id="slot-source-empty">Cliquez pour choisir</div>
+      </div>
+
+      <div class="transfer-arrow">→</div>
+
+      <!-- RÉCEPTEUR -->
+      <div class="item-slot" id="slot-target">
+        <div class="item-slot-label">▸ RÉCEPTEUR (gardé)</div>
+        <div class="item-slot-empty" id="slot-target-empty">Cliquez pour choisir</div>
+      </div>
+    </div>
+
+    <div class="action-area">
+      <button class="action-btn" id="btn-transfer" disabled>⇄ TRANSFÉRER</button>
+      <div class="action-status" id="transfer-status"></div>
+    </div>
+  </section>
+
+  <!-- UPGRADE MODE -->
+  <section class="section" id="upgrade-section" style="display:none;">
+    <div class="section-title">▸ Augmenter le tier d'un item</div>
+    <div style="font-size:10px; color:var(--text-1); margin-bottom:10px; line-height:1.4;">
+      Augmente l'iLvl de l'item de +1. Les valeurs des stats <b>scalent automatiquement</b> en fonction du nouveau tier (% qualité conservé).
+      <br>Le coût est exponentiel. Cap à <b>iLvl X</b>.
+    </div>
+
+    <div class="upgrade-card">
+      <!-- État avant -->
+      <div class="upgrade-side">
+        <div class="upgrade-side-label">▸ AVANT</div>
+        <div id="upgrade-before"></div>
+      </div>
+      <!-- État après -->
+      <div class="upgrade-side">
+        <div class="upgrade-side-label">▸ APRÈS</div>
+        <div id="upgrade-after"></div>
+      </div>
+    </div>
+
+    <div id="upgrade-cost-display"></div>
+
+    <div class="action-area">
+      <button class="action-btn" id="btn-upgrade" disabled>▲ AUGMENTER</button>
+      <div class="action-status" id="upgrade-status"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ITEM PICKER MODAL -->
+<div class="modal-overlay" id="picker-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title" id="picker-title">Choisir un item</div>
+      <button class="modal-close" id="picker-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid" id="picker-grid"></div>
+    </div>
+  </div>
 </div>
 
-<div class="placeholder">
-  <div class="placeholder-card">
-    <div class="placeholder-icon">🔨</div>
-    <div class="placeholder-title">FORGER</div>
-    <div class="placeholder-sub">Craft & upgrade items</div>
-    <div class="placeholder-msg">Combine des ressources biome (Braise, Givre, Spore, Datum, Sang) avec des items pour les upgrade ou crafter de nouveaux objets. Recettes débloquées en clean les donjons boss.</div>
-    <div class="placeholder-status">STATUS · <span class="v">EN CONSTRUCTION</span></div>
-  </div>
-</div>
+<script type="module">
+import {
+  loadCatalog, getItem, getAllItems, getAllAffixes, getAffix,
+  composeItemName, ilvlToRoman,
+  rollAffixValue, affixQualityPct,
+} from './items-catalog.js';
+
+// === STATE ===
+const STATE = {
+  mode: 'transfer', // 'transfer' | 'upgrade'
+  chest: [],
+  equipped: {},
+  wallet: {},
+  // Transfer mode
+  sourceItemId: null,
+  sourceAffixIdx: null,  // index de l'affixe à transférer (sur sourceItem)
+  targetItemId: null,
+  targetAffixIdx: null,  // index de l'affixe à écraser (sur targetItem)
+  // Upgrade mode
+  upgradeItemId: null,
+  // Modal picker
+  pickerTarget: null, // 'source' | 'target' | 'upgrade'
+};
+
+const ILVL_MULTIPLIER = {
+  1: 0.50, 2: 0.65, 3: 0.80, 4: 0.95, 5: 1.00,
+  6: 1.15, 7: 1.30, 8: 1.50, 9: 1.75, 10: 2.10,
+};
+const MAX_ILVL = 10;
+
+const SLOT_ICONS = {
+  mainhand: '⚔️', offhand: '🛡️', head: '🪖',
+  chest: '🦺', legs: '👖', gloves: '🧤',
+  boots: '👢', amulet: '📿', ring: '💍',
+};
+
+const BIOME_RESOURCES = {
+  inferno:  { id: 'inferno', name: 'Cendres ardentes', icon: '🔥', color: '#ff6644' },
+  cryo:     { id: 'cryo',    name: 'Éclats glacés',    icon: '❄️', color: '#66bbff' },
+  toxic:    { id: 'toxic',   name: 'Bave acide',        icon: '☠️', color: '#88dd44' },
+  voidnet:  { id: 'voidnet', name: 'Fragments numériques', icon: '⚡', color: '#aa66ff' },
+  crimson:  { id: 'crimson', name: 'Sang coagulé',      icon: '🩸', color: '#ff4488' },
+};
+
+const POOL_LABELS = {
+  elemental: 'Élém', physical: 'Phys', armor: 'Armure', boots: 'Bottes',
+  ring: 'Anneau', amulet_specific: 'Amul', tome: 'Tome',
+  shield: 'Bouclier', quiver: 'Carquois', charger: 'Chargeur', elite: 'Élite',
+};
+
+// === STORAGE ===
+function loadChest(){
+  try {
+    const raw = localStorage.getItem('rh_player_chest');
+    STATE.chest = raw ? JSON.parse(raw) : [];
+  } catch(e){ STATE.chest = []; }
+}
+function saveChest(){
+  localStorage.setItem('rh_player_chest', JSON.stringify(STATE.chest));
+}
+function loadEquipped(){
+  try {
+    const raw = localStorage.getItem('rh_player_equipped');
+    STATE.equipped = raw ? JSON.parse(raw) : {};
+  } catch(e){ STATE.equipped = {}; }
+}
+function loadWallet(){
+  try {
+    const raw = localStorage.getItem('rh_player_wallet');
+    STATE.wallet = raw ? JSON.parse(raw) : {};
+  } catch(e){ STATE.wallet = {}; }
+}
+function saveWallet(){
+  localStorage.setItem('rh_player_wallet', JSON.stringify(STATE.wallet));
+}
+
+function isEquipped(instanceId){
+  return Object.values(STATE.equipped).some(i => i?.instanceId === instanceId);
+}
+
+// === COSTS (exponentiel) ===
+// cost(t→t+1) = 10 × 2^(t-1)
+function getUpgradeCost(currentIlvl){
+  if(currentIlvl >= MAX_ILVL) return null;
+  return 10 * Math.pow(2, currentIlvl - 1);
+}
+
+// === HELPERS ===
+function getItemBiome(item){
+  const tpl = getItem(item.itemId);
+  return (item.biomeId || tpl?.biome) || 'crimson';
+}
+
+// Calcule la valeur d'un affixe à un % de qualité donné pour un iLvl donné.
+// Cohérent avec rollAffixValue (utilise round, pas floor).
+function valueAtQuality(qualityPct, valueRange, ilvl){
+  const [vMin, vMax] = valueRange;
+  const ilvlMult = ILVL_MULTIPLIER[ilvl] || 1;
+  const t = qualityPct / 100;
+  const rawVal = (vMin + t * (vMax - vMin)) * ilvlMult;
+  if(Number.isInteger(vMin) && Number.isInteger(vMax)){
+    return Math.max(1, Math.round(rawVal));
+  }
+  return Math.max(0.1, Math.round(rawVal * 10) / 10);
+}
+
+// Récupère la liste des pools partagés entre 2 items
+function getSharedPools(item1, item2){
+  const tpl1 = getItem(item1.itemId);
+  const tpl2 = getItem(item2.itemId);
+  if(!tpl1 || !tpl2) return [];
+  const p1 = new Set(tpl1.affixPools || []);
+  const p2 = tpl2.affixPools || [];
+  return p2.filter(p => p1.has(p));
+}
+
+// === RENDER ===
+function renderWallet(){
+  const wallet = document.getElementById('wallet');
+  wallet.innerHTML = Object.values(BIOME_RESOURCES).map(r => {
+    const owned = STATE.wallet[r.id] || 0;
+    return `
+      <div class="wallet-pill" style="border-color: ${r.color};">
+        <span style="color: ${r.color};">${r.icon}</span>
+        <span>${owned}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderModeTabs(){
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === STATE.mode);
+  });
+  document.getElementById('transfer-section').style.display = STATE.mode === 'transfer' ? '' : 'none';
+  document.getElementById('upgrade-section').style.display = STATE.mode === 'upgrade' ? '' : 'none';
+}
+
+function renderItemSlot(slotId, isSource){
+  const slot = document.getElementById(slotId);
+  const itemId = isSource ? STATE.sourceItemId : STATE.targetItemId;
+  const selectedAffixIdx = isSource ? STATE.sourceAffixIdx : STATE.targetAffixIdx;
+  const item = STATE.chest.find(i => i.instanceId === itemId);
+
+  // Reset interactions
+  slot.classList.toggle('has-item', !!item);
+
+  const labelText = isSource ? '▸ ÉMETTEUR (détruit)' : '▸ RÉCEPTEUR (gardé)';
+  const labelHtml = `<div class="item-slot-label">${labelText}</div>`;
+
+  if(!item){
+    slot.innerHTML = `
+      ${labelHtml}
+      <div class="item-slot-empty" id="${slotId}-empty">Cliquez pour choisir</div>
+    `;
+    document.getElementById(`${slotId}-empty`).onclick = () => openPicker(isSource ? 'source' : 'target');
+    return;
+  }
+
+  const tpl = getItem(item.itemId);
+  if(!tpl){
+    slot.innerHTML = `${labelHtml}<div class="item-slot-empty" style="color:var(--bad)">Item invalide</div>`;
+    return;
+  }
+
+  const itemName = composeItemName(item);
+  const otherItemId = isSource ? STATE.targetItemId : STATE.sourceItemId;
+  const otherItem = STATE.chest.find(i => i.instanceId === otherItemId);
+
+  // Pour chaque affixe rollable, vérifier si le transfert est valide
+  // - Source : affixe doit appartenir à un pool partagé avec le récepteur
+  // - Target : la STAT de l'affixe ne doit pas déjà exister sur la source comme stat à transférer
+  let affixesHtml = '';
+  if(item.affixes && item.affixes.length > 0){
+    item.affixes.forEach((a, idx) => {
+      const def = getAffix(a.id);
+      if(!def) return;
+      const isRollable = def.rollable !== false;
+      const lbl = (a.label || '').replace('X', a.value);
+
+      // Quality % pour affichage
+      let qualityPctText = '';
+      if(isRollable && def.valueRange){
+        const q = Math.round(affixQualityPct(a.value, def.valueRange, item.ilvl));
+        qualityPctText = `${q}%`;
+      } else {
+        qualityPctText = 'FIXE';
+      }
+
+      // Détermine si l'affixe est sélectionnable selon le contexte
+      let selectable = true;
+      let lockReason = '';
+      if(otherItem){
+        const sharedPools = getSharedPools(item, otherItem);
+        if(sharedPools.length === 0){
+          selectable = false;
+          lockReason = 'pas de pool partagé';
+        } else if(item.ilvl !== otherItem.ilvl){
+          selectable = false;
+          lockReason = `iLvl ${item.ilvl} ≠ ${otherItem.ilvl}`;
+        } else if(isSource){
+          // Source : l'affixe sélectionné doit pouvoir aller dans un pool partagé
+          if(!sharedPools.includes(def.pool)){
+            selectable = false;
+            lockReason = `pool ${def.pool} pas dispo sur récepteur`;
+          }
+          // Anti-doublon : si la stat existe déjà sur le récepteur (autre que la position d'écrasement)
+          const targetHasSameStat = otherItem.affixes?.some((oa, oaIdx) => {
+            if(oaIdx === STATE.targetAffixIdx) return false; // celle qu'on écrase ne compte pas
+            return oa.stat === a.stat;
+          });
+          if(targetHasSameStat){
+            selectable = false;
+            lockReason = 'récepteur a déjà cette stat';
+          }
+        } else {
+          // Target : on ne peut écraser un affixe que si l'affixe sélectionné chez la source
+          // (s'il y en a un) peut prendre sa place. Sinon par défaut on autorise.
+          if(STATE.sourceAffixIdx !== null){
+            const sourceAffix = otherItem.affixes?.[STATE.sourceAffixIdx];
+            const sourceDef = sourceAffix ? getAffix(sourceAffix.id) : null;
+            if(sourceDef){
+              // Vérifie pool compat
+              if(!sharedPools.includes(sourceDef.pool)){
+                selectable = false;
+                lockReason = 'incompat pool source';
+              }
+              // Anti-doublon (sauf si on écrase justement l'affixe doublon)
+              const wouldDup = item.affixes.some((ta, tIdx) => {
+                if(tIdx === idx) return false; // celui qu'on écrase
+                return ta.stat === sourceAffix.stat;
+              });
+              if(wouldDup){
+                selectable = false;
+                lockReason = 'écraser cet affixe créerait un doublon';
+              }
+            }
+          }
+        }
+      }
+
+      const isSelected = selectedAffixIdx === idx;
+      const classes = [
+        'affix-item',
+        selectable ? 'selectable' : 'locked',
+        isSelected ? 'selected' : '',
+      ].filter(Boolean).join(' ');
+
+      const poolTag = `<span class="affix-item-pool-tag">${POOL_LABELS[def.pool] || def.pool}</span>`;
+      const lockIcon = !selectable && !isRollable ? '🔒 ' : '';
+      affixesHtml += `
+        <div class="${classes}" data-affix-idx="${idx}" ${selectable ? '' : 'data-locked="1"'} ${lockReason ? `title="${lockReason}"` : ''}>
+          <span class="lbl">${poolTag}${lockIcon}${lbl}</span>
+          <span class="pct">${qualityPctText}</span>
+        </div>
+      `;
+    });
+  } else {
+    affixesHtml = '<div style="color:var(--text-2); font-size:10px; padding:6px;">Aucun affixe</div>';
+  }
+
+  slot.innerHTML = `
+    ${labelHtml}
+    <div class="item-slot-card">
+      <div class="item-slot-header">
+        <span class="icon">${tpl.icon || SLOT_ICONS[tpl.slot] || '?'}</span>
+        <span class="name">${itemName}</span>
+        <span class="ilvl">${ilvlToRoman(item.ilvl)}</span>
+      </div>
+      <div class="item-slot-affixes">
+        ${affixesHtml}
+      </div>
+      <button class="change-btn" data-change="${isSource ? 'source' : 'target'}">Changer d'item</button>
+    </div>
+  `;
+
+  // Bind affix click
+  slot.querySelectorAll('.affix-item[data-affix-idx]').forEach(el => {
+    el.addEventListener('click', () => {
+      if(el.dataset.locked) return;
+      const idx = Number(el.dataset.affixIdx);
+      if(isSource){
+        STATE.sourceAffixIdx = STATE.sourceAffixIdx === idx ? null : idx;
+      } else {
+        STATE.targetAffixIdx = STATE.targetAffixIdx === idx ? null : idx;
+      }
+      render();
+    });
+  });
+  // Bind change btn
+  const changeBtn = slot.querySelector(`.change-btn[data-change]`);
+  if(changeBtn){
+    changeBtn.addEventListener('click', () => openPicker(isSource ? 'source' : 'target'));
+  }
+}
+
+function renderTransferAction(){
+  const btn = document.getElementById('btn-transfer');
+  const status = document.getElementById('transfer-status');
+  const source = STATE.chest.find(i => i.instanceId === STATE.sourceItemId);
+  const target = STATE.chest.find(i => i.instanceId === STATE.targetItemId);
+
+  if(!source || !target){
+    btn.disabled = true;
+    status.textContent = 'Sélectionne un émetteur et un récepteur.';
+    status.className = 'action-status';
+    return;
+  }
+  if(source.instanceId === target.instanceId){
+    btn.disabled = true;
+    status.textContent = 'Émetteur et récepteur ne peuvent pas être le même item.';
+    status.className = 'action-status error';
+    return;
+  }
+  if(source.ilvl !== target.ilvl){
+    btn.disabled = true;
+    status.textContent = `iLvl différents : ${ilvlToRoman(source.ilvl)} ≠ ${ilvlToRoman(target.ilvl)}. Le transfert nécessite des iLvl identiques.`;
+    status.className = 'action-status error';
+    return;
+  }
+  const sharedPools = getSharedPools(source, target);
+  if(sharedPools.length === 0){
+    btn.disabled = true;
+    status.textContent = `Aucun pool d'affixes en commun.`;
+    status.className = 'action-status error';
+    return;
+  }
+  if(STATE.sourceAffixIdx === null || STATE.targetAffixIdx === null){
+    btn.disabled = true;
+    status.textContent = `Sélectionne un affixe sur l'émetteur ET un slot sur le récepteur.`;
+    status.className = 'action-status warn';
+    return;
+  }
+  const sourceAffix = source.affixes[STATE.sourceAffixIdx];
+  const sourceDef = getAffix(sourceAffix.id);
+  if(!sourceDef){
+    btn.disabled = true;
+    status.textContent = 'Affixe émetteur introuvable.';
+    status.className = 'action-status error';
+    return;
+  }
+  if(!sharedPools.includes(sourceDef.pool)){
+    btn.disabled = true;
+    status.textContent = `Pool "${sourceDef.pool}" pas disponible sur le récepteur.`;
+    status.className = 'action-status error';
+    return;
+  }
+  // Anti-doublon strict
+  const wouldDup = target.affixes.some((ta, tIdx) => {
+    if(tIdx === STATE.targetAffixIdx) return false;
+    return ta.stat === sourceAffix.stat;
+  });
+  if(wouldDup){
+    btn.disabled = true;
+    status.textContent = `Doublon : le récepteur a déjà la stat "${sourceAffix.stat}".`;
+    status.className = 'action-status error';
+    return;
+  }
+  if(isEquipped(source.instanceId)){
+    btn.disabled = true;
+    status.textContent = `L'émetteur est équipé. Déséquipe-le avant de le détruire.`;
+    status.className = 'action-status error';
+    return;
+  }
+
+  btn.disabled = false;
+  const sourceLbl = (sourceAffix.label || '').replace('X', sourceAffix.value);
+  const targetAffix = target.affixes[STATE.targetAffixIdx];
+  const targetLbl = (targetAffix.label || '').replace('X', targetAffix.value);
+  status.innerHTML = `Transfèrera <b style="color:var(--good)">${sourceLbl}</b> à la place de <b style="color:var(--bad)">${targetLbl}</b>. L'émetteur sera détruit.`;
+  status.className = 'action-status';
+}
+
+function doTransfer(){
+  const source = STATE.chest.find(i => i.instanceId === STATE.sourceItemId);
+  const target = STATE.chest.find(i => i.instanceId === STATE.targetItemId);
+  if(!source || !target) return;
+  const sourceAffix = source.affixes[STATE.sourceAffixIdx];
+  if(!sourceAffix) return;
+
+  // Remplace l'affixe ciblé par celui de la source (valeur exacte)
+  target.affixes[STATE.targetAffixIdx] = {
+    ...sourceAffix,
+  };
+
+  // Supprime la source du chest (détruit)
+  STATE.chest = STATE.chest.filter(i => i.instanceId !== source.instanceId);
+  saveChest();
+
+  // Reset state
+  STATE.sourceItemId = null;
+  STATE.sourceAffixIdx = null;
+  STATE.targetAffixIdx = null;
+
+  render();
+
+  // Confirmation visuelle
+  const status = document.getElementById('transfer-status');
+  status.innerHTML = `✓ Transfert effectué. Émetteur détruit.`;
+  status.className = 'action-status';
+  status.style.color = 'var(--good)';
+  setTimeout(() => { status.style.color = ''; }, 1500);
+}
+
+// === UPGRADE MODE ===
+function renderUpgrade(){
+  const before = document.getElementById('upgrade-before');
+  const after = document.getElementById('upgrade-after');
+  const costDisp = document.getElementById('upgrade-cost-display');
+  const btn = document.getElementById('btn-upgrade');
+  const status = document.getElementById('upgrade-status');
+  const item = STATE.chest.find(i => i.instanceId === STATE.upgradeItemId);
+
+  if(!item){
+    before.innerHTML = `<div class="item-slot-empty" id="upgrade-empty">Cliquez pour choisir</div>`;
+    after.innerHTML = `<div class="item-slot-empty">—</div>`;
+    document.getElementById('upgrade-empty').onclick = () => openPicker('upgrade');
+    costDisp.innerHTML = '';
+    btn.disabled = true;
+    status.textContent = 'Sélectionne un item à améliorer.';
+    status.className = 'action-status';
+    return;
+  }
+
+  const tpl = getItem(item.itemId);
+  if(!tpl){
+    before.innerHTML = `<div style="color:var(--bad);font-size:10px">Item invalide</div>`;
+    return;
+  }
+
+  // Render before
+  before.innerHTML = renderUpgradePreview(item, item.ilvl);
+
+  // Cap check
+  if(item.ilvl >= MAX_ILVL){
+    after.innerHTML = `<div style="color:var(--text-2); font-size:10px; padding: 14px; text-align:center;">★ Tier maximum atteint (${ilvlToRoman(MAX_ILVL)})</div>`;
+    costDisp.innerHTML = '';
+    btn.disabled = true;
+    status.textContent = `Cet item est déjà au tier maximum.`;
+    status.className = 'action-status warn';
+    return;
+  }
+
+  const newIlvl = item.ilvl + 1;
+  // Render after (prévisualise la même structure mais avec newIlvl)
+  after.innerHTML = renderUpgradePreview(item, newIlvl);
+
+  // Cost
+  const cost = getUpgradeCost(item.ilvl);
+  const biomeId = getItemBiome(item);
+  const resource = BIOME_RESOURCES[biomeId];
+  const owned = STATE.wallet[resource.id] || 0;
+  const affordable = owned >= cost;
+
+  costDisp.innerHTML = `
+    <div class="cost-display ${affordable ? '' : 'broke'}">
+      <div class="resource">
+        <span style="color: ${resource.color};">${resource.icon}</span>
+        <span>Coût : ${resource.name}</span>
+      </div>
+      <div class="cost-value">${cost} / ${owned}</div>
+    </div>
+  `;
+
+  if(!affordable){
+    btn.disabled = true;
+    status.textContent = `Il manque ${cost - owned} ${resource.name}.`;
+    status.className = 'action-status error';
+  } else {
+    btn.disabled = false;
+    status.innerHTML = `Tier passera de ${ilvlToRoman(item.ilvl)} à <b style="color:var(--good)">${ilvlToRoman(newIlvl)}</b>. Toutes les valeurs scalent (% qualité conservé).`;
+    status.className = 'action-status';
+  }
+}
+
+function renderUpgradePreview(item, targetIlvl){
+  const tpl = getItem(item.itemId);
+  if(!tpl) return '<div style="color:var(--bad)">?</div>';
+  const itemName = composeItemName(item);
+
+  // Build affixes preview at target ilvl (scaled by quality% conservation)
+  let affixesHtml = '';
+  // Implicit
+  if(item.implicit){
+    const oldVal = item.implicit.value;
+    const newVal = scaleAffixValue(item.implicit, item, targetIlvl, true);
+    affixesHtml += renderUpgradeAffixLine('◆ ' + (item.implicit.label || '').replace('X', newVal), oldVal, newVal);
+  }
+  // Affixes
+  (item.affixes || []).forEach(a => {
+    const def = getAffix(a.id);
+    if(!def) return;
+    const oldVal = a.value;
+    const newVal = scaleAffixValue(a, item, targetIlvl, false, def);
+    affixesHtml += renderUpgradeAffixLine('+ ' + (a.label || '').replace('X', newVal), oldVal, newVal);
+  });
+
+  return `
+    <div class="item-slot-card">
+      <div class="item-slot-header">
+        <span class="icon">${tpl.icon || SLOT_ICONS[tpl.slot] || '?'}</span>
+        <span class="name">${itemName}</span>
+        <span class="ilvl-badge-big" style="font-size:11px; padding:2px 6px;">${ilvlToRoman(targetIlvl)}</span>
+      </div>
+      <div class="item-slot-affixes">
+        ${affixesHtml || '<div style="color:var(--text-2);font-size:10px;padding:6px;">Aucun affixe</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderUpgradeAffixLine(label, oldVal, newVal){
+  if(oldVal === newVal){
+    return `<div class="affix-item"><span class="lbl">${label}</span><span class="pct" style="color:var(--text-2);">=</span></div>`;
+  }
+  return `<div class="affix-item">
+    <span class="lbl">${label}</span>
+    <span class="pct" style="color:var(--good); font-size:9px;">${oldVal}→${newVal}</span>
+  </div>`;
+}
+
+/**
+ * Calcule la nouvelle valeur d'un affixe / implicit après changement d'iLvl.
+ * Préserve le % de qualité actuel (relatif au range).
+ *
+ * @param {object} affix    L'affixe / implicit existant ({ value, valueRange? OU label avec range deductible })
+ * @param {object} item     L'item parent (pour ilvl source)
+ * @param {number} newIlvl  Nouvel iLvl cible
+ * @param {boolean} isImplicit  Si true, c'est l'implicit (range pas dispo dans l'objet, on utilise tpl.implicit.valueRange)
+ * @param {object} def      Définition d'affixe (pour les affixes du pool, contient valueRange)
+ */
+function scaleAffixValue(affix, item, newIlvl, isImplicit, def){
+  // Récupère le valueRange
+  let range = null;
+  if(isImplicit){
+    const tpl = getItem(item.itemId);
+    if(tpl && tpl.implicit && tpl.implicit.valueRange) range = tpl.implicit.valueRange;
+  } else if(def && def.valueRange){
+    range = def.valueRange;
+  }
+  if(!range) return affix.value; // Fallback : pas de scaling possible
+
+  // Calcule le % qualité actuel
+  const oldPct = affixQualityPct(affix.value, range, item.ilvl);
+  // Recalcule la valeur au nouvel iLvl pour le même %
+  return valueAtQuality(oldPct, range, newIlvl);
+}
+
+function doUpgrade(){
+  const item = STATE.chest.find(i => i.instanceId === STATE.upgradeItemId);
+  if(!item) return;
+  if(item.ilvl >= MAX_ILVL) return;
+  const cost = getUpgradeCost(item.ilvl);
+  const biomeId = getItemBiome(item);
+  const resource = BIOME_RESOURCES[biomeId];
+  const owned = STATE.wallet[resource.id] || 0;
+  if(owned < cost) return;
+
+  const newIlvl = item.ilvl + 1;
+
+  // Scale implicit
+  if(item.implicit){
+    item.implicit.value = scaleAffixValue(item.implicit, item, newIlvl, true);
+  }
+  // Scale affixes
+  (item.affixes || []).forEach(a => {
+    const def = getAffix(a.id);
+    if(!def) return;
+    a.value = scaleAffixValue(a, item, newIlvl, false, def);
+  });
+  // Update ilvl
+  item.ilvl = newIlvl;
+
+  // Pay
+  STATE.wallet[resource.id] = owned - cost;
+
+  saveChest();
+  saveWallet();
+
+  render();
+
+  const status = document.getElementById('upgrade-status');
+  status.innerHTML = `✓ Item amélioré au tier ${ilvlToRoman(newIlvl)} !`;
+  status.className = 'action-status';
+  status.style.color = 'var(--good)';
+  setTimeout(() => { status.style.color = ''; }, 1500);
+}
+
+// === PICKER MODAL ===
+function openPicker(target){
+  STATE.pickerTarget = target;
+  const modal = document.getElementById('picker-modal');
+  const grid = document.getElementById('picker-grid');
+  const titleEl = document.getElementById('picker-title');
+
+  let titleText, candidates;
+  if(target === 'source'){
+    titleText = 'Choisir l\'émetteur (sera détruit)';
+    candidates = filterPickerForSource();
+  } else if(target === 'target'){
+    titleText = 'Choisir le récepteur (sera gardé)';
+    candidates = filterPickerForTarget();
+  } else {
+    titleText = 'Choisir l\'item à améliorer';
+    candidates = filterPickerForUpgrade();
+  }
+  titleEl.textContent = titleText;
+
+  if(candidates.length === 0){
+    grid.innerHTML = '<div class="modal-empty">Aucun item compatible disponible.</div>';
+  } else {
+    grid.innerHTML = '';
+    candidates.forEach(item => {
+      const tpl = getItem(item.itemId);
+      if(!tpl) return;
+      const cell = document.createElement('button');
+      cell.className = 'pick-cell r-' + item.rarity;
+      cell.title = composeItemName(item) + ' iLvl ' + ilvlToRoman(item.ilvl);
+      cell.innerHTML = `
+        <span>${SLOT_ICONS[tpl.slot] || tpl.icon || '?'}</span>
+        <span class="ilvl-badge">${ilvlToRoman(item.ilvl)}</span>
+        ${isEquipped(item.instanceId) ? '<span class="equipped-badge">EQ</span>' : ''}
+      `;
+      cell.addEventListener('click', () => {
+        pickItem(item.instanceId);
+      });
+      grid.appendChild(cell);
+    });
+  }
+
+  modal.classList.add('open');
+}
+
+function closePicker(){
+  document.getElementById('picker-modal').classList.remove('open');
+  STATE.pickerTarget = null;
+}
+
+function pickItem(instanceId){
+  if(STATE.pickerTarget === 'source'){
+    STATE.sourceItemId = instanceId;
+    STATE.sourceAffixIdx = null;
+  } else if(STATE.pickerTarget === 'target'){
+    STATE.targetItemId = instanceId;
+    STATE.targetAffixIdx = null;
+  } else if(STATE.pickerTarget === 'upgrade'){
+    STATE.upgradeItemId = instanceId;
+  }
+  closePicker();
+  render();
+}
+
+// Filtre items pour la source du transfert : tout sauf l'item target déjà sélectionné, et tout sauf
+// les items équipés (on ne peut pas détruire un item équipé). Plus : doit avoir au moins 1 affixe.
+function filterPickerForSource(){
+  return STATE.chest.filter(item => {
+    if(item.instanceId === STATE.targetItemId) return false;
+    if(isEquipped(item.instanceId)) return false; // équipés non détructibles
+    if(!item.affixes || item.affixes.length === 0) return false; // sans affixe = rien à transférer
+    return true;
+  });
+}
+// Filtre pour le target : tout sauf source. Pas de contrainte d'équipement (le récepteur est gardé).
+function filterPickerForTarget(){
+  return STATE.chest.filter(item => {
+    if(item.instanceId === STATE.sourceItemId) return false;
+    if(!item.affixes || item.affixes.length === 0) return false; // sans affixe = rien à écraser
+    return true;
+  });
+}
+// Filtre pour l'upgrade : tous les items (équipés ok, peu importe), même les communes sans affixes.
+function filterPickerForUpgrade(){
+  return STATE.chest.slice();
+}
+
+// === RENDER MASTER ===
+function render(){
+  renderWallet();
+  renderModeTabs();
+  if(STATE.mode === 'transfer'){
+    renderItemSlot('slot-source', true);
+    renderItemSlot('slot-target', false);
+    renderTransferAction();
+  } else {
+    renderUpgrade();
+  }
+}
+
+// === BOOT ===
+async function boot(){
+  await loadCatalog();
+  loadChest();
+  loadEquipped();
+  loadWallet();
+
+  // Mode tabs
+  document.querySelectorAll('.mode-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      STATE.mode = t.dataset.mode;
+      render();
+    });
+  });
+
+  // Transfer button
+  document.getElementById('btn-transfer').addEventListener('click', doTransfer);
+
+  // Upgrade button
+  document.getElementById('btn-upgrade').addEventListener('click', doUpgrade);
+
+  // Picker close
+  document.getElementById('picker-close').addEventListener('click', closePicker);
+  document.getElementById('picker-modal').addEventListener('click', (e) => {
+    if(e.target.id === 'picker-modal') closePicker();
+  });
+
+  render();
+}
+
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#ff5959;font-family:monospace;">Erreur de chargement: ${e.message}</div>`;
+});
+</script>
 
 </body>
 </html>

@@ -277,6 +277,14 @@
     border-color: var(--border-2);
     cursor: not-allowed;
   }
+  /* État "MAX atteint" : disabled mais en vert (succès, pas erreur) */
+  .reroll-btn.at-max,
+  .reroll-btn.at-max:disabled {
+    background: rgba(95, 255, 140, 0.12);
+    color: var(--good);
+    border-color: var(--good);
+    cursor: default;
+  }
 
   /* === WALLET DISPLAY === */
   .wallet {
@@ -1057,6 +1065,23 @@ function renderReroller(){
     const owned = STATE.wallet[resource.id] || 0;
     const affordable = owned >= cost;
     const affixDisplayLabel = (selectedAffix.label || '').replace('X', selectedAffix.value);
+    // Check si déjà au max (rendu impossible à améliorer)
+    const selectedDef = getAffix(selectedAffix.id);
+    const maxValueForAffix = selectedDef ? computeMaxValue(selectedDef.valueRange, item.ilvl) : null;
+    const isAtMax = maxValueForAffix !== null && selectedAffix.value >= maxValueForAffix;
+
+    let btnLabel, btnDisabled;
+    if(isAtMax){
+      btnLabel = `★ MAX ATTEINT — Reroll inutile`;
+      btnDisabled = 'disabled';
+    } else if(!affordable){
+      btnLabel = `❌ ESSENCES INSUFFISANTES`;
+      btnDisabled = 'disabled';
+    } else {
+      btnLabel = `⟳ REROLL (${cost} ${resource.name})`;
+      btnDisabled = '';
+    }
+
     actionHtml = `
       <div class="reroll-action">
         <div class="reroll-info">
@@ -1066,8 +1091,8 @@ function renderReroller(){
             <b>${cost}</b> / ${owned}
           </div>
         </div>
-        <button class="reroll-btn" id="btn-reroll" ${affordable ? '' : 'disabled'}>
-          ${affordable ? `⟳ REROLL (${cost} ${resource.name})` : `❌ ESSENCES INSUFFISANTES`}
+        <button class="reroll-btn ${isAtMax ? 'at-max' : ''}" id="btn-reroll" ${btnDisabled}>
+          ${btnLabel}
         </button>
       </div>
     `;
@@ -1140,6 +1165,12 @@ function doReroll(){
   }
   // Sécurité : ne JAMAIS rerouler les affixes non-rollables
   if(def.rollable === false){
+    return;
+  }
+  // Sécurité : ne pas reroll si déjà au max (le bouton est censé être désactivé,
+  // mais en cas de manipulation directe on bloque ici)
+  const maxValue = computeMaxValue(def.valueRange, item.ilvl);
+  if(affix.value >= maxValue){
     return;
   }
 
