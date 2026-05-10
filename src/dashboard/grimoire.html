@@ -427,18 +427,13 @@
     </div>
   </section>
 
-  <!-- ROLLABLES SECTION -->
-  <section class="section-header">
-    <span class="section-icon">🎲</span>
-    <span class="section-title">Affixes Rollables</span>
-    <span class="section-count" id="rollable-count"></span>
-  </section>
-  <section class="affixes-list" id="rollable-list"></section>
+  <!-- ROLLABLES PAR POOL (sections générées dynamiquement) -->
+  <div id="pools-container"></div>
 
-  <!-- FIXED SECTION -->
+  <!-- FIXED SECTION (en bas, séparée car non-rollable concerne tous pools) -->
   <section class="section-header fixed">
     <span class="section-icon">🔒</span>
-    <span class="section-title">Affixes Fixes</span>
+    <span class="section-title">Affixes Fixes (tous pools)</span>
     <span class="section-count" id="fixed-count"></span>
   </section>
   <section class="affixes-list" id="fixed-list"></section>
@@ -570,27 +565,72 @@ function render(){
   const rollables = allAffixes.filter(a => a.rollable !== false);
   const fixed = allAffixes.filter(a => a.rollable === false);
 
-  // Sort alpha by name
-  rollables.sort((a, b) => a.name.localeCompare(b.name));
+  // Group rollables by pool
+  const poolGroups = {};
+  rollables.forEach(a => {
+    if(!poolGroups[a._pool]) poolGroups[a._pool] = [];
+    poolGroups[a._pool].push(a);
+  });
+  // Sort each pool's affixes alphabetically
+  Object.values(poolGroups).forEach(list => list.sort((a, b) => a.name.localeCompare(b.name)));
+
+  // Sort fixes
   fixed.sort((a, b) => a.name.localeCompare(b.name));
 
-  // Update header counts
+  // Update header count (total)
   document.getElementById('stats-mini').textContent = `${allAffixes.length} affixes (${rollables.length} ⚙ + ${fixed.length} 🔒)`;
-  document.getElementById('rollable-count').textContent = `${rollables.length} affixes`;
   document.getElementById('fixed-count').textContent = `${fixed.length} affixes`;
 
-  // Render
-  renderList('rollable-list', rollables, false);
-  renderList('fixed-list', fixed, true);
+  // Render rollables sections (1 par pool, dans l'ordre logique)
+  renderRollableSections(poolGroups);
+
+  // Render fixed section
+  const fixedList = document.getElementById('fixed-list');
+  if(fixed.length === 0){
+    fixedList.innerHTML = '<div class="empty-section">Aucun affixe fixe</div>';
+  } else {
+    fixedList.innerHTML = fixed.map(a => renderAffixCard(a, true)).join('');
+  }
 }
 
-function renderList(elId, affixes, isFixed){
-  const list = document.getElementById(elId);
-  if(affixes.length === 0){
-    list.innerHTML = '<div class="empty-section">Aucun affixe dans cette catégorie</div>';
-    return;
+// Ordre d'affichage des pools dans le grimoire (le plus pertinent en haut)
+const POOL_ORDER = [
+  'physical', 'elemental', 'armor', 'boots', 'ring',
+  'amulet_specific', 'tome', 'shield', 'quiver', 'charger', 'elite',
+];
+const POOL_ICONS = {
+  physical: '⚔️', elemental: '🔥', armor: '🛡️', boots: '👢',
+  ring: '💍', amulet_specific: '📿', tome: '📚',
+  shield: '🛡', quiver: '🏹', charger: '🔋', elite: '★',
+};
+
+function renderRollableSections(poolGroups){
+  const container = document.getElementById('pools-container');
+  let html = '';
+
+  // Pools dans l'ordre, puis ceux qui restent (cas où on aurait oublié un pool dans POOL_ORDER)
+  const orderedKeys = POOL_ORDER.filter(p => poolGroups[p] && poolGroups[p].length > 0);
+  const remainingKeys = Object.keys(poolGroups).filter(p => !orderedKeys.includes(p));
+  const allKeys = [...orderedKeys, ...remainingKeys];
+
+  for(const poolName of allKeys){
+    const list = poolGroups[poolName];
+    const icon = POOL_ICONS[poolName] || '◆';
+    const label = POOL_LABELS[poolName] || poolName;
+
+    html += `
+      <section class="section-header">
+        <span class="section-icon">${icon}</span>
+        <span class="section-title">${label}</span>
+        <span class="section-count">${list.length} affixes</span>
+      </section>
+      <section class="affixes-list">
+        ${list.map(a => renderAffixCard(a, false)).join('')}
+      </section>
+    `;
   }
-  list.innerHTML = affixes.map(a => renderAffixCard(a, isFixed)).join('');
+
+  container.innerHTML = html;
 }
 
 function renderAffixCard(affix, isFixed){

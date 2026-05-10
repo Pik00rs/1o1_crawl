@@ -204,6 +204,13 @@
     color: var(--accent);
     margin-right: 4px;
   }
+  .affix-max-hint {
+    font-size: 9px;
+    color: var(--text-2);
+    margin-top: 2px;
+    font-style: italic;
+    opacity: 0.85;
+  }
   .affix-quality-bar {
     width: 60px;
     height: 4px;
@@ -830,10 +837,21 @@ function attachHandlers(){
 }
 
 // === FILTERING ===
+// Détermine si un item a au moins UN affixe rerollable
+function itemHasRerollableAffixes(item){
+  if(!item.affixes || item.affixes.length === 0) return false;
+  return item.affixes.some(a => {
+    const def = getAffix(a.id);
+    return def && def.rollable !== false;
+  });
+}
+
 function getFilteredItems(){
   return STATE.chest.filter(item => {
     const tpl = getItem(item.itemId);
     if(!tpl) return false;
+    // Filtre prioritaire : items sans affixes rerollables disparaissent de la sélection
+    if(!itemHasRerollableAffixes(item)) return false;
     if(STATE.filter.slot !== 'all' && tpl.slot !== STATE.filter.slot) return false;
     if(STATE.filter.rarity !== 'all' && item.rarity !== STATE.filter.rarity) return false;
     if(STATE.filter.ilvl !== 'all' && item.ilvl !== Number(STATE.filter.ilvl)) return false;
@@ -1003,10 +1021,14 @@ function renderReroller(){
     const qualityPct = def ? affixQualityPct(a.value, def.valueRange, item.ilvl) : 50;
     const qualityPctRounded = Math.round(qualityPct);
     const qualColor = qualityPct >= 85 ? 'var(--good)' : qualityPct >= 60 ? '#fff200' : qualityPct >= 30 ? '#ffaa44' : 'var(--bad)';
+    // Max atteignable à 100% qualité (pour cet item × iLvl)
+    const maxValue = computeMaxValue(def.valueRange, item.ilvl);
+    const isAtMax = a.value >= maxValue;
     affixListHtml += `
       <button class="affix-row ${isSelected ? 'selected' : ''}" data-affix-idx="${idx}">
         <div class="affix-info">
           <div class="affix-label">+ ${lbl}</div>
+          <div class="affix-max-hint">${isAtMax ? '★ MAX atteint' : `Max possible : ${maxValue}`}</div>
         </div>
         <div class="affix-quality-bar">
           <div style="width: ${qualityPctRounded}%; background: ${qualColor};"></div>
@@ -1088,6 +1110,19 @@ function ilvlToMult(ilvl){
     6: 1.15, 7: 1.30, 8: 1.50, 9: 1.75, 10: 2.10,
   };
   return ILVL_MULT[ilvl] || 1;
+}
+
+/**
+ * Calcule la valeur MAX qu'un affixe peut atteindre à 100% de qualité pour un iLvl donné.
+ * Utilise round (pas floor), cohérent avec rollAffixValue.
+ */
+function computeMaxValue(valueRange, ilvl){
+  const [vMin, vMax] = valueRange;
+  const mult = ilvlToMult(ilvl);
+  const rawMax = vMax * mult;
+  const isInt = Number.isInteger(vMin) && Number.isInteger(vMax);
+  if(isInt) return Math.max(1, Math.round(rawMax));
+  return Math.max(0.1, Math.round(rawMax * 10) / 10);
 }
 
 // === REROLL EXECUTION ===
