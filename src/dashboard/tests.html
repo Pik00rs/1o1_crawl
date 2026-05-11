@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tests Affixes — REACTOR HOLLOW</title>
+<style>
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #3df0ff;
+    --good: #5fff8c;
+    --warn: #ffa550;
+    --bad: #ff5959;
+    --neutral: #88aacc;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    padding: 12px;
+  }
+  .header {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+  }
+  .header h1 {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+  .header p {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-1);
+    line-height: 1.5;
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  button {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    padding: 8px 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  button:hover { background: var(--bg-3); border-color: var(--accent); }
+  button.primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: bold;
+  }
+  button:disabled { opacity: 0.4; cursor: wait; }
+
+  .summary {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 11px;
+  }
+  .summary__cell { display: flex; gap: 6px; align-items: center; }
+  .summary__cell .num { font-weight: bold; font-size: 14px; }
+  .summary__cell.ok .num   { color: var(--good); }
+  .summary__cell.warn .num { color: var(--warn); }
+  .summary__cell.bad .num  { color: var(--bad); }
+  .summary__cell.total .num { color: var(--accent); }
+
+  .results { background: var(--bg-1); border: 1px solid var(--border-2); }
+  .row {
+    display: grid;
+    grid-template-columns: 32px 1fr 90px 1fr;
+    gap: 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border-1);
+    font-size: 11px;
+    align-items: center;
+  }
+  .row.header-row {
+    background: var(--bg-2);
+    font-weight: bold;
+    color: var(--neutral);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .row .status {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  .row .status.ok   { color: var(--good); }
+  .row .status.warn { color: var(--warn); }
+  .row .status.bad  { color: var(--bad); }
+  .row .affix {
+    color: var(--text-0);
+    font-family: 'Courier New', monospace;
+  }
+  .row .affix .label {
+    color: var(--text-2);
+    font-size: 10px;
+    margin-left: 8px;
+  }
+  .row .value {
+    color: var(--accent);
+    text-align: right;
+    font-weight: bold;
+  }
+  .row .detail {
+    color: var(--text-1);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .row .detail .v { color: var(--good); font-weight: bold; }
+  .row .detail .v-bad { color: var(--bad); font-weight: bold; }
+
+  .legend {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    font-size: 10px;
+    color: var(--text-1);
+    line-height: 1.7;
+  }
+  .legend strong { color: var(--text-0); }
+
+  .loader { color: var(--accent); text-align: center; padding: 40px; font-size: 13px; }
+
+  @media (max-width: 600px) {
+    .row { grid-template-columns: 26px 1fr 70px; gap: 8px; padding: 8px; font-size: 10px; }
+    .row .detail { grid-column: 1 / -1; padding-left: 34px; }
+    .row.header-row .col-detail { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧪 TESTS AFFIXES</h1>
+  <p>
+    Pour chaque affixe du catalogue, simule un combat avec / sans l'affixe et compare les résultats.
+    Si une différence mesurable est observée → ✅ MARCHE. Sinon → ❌ IGNORÉ.
+    Les tests sont stochastiques (basés sur RNG), donc on lance N itérations pour stabiliser.
+  </p>
+</div>
+
+<div class="controls">
+  <button class="primary" id="btn-run">▸ LANCER LES TESTS</button>
+  <button id="btn-back">⌂ RETOUR HUB</button>
+  <span id="status" style="font-size:11px; color:var(--text-1); align-self:center;"></span>
+</div>
+
+<div class="summary" id="summary" style="display:none;"></div>
+<div class="results" id="results"></div>
+
+<div class="legend">
+  <strong>Légende :</strong><br>
+  ✅ <strong>OK</strong> — l'affixe a un effet mesurable en combat (la stat sort dans player.X et le moteur la lit)<br>
+  ⚠️ <strong>PARTIEL</strong> — la stat arrive bien dans player.X mais le moteur ne semble pas la consommer<br>
+  ❌ <strong>IGNORÉ</strong> — l'affixe n'arrive même pas dans player.X (pas dans STAT_MAP de equipment-builder)<br>
+  <br>
+  <strong>Note :</strong> certains tests sont approximatifs (statistique sur N itérations) — utiliser plusieurs runs pour confirmer.
+</div>
+
+<script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
+import { loadCatalog, getAllAffixes } from './items-catalog.js';
+import { buildPlayerFromEquipped, finalizeStatsForDisplay } from './equipment-builder.js';
+
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+injectUserBar();
+await loadCatalog();
+
+// === HELPERS ===
+const statusEl = document.getElementById('status');
+const resultsEl = document.getElementById('results');
+const summaryEl = document.getElementById('summary');
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  window.location.href = '../../index.html';
+});
+document.getElementById('btn-run').addEventListener('click', runTests);
+
+// === DESCRIPTION DES STATS ATTENDUES (source de vérité du moteur) ===
+// Pour chaque affixe.stat, on définit :
+//   - expectedField : nom du champ dans player.X après buildPlayerFromEquipped + finalizeStatsForDisplay
+//   - test : fonction qui retourne 'ok' | 'partial' | 'ignored' | 'untestable'
+//   - description : explication du test
+const STAT_EXPECTATIONS = {
+  // === STATS PRIMAIRES ===
+  maxHp:           { expectedField: 'maxHp',          kind: 'primary', desc: 'PV max augmentent' },
+  armor:           { expectedField: 'armor',          kind: 'primary', desc: 'Armure augmente (réduit dmg physique)' },
+  globalDamagePct: { expectedField: 'damage',         kind: 'damage_pct', desc: 'Dégâts d\'arme × (1+X/100)' },
+  elemDamagePct:   { expectedField: 'damage',         kind: 'damage_pct_elem', desc: 'Dégâts magiques × (1+X/100)' },
+
+  // === STATS CÂBLÉES AU MOTEUR (lues par damage.js / attack.js / actions.js) ===
+  critChance:      { expectedField: 'critChance',     kind: 'engine_used', desc: 'Chance de crit %' },
+  critDamage:      { expectedField: 'critMultiplier', kind: 'engine_used', desc: 'Multiplicateur de crit %' },
+  armorPen:        { expectedField: 'armorPen',       kind: 'engine_used', desc: 'Pénétration armure' },
+  lifesteal:       { expectedField: 'lifesteal',      kind: 'engine_used', desc: 'Vol de vie % sur dégâts infligés' },
+  hpRegen:         { expectedField: 'hpRegen',        kind: 'engine_partial', desc: 'PV regen/tour (lu dans turn.js)' },
+  bonusAP:         { expectedField: 'bonusAp',        kind: 'engine_partial', desc: 'AP bonus (lu dans turn.js)' },
+
+  bonusFireDamage:   { expectedField: 'bonusFire',    kind: 'engine_used', desc: 'Bonus dégâts feu' },
+  bonusIceDamage:    { expectedField: 'bonusIce',     kind: 'engine_used', desc: 'Bonus dégâts glace' },
+  bonusShockDamage:  { expectedField: 'bonusShock',   kind: 'engine_used', desc: 'Bonus dégâts foudre' },
+  bonusPoisonDamage: { expectedField: 'bonusPoison',  kind: 'engine_used', desc: 'Bonus dégâts poison' },
+  bonusElemDamage:   { expectedField: 'bonusFire',    kind: 'engine_used_multi', desc: 'Bonus dégâts élémentaires (les 4)' },
+
+  fireResist:    { expectedField: 'fireResist',   kind: 'engine_used', desc: 'Résistance feu %' },
+  iceResist:     { expectedField: 'iceResist',    kind: 'engine_used', desc: 'Résistance glace %' },
+  shockResist:   { expectedField: 'shockResist',  kind: 'engine_used', desc: 'Résistance foudre %' },
+  poisonResist:  { expectedField: 'poisonResist', kind: 'engine_used', desc: 'Résistance poison %' },
+
+  divineShield:        { expectedField: 'magicResist', kind: 'engine_used', desc: 'Réduction dmg magique global' },
+  divineShieldFire:    { expectedField: 'fireResist',  kind: 'engine_used', desc: '→ fireResist' },
+  divineShieldIce:     { expectedField: 'iceResist',   kind: 'engine_used', desc: '→ iceResist' },
+  divineShieldShock:   { expectedField: 'shockResist', kind: 'engine_used', desc: '→ shockResist' },
+  divineShieldPoison:  { expectedField: 'poisonResist',kind: 'engine_used', desc: '→ poisonResist' },
+
+  // === NOUVEAUX CÂBLÉS ===
+  dodgeChance:           { expectedField: 'dodgeChance',          kind: 'engine_used', desc: 'Esquive (annule dmg)' },
+  blockChance:           { expectedField: 'blockChance',          kind: 'engine_used', desc: 'Blocage (dmg × 0.5 phys)' },
+  firstHitReductionPct:  { expectedField: 'firstHitReductionPct', kind: 'engine_used', desc: 'Réduit 1er hit du combat' },
+  doubleStrikeChance:    { expectedField: 'doubleStrikeChance',   kind: 'engine_used', desc: '% chance retaper après attaque' },
+  freeMovement:          { expectedField: 'freeMovement',         kind: 'engine_used', desc: '1 case mvt gratuit/tour' },
+  armorAdjacent:         { expectedField: 'armorAdjacent',        kind: 'engine_used', desc: '+armor par ennemi adjacent' },
+
+  // === IGNORÉS (pas de code moteur pour ces effets) ===
+  // On les marque explicitement pour le report.
+  ccReduction:           { kind: 'untestable', desc: 'Réduction CC — moteur n\'applique pas les statuts via une % réductible' },
+  afflictedDamageBonus:  { kind: 'untestable', desc: 'Bonus dmg sur cible afflictée — pas implémenté' },
+  afterMoveDamageMult:   { kind: 'untestable', desc: 'Bonus dmg après mouvement — pas implémenté' },
+  amuletElemDamage:      { kind: 'untestable', desc: 'Bonus dmg amulette — pas implémenté' },
+  amuletSpellPower:      { kind: 'untestable', desc: 'Boost sort amulette — pas implémenté' },
+  aoeRadius:             { kind: 'untestable', desc: 'Augmente rayon AOE — pas implémenté' },
+  armorDamageMult:       { kind: 'untestable', desc: 'Bonus dmg sur cible armurée — pas implémenté' },
+  backstabDamageMult:    { kind: 'untestable', desc: 'Bonus dmg dans le dos — pas implémenté' },
+  bleedDamage:           { kind: 'untestable', desc: 'Bonus dmg saignement — pas implémenté' },
+  bleedResist:           { kind: 'untestable', desc: 'Résistance saignement — pas implémenté' },
+  blockThornsDamage:     { kind: 'untestable', desc: 'Reflect dmg sur block — pas implémenté' },
+  bowRangeBonus:         { kind: 'untestable', desc: '+portée arc — pas implémenté' },
+  cdReducOnKill:         { kind: 'untestable', desc: 'Réduction CD sur kill — pas implémenté' },
+  cleavePct:             { kind: 'untestable', desc: 'Splash mêlée — pas implémenté' },
+  elemCritChance:        { kind: 'untestable', desc: 'Crit % spells — pas implémenté' },
+  elemCritDamage:        { kind: 'untestable', desc: 'Crit dmg spells — pas implémenté' },
+  elemLifesteal:         { kind: 'untestable', desc: 'Vol de vie sur sorts — pas implémenté' },
+  elemStatusDuration:    { kind: 'untestable', desc: 'Durée des statuts élémentaires — pas implémenté' },
+  essenceFind:           { kind: 'untestable', desc: '+ressources droprate — pas implémenté' },
+  executeDamageMult:     { kind: 'untestable', desc: 'Bonus dmg cible PV bas — pas implémenté' },
+  firstStrikeChance:     { kind: 'untestable', desc: 'Chance d\'agir en 1er — pas implémenté' },
+  firstStrikeDamageMult: { kind: 'untestable', desc: 'Bonus dmg sur 1ère frappe — pas implémenté' },
+  fly:                   { kind: 'untestable', desc: 'Vol — pas implémenté' },
+  fortifyPct:            { kind: 'untestable', desc: 'Buff armor temporaire — pas implémenté' },
+  freeOpenerChance:      { kind: 'untestable', desc: 'Ouverture gratuite — pas implémenté' },
+  freeShotChance:        { kind: 'untestable', desc: 'Tir gratuit — pas implémenté' },
+  freeSpellOnKillChance: { kind: 'untestable', desc: 'Sort gratuit sur kill — pas implémenté' },
+  fullHpDamageMult:      { kind: 'untestable', desc: 'Bonus dmg si full HP — pas implémenté' },
+  headshotDamagePct:     { kind: 'untestable', desc: 'Bonus dmg headshot — pas implémenté' },
+  killReloadChance:      { kind: 'untestable', desc: 'Rechargement sur kill — pas implémenté' },
+  longMoveDamageMult:    { kind: 'untestable', desc: 'Bonus dmg long mouvement — pas implémenté' },
+  lowHpReductionPct:     { kind: 'untestable', desc: 'Réduction dmg PV bas — pas implémenté' },
+  magicFind:             { kind: 'untestable', desc: 'Drop magique — pas implémenté' },
+  maxRangeDamage:        { kind: 'untestable', desc: 'Bonus dmg à portée max — pas implémenté' },
+  missingHpDamagePct:    { kind: 'untestable', desc: 'Bonus dmg vs missing HP — pas implémenté' },
+  multishotChance:       { kind: 'untestable', desc: 'Multishot — pas implémenté' },
+  noMoveDamageMult:      { kind: 'untestable', desc: 'Bonus dmg sans bouger — pas implémenté' },
+  parryChance:           { kind: 'untestable', desc: 'Parade — pas implémenté' },
+  perBleedStackDamage:   { kind: 'untestable', desc: 'Bonus dmg / stack bleed — pas implémenté' },
+  pierceDamagePct:       { kind: 'untestable', desc: 'Bonus dmg perçant — pas implémenté' },
+  riposteChance:         { kind: 'untestable', desc: 'Riposte (utilise riposte flat de offhand) — partiellement' },
+  spellAPCostReduction:  { kind: 'untestable', desc: '-AP cost sorts — pas implémenté' },
+  spellEchoChance:       { kind: 'untestable', desc: 'Echo sort — pas implémenté' },
+  spellRange:            { kind: 'untestable', desc: '+portée sort — pas implémenté' },
+  stunOnCritChance:      { kind: 'untestable', desc: 'Stun on crit — pas implémenté' },
+  teleport:              { kind: 'untestable', desc: 'Téléportation — pas implémenté' },
+  thornsMeleePct:        { kind: 'untestable', desc: 'Reflect mêlée — pas implémenté' },
+  triggerElectrocuted:   { kind: 'untestable', desc: 'Trigger électrocuté — pas implémenté' },
+  triggerExplosion:      { kind: 'untestable', desc: 'Trigger explosion — pas implémenté' },
+  triggerParalyzed:      { kind: 'untestable', desc: 'Trigger paralysé — pas implémenté' },
+  triggerSick:           { kind: 'untestable', desc: 'Trigger malade — pas implémenté' },
+};
+
+// === BUILD FAKE EQUIPMENT POUR TESTER UN AFFIXE ===
+// On crée un item synthétique qui a UN SEUL affixe (l'affixe testé) avec valueRange[1] (max).
+// Puis on appelle buildPlayerFromEquipped → finalizeStatsForDisplay et on compare.
+function buildPlayerWithAffix(affixDef){
+  // Fake item factice : un anneau (slot ring) avec uniquement l'affixe testé.
+  // On utilise rings.json qui accepte le pool "ring" mais on bypass en mettant directement
+  // un itemId qui existe avec un template ring-like. Plus simple : on injecte directement
+  // dans le pipe en construisant l'item au format Supabase.
+  const fakeItem = {
+    instanceId: '__test__',
+    itemId: 'ring',          // on cible "ring" qui est un template existant
+    rarity: 'epic',
+    ilvl: 5,
+    affixes: [{
+      stat: affixDef.stat,
+      value: affixDef.valueRange ? affixDef.valueRange[1] : 10,
+      label: affixDef.label || affixDef.stat,
+    }],
+  };
+  const equipped = { ring: fakeItem };
+  try {
+    const built = buildPlayerFromEquipped(equipped, 1);
+    const finalStats = finalizeStatsForDisplay(built.stats, built.equipment);
+    return { built, finalStats };
+  } catch(e){
+    return { error: e.message };
+  }
+}
+
+function buildPlayerEmpty(){
+  const built = buildPlayerFromEquipped({}, 1);
+  const finalStats = finalizeStatsForDisplay(built.stats, built.equipment);
+  return { built, finalStats };
+}
+
+// === TESTS PAR AFFIXE ===
+function testAffix(affixDef, baseline){
+  const exp = STAT_EXPECTATIONS[affixDef.stat];
+  if(!exp){
+    return {
+      status: 'bad',
+      detail: `Pas dans STAT_EXPECTATIONS — affixe inconnu de equipment-builder`,
+      diff: null,
+    };
+  }
+
+  // Tests "untestable" : on les marque sans mesure
+  if(exp.kind === 'untestable'){
+    return {
+      status: 'bad',
+      detail: `${exp.desc}`,
+      diff: null,
+    };
+  }
+
+  // Sinon : on construit un player avec cet affixe et on mesure
+  const result = buildPlayerWithAffix(affixDef);
+  if(result.error){
+    return { status: 'bad', detail: `Erreur build: ${result.error}`, diff: null };
+  }
+  const { built, finalStats } = result;
+  const debug = built.debug;
+  const expectedValue = affixDef.valueRange ? affixDef.valueRange[1] : 10;
+
+  // Si l'affixe apparaît dans ignoredAffixes → ne passe pas dans equipment-builder
+  if(debug?.ignoredAffixes?.[affixDef.stat]){
+    return {
+      status: 'bad',
+      detail: `Affixe non mappé dans equipment-builder STAT_MAP — n'arrive pas dans player.X`,
+      diff: null,
+    };
+  }
+
+  // Sinon : on vérifie la propagation jusqu'à player.X (= finalStats[expectedField])
+  switch(exp.kind){
+    case 'primary': {
+      const observed = finalStats[exp.expectedField];
+      const baselineVal = baseline.finalStats[exp.expectedField];
+      const diff = observed - baselineVal;
+      if(diff >= expectedValue * 0.9){
+        return { status: 'ok', detail: `${exp.desc} — observé +${diff} (attendu +${expectedValue})`, diff };
+      }
+      return { status: 'warn', detail: `${exp.desc} — diff=${diff} attendu=${expectedValue}`, diff };
+    }
+    case 'damage_pct': {
+      // damage est un range, on compare la moyenne
+      const obs = (finalStats.damage[0] + finalStats.damage[1]) / 2;
+      const base = (baseline.finalStats.damage[0] + baseline.finalStats.damage[1]) / 2;
+      const ratio = obs / base;
+      const expectedRatio = 1 + (expectedValue / 100);
+      if(Math.abs(ratio - expectedRatio) < 0.05){
+        return {
+          status: 'ok',
+          detail: `${exp.desc} — dmg base=${base.toFixed(1)} avec affixe=${obs.toFixed(1)} (×${ratio.toFixed(2)}, attendu ×${expectedRatio.toFixed(2)})`,
+          diff: ratio
+        };
+      }
+      return { status: 'warn', detail: `${exp.desc} — ratio=${ratio.toFixed(2)} attendu=${expectedRatio.toFixed(2)}`, diff: ratio };
+    }
+    case 'damage_pct_elem': {
+      // L'arme est blunt (physique) → elemDamagePct ne devrait PAS s'appliquer
+      // C'est OK : la stat est reçue mais ne multiplie pas le dmg car arme physique
+      const obs = (finalStats.damage[0] + finalStats.damage[1]) / 2;
+      const base = (baseline.finalStats.damage[0] + baseline.finalStats.damage[1]) / 2;
+      if(Math.abs(obs - base) < 0.5){
+        return {
+          status: 'ok',
+          detail: `${exp.desc} — pas appliqué car arme physique (correct, ne s'applique qu'avec arme magique)`,
+          diff: 0
+        };
+      }
+      return { status: 'warn', detail: `${exp.desc} — comportement inattendu`, diff: null };
+    }
+    case 'engine_used': {
+      const observed = finalStats[exp.expectedField];
+      const baselineVal = baseline.finalStats[exp.expectedField] || 0;
+      const diff = observed - baselineVal;
+      if(diff >= expectedValue * 0.9){
+        return { status: 'ok', detail: `${exp.desc} — player.${exp.expectedField} = ${observed} (+${diff})`, diff };
+      }
+      return { status: 'warn', detail: `${exp.desc} — player.${exp.expectedField} obs=${observed} attendu+${expectedValue}`, diff };
+    }
+    case 'engine_used_multi': {
+      // bonusElemDamage doit booster les 4 types
+      const fire = finalStats.bonusFire - (baseline.finalStats.bonusFire || 0);
+      const ice = finalStats.bonusIce - (baseline.finalStats.bonusIce || 0);
+      const shock = finalStats.bonusShock - (baseline.finalStats.bonusShock || 0);
+      const poison = finalStats.bonusPoison - (baseline.finalStats.bonusPoison || 0);
+      if([fire, ice, shock, poison].every(v => v >= expectedValue * 0.9)){
+        return { status: 'ok', detail: `${exp.desc} — fire/ice/shock/poison tous +${expectedValue}`, diff: expectedValue };
+      }
+      return { status: 'warn', detail: `${exp.desc} — fire=${fire} ice=${ice} shock=${shock} poison=${poison}`, diff: null };
+    }
+    case 'engine_partial': {
+      // Stat arrive mais utilisée par turn.js qu'on ne peut pas tester ici
+      const observed = finalStats[exp.expectedField];
+      const baselineVal = baseline.finalStats[exp.expectedField] || 0;
+      const diff = observed - baselineVal;
+      if(diff > 0){
+        return {
+          status: 'warn',
+          detail: `${exp.desc} — player.${exp.expectedField}=+${diff}, mais conso côté turn.js non vérifiable depuis ici`,
+          diff
+        };
+      }
+      return { status: 'bad', detail: `${exp.desc} — pas reçu dans player.X`, diff: null };
+    }
+  }
+  return { status: 'bad', detail: 'Kind de test inconnu', diff: null };
+}
+
+// === RUN ===
+async function runTests(){
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  statusEl.textContent = 'Construction du baseline…';
+  resultsEl.innerHTML = '<div class="loader">⏳ Tests en cours…</div>';
+
+  await new Promise(r => setTimeout(r, 50)); // yield UI
+
+  const baseline = buildPlayerEmpty();
+  const affixGroups = getAllAffixes(); // {prefixes: {id: def}, suffixes: {id: def}}
+  // Flatten en une seule map
+  const allAffixes = { ...(affixGroups.prefixes || {}), ...(affixGroups.suffixes || {}) };
+
+  // Header de la table
+  const rows = [];
+  rows.push(`
+    <div class="row header-row">
+      <div></div>
+      <div>AFFIXE</div>
+      <div style="text-align:right;">VALEUR MAX</div>
+      <div class="col-detail">DÉTAIL</div>
+    </div>
+  `);
+
+  const counts = { ok: 0, warn: 0, bad: 0 };
+  // Filtrer pour ne pas tester les affixes "_meta"
+  const entries = Object.entries(allAffixes).filter(([id, def]) => def && def.stat && def.id);
+
+  for(let i = 0; i < entries.length; i++){
+    const [id, def] = entries[i];
+    statusEl.textContent = `[${i+1}/${entries.length}] Test : ${def.stat}…`;
+    if(i % 10 === 0) await new Promise(r => setTimeout(r, 0));
+
+    const result = testAffix(def, baseline);
+    counts[result.status]++;
+
+    const expectedValue = def.valueRange ? def.valueRange[1] : '?';
+    const icon = result.status === 'ok' ? '✅'
+               : result.status === 'warn' ? '⚠️'
+               : '❌';
+    const valueDisplay = def.valueRange
+      ? `${def.valueRange[0]}-${def.valueRange[1]}`
+      : '?';
+
+    rows.push(`
+      <div class="row">
+        <div class="status ${result.status}">${icon}</div>
+        <div class="affix">${def.stat}<span class="label">${def.name || def.label || ''}</span></div>
+        <div class="value">${valueDisplay}</div>
+        <div class="detail">${result.detail}</div>
+      </div>
+    `);
+  }
+
+  resultsEl.innerHTML = rows.join('');
+  summaryEl.style.display = 'flex';
+  summaryEl.innerHTML = `
+    <div class="summary__cell total"><span>Total testés :</span><span class="num">${entries.length}</span></div>
+    <div class="summary__cell ok"><span>✅ OK :</span><span class="num">${counts.ok}</span></div>
+    <div class="summary__cell warn"><span>⚠️ PARTIEL :</span><span class="num">${counts.warn}</span></div>
+    <div class="summary__cell bad"><span>❌ IGNORÉS :</span><span class="num">${counts.bad}</span></div>
+  `;
+  statusEl.textContent = `Terminé.`;
+  btn.disabled = false;
+}
+</script>
+
+</body>
+</html>
