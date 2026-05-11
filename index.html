@@ -157,7 +157,7 @@
     transition: width 0.3s;
   }
   .hero-bar__fill--hp { background: linear-gradient(90deg, #c82828, #e84040); box-shadow: 0 0 6px rgba(232,64,64,0.5); }
-  .hero-bar__fill--xp { background: linear-gradient(90deg, #5a4828, #ffd060); box-shadow: 0 0 6px rgba(255,208,96,0.5); }
+  .hero-bar__fill--tier { background: linear-gradient(90deg, #285a5a, #3df0ff); box-shadow: 0 0 6px rgba(61,240,255,0.5); }
   .hero-bar__val {
     font-size: 9px;
     color: #d8c8a0;
@@ -503,17 +503,17 @@
           <span class="hero-bar__val" id="hp-val">--/--</span>
         </div>
         <div class="hero-bar">
-          <span class="hero-bar__label">XP</span>
-          <div class="hero-bar__track"><div class="hero-bar__fill hero-bar__fill--xp" id="xp-fill"></div></div>
-          <span class="hero-bar__val" id="xp-val">--/--</span>
+          <span class="hero-bar__label">⌭ TIER</span>
+          <div class="hero-bar__track"><div class="hero-bar__fill hero-bar__fill--tier" id="tier-fill"></div></div>
+          <span class="hero-bar__val" id="avg-tier-val">--</span>
         </div>
       </div>
     </div>
   </div>
   <div class="tier-badge">
-    <div class="tier-badge__label">GLOBAL TIER</div>
-    <div class="tier-badge__value" id="tier-value">I</div>
-    <div class="tier-badge__sub" id="tier-sub">— LV.--</div>
+    <div class="tier-badge__label">TIER MOYEN</div>
+    <div class="tier-badge__value" id="tier-value">—</div>
+    <div class="tier-badge__sub" id="tier-sub">— ITEMS ÉQUIPÉS</div>
   </div>
 </div>
 
@@ -670,57 +670,90 @@
 </div>
 
 <script type="module">
-import { ASCENSION_DATA, BIOMES, PLAYER_PROGRESS } from './src/dashboard/ascension-data.js';
+import { ASCENSION_DATA, PLAYER_PROGRESS } from './src/dashboard/ascension-data.js';
+import { loadAllPlayerData } from './src/dashboard/api.js';
 
-// === MOCK PLAYER STATE ===
-// À terme : récupéré depuis localStorage / save state.
-const PLAYER = {
-  name: 'KAEL',
-  level: 8,
-  hp: 78,
-  hpMax: 95,
-  xp: 1240,
-  xpMax: 2000,
-  globalTier: 1,  // promu quand on clean tous les D6 d'un biome
-  resources: {
-    ember: 142,    // Inferno
-    frost: 87,     // Cryo
-    spore: 54,     // Toxic
-    datum: 23,     // Voidnet
-    blood: 0,      // Crimson (pas encore touché)
-  },
-  chest: { totalItems: 24 },
-  rerolls: 5,
-  recipesUnlocked: 8,
-  talents: 3,
-};
+// === CONSTANTES ===
+const BASE_HP = 100;       // HP de base sans équipement
+const MAX_ILVL = 10;       // pour normaliser la barre de tier moyen
 
-// === FILL HERO STATS ===
-function setHeroStats(){
-  document.getElementById('hero-name').textContent = PLAYER.name;
-  document.getElementById('hp-fill').style.width = `${(PLAYER.hp / PLAYER.hpMax) * 100}%`;
-  document.getElementById('hp-val').textContent = `${PLAYER.hp}/${PLAYER.hpMax}`;
-  document.getElementById('xp-fill').style.width = `${(PLAYER.xp / PLAYER.xpMax) * 100}%`;
-  document.getElementById('xp-val').textContent = `${PLAYER.xp}/${PLAYER.xpMax}`;
-  // Tier roman numeral
-  const roman = ['', 'I', 'II', 'III', 'IV', 'V'][PLAYER.globalTier] || PLAYER.globalTier;
+// Ressources : IDs alignés avec le wallet stocké (cf. forger / reroller).
+// /!\ ne pas réutiliser BIOMES de ascension-data.js qui utilise d'autres IDs.
+const RESOURCES = [
+  { id: 'inferno', name: 'Cendres ardentes',     icon: '🔥', color: '#ff6644' },
+  { id: 'cryo',    name: 'Éclats glacés',        icon: '❄️', color: '#66bbff' },
+  { id: 'toxic',   name: 'Bave acide',           icon: '☠️', color: '#88dd44' },
+  { id: 'voidnet', name: 'Fragments numériques', icon: '⚡', color: '#aa66ff' },
+  { id: 'crimson', name: 'Sang coagulé',         icon: '🩸', color: '#ff4488' },
+];
+
+// === CALCULS DERIVES ===
+function computeMaxHp(equipped){
+  let total = BASE_HP;
+  Object.values(equipped || {}).forEach(item => {
+    if(!item) return;
+    // Implicit : si c'est un maxHp implicit
+    if(item.implicit && item.implicit.id === 'maxHp' && typeof item.implicit.value === 'number'){
+      total += item.implicit.value;
+    }
+    // Affixes : tous les affixes dont stat === 'maxHp'
+    (item.affixes || []).forEach(a => {
+      if(a.stat === 'maxHp' && typeof a.value === 'number'){
+        total += a.value;
+      }
+    });
+  });
+  return total;
+}
+
+function computeAvgTier(equipped){
+  // Moyenne des iLvl des items équipés. Slot manquant = ignoré (pas compté comme 0).
+  const items = Object.values(equipped || {}).filter(it => it && typeof it.ilvl === 'number');
+  if(items.length === 0) return { avg: 0, count: 0 };
+  const sum = items.reduce((s, it) => s + it.ilvl, 0);
+  return { avg: sum / items.length, count: items.length };
+}
+
+function tierToRoman(n){
+  const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  const rounded = Math.round(n);
+  return ROMAN[rounded] || String(rounded);
+}
+
+// === RENDER ===
+function renderHeroStats(state){
+  document.getElementById('hero-name').textContent = 'KAEL';
+
+  // HP : full pour l'instant
+  const hpMax = computeMaxHp(state.equipped);
+  document.getElementById('hp-fill').style.width = '100%';
+  document.getElementById('hp-val').textContent = `${hpMax}/${hpMax}`;
+
+  // Tier moyen
+  const { avg, count } = computeAvgTier(state.equipped);
+  const roman = avg > 0 ? tierToRoman(avg) : '—';
+  const pct = avg > 0 ? Math.min(100, (avg / MAX_ILVL) * 100) : 0;
+  document.getElementById('tier-fill').style.width = `${pct}%`;
+  document.getElementById('avg-tier-val').textContent = avg > 0 ? roman : '--';
   document.getElementById('tier-value').textContent = roman;
-  document.getElementById('tier-sub').textContent = `LV.${PLAYER.level}`;
+  document.getElementById('tier-sub').textContent = count > 0
+    ? `${count}/9 SLOTS ÉQUIPÉS`
+    : `AUCUN ÉQUIPEMENT`;
 }
 
 // === RESOURCES ===
-function renderResources(){
+function renderResources(state){
   const bar = document.getElementById('resources-bar');
   bar.innerHTML = '';
-  Object.values(BIOMES).forEach(biome => {
-    const count = PLAYER.resources[biome.resource.id] || 0;
+  RESOURCES.forEach(res => {
+    const count = (state.wallet && state.wallet[res.id]) || 0;
     const cell = document.createElement('div');
     cell.className = 'resource-cell';
-    cell.style.setProperty('--res-color', biome.resource.color);
+    cell.style.setProperty('--res-color', res.color);
     cell.innerHTML = `
-      <div class="resource-cell__icon">${biome.resource.icon}</div>
+      <div class="resource-cell__icon">${res.icon}</div>
       <div class="resource-cell__info">
-        <div class="resource-cell__name">${biome.resource.name}</div>
+        <div class="resource-cell__name">${res.name}</div>
         <div class="resource-cell__count">${count.toLocaleString('fr-FR')}</div>
       </div>
     `;
@@ -729,28 +762,64 @@ function renderResources(){
 }
 
 // === MODULE PREVIEWS ===
-function renderModulePreviews(){
+function renderModulePreviews(state){
   // Ascension : total clean dungeons / 30
   const totalCleared = Object.values(PLAYER_PROGRESS).reduce((s, p) => s + p.clearedDungeons.length, 0);
-  document.getElementById('ascension-status').innerHTML = `<span class="v">${totalCleared}</span>/30 donjons clean`;
+  const ascEl = document.getElementById('ascension-status');
+  if(ascEl) ascEl.innerHTML = `<span class="v">${totalCleared}</span>/30 donjons clean`;
 
   // Chest
-  document.getElementById('chest-status').innerHTML = `<span class="v">${PLAYER.chest.totalItems}</span> items`;
+  const chestEl = document.getElementById('chest-status');
+  if(chestEl){
+    const n = (state.chest || []).length;
+    chestEl.innerHTML = `<span class="v">${n}</span> items`;
+  }
 
-  // Reroller
-  document.getElementById('reroller-status').innerHTML = `<span class="v">${PLAYER.rerolls}</span> rerolls dispo`;
+  // Reroller : items qui ont au moins un affixe
+  const rerollEl = document.getElementById('reroller-status');
+  if(rerollEl){
+    const rerollable = (state.chest || []).filter(it => (it.affixes || []).length > 0).length;
+    rerollEl.innerHTML = `<span class="v">${rerollable}</span> items rerollables`;
+  }
 
   // Forger
-  document.getElementById('forger-status').innerHTML = `<span class="v">${PLAYER.recipesUnlocked}</span> recettes`;
+  const forgerEl = document.getElementById('forger-status');
+  if(forgerEl){
+    const n = (state.chest || []).length;
+    forgerEl.innerHTML = `<span class="v">${n}</span> items dispo`;
+  }
 
-  // Hero
-  document.getElementById('hero-status').innerHTML = `LV.<span class="v">${PLAYER.level}</span> · <span class="v">${PLAYER.talents}</span> talents`;
+  // Hero : équipement count
+  const heroEl = document.getElementById('hero-status');
+  if(heroEl){
+    const equippedCount = Object.values(state.equipped || {}).filter(Boolean).length;
+    heroEl.innerHTML = `<span class="v">${equippedCount}</span>/9 slots équipés`;
+  }
+
+  // Builds
+  const buildsEl = document.getElementById('builds-status');
+  if(buildsEl){
+    const n = (state.builds || []).length;
+    buildsEl.innerHTML = `<span class="v">${n}</span>/5 builds`;
+  }
 }
 
 // === INIT ===
-setHeroStats();
-renderResources();
-renderModulePreviews();
+async function boot(){
+  try {
+    const state = await loadAllPlayerData();
+    renderHeroStats(state);
+    renderResources(state);
+    renderModulePreviews(state);
+  } catch(err){
+    console.error('[index] boot failed:', err);
+    renderHeroStats({ equipped: {}, chest: [], wallet: {} });
+    renderResources({ wallet: {} });
+    renderModulePreviews({ chest: [], equipped: {}, builds: [] });
+  }
+}
+
+boot();
 </script>
 
 </body>
