@@ -9,6 +9,9 @@ export const state = {
   selectedSkill: null, targetingMode: null,
   validTargets: new Set(), aoePreview: new Set(),
   log: [], combatOver: false,
+  // Événements combat consommés par l'UI pour afficher floats (dmg/heal/miss/etc).
+  // Chaque event : { type: 'damage'|'heal'|'dodge'|'parry'|'block'|'crit'|'status', x, y, value, color?, isCrit?, id }
+  combatEvents: [],
 };
 
 export function resetState() {
@@ -26,4 +29,11 @@ export function resetState() {
   state.aoePreview = new Set();
   state.log = [];
   state.combatOver = false;
+  state.combatEvents = [];
+}
+
+// Helper pour pusher un event combat (utilisé par attack.js, status.js, etc.)
+let _eventId = 0;
+export function pushCombatEvent(evt){
+  state.combatEvents.push({ id: ++_eventId, t: Date.now(), ...evt });
 }

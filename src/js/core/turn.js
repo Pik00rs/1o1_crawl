@@ -6,6 +6,7 @@
 //   - expiration du buff fortifyPct
 
 import { state } from './state.js';
+import { pushCombatEvent } from './state.js';
 import { tickDoTStatuses, tickStatusDurations, isSkippedByStatus } from '../combat/status.js';
 import { runEnemyAI } from '../ai/ai.js';
 import { render } from '../ui/render.js';
@@ -48,7 +49,10 @@ export function startTurn(actor) {
     const before = actor.hp;
     actor.hp = Math.min(actor.maxHp, actor.hp + heal);
     const actual = actor.hp - before;
-    if (actual > 0) log(`${actor.name} régénère ${actual} PV.`, 'heal');
+    if (actual > 0) {
+      log(`${actor.name} régénère ${actual} PV.`, 'heal');
+      pushCombatEvent({ type: 'heal', x: actor.x, y: actor.y, value: actual });
+    }
   }
 
   // === EXPIRATION FORTIFY ===
