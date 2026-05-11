@@ -95,25 +95,26 @@
     min-height: 78px;
     background: rgba(0,0,0,0.92);
     border-top: 1px solid rgba(79,195,247,0.4);
-    display: flex; gap: 4px;
-    padding: 6px;
+    display: flex; gap: 3px;
+    padding: 5px;
     z-index: 10;
     backdrop-filter: blur(8px);
-    overflow-x: auto;
+    overflow: hidden;
   }
   .action-btn {
-    flex: 1 0 80px;
-    min-width: 80px;
+    flex: 1 1 0;
+    min-width: 0;
     background: rgba(20,20,28,0.95);
     border: 1px solid #2a2a30;
     color: #aaa;
     cursor: pointer;
-    padding: 6px 4px;
+    padding: 5px 2px;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     transition: all 0.15s;
     font-family: inherit;
     position: relative;
+    overflow: hidden;
   }
   .action-btn:hover:not(.disabled), .action-btn:active:not(.disabled) { border-color: #4fc3f7; color: #fff; }
   .action-btn.selected {
@@ -126,19 +127,26 @@
   .action-btn.attack { border-left: 3px solid #ff5722; }
   .action-btn.spell { border-left: 3px solid #9c27b0; }
   .action-btn.pass { border-left: 3px solid #888; }
-  .ab-icon { font-size: 18px; line-height: 1; margin-bottom: 2px; }
+  .ab-icon { font-size: 16px; line-height: 1; margin-bottom: 2px; }
   .ab-name {
-    font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.3px;
     color: #fff; text-align: center;
     white-space: nowrap; overflow: hidden;
     max-width: 100%;
     text-overflow: ellipsis;
   }
   .ab-cost { font-size: 8px; letter-spacing: 0.5px; margin-top: 1px; }
+  .ab-dmg {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.3px;
+    margin-top: 1px; color: #ffd060;
+    text-shadow: 0 0 4px rgba(255,208,96,0.4);
+  }
   .action-btn.move .ab-cost { color: #4fc3f7; }
   .action-btn.attack .ab-cost { color: #ff8a4d; }
   .action-btn.spell .ab-cost { color: #ce93d8; }
   .action-btn.pass .ab-cost { color: #888; }
+  .action-btn.attack .ab-dmg { color: #ff8a4d; }
+  .action-btn.spell .ab-dmg { color: #ce93d8; }
   .ab-info-btn {
     position: absolute; top: 3px; right: 4px;
     width: 14px; height: 14px;
@@ -310,18 +318,119 @@
     text-align: center;
   }
 
-  /* ================================================================ FLOATING DAMAGE ================================================================ */
+  /* ================================================================ ACTOR HUD OVERLAY ================================================================ */
+  /* Overlay HTML par-dessus le canvas iso : mini HP bar + chiffres + icônes de statuts au-dessus de chaque actor */
+  #actor-hud-layer {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 18;
+  }
+  .actor-hud {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    pointer-events: none;
+    font-family: 'Courier New', monospace;
+  }
+  .ah-hp-wrap {
+    width: 56px; height: 12px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .ah-hp-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #c82828 0%, #ff5252 100%);
+    transition: width 0.2s ease-out, background 0.2s;
+  }
+  .ah-hp-fill.healthy { background: linear-gradient(90deg, #2ea83f 0%, #5fff8c 100%); }
+  .ah-hp-fill.medium  { background: linear-gradient(90deg, #c89030 0%, #ffd060 100%); }
+  .ah-hp-fill.low     { background: linear-gradient(90deg, #c82828 0%, #ff5252 100%); }
+  .ah-hp-fill.flash   { animation: hpFlash 0.4s ease-out; }
+  @keyframes hpFlash {
+    0% { box-shadow: 0 0 12px 4px rgba(255,255,255,0.8) inset, 0 0 12px rgba(255,255,255,0.5); }
+    100% { box-shadow: none; }
+  }
+  .ah-hp-text {
+    position: relative; z-index: 2;
+    font-size: 9px; font-weight: 700;
+    color: #fff; text-shadow: 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000;
+    letter-spacing: 0.3px;
+  }
+  .ah-statuses {
+    display: flex; gap: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 80px;
+  }
+  .ah-status {
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(255,180,80,0.6);
+    color: #ffb74d;
+    font-size: 10px;
+    padding: 1px 3px;
+    line-height: 1;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .ah-status .dur { font-size: 8px; color: #aaa; font-weight: 700; }
+  .ah-status.dmg-status { border-color: rgba(255,82,82,0.6); color: #ff8a80; }
+  .ah-status.cc-status  { border-color: rgba(206,147,216,0.6); color: #ce93d8; }
+  .ah-status.buff-status { border-color: rgba(95,255,140,0.6); color: #5fff8c; }
   .float-text {
     position: fixed;
-    font-weight: 700; font-size: 18px;
+    font-weight: 700; font-size: 16px;
     pointer-events: none;
     animation: floatUp 1.2s ease-out forwards;
-    text-shadow: 0 0 4px currentColor, 0 1px 0 #000;
+    text-shadow: 0 0 4px currentColor, 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000;
     z-index: 25;
+    transform: translate(-50%, 0);
+    letter-spacing: 0.5px;
+    font-family: 'Courier New', monospace;
+  }
+  .float-text.dmg { color: #ff8a4d; }
+  .float-text.dmg-fire { color: #ff5722; }
+  .float-text.dmg-ice { color: #4fc3f7; }
+  .float-text.dmg-shock { color: #ce93d8; }
+  .float-text.dmg-poison { color: #8bc34a; }
+  .float-text.dmg-slash { color: #ff5252; }
+  .float-text.dmg-pierce { color: #ffeb3b; }
+  .float-text.dmg-blunt { color: #bdbdbd; }
+  .float-text.crit {
+    font-size: 28px;
+    color: #ffd060;
+    animation: floatUpCrit 1.5s ease-out forwards;
+    text-shadow: 0 0 8px #ffd060, 0 0 16px rgba(255,208,96,0.6), 0 2px 0 #000, -1px 0 0 #000, 1px 0 0 #000;
+  }
+  .float-text.heal {
+    color: #5fff8c;
+    font-size: 16px;
+  }
+  .float-text.heal::before { content: '+'; }
+  .float-text.miss {
+    color: #aaa;
+    font-size: 13px;
+    font-style: italic;
+  }
+  .float-text.block {
+    color: #4fc3f7;
+    font-size: 14px;
   }
   @keyframes floatUp {
-    0% { transform: translateY(0); opacity: 1; }
-    100% { transform: translateY(-50px); opacity: 0; }
+    0%   { transform: translate(-50%, 0)     scale(1.2); opacity: 0; }
+    15%  { transform: translate(-50%, -8px)  scale(1);   opacity: 1; }
+    80%  { transform: translate(-50%, -45px) scale(1);   opacity: 1; }
+    100% { transform: translate(-50%, -60px) scale(0.9); opacity: 0; }
+  }
+  @keyframes floatUpCrit {
+    0%   { transform: translate(-50%, 0)     scale(0.5); opacity: 0; }
+    10%  { transform: translate(-50%, -5px)  scale(1.4); opacity: 1; }
+    20%  { transform: translate(-50%, -10px) scale(1.1); opacity: 1; }
+    80%  { transform: translate(-50%, -55px) scale(1.1); opacity: 1; }
+    100% { transform: translate(-50%, -70px) scale(1);   opacity: 0; }
   }
 
   /* ================================================================ TOUCH RETICLE ================================================================ */
@@ -369,8 +478,27 @@
     display: none;
     transform: translate(-50%, 0);
     box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    min-width: 180px;
   }
-  #confirm-popup .cp-label { font-size: 9px; letter-spacing: 1.5px; color: #888; margin-bottom: 6px; text-align: center; }
+  #confirm-popup .cp-label {
+    font-size: 10px; letter-spacing: 1.5px; color: #fff;
+    margin-bottom: 6px; text-align: center; font-weight: 700;
+  }
+  #confirm-popup .cp-info {
+    font-size: 9px; color: #888; margin-bottom: 8px;
+    padding: 4px 6px; background: rgba(20,20,28,0.7);
+    border-left: 2px solid #4fc3f7;
+  }
+  #confirm-popup .cp-info-row {
+    display: flex; justify-content: space-between;
+    padding: 2px 0; font-family: inherit;
+  }
+  #confirm-popup .cp-info-row .lbl { color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+  #confirm-popup .cp-info-row .val { color: #fff; font-weight: 700; }
+  #confirm-popup .cp-info-row.dmg .val { color: #ffd060; }
+  #confirm-popup .cp-info-row.crit .val { color: #ff8a80; }
+  #confirm-popup .cp-info-row.status .val { color: #ffb74d; }
+  #confirm-popup .cp-info-row.target .val { color: #ff8a80; }
   #confirm-popup .cp-buttons { display: flex; gap: 6px; }
   #confirm-popup button {
     width: 56px; height: 48px;
@@ -385,10 +513,10 @@
     transition: transform 0.1s, background 0.15s;
   }
   #confirm-popup button:active { transform: scale(0.92); }
-  #confirm-popup .cp-go { border-color: #4caf50; color: #4caf50; }
+  #confirm-popup .cp-go { border-color: #4caf50; color: #4caf50; flex: 1; }
   #confirm-popup .cp-go:hover, #confirm-popup .cp-go:active { background: rgba(76,175,80,0.25); }
   #confirm-popup .cp-go .lab { font-size: 8px; letter-spacing: 1px; color: #69f0ae; margin-top: 2px; }
-  #confirm-popup .cp-cancel { border-color: #f44336; color: #f44336; }
+  #confirm-popup .cp-cancel { border-color: #f44336; color: #f44336; flex: 1; }
   #confirm-popup .cp-cancel:hover, #confirm-popup .cp-cancel:active { background: rgba(244,67,54,0.25); }
   #confirm-popup .cp-cancel .lab { font-size: 8px; letter-spacing: 1px; color: #ff8a80; margin-top: 2px; }
 
@@ -436,8 +564,12 @@
 
 <div id="touch-reticle"></div>
 
+<!-- Overlay HUD : HP bars + statuts au-dessus des actors -->
+<div id="actor-hud-layer"></div>
+
 <div id="confirm-popup">
   <div class="cp-label" id="cp-action-label">▸ CONFIRMER</div>
+  <div class="cp-info" id="cp-action-info" style="display:none;"></div>
   <div class="cp-buttons">
     <button class="cp-cancel" id="cp-cancel-btn"><span>✗</span><span class="lab">CANCEL</span></button>
     <button class="cp-go" id="cp-go-btn"><span>✓</span><span class="lab">GO</span></button>
@@ -616,6 +748,7 @@ import { createPlayer } from './src/js/entities/player.js';
 import { createEnemy } from './src/js/entities/enemy.js';
 import { computeInitiative, startTurn, getCurrentActor, endTurn } from './src/js/core/turn.js';
 import { getPlayerSkills, selectMove, selectSkill, executeAction } from './src/js/combat/actions.js';
+import { resetPerCombatFlags } from './src/js/combat/attack.js';
 import { getReachableCells } from './src/js/grid/pathfinding.js';
 import { isWall as gridIsWall, getActorAt, key as gridKey, getCellsInAOE } from './src/js/grid/grid.js';
 
@@ -841,12 +974,21 @@ async function initCombat(){
   resetState();
   if(typeof resetDungeonEndFlags === 'function') resetDungeonEndFlags();
 
+  // Cleanup overlays HUD précédents (changement de room ou nouveau combat)
+  if(typeof _actorHudEls !== 'undefined'){
+    for(const [, el] of _actorHudEls){ el.remove(); }
+    _actorHudEls.clear();
+    _actorHpLast.clear();
+  }
+
   const playtestRun = readPlaytestRun();
   const builderMap = readBuilderMap();
 
   // Détermine la room à utiliser
   let roomData;
   let playerCfg = {};
+  const hasPlayerOverride = playtestRun && playtestRun.player && (playtestRun.player.equipment || playtestRun.player.stats);
+
   if(playtestRun && playtestRun.rooms && playtestRun.rooms.length > 0){
     roomData = playtestRun.rooms[0];
     playerCfg = {
@@ -854,21 +996,32 @@ async function initCombat(){
       stuff: playtestRun.player?.stuff || 'balanced',
       customModifiers: playtestRun.player?.customModifiers || [],
     };
-    // Si Ascension a injecté un équipement réel (depuis Supabase), on le passe
-    // à createPlayer. Idem pour les stats pré-calculées.
-    // createPlayer bypass alors applyStuff() et buildDefaultLoadout() — voir player.js.
     if(playtestRun.player?.equipment){
       playerCfg.equipment = playtestRun.player.equipment;
     }
     if(playtestRun.player?.stats){
       playerCfg.stats = playtestRun.player.stats;
     }
-    // Si la run vient du système Ascension (biomeId présent), aligne le biome de rendu
     if(playtestRun.biomeId && ['cryo','inferno','toxic','crimson','voidnet'].includes(playtestRun.biomeId)){
       render.biomeId = playtestRun.biomeId;
     }
-    // Met à jour le HUD multi-room (Room X/N + nom du donjon)
     updateDungeonHud(playtestRun);
+  } else if(hasPlayerOverride){
+    // Mode debug-combat : pas de rooms, mais on veut quand même les stats custom du player
+    const tutorial = DATA.rooms.tutorial;
+    if(!tutorial) throw new Error('No tutorial room in DATA');
+    roomData = tutorial;
+    playerCfg = {
+      level: playtestRun.player?.level || 1,
+      stuff: playtestRun.player?.stuff || 'balanced',
+      customModifiers: playtestRun.player?.customModifiers || [],
+    };
+    if(playtestRun.player?.equipment) playerCfg.equipment = playtestRun.player.equipment;
+    if(playtestRun.player?.stats) playerCfg.stats = playtestRun.player.stats;
+    if(playtestRun.biomeId && ['cryo','inferno','toxic','crimson','voidnet'].includes(playtestRun.biomeId)){
+      render.biomeId = playtestRun.biomeId;
+    }
+    updateDungeonHud(null);
   } else {
     // Pas de playtest, on prend la room tutorial (par défaut)
     const tutorial = DATA.rooms.tutorial;
@@ -895,6 +1048,9 @@ async function initCombat(){
   // Crée le joueur
   const startPos = roomData.playerStart || { x: 1, y: 2 };
   state.player = createPlayer({ ...playerCfg, x: startPos.x, y: startPos.y });
+
+  // Reset les flags par-combat (firstHitConsumed, fortify, backstabbedTargets, etc.)
+  resetPerCombatFlags(state.player);
 
   // === MULTI-ROOM HP PERSISTENCE ===
   // Si on est dans un dungeon run et qu'un HP courant a été sauvegardé entre
@@ -1227,13 +1383,60 @@ const inputHandler = createIsoInput({
   cpCancelBtn: document.getElementById('cp-cancel-btn'),
   getActionLabel: (tile) => {
     const sk = state.selectedSkill;
-    if(sk?.id === 'move') return `▸ MOVE → (${tile.gx},${tile.gy})`;
-    if(sk?.type === 'attack'){
-      const t = state.enemies.find(e => !e.isDead && e.x === tile.gx && e.y === tile.gy);
-      return `▸ ${sk.name.toUpperCase()} → ${(t?.name || '').toUpperCase()}`;
+    const infoEl = document.getElementById('cp-action-info');
+
+    // Move : info minimaliste
+    if(sk?.id === 'move'){
+      if(infoEl) infoEl.style.display = 'none';
+      return `▸ MOVE → (${tile.gx},${tile.gy})`;
     }
-    if(sk?.type === 'spell') return `▸ ${sk.name.toUpperCase()} @ (${tile.gx},${tile.gy})`;
-    return `▸ ${sk?.name?.toUpperCase() || 'ACTION'}`;
+
+    if(!sk || (sk.type !== 'attack' && sk.type !== 'spell')){
+      if(infoEl) infoEl.style.display = 'none';
+      return `▸ ${sk?.name?.toUpperCase() || 'ACTION'}`;
+    }
+
+    // Attaque/sort : on construit le panneau info
+    const target = state.enemies.find(e => !e.isDead && e.x === tile.gx && e.y === tile.gy);
+    const summary = getSkillFullSummary(sk);
+    const rangeStr = summary.range ? `${summary.range[0]}-${summary.range[1]}` : '—';
+    const typeStr = summary.type.toUpperCase();
+    const typeColor = sk.type === 'spell' ? '#ce93d8' : '#ff8a4d';
+
+    const rows = [];
+    // Cible
+    if(target){
+      rows.push(`<div class="cp-info-row target"><span class="lbl">▸ Target</span><span class="val">${target.name.toUpperCase()} (${target.hp}/${target.maxHp})</span></div>`);
+    }
+    // Damage
+    rows.push(`<div class="cp-info-row dmg"><span class="lbl">▸ Damage</span><span class="val" style="color:${typeColor};">${rangeStr} ${typeStr}</span></div>`);
+    // Crit
+    if(summary.critChance > 0){
+      rows.push(`<div class="cp-info-row crit"><span class="lbl">▸ Crit</span><span class="val">${summary.critChance}% · ×${(1 + summary.critMult/100).toFixed(2)}</span></div>`);
+    }
+    // AOE
+    if(sk.aoe){
+      rows.push(`<div class="cp-info-row"><span class="lbl">▸ AOE</span><span class="val">${sk.aoe*2+1}×${sk.aoe*2+1}</span></div>`);
+    }
+    // Statuts
+    for(const s of summary.statuses){
+      rows.push(`<div class="cp-info-row status"><span class="lbl">▸ ${s.icon} ${s.name}</span><span class="val">${s.chance}% · ${s.duration}t</span></div>`);
+    }
+    // AP cost
+    rows.push(`<div class="cp-info-row"><span class="lbl">▸ Cost</span><span class="val">${sk.cost} AP</span></div>`);
+
+    if(infoEl){
+      infoEl.innerHTML = rows.join('');
+      infoEl.style.display = 'block';
+    }
+
+    if(sk.type === 'attack' && target){
+      return `▸ ${sk.name.toUpperCase()}`;
+    }
+    if(sk.type === 'spell'){
+      return `▸ ${sk.name.toUpperCase()} @ (${tile.gx},${tile.gy})`;
+    }
+    return `▸ ${sk.name.toUpperCase()}`;
   },
   getActionColor: () => {
     const sk = state.selectedSkill;
@@ -1315,10 +1518,13 @@ function rebuildActionBar(){
       const cdStr = sk.cooldown ? (cd > 0 ? ` · CD${cd}` : ` · CD${sk.cooldown}`) : '';
       const icon = sk.type === 'spell' ? (sk.damageType === 'fire' ? '🔥' : sk.damageType === 'ice' ? '❄️' : sk.damageType === 'shock' ? '⚡' : sk.damageType === 'poison' ? '☣️' : '✨') : '⚔';
       const nameShort = sk.name.length > 10 ? sk.name.toUpperCase().slice(0, 9) + '…' : sk.name.toUpperCase();
+      const dmgStr = getSkillShortStats(sk);
+      const dmgLine = dmgStr ? `<div class="ab-dmg">${dmgStr}</div>` : '';
       btn.innerHTML = `
         <div class="ab-icon">${icon}</div>
         <div class="ab-name" title="${sk.name}">${nameShort}</div>
         <div class="ab-cost">${sk.cost} AP${cdStr}</div>
+        ${dmgLine}
         <div class="ab-info-btn" data-info="${sk.id}">ⓘ</div>
       `;
       const isDisabled = !isPlayerTurn || state.player.ap < sk.cost || cd > 0;
@@ -1362,6 +1568,77 @@ function rebuildActionBar(){
     doEndTurn();
   });
   bar.appendChild(endBtn);
+}
+
+// =============================================================================
+// SKILL SUMMARY — helper qui calcule damage range + effets pour affichage
+// =============================================================================
+// Calcule le dmg range affiché pour un skill (en tenant compte de l'arme et damageMult).
+function getSkillDamageRange(skill){
+  // 1) Skill a son propre damage (sorts)
+  let range = null;
+  if(skill.damage && Array.isArray(skill.damage)){
+    range = [...skill.damage];
+  }
+  // 2) Sinon, prend l'arme source (attaques d'arme)
+  else if(skill.source?.damage && Array.isArray(skill.source.damage)){
+    range = [...skill.source.damage];
+  }
+  // 3) Sinon, prend le player.damage (poing nu fallback)
+  else if(state.player?.damage && Array.isArray(state.player.damage)){
+    range = [...state.player.damage];
+  }
+  if(!range) return null;
+
+  // Applique damageMult du skill (ex: heavy = ×1.5/1.6)
+  if(skill.damageMult && skill.damageMult !== 1){
+    range = [
+      Math.max(1, Math.round(range[0] * skill.damageMult)),
+      Math.max(1, Math.round(range[1] * skill.damageMult)),
+    ];
+  }
+
+  // Applique bonus élémentaire flat si type magique et arme matche
+  if(skill.damageType && state.player){
+    const flat =
+      skill.damageType === 'fire'   ? (state.player.bonusFire   || 0) :
+      skill.damageType === 'ice'    ? (state.player.bonusIce    || 0) :
+      skill.damageType === 'shock'  ? (state.player.bonusShock  || 0) :
+      skill.damageType === 'poison' ? (state.player.bonusPoison || 0) : 0;
+    if(flat > 0){
+      range[0] += flat;
+      range[1] += flat;
+    }
+  }
+  return range;
+}
+
+// Retourne une string courte pour affichage sous le bouton skill, ex: "4-7 dmg"
+function getSkillShortStats(skill){
+  const range = getSkillDamageRange(skill);
+  if(!range) return null;
+  return `${range[0]}-${range[1]}`;
+}
+
+// Retourne un résumé complet pour le confirm popup ou tooltip
+// Returns { range, type, statuses: [{id, name, chance, duration}], critChance, critMult }
+function getSkillFullSummary(skill){
+  const range = getSkillDamageRange(skill);
+  const type = skill.damageType || skill.source?.damageType || state.player?.damageType || 'blunt';
+  const statuses = [];
+  if(skill.applyStatus){
+    const sdef = DATA.statuses?.[skill.applyStatus.id];
+    statuses.push({
+      id: skill.applyStatus.id,
+      name: sdef?.name || skill.applyStatus.id,
+      icon: sdef?.icon || '◇',
+      chance: skill.applyStatus.chance ?? 100,
+      duration: skill.applyStatus.duration ?? 1,
+    });
+  }
+  const critChance = (state.player?.critChance || 5) + (skill.critBonus || 0);
+  const critMult = state.player?.critMultiplier || 50;
+  return { range, type, statuses, critChance, critMult };
 }
 
 function updateActionButtons(){
@@ -1860,6 +2137,13 @@ window.restartCombat = async function(){
     return;
   }
 
+  // Mode debug-combat : pas de logique de progression, juste restart le même combat
+  if(run.debugMode){
+    if(modal) modal.style.display = 'none';
+    await initCombat();
+    return;
+  }
+
   // Détection victoire vs défaite. Le moteur affiche le modal soit quand
   // tous les ennemis sont morts (victoire), soit quand le joueur meurt (défaite).
   // On lit le titre du modal s'il est visible.
@@ -2100,6 +2384,188 @@ document.getElementById('opt-restart').addEventListener('click', async () => {
 // ============================================================================
 // LOOP
 // ============================================================================
+// =============================================================================
+// COMBAT EVENTS → FLOAT TEXTS
+// Consomme state.combatEvents et spawn des éléments DOM .float-text.
+// Le ticker vide la queue. Chaque event est consommé une seule fois.
+// =============================================================================
+function spawnFloatText(text, screenX, screenY, cssClass = 'dmg', offsetMs = 0){
+  setTimeout(() => {
+    const el = document.createElement('div');
+    el.className = 'float-text ' + cssClass;
+    el.textContent = text;
+    el.style.left = screenX + 'px';
+    el.style.top = screenY + 'px';
+    document.body.appendChild(el);
+    // Auto-remove après animation (1.5s max pour les crits)
+    setTimeout(() => el.remove(), 1600);
+  }, offsetMs);
+}
+
+let _lastFloatStackY = new Map(); // pour stacker plusieurs floats sur même actor
+function getFloatScreenPos(gx, gy){
+  // Convertit position grille → écran en utilisant l'anim courant si dispo
+  const actor = state.player && state.player.x === gx && state.player.y === gy
+    ? state.player
+    : state.enemies.find(e => e.x === gx && e.y === gy && !e.isDead);
+
+  let ax = gx, ay = gy;
+  if(actor){
+    const anim = render.actorAnims.get(actor.id);
+    if(anim){ ax = anim.ax; ay = anim.ay; }
+  }
+  const elev = getElev ? getElev(gx, gy) : 0;
+  const sp = isoToScreen(ax, ay, elev, viewport, view);
+  // Offset vertical pour mettre le float au-dessus du sprite (sprite haut ~ -40px)
+  // Stack si plusieurs floats récents sur la même cellule
+  const key = `${gx},${gy}`;
+  const now = Date.now();
+  const last = _lastFloatStackY.get(key);
+  let stackOffset = 0;
+  if(last && (now - last.t) < 600){
+    stackOffset = (last.offset || 0) + 18;
+  }
+  _lastFloatStackY.set(key, { t: now, offset: stackOffset });
+  // Cleanup vieux
+  if(_lastFloatStackY.size > 50){
+    for(const [k, v] of _lastFloatStackY){
+      if(now - v.t > 1500) _lastFloatStackY.delete(k);
+    }
+  }
+  // sp.x et sp.y sont en device pixels (canvas DPR). On convertit en CSS px.
+  const dpr = window.devicePixelRatio || 1;
+  return {
+    x: sp.x / dpr,
+    y: (sp.y / dpr) - 50 - stackOffset, // au-dessus du sprite
+  };
+}
+
+function processCombatEvents(){
+  if(!state.combatEvents || state.combatEvents.length === 0) return;
+  const events = state.combatEvents;
+  state.combatEvents = [];
+  for(const evt of events){
+    if(evt.x == null || evt.y == null) continue;
+    const pos = getFloatScreenPos(evt.x, evt.y);
+
+    if(evt.type === 'damage'){
+      const dmgClass = `dmg-${evt.damageType || 'blunt'}`;
+      if(evt.isCrit){
+        spawnFloatText(`${evt.value}!`, pos.x, pos.y, 'crit');
+      } else {
+        const txt = evt.blocked ? `${evt.value} ⛨` : String(evt.value);
+        spawnFloatText(txt, pos.x, pos.y, dmgClass);
+      }
+    } else if(evt.type === 'heal'){
+      spawnFloatText(String(evt.value), pos.x, pos.y, 'heal');
+    } else if(evt.type === 'miss'){
+      spawnFloatText(evt.value, pos.x, pos.y, 'miss');
+    } else if(evt.type === 'status'){
+      // Affichage statut appliqué (peut être ajouté plus tard)
+    }
+  }
+}
+
+// =============================================================================
+// ACTOR HUDS : HP bar + statuts au-dessus de chaque actor
+// =============================================================================
+const _actorHudEls = new Map(); // actorId → DOM element
+const _actorHpLast = new Map(); // actorId → last HP (pour détecter flash)
+
+function getStatusCss(statusId){
+  // Map status → couleur category
+  if(['burning','bleeding','poisoned'].includes(statusId)) return 'dmg-status';
+  if(['stunned','frozen','chilled','shocked','paralyzed','electrocuted','sick'].includes(statusId)) return 'cc-status';
+  return 'buff-status';
+}
+
+function updateActorHuds(){
+  const layer = document.getElementById('actor-hud-layer');
+  if(!layer || !state.actors) return;
+
+  const seenIds = new Set();
+  const dpr = window.devicePixelRatio || 1;
+
+  for(const actor of state.actors){
+    if(!actor || actor.isDead){
+      // Si élément encore visible, on le retire
+      const el = _actorHudEls.get(actor?.id);
+      if(el){ el.remove(); _actorHudEls.delete(actor.id); }
+      continue;
+    }
+    const id = actor.id;
+    seenIds.add(id);
+
+    // Position screen via anim courant
+    const anim = render.actorAnims.get(id) || { ax: actor.x, ay: actor.y };
+    const elev = getElev(actor.x, actor.y);
+    const sp = isoToScreen(anim.ax, anim.ay, elev, viewport, view);
+    const screenX = sp.x / dpr;
+    const screenY = (sp.y / dpr) - 50; // au-dessus du sprite
+
+    let el = _actorHudEls.get(id);
+    if(!el){
+      el = document.createElement('div');
+      el.className = 'actor-hud';
+      // structure : HP bar + statuses
+      el.innerHTML = `
+        <div class="ah-hp-wrap">
+          <div class="ah-hp-fill"></div>
+          <div class="ah-hp-text"></div>
+        </div>
+        <div class="ah-statuses"></div>
+      `;
+      layer.appendChild(el);
+      _actorHudEls.set(id, el);
+    }
+    el.style.left = screenX + 'px';
+    el.style.top = screenY + 'px';
+
+    // Update HP bar
+    const hpFill = el.querySelector('.ah-hp-fill');
+    const hpText = el.querySelector('.ah-hp-text');
+    const ratio = Math.max(0, Math.min(1, actor.hp / Math.max(1, actor.maxHp)));
+    hpFill.style.width = (ratio * 100) + '%';
+    hpFill.classList.toggle('healthy', ratio > 0.5);
+    hpFill.classList.toggle('medium', ratio > 0.25 && ratio <= 0.5);
+    hpFill.classList.toggle('low', ratio <= 0.25);
+    hpText.textContent = `${Math.max(0, Math.round(actor.hp))}/${actor.maxHp}`;
+
+    // Flash si HP a changé depuis dernière frame
+    const lastHp = _actorHpLast.get(id);
+    if(lastHp != null && lastHp !== actor.hp){
+      hpFill.classList.remove('flash');
+      // Force reflow pour relancer l'animation
+      void hpFill.offsetWidth;
+      hpFill.classList.add('flash');
+    }
+    _actorHpLast.set(id, actor.hp);
+
+    // Update statuses (mini icones)
+    const statusesEl = el.querySelector('.ah-statuses');
+    const statuses = actor.statuses || [];
+    if(statuses.length === 0){
+      statusesEl.innerHTML = '';
+    } else {
+      statusesEl.innerHTML = statuses.map(s => {
+        const def = DATA.statuses?.[s.id];
+        const icon = def?.icon || '◇';
+        const cls = getStatusCss(s.id);
+        return `<span class="ah-status ${cls}" title="${def?.name || s.id} (${s.duration}t)">${icon}<span class="dur">${s.duration}</span></span>`;
+      }).join('');
+    }
+  }
+
+  // Cleanup orphans (actors qu'on n'a pas vus cette frame — morts ou retirés)
+  for(const [id, el] of _actorHudEls){
+    if(!seenIds.has(id)){
+      el.remove();
+      _actorHudEls.delete(id);
+      _actorHpLast.delete(id);
+    }
+  }
+}
+
 function tick(){
   updateActorAnims();
   particles.update();
@@ -2111,6 +2577,8 @@ function tick(){
   updateLightUI();      // HP/AP/turn (cheap)
   detectTurnChange();   // rebuild action bar quand l'actor change
   detectDungeonRoomEnd(); // multi-room : auto-charge la prochaine room dès que clean
+  processCombatEvents();  // spawn float texts pour dmg/heal/miss
+  updateActorHuds();      // refresh mini HP bars + statuts au-dessus des actors
 }
 setInterval(tick, 16);
 
