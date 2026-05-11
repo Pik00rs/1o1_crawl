@@ -81,6 +81,14 @@ const STAT_MAP = {
 
   // AP
   bonusAP:          'bonusAp',
+
+  // === NOUVEAUX (câblés au moteur via damage.js / attack.js / actions.js) ===
+  dodgeChance:           'dodgeChance',
+  blockChance:           'blockChance',
+  firstHitReductionPct:  'firstHitReductionPct',
+  doubleStrikeChance:    'doubleStrikeChance',
+  freeMovement:          'freeMovement',
+  armorAdjacent:         'armorAdjacent',
 };
 
 // Tous les affixes du catalog qui ne sont PAS dans STAT_MAP sont automatiquement ignorés
@@ -300,4 +308,64 @@ export function buildPlayerFromEquipped(equippedFromApi, level = 1){
   }
 
   return { equipment, stats, debug };
+}
+
+// =============================================================================
+// SIMULATION de aggregatePassives() côté player.js
+// =============================================================================
+// Source : src/js/entities/player.js — PASSIVE_STAT_KEYS contient :
+//   lifesteal, armorPen, hpRegen, critChance, critMultiplier, dodgeChance,
+//   blockChance, bonusFire, bonusIce, bonusShock, bonusPoison, fireResist,
+//   iceResist, shockResist, poisonResist, magicResist, ccReduction.
+// Pour les autres clés (maxHp, armor...), player.js NE LES AGRÈGE PAS via passive,
+// elles arrivent déjà dans `stats` final.
+//
+// NOTE : il faut aussi ajouter les 6 nouvelles stats câblées au moteur
+// (firstHitReductionPct, doubleStrikeChance, freeMovement, armorAdjacent)
+// à PASSIVE_STAT_KEYS dans player.js sinon elles ne seront pas agrégées.
+// Ici on les liste pour que le panel debug les voie de façon cohérente.
+const PASSIVE_STAT_KEYS = new Set([
+  'lifesteal', 'armorPen', 'hpRegen',
+  'critChance', 'critMultiplier', 'dodgeChance', 'blockChance',
+  'bonusFire', 'bonusIce', 'bonusShock', 'bonusPoison',
+  'fireResist', 'iceResist', 'shockResist', 'poisonResist', 'magicResist',
+  'ccReduction',
+  // Nouveaux affixes câblés au moteur
+  'firstHitReductionPct', 'doubleStrikeChance', 'freeMovement', 'armorAdjacent',
+]);
+
+/**
+ * Reproduit aggregatePassives() de player.js : pour chaque item, somme les
+ * passives autorisées sur les stats correspondantes. Retourne le stats final
+ * que le moteur de combat verra (= ce qui finit dans state.player.X).
+ *
+ * @param {object} stats - sortie de buildPlayerFromEquipped().stats
+ * @param {object} equipment - sortie de buildPlayerFromEquipped().equipment
+ * @returns {object} stats final tel que le moteur le verra
+ */
+export function finalizeStatsForDisplay(stats, equipment){
+  const out = { ...stats };
+  // Copie defensive du range damage (sinon mutation partagée)
+  if(Array.isArray(stats.damage)) out.damage = [...stats.damage];
+
+  for(const slot in equipment){
+    const item = equipment[slot];
+    if(!item?.passive) continue;
+    for(const [k, v] of Object.entries(item.passive)){
+      if(!PASSIVE_STAT_KEYS.has(k)) continue;
+      out[k] = (out[k] || 0) + v;
+    }
+  }
+
+  // Applique les caps (comme dans player.js)
+  const CAPS_FINAL = {
+    fireResist: 75, iceResist: 75, shockResist: 75, poisonResist: 75, magicResist: 75,
+    critChance: 70, dodgeChance: 60, blockChance: 60, ccReduction: 50,
+  };
+  for(const [stat, cap] of Object.entries(CAPS_FINAL)){
+    if(out[stat] > cap) out[stat] = cap;
+  }
+  if(out.hpRegen > 5) out.hpRegen = 5;
+
+  return out;
 }
