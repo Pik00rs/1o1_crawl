@@ -226,8 +226,8 @@ const STAT_EXPECTATIONS = {
   critDamage:      { expectedField: 'critMultiplier', kind: 'engine_used', desc: 'Multiplicateur de crit %' },
   armorPen:        { expectedField: 'armorPen',       kind: 'engine_used', desc: 'Pénétration armure' },
   lifesteal:       { expectedField: 'lifesteal',      kind: 'engine_used', desc: 'Vol de vie % sur dégâts infligés' },
-  hpRegen:         { expectedField: 'hpRegen',        kind: 'engine_partial', desc: 'PV regen/tour (lu dans turn.js)' },
-  bonusAP:         { expectedField: 'bonusAp',        kind: 'engine_partial', desc: 'AP bonus (lu dans turn.js)' },
+  hpRegen:         { expectedField: 'hpRegen',        kind: 'engine_used', desc: 'PV regen/tour (lu dans turn.js)' },
+  bonusAP:         { expectedField: 'bonusAp',        kind: 'engine_used', desc: 'AP bonus (lu dans turn.js startTurn)' },
 
   bonusFireDamage:   { expectedField: 'bonusFire',    kind: 'engine_used', desc: 'Bonus dégâts feu' },
   bonusIceDamage:    { expectedField: 'bonusIce',     kind: 'engine_used', desc: 'Bonus dégâts glace' },
@@ -315,11 +315,11 @@ const STAT_EXPECTATIONS = {
   amuletElemDamage:      { expectedField: 'amuletElemDamage',     kind: 'engine_used', desc: 'Bonus dmg via amulette' },
   amuletSpellPower:      { expectedField: 'amuletSpellPower',     kind: 'engine_used', desc: '% boost sort amulette' },
   // Movement
-  fly:                   { expectedField: 'fly',                  kind: 'engine_partial', desc: 'Vol (passe à 1 = activé, conso pathfinding pas vérifiée)' },
-  teleport:              { expectedField: 'teleport',             kind: 'engine_partial', desc: 'Téléportation (passe à 1 = activé, skill UI custom)' },
+  fly:                   { expectedField: 'fly',                  kind: 'engine_used', desc: 'Vol (pathfinding ignore murs)' },
+  teleport:              { expectedField: 'teleport',             kind: 'engine_partial', desc: 'Téléportation (passe à 1 = activé, skill UI custom à créer)' },
   // Loot (hors combat)
-  magicFind:             { expectedField: 'magicFind',            kind: 'engine_partial', desc: '+drop rate (utilisé dans loot-roller.js)' },
-  essenceFind:           { expectedField: 'essenceFind',          kind: 'engine_partial', desc: '+ressources (utilisé dans loot-roller.js)' },
+  magicFind:             { expectedField: 'magicFind',            kind: 'engine_used', desc: '+drop rate (lu par loot-roller.js)' },
+  essenceFind:           { expectedField: 'essenceFind',          kind: 'engine_used', desc: '+ressources (lu par loot-roller.js)' },
 };
 
 // === BUILD FAKE EQUIPMENT POUR TESTER UN AFFIXE ===

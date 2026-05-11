@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Debug Combat — REACTOR HOLLOW</title>
+<style>
+  :root {
+    --bg-0: #050608; --bg-1: #0a0d12; --bg-2: #11151c; --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06); --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8; --text-1: #a0a0a0; --text-2: #606060;
+    --accent: #3df0ff; --good: #5fff8c; --warn: #ffa550; --bad: #ff5959;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 12px; background: var(--bg-0); color: var(--text-0); font-family: 'Courier New', monospace; min-height: 100vh; }
+  .header { background: var(--bg-1); border: 1px solid var(--border-2); padding: 12px 16px; margin-bottom: 14px; }
+  .header h1 { margin: 0 0 6px 0; font-size: 15px; letter-spacing: 3px; color: var(--accent); }
+  .header p { margin: 0; font-size: 11px; color: var(--text-1); line-height: 1.5; }
+  .controls { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; position: sticky; top: 0; z-index: 10; background: var(--bg-0); padding: 8px 0; border-bottom: 1px solid var(--border-1); }
+  button { background: var(--bg-2); border: 1px solid var(--border-2); color: var(--text-0); font-family: inherit; font-size: 11px; letter-spacing: 1.5px; padding: 8px 14px; cursor: pointer; text-transform: uppercase; }
+  button:hover { background: var(--bg-3); border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
+  button.preset { background: var(--bg-2); border-color: rgba(95, 255, 140, 0.3); color: var(--good); font-size: 10px; padding: 6px 10px; }
+  button.preset:hover { border-color: var(--good); background: rgba(95, 255, 140, 0.1); }
+  .section { background: var(--bg-1); border: 1px solid var(--border-2); margin-bottom: 12px; padding: 10px 14px; }
+  .section h3 { margin: 0 0 10px 0; font-size: 10px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; border-bottom: 1px solid var(--border-1); padding-bottom: 5px; }
+  .row { display: grid; grid-template-columns: 1fr 70px 80px; gap: 8px; align-items: center; padding: 5px 0; font-size: 11px; border-bottom: 1px dashed rgba(255,255,255,0.03); }
+  .row:last-child { border-bottom: none; }
+  .row label { color: var(--text-1); font-family: 'Courier New', monospace; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .desc { color: var(--text-2); font-size: 9px; margin-left: 6px; }
+  .row input[type="number"] { background: var(--bg-2); border: 1px solid var(--border-2); color: var(--text-0); font-family: inherit; font-size: 11px; padding: 4px 6px; width: 70px; text-align: right; }
+  .row input[type="number"]:focus { border-color: var(--accent); outline: none; }
+  .row .range { color: var(--text-2); font-size: 9px; text-align: right; font-family: 'Courier New', monospace; }
+  .row.active label { color: var(--good); }
+  .preset-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .summary { background: rgba(61, 240, 255, 0.05); border-left: 2px solid var(--accent); padding: 8px 12px; margin-bottom: 10px; font-size: 11px; color: var(--text-1); }
+  .summary .count { color: var(--accent); font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧪 DEBUG COMBAT</h1>
+  <p>Règle chaque affixe à n'importe quelle valeur et lance un combat custom sans avoir à crafter d'items. Les valeurs sont injectées comme stats du player dans game.html via rh_active_run.</p>
+</div>
+
+<div class="controls">
+  <button class="primary" id="btn-launch">▸ LANCER LE COMBAT</button>
+  <button id="btn-reset">⟲ RESET</button>
+  <button id="btn-back">⌂ RETOUR HUB</button>
+</div>
+
+<div class="summary" id="summary">
+  <span class="count" id="active-count">0</span> affixe(s) actif(s) ·
+  Niveau player : <span class="count" id="lvl-display">1</span> ·
+  Stuff base : <span class="count" id="stuff-display">balanced</span>
+</div>
+
+<div class="section">
+  <h3>⚡ PRESETS RAPIDES (clic pour appliquer)</h3>
+  <div class="preset-row">
+    <button class="preset" data-preset="dodge-tank">🛡 Dodge Tank</button>
+    <button class="preset" data-preset="berserker">⚔ Berserker</button>
+    <button class="preset" data-preset="execute">💀 Executioner</button>
+    <button class="preset" data-preset="onkill">🔗 On-Kill Combo</button>
+    <button class="preset" data-preset="bleeder">🩸 Bleeder</button>
+    <button class="preset" data-preset="ranger">🏹 Ranger</button>
+    <button class="preset" data-preset="mage">✨ Mage</button>
+    <button class="preset" data-preset="triggers">💥 Triggers</button>
+    <button class="preset" data-preset="speedster">💨 Speedster</button>
+    <button class="preset" data-preset="reflect">🌵 Reflect</button>
+    <button class="preset" data-preset="god">👑 GOD MODE</button>
+  </div>
+</div>
+
+<div class="section"><h3>⚔ BASE</h3><div id="affixes-base"></div></div>
+<div class="section"><h3>🗡 OFFENSIF (multipliers conditionnels)</h3><div id="affixes-offensive"></div></div>
+<div class="section"><h3>🛡 DÉFENSIF</h3><div id="affixes-defensive"></div></div>
+<div class="section"><h3>☠ STATUS & TRIGGERS</h3><div id="affixes-status"></div></div>
+<div class="section"><h3>⚡ ON-KILL & REPEAT</h3><div id="affixes-onkill"></div></div>
+<div class="section"><h3>🔧 MODIFICATEURS D'ITEMS / MOVEMENT</h3><div id="affixes-modifiers"></div></div>
+
+<div class="section">
+  <h3>🏰 PLAYER CONFIG</h3>
+  <div class="row">
+    <label>Niveau player</label>
+    <input type="number" id="player-level" value="1" min="1" max="100">
+    <span class="range">1-100</span>
+  </div>
+  <div class="row">
+    <label>Preset stuff (base = arme + sort)</label>
+    <select id="player-stuff" style="background:var(--bg-2); border:1px solid var(--border-2); color:var(--text-0); font-family:inherit; font-size:11px; padding:4px 6px; width:150px;">
+      <option value="naked">naked</option>
+      <option value="poor">poor</option>
+      <option value="balanced" selected>balanced</option>
+      <option value="strong">strong</option>
+      <option value="op">op</option>
+    </select>
+    <span class="range">arme + sort</span>
+  </div>
+</div>
+
+<script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
+
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+injectUserBar();
+
+const AFFIXES = {
+  base: [
+    { stat: 'maxHp',           label: 'maxHp',           range: [10, 200],  desc: 'PV max ajouté' },
+    { stat: 'armor',           label: 'armor',           range: [0, 100],   desc: 'Armure' },
+    { stat: 'damage',          label: 'damage flat',     range: [0, 50],    desc: 'Ajouté au range' },
+    { stat: 'critChance',      label: 'critChance %',    range: [0, 70],    desc: 'Chance crit' },
+    { stat: 'critMultiplier',  label: 'critMultiplier %',range: [0, 300],   desc: 'Bonus dmg crit' },
+    { stat: 'armorPen',        label: 'armorPen',        range: [0, 50],    desc: 'Pénétration' },
+    { stat: 'lifesteal',       label: 'lifesteal %',     range: [0, 50],    desc: 'Vol vie' },
+    { stat: 'hpRegen',         label: 'hpRegen',         range: [0, 5],     desc: 'PV/tour' },
+    { stat: 'bonusAp',         label: 'bonusAp',         range: [0, 5],     desc: '+AP/tour' },
+  ],
+  offensive: [
+    { stat: 'fullHpDamageMult',     label: 'fullHpDamageMult',     range: [0, 100], desc: 'si full HP' },
+    { stat: 'missingHpDamagePct',   label: 'missingHpDamagePct',   range: [0, 100], desc: '× missing HP' },
+    { stat: 'executeDamageMult',    label: 'executeDamageMult',    range: [0, 100], desc: 'target <30% HP' },
+    { stat: 'firstStrikeDamageMult',label: 'firstStrikeDamageMult',range: [0, 100], desc: '1er hit combat' },
+    { stat: 'firstStrikeChance',    label: 'firstStrikeChance %',  range: [0, 100], desc: '+50 init' },
+    { stat: 'afterMoveDamageMult',  label: 'afterMoveDamageMult',  range: [0, 100], desc: 'après mvt' },
+    { stat: 'noMoveDamageMult',     label: 'noMoveDamageMult',     range: [0, 100], desc: 'si pas bougé' },
+    { stat: 'longMoveDamageMult',   label: 'longMoveDamageMult',   range: [0, 100], desc: '>= 3 cases' },
+    { stat: 'armorDamageMult',      label: 'armorDamageMult',      range: [0, 100], desc: 'target armuré' },
+    { stat: 'afflictedDamageBonus', label: 'afflictedDamageBonus', range: [0, 100], desc: 'target a status' },
+    { stat: 'backstabDamageMult',   label: 'backstabDamageMult',   range: [0, 100], desc: '1er hit / target' },
+    { stat: 'perBleedStackDamage',  label: 'perBleedStackDamage',  range: [0, 50],  desc: '/ stack bleed' },
+    { stat: 'pierceDamagePct',      label: 'pierceDamagePct',      range: [0, 100], desc: 'si dmg=pierce' },
+    { stat: 'maxRangeDamage',       label: 'maxRangeDamage',       range: [0, 100], desc: 'à portée max' },
+    { stat: 'headshotDamagePct',    label: 'headshotDamagePct',    range: [0, 100], desc: 'crit ranged' },
+    { stat: 'doubleStrikeChance',   label: 'doubleStrikeChance %', range: [0, 100], desc: '2e attaque mêlée' },
+    { stat: 'multishotChance',      label: 'multishotChance %',    range: [0, 100], desc: '2e tir ranged' },
+    { stat: 'cleavePct',            label: 'cleavePct %',          range: [0, 100], desc: 'splash mêlée' },
+    { stat: 'spellEchoChance',      label: 'spellEchoChance %',    range: [0, 100], desc: 're-cast sort' },
+    { stat: 'elemCritChance',       label: 'elemCritChance %',     range: [0, 100], desc: 'crit % sorts' },
+    { stat: 'elemCritDamage',       label: 'elemCritDamage %',     range: [0, 300], desc: 'crit dmg sorts' },
+    { stat: 'elemLifesteal',        label: 'elemLifesteal %',      range: [0, 50],  desc: 'LS sorts' },
+    { stat: 'amuletSpellPower',     label: 'amuletSpellPower %',   range: [0, 100], desc: 'boost amulette' },
+  ],
+  defensive: [
+    { stat: 'dodgeChance',          label: 'dodgeChance %',        range: [0, 60],  desc: 'esquive' },
+    { stat: 'blockChance',          label: 'blockChance %',        range: [0, 60],  desc: '×0.5 phys' },
+    { stat: 'parryChance',          label: 'parryChance %',        range: [0, 60],  desc: 'parry phys' },
+    { stat: 'firstHitReductionPct', label: 'firstHitReductionPct', range: [0, 90],  desc: 'réduit 1er hit' },
+    { stat: 'lowHpReductionPct',    label: 'lowHpReductionPct',    range: [0, 80],  desc: 'si PV <30%' },
+    { stat: 'fortifyPct',           label: 'fortifyPct',           range: [0, 80],  desc: 'buff 2t' },
+    { stat: 'fireResist',           label: 'fireResist %',         range: [0, 75],  desc: '' },
+    { stat: 'iceResist',            label: 'iceResist %',          range: [0, 75],  desc: '' },
+    { stat: 'shockResist',          label: 'shockResist %',        range: [0, 75],  desc: '' },
+    { stat: 'poisonResist',         label: 'poisonResist %',       range: [0, 75],  desc: '' },
+    { stat: 'magicResist',          label: 'magicResist %',        range: [0, 75],  desc: 'global' },
+    { stat: 'armorAdjacent',        label: 'armorAdjacent',        range: [0, 20],  desc: '+armor / adj' },
+    { stat: 'bleedResist',          label: 'bleedResist %',        range: [0, 100], desc: 'résist bleed' },
+    { stat: 'thornsMeleePct',       label: 'thornsMeleePct %',     range: [0, 100], desc: 'reflect mêlée' },
+    { stat: 'blockThornsDamage',    label: 'blockThornsDamage',    range: [0, 30],  desc: 'reflect block' },
+    { stat: 'riposteChance',        label: 'riposteChance %',      range: [0, 100], desc: 'riposte' },
+  ],
+  status: [
+    { stat: 'bonusFire',            label: 'bonusFire',            range: [0, 30],  desc: '+dmg feu' },
+    { stat: 'bonusIce',             label: 'bonusIce',             range: [0, 30],  desc: '+dmg glace' },
+    { stat: 'bonusShock',           label: 'bonusShock',           range: [0, 30],  desc: '+dmg foudre' },
+    { stat: 'bonusPoison',          label: 'bonusPoison',          range: [0, 30],  desc: '+dmg poison' },
+    { stat: 'bleedDamage',          label: 'bleedDamage',          range: [0, 20],  desc: '+power bleed' },
+    { stat: 'elemStatusDuration',   label: 'elemStatusDuration %', range: [0, 100], desc: '+durée elem' },
+    { stat: 'stunOnCritChance',     label: 'stunOnCritChance %',   range: [0, 100], desc: 'stun sur crit' },
+    { stat: 'triggerExplosion',     label: 'triggerExplosion',     range: [0, 1],   desc: '0/1 (15%/hit)' },
+    { stat: 'triggerParalyzed',     label: 'triggerParalyzed',     range: [0, 1],   desc: '0/1' },
+    { stat: 'triggerElectrocuted',  label: 'triggerElectrocuted',  range: [0, 1],   desc: '0/1' },
+    { stat: 'triggerSick',          label: 'triggerSick',          range: [0, 1],   desc: '0/1' },
+  ],
+  onkill: [
+    { stat: 'cdReducOnKill',        label: 'cdReducOnKill',        range: [0, 5],   desc: '-CD t/kill' },
+    { stat: 'killReloadChance',     label: 'killReloadChance %',   range: [0, 100], desc: 'reset CD arme' },
+    { stat: 'freeSpellOnKillChance',label: 'freeSpellOnKillChance %',range:[0, 100],desc: 'sort gratuit' },
+    { stat: 'freeOpenerChance',     label: 'freeOpenerChance %',   range: [0, 100], desc: '1ère gratuite' },
+    { stat: 'freeShotChance',       label: 'freeShotChance %',     range: [0, 100], desc: 'tir gratuit' },
+  ],
+  modifiers: [
+    { stat: 'spellRange',           label: 'spellRange',           range: [0, 5],   desc: '+portée sorts' },
+    { stat: 'spellAPCostReduction', label: 'spellAPCostReduction', range: [0, 3],   desc: '-cost sorts' },
+    { stat: 'aoeRadius',            label: 'aoeRadius',            range: [0, 3],   desc: '+rayon AOE' },
+    { stat: 'bowRangeBonus',        label: 'bowRangeBonus',        range: [0, 3],   desc: '+portée arc' },
+    { stat: 'amuletElemDamage',     label: 'amuletElemDamage',     range: [0, 20],  desc: '+dmg amulette' },
+    { stat: 'freeMovement',         label: 'freeMovement',         range: [0, 3],   desc: 'mvt gratuit/tour' },
+    { stat: 'fly',                  label: 'fly',                  range: [0, 1],   desc: 'ignore murs' },
+    { stat: 'magicFind',            label: 'magicFind %',          range: [0, 200], desc: 'drop rate' },
+    { stat: 'essenceFind',          label: 'essenceFind %',        range: [0, 200], desc: '+ressources' },
+  ],
+};
+
+const CUSTOM_STATS = {};
+
+function renderSection(sectionId, affixList){
+  document.getElementById(`affixes-${sectionId}`).innerHTML = affixList.map(a => `
+    <div class="row" data-stat="${a.stat}">
+      <label><b>${a.label}</b><span class="desc">${a.desc}</span></label>
+      <input type="number" min="${a.range[0]}" max="${a.range[1]}" value="0" data-stat="${a.stat}">
+      <span class="range">${a.range[0]} → ${a.range[1]}</span>
+    </div>
+  `).join('');
+}
+
+function renderAll(){
+  for(const [section, list] of Object.entries(AFFIXES)){
+    renderSection(section, list);
+  }
+  document.querySelectorAll('input[type="number"][data-stat]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const stat = e.target.dataset.stat;
+      const val = parseInt(e.target.value) || 0;
+      if(val !== 0){
+        CUSTOM_STATS[stat] = val;
+        e.target.closest('.row').classList.add('active');
+      } else {
+        delete CUSTOM_STATS[stat];
+        e.target.closest('.row').classList.remove('active');
+      }
+      updateSummary();
+    });
+  });
+}
+
+function updateSummary(){
+  document.getElementById('active-count').textContent = Object.keys(CUSTOM_STATS).length;
+  document.getElementById('lvl-display').textContent = document.getElementById('player-level').value;
+  document.getElementById('stuff-display').textContent = document.getElementById('player-stuff').value;
+}
+
+const PRESETS = {
+  'dodge-tank': { dodgeChance: 50, blockChance: 30, parryChance: 30, firstHitReductionPct: 50, fortifyPct: 40, maxHp: 150, armor: 30, magicResist: 50, thornsMeleePct: 50 },
+  'berserker': { fullHpDamageMult: 80, missingHpDamagePct: 80, critChance: 30, critMultiplier: 150, damage: 20, afterMoveDamageMult: 50, longMoveDamageMult: 50 },
+  'execute': { executeDamageMult: 100, critChance: 30, critMultiplier: 200, cdReducOnKill: 3, killReloadChance: 100, freeSpellOnKillChance: 100, stunOnCritChance: 50 },
+  'onkill': { cdReducOnKill: 5, killReloadChance: 100, freeSpellOnKillChance: 100, freeOpenerChance: 100, cleavePct: 60, doubleStrikeChance: 50 },
+  'bleeder': { bleedDamage: 15, perBleedStackDamage: 30, damage: 15, doubleStrikeChance: 60, afflictedDamageBonus: 50 },
+  'ranger': { bowRangeBonus: 3, multishotChance: 70, headshotDamagePct: 100, maxRangeDamage: 80, freeShotChance: 60, critChance: 30, critMultiplier: 150 },
+  'mage': { bonusFire: 15, bonusIce: 15, bonusShock: 15, bonusPoison: 15, elemCritChance: 30, elemCritDamage: 150, elemLifesteal: 30, spellRange: 3, spellAPCostReduction: 2, aoeRadius: 2, spellEchoChance: 50, amuletSpellPower: 80, elemStatusDuration: 100 },
+  'triggers': { triggerExplosion: 1, triggerParalyzed: 1, triggerElectrocuted: 1, triggerSick: 1, damage: 15, doubleStrikeChance: 100 },
+  'speedster': { freeMovement: 3, fly: 1, bonusAp: 3, afterMoveDamageMult: 80, longMoveDamageMult: 80, freeOpenerChance: 100 },
+  'reflect': { thornsMeleePct: 100, blockThornsDamage: 25, blockChance: 50, riposteChance: 80, maxHp: 200, armor: 50 },
+  'god': { maxHp: 200, armor: 50, damage: 30, critChance: 70, critMultiplier: 300, dodgeChance: 60, blockChance: 60, parryChance: 60, fullHpDamageMult: 50, executeDamageMult: 50, missingHpDamagePct: 50, doubleStrikeChance: 100, multishotChance: 100, cleavePct: 80, spellEchoChance: 100, freeMovement: 3, freeOpenerChance: 100, cdReducOnKill: 5, killReloadChance: 100, freeSpellOnKillChance: 100, triggerExplosion: 1, lifesteal: 30, hpRegen: 5, bonusAp: 3 },
+};
+
+function applyPreset(name){
+  const preset = PRESETS[name];
+  if(!preset) return;
+  Object.keys(CUSTOM_STATS).forEach(k => delete CUSTOM_STATS[k]);
+  document.querySelectorAll('.row').forEach(r => r.classList.remove('active'));
+  document.querySelectorAll('input[type="number"][data-stat]').forEach(inp => inp.value = 0);
+  for(const [stat, val] of Object.entries(preset)){
+    CUSTOM_STATS[stat] = val;
+    const inp = document.querySelector(`input[data-stat="${stat}"]`);
+    if(inp){
+      inp.value = val;
+      inp.closest('.row').classList.add('active');
+    }
+  }
+  updateSummary();
+}
+
+function launchCombat(){
+  const level = parseInt(document.getElementById('player-level').value) || 1;
+  const stuff = document.getElementById('player-stuff').value;
+
+  // Base stats raisonnables (alignées avec player-stats.js)
+  const baseStats = {
+    maxHp: 100, maxAp: 6, bonusAp: 1,
+    damage: [4, 7], damageType: 'blunt', range: 1,
+    armor: 0, dodgeChance: 5, blockChance: 0,
+    critChance: 5, critMultiplier: 50,
+    moveSpeed: 4, initiative: 18,
+    hpRegen: 0, lifesteal: 0, armorPen: 0,
+    bonusFire: 0, bonusIce: 0, bonusShock: 0, bonusPoison: 0,
+    fireResist: 0, iceResist: 0, shockResist: 0, poisonResist: 0,
+    magicResist: 0, ccReduction: 0,
+  };
+
+  const finalStats = { ...baseStats };
+  for(const [stat, val] of Object.entries(CUSTOM_STATS)){
+    if(stat === 'damage'){
+      finalStats.damage = [baseStats.damage[0] + val, baseStats.damage[1] + val];
+    } else if(stat === 'maxHp'){
+      finalStats.maxHp = baseStats.maxHp + val;
+    } else if(stat === 'armor'){
+      finalStats.armor = baseStats.armor + val;
+    } else {
+      finalStats[stat] = val;
+    }
+  }
+  finalStats.maxHp += (level - 1) * 7;
+
+  const run = {
+    debugMode: true,
+    biomeId: 'crimson',
+    rooms: [], // game.html fallback sur tutorial
+    player: {
+      level, stuff,
+      stats: finalStats,
+      customModifiers: [],
+    },
+  };
+
+  localStorage.setItem('rh_active_run', JSON.stringify(run));
+  window.location.href = '../../game.html';
+}
+
+document.getElementById('btn-launch').addEventListener('click', launchCombat);
+document.getElementById('btn-reset').addEventListener('click', () => {
+  Object.keys(CUSTOM_STATS).forEach(k => delete CUSTOM_STATS[k]);
+  document.querySelectorAll('.row').forEach(r => r.classList.remove('active'));
+  document.querySelectorAll('input[type="number"][data-stat]').forEach(inp => inp.value = 0);
+  updateSummary();
+});
+document.getElementById('btn-back').addEventListener('click', () => {
+  window.location.href = '../../index.html';
+});
+document.getElementById('player-level').addEventListener('input', updateSummary);
+document.getElementById('player-stuff').addEventListener('change', updateSummary);
+document.querySelectorAll('button.preset').forEach(b => {
+  b.addEventListener('click', () => applyPreset(b.dataset.preset));
+});
+
+renderAll();
+updateSummary();
+</script>
+
+</body>
+</html>
