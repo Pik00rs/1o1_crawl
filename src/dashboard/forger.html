@@ -444,6 +444,98 @@
   .cost-display.broke .cost-value { color: var(--bad); }
   .cost-display:not(.broke) .cost-value { color: var(--accent); }
 
+  /* === ADMIN MODE === */
+  .admin-block {
+    background: var(--bg-2);
+    border: 1px dashed rgba(255, 0, 100, 0.2);
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  .admin-block-title {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #ff6699;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: bold;
+  }
+  .admin-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .admin-resource {
+    background: var(--bg-3);
+    border: 1px solid var(--border-1);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    font-size: 10px;
+  }
+  .admin-resource-icon { font-size: 14px; }
+  .admin-resource-count {
+    color: var(--text-0);
+    font-weight: bold;
+  }
+  .admin-resource-btns {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+  }
+  .admin-resource-btns button {
+    flex: 1;
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    font-size: 9px;
+    padding: 2px;
+    cursor: pointer;
+  }
+  .admin-resource-btns button:hover { background: var(--accent); color: #000; }
+  .admin-actions {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .admin-btn {
+    background: var(--bg-3);
+    border: 1px solid var(--border-1);
+    color: var(--text-0);
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .admin-btn:hover {
+    background: rgba(255, 0, 100, 0.15);
+    border-color: rgba(255, 0, 100, 0.4);
+    color: #ff6699;
+  }
+  .admin-btn.warn {
+    border-color: rgba(255, 89, 89, 0.4);
+    color: var(--bad);
+  }
+  .admin-btn.warn:hover {
+    background: rgba(255, 89, 89, 0.15);
+  }
+  .admin-select {
+    background: var(--bg-3);
+    border: 1px solid var(--border-1);
+    color: var(--text-0);
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 10px;
+  }
+  @media (max-width: 600px) {
+    .admin-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
   /* === MOBILE === */
   @media (max-width: 600px) {
     .container { padding: 8px; }
@@ -468,6 +560,7 @@
 <header class="header">
   <a href="../../index.html" class="back-btn">← RETOUR</a>
   <div class="title"><span class="acc">⚒</span> FORGE</div>
+  <button class="back-btn" id="btn-admin-toggle" style="margin-left:auto; border-color: rgba(255,100,150,0.5); color: rgba(255,100,150,0.9);">⚙ ADMIN</button>
 </header>
 
 <main class="container">
@@ -477,31 +570,31 @@
 
   <!-- MODE TABS -->
   <div class="mode-tabs">
-    <button class="mode-tab active" data-mode="transfer">⇄ Transfert d'affixe</button>
-    <button class="mode-tab" data-mode="upgrade">▲ Augmenter tier</button>
+    <button class="mode-tab active" data-mode="transfer">⇄ Transfert</button>
+    <button class="mode-tab" data-mode="upgrade">▲ Tier</button>
   </div>
 
   <!-- TRANSFER MODE -->
   <section class="section" id="transfer-section">
     <div class="section-title">▸ Transfert d'affixe</div>
     <div style="font-size:10px; color:var(--text-1); margin-bottom:10px; line-height:1.4;">
-      Sélectionne un affixe émetteur (sera transféré, l'item est <b style="color:var(--bad)">détruit</b>) et un slot affixe récepteur (sera <b>écrasé</b>).
-      <br>Les 2 items doivent partager au moins un pool d'affixes et avoir le <b>même iLvl</b>. Pas de coût.
+      Étape 1 : choisis le <b style="color:var(--good)">récepteur</b> (gardé). Étape 2 : choisis l'<b style="color:var(--bad)">émetteur</b> (sera détruit) parmi les items compatibles. Étape 3 : sélectionne l'affixe à transférer puis le slot à écraser.
+      <br>Conditions : même iLvl, au moins un pool d'affixes en commun. Pas de coût.
     </div>
 
     <div class="transfer-grid">
-      <!-- ÉMETTEUR -->
-      <div class="item-slot" id="slot-source">
-        <div class="item-slot-label">▸ ÉMETTEUR (détruit)</div>
-        <div class="item-slot-empty" id="slot-source-empty">Cliquez pour choisir</div>
+      <!-- RÉCEPTEUR (à choisir EN PREMIER) -->
+      <div class="item-slot" id="slot-target">
+        <div class="item-slot-label">▸ ÉTAPE 1 — RÉCEPTEUR (gardé)</div>
+        <div class="item-slot-empty" id="slot-target-empty">Cliquez pour choisir</div>
       </div>
 
-      <div class="transfer-arrow">→</div>
+      <div class="transfer-arrow">←</div>
 
-      <!-- RÉCEPTEUR -->
-      <div class="item-slot" id="slot-target">
-        <div class="item-slot-label">▸ RÉCEPTEUR (gardé)</div>
-        <div class="item-slot-empty" id="slot-target-empty">Cliquez pour choisir</div>
+      <!-- ÉMETTEUR (à choisir EN SECOND, filtré selon le récepteur) -->
+      <div class="item-slot" id="slot-source">
+        <div class="item-slot-label">▸ ÉTAPE 2 — ÉMETTEUR (détruit)</div>
+        <div class="item-slot-empty" id="slot-source-empty">Choisis le récepteur d'abord</div>
       </div>
     </div>
 
@@ -540,6 +633,50 @@
     </div>
   </section>
 
+  <!-- ADMIN MODE -->
+  <section class="section" id="admin-section" style="display:none; border-color: rgba(255,0,100,0.3);">
+    <div class="section-title" style="color: #ff6699;">🧪 ▸ Mode Admin (test)</div>
+    <div style="font-size:10px; color:var(--text-1); margin-bottom:10px; line-height:1.4;">
+      Outils de test : ajoute des ressources et drops des items pour tester la forge sans farm.
+    </div>
+
+    <!-- RESSOURCES -->
+    <div class="admin-block">
+      <div class="admin-block-title">▸ Ressources</div>
+      <div class="admin-grid" id="admin-resources"></div>
+      <div class="admin-actions">
+        <button class="admin-btn" data-action="add-all-100">+ 100 partout</button>
+        <button class="admin-btn" data-action="add-all-1000">+ 1000 partout</button>
+        <button class="admin-btn warn" data-action="reset-wallet">Reset wallet à 0</button>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="admin-block">
+      <div class="admin-block-title">▸ Drop d'items</div>
+      <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+        <select id="admin-item-select" class="admin-select"></select>
+        <select id="admin-rarity-select" class="admin-select">
+          <option value="common">Common</option>
+          <option value="magic">Magic</option>
+          <option value="rare">Rare</option>
+          <option value="epic" selected>Epic</option>
+          <option value="legendary">Legendary</option>
+        </select>
+        <select id="admin-ilvl-select" class="admin-select">
+          ${[1,2,3,4,5,6,7,8,9,10].map(i => `<option value="${i}" ${i===5?'selected':''}>iLvl ${i}</option>`).join('')}
+        </select>
+      </div>
+      <div class="admin-actions">
+        <button class="admin-btn" data-action="drop-selected">Drop x1</button>
+        <button class="admin-btn" data-action="drop-selected-5">Drop x5</button>
+        <button class="admin-btn" data-action="drop-rng-5">Drop 5 random Epic iLvl 5</button>
+        <button class="admin-btn warn" data-action="wipe-chest">Wipe coffre</button>
+      </div>
+      <div class="action-status" id="admin-status"></div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ITEM PICKER MODAL -->
@@ -559,7 +696,7 @@
 import {
   loadCatalog, getItem, getAllItems, getAllAffixes, getAffix,
   composeItemName, ilvlToRoman,
-  rollAffixValue, affixQualityPct,
+  rollAffixValue, affixQualityPct, rollItem,
 } from './items-catalog.js';
 
 // === STATE ===
@@ -577,6 +714,8 @@ const STATE = {
   upgradeItemId: null,
   // Modal picker
   pickerTarget: null, // 'source' | 'target' | 'upgrade'
+  // Admin panel toggle
+  adminPanelOpen: false,
 };
 
 const ILVL_MULTIPLIER = {
@@ -691,6 +830,18 @@ function renderModeTabs(){
   });
   document.getElementById('transfer-section').style.display = STATE.mode === 'transfer' ? '' : 'none';
   document.getElementById('upgrade-section').style.display = STATE.mode === 'upgrade' ? '' : 'none';
+  // Admin = panneau toggle séparé (au-dessus des onglets), pas un mode
+  document.getElementById('admin-section').style.display = STATE.adminPanelOpen ? '' : 'none';
+  // État visuel du bouton ADMIN
+  const btnAdmin = document.getElementById('btn-admin-toggle');
+  if(btnAdmin){
+    if(STATE.adminPanelOpen){
+      btnAdmin.style.background = 'rgba(255,100,150,0.2)';
+      btnAdmin.style.color = '#ff6699';
+    } else {
+      btnAdmin.style.background = '';
+    }
+  }
 }
 
 function renderItemSlot(slotId, isSource){
@@ -702,15 +853,24 @@ function renderItemSlot(slotId, isSource){
   // Reset interactions
   slot.classList.toggle('has-item', !!item);
 
-  const labelText = isSource ? '▸ ÉMETTEUR (détruit)' : '▸ RÉCEPTEUR (gardé)';
+  const labelText = isSource
+    ? '▸ ÉTAPE 2 — ÉMETTEUR (détruit)'
+    : '▸ ÉTAPE 1 — RÉCEPTEUR (gardé)';
   const labelHtml = `<div class="item-slot-label">${labelText}</div>`;
 
   if(!item){
+    const isSourceWithoutTarget = isSource && !STATE.targetItemId;
+    const emptyMsg = isSourceWithoutTarget
+      ? 'Choisis le récepteur d\'abord (étape 1)'
+      : 'Cliquez pour choisir';
     slot.innerHTML = `
       ${labelHtml}
-      <div class="item-slot-empty" id="${slotId}-empty">Cliquez pour choisir</div>
+      <div class="item-slot-empty" id="${slotId}-empty" ${isSourceWithoutTarget ? 'style="opacity:0.5;cursor:not-allowed;"' : ''}>${emptyMsg}</div>
     `;
-    document.getElementById(`${slotId}-empty`).onclick = () => openPicker(isSource ? 'source' : 'target');
+    // Bloque le clic pour ouvrir le picker source si pas de récepteur
+    if(!isSourceWithoutTarget){
+      document.getElementById(`${slotId}-empty`).onclick = () => openPicker(isSource ? 'source' : 'target');
+    }
     return;
   }
 
@@ -1145,26 +1305,37 @@ function doUpgrade(){
 
 // === PICKER MODAL ===
 function openPicker(target){
+  // Bloque l'ouverture du source picker si target pas choisi
+  if(target === 'source' && !STATE.targetItemId){
+    const status = document.getElementById('transfer-status');
+    status.textContent = 'Choisis d\'abord le récepteur (étape 1) pour qu\'on puisse filtrer les émetteurs compatibles.';
+    status.className = 'action-status warn';
+    return;
+  }
+
   STATE.pickerTarget = target;
   const modal = document.getElementById('picker-modal');
   const grid = document.getElementById('picker-grid');
   const titleEl = document.getElementById('picker-title');
 
-  let titleText, candidates;
+  let titleText, candidates, emptyMsg;
   if(target === 'source'){
     titleText = 'Choisir l\'émetteur (sera détruit)';
     candidates = filterPickerForSource();
+    emptyMsg = 'Aucun item compatible. Il faut un item :<br>- Même iLvl que le récepteur<br>- Au moins un pool d\'affixes en commun<br>- Non équipé<br>- Avec au moins un affixe transférable';
   } else if(target === 'target'){
     titleText = 'Choisir le récepteur (sera gardé)';
     candidates = filterPickerForTarget();
+    emptyMsg = 'Aucun item dans le coffre avec des affixes.';
   } else {
     titleText = 'Choisir l\'item à améliorer';
     candidates = filterPickerForUpgrade();
+    emptyMsg = 'Coffre vide.';
   }
   titleEl.textContent = titleText;
 
   if(candidates.length === 0){
-    grid.innerHTML = '<div class="modal-empty">Aucun item compatible disponible.</div>';
+    grid.innerHTML = `<div class="modal-empty">${emptyMsg}</div>`;
   } else {
     grid.innerHTML = '';
     candidates.forEach(item => {
@@ -1198,6 +1369,11 @@ function pickItem(instanceId){
     STATE.sourceItemId = instanceId;
     STATE.sourceAffixIdx = null;
   } else if(STATE.pickerTarget === 'target'){
+    // Si on change le récepteur, on doit reset la source (peut devenir incompatible)
+    if(STATE.targetItemId !== instanceId){
+      STATE.sourceItemId = null;
+      STATE.sourceAffixIdx = null;
+    }
     STATE.targetItemId = instanceId;
     STATE.targetAffixIdx = null;
   } else if(STATE.pickerTarget === 'upgrade'){
@@ -1207,25 +1383,45 @@ function pickItem(instanceId){
   render();
 }
 
-// Filtre items pour la source du transfert : tout sauf l'item target déjà sélectionné, et tout sauf
-// les items équipés (on ne peut pas détruire un item équipé). Plus : doit avoir au moins 1 affixe.
+// Filtre items pour la SOURCE du transfert.
+// La source ne peut être ouverte que si le récepteur est déjà choisi.
+// Filtre :
+// - exclut le target déjà sélectionné
+// - exclut les items équipés (on ne peut pas détruire ce qui est équipé)
+// - exclut les items sans affixes (rien à transférer)
+// - exclut les items qui ne partagent PAS de pool avec le target
+// - exclut les items qui n'ont PAS le même iLvl que le target
 function filterPickerForSource(){
+  const target = STATE.chest.find(i => i.instanceId === STATE.targetItemId);
+  if(!target) return []; // Target obligatoire pour filtrer
   return STATE.chest.filter(item => {
     if(item.instanceId === STATE.targetItemId) return false;
-    if(isEquipped(item.instanceId)) return false; // équipés non détructibles
-    if(!item.affixes || item.affixes.length === 0) return false; // sans affixe = rien à transférer
+    if(isEquipped(item.instanceId)) return false;
+    if(!item.affixes || item.affixes.length === 0) return false;
+    // Même iLvl
+    if(item.ilvl !== target.ilvl) return false;
+    // Au moins un pool partagé
+    const shared = getSharedPools(item, target);
+    if(shared.length === 0) return false;
+    // Au moins un affixe rollable dans un pool partagé
+    const hasUsableAffix = item.affixes.some(a => {
+      const def = getAffix(a.id);
+      if(!def) return false;
+      return shared.includes(def.pool);
+    });
+    if(!hasUsableAffix) return false;
     return true;
   });
 }
-// Filtre pour le target : tout sauf source. Pas de contrainte d'équipement (le récepteur est gardé).
+// Filtre pour le target : tout sauf l'item équipé est OK pour le récepteur (lui n'est pas détruit).
+// Mais source doit être déselectionnée si target change → géré dans pickItem.
 function filterPickerForTarget(){
   return STATE.chest.filter(item => {
-    if(item.instanceId === STATE.sourceItemId) return false;
     if(!item.affixes || item.affixes.length === 0) return false; // sans affixe = rien à écraser
     return true;
   });
 }
-// Filtre pour l'upgrade : tous les items (équipés ok, peu importe), même les communes sans affixes.
+// Filtre pour l'upgrade : tous les items.
 function filterPickerForUpgrade(){
   return STATE.chest.slice();
 }
@@ -1238,10 +1434,134 @@ function render(){
     renderItemSlot('slot-source', true);
     renderItemSlot('slot-target', false);
     renderTransferAction();
-  } else {
+  } else if(STATE.mode === 'upgrade'){
     renderUpgrade();
   }
+  // Admin panel rendu indépendamment du mode (toggle séparé)
+  if(STATE.adminPanelOpen){
+    renderAdmin();
+  }
 }
+
+// === ADMIN MODE ===
+function renderAdmin(){
+  // Resources display
+  const resGrid = document.getElementById('admin-resources');
+  resGrid.innerHTML = Object.values(BIOME_RESOURCES).map(r => {
+    const owned = STATE.wallet[r.id] || 0;
+    return `
+      <div class="admin-resource">
+        <div class="admin-resource-icon" style="color:${r.color};">${r.icon}</div>
+        <div class="admin-resource-count">${owned}</div>
+        <div style="font-size:8px; color:${r.color}; text-align:center;">${r.name}</div>
+        <div class="admin-resource-btns">
+          <button data-res-add="${r.id}" data-amount="10">+10</button>
+          <button data-res-add="${r.id}" data-amount="100">+100</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Items dropdown
+  const itemSelect = document.getElementById('admin-item-select');
+  if(itemSelect.options.length === 0){
+    const all = getAllItems();
+    const items = Object.values(all).sort((a, b) => {
+      // Group by cat
+      const catOrder = { weapon: 1, offhand: 2, armor: 3, boots: 4, amulet: 5, ring: 6 };
+      const ca = catOrder[a.cat] || 99;
+      const cb = catOrder[b.cat] || 99;
+      if(ca !== cb) return ca - cb;
+      return a.name.localeCompare(b.name);
+    });
+    items.forEach(it => {
+      const opt = document.createElement('option');
+      opt.value = it.id;
+      opt.textContent = `${it.icon || ''} ${it.name} (${it.cat})`;
+      itemSelect.appendChild(opt);
+    });
+  }
+}
+
+function adminAddRes(resId, amount){
+  STATE.wallet[resId] = (STATE.wallet[resId] || 0) + amount;
+  saveWallet();
+  render();
+  flashAdminStatus(`+${amount} ${BIOME_RESOURCES[resId].name}`);
+}
+
+function adminAddAll(amount){
+  Object.values(BIOME_RESOURCES).forEach(r => {
+    STATE.wallet[r.id] = (STATE.wallet[r.id] || 0) + amount;
+  });
+  saveWallet();
+  render();
+  flashAdminStatus(`+${amount} dans toutes les ressources`);
+}
+
+function adminResetWallet(){
+  if(!confirm('Reset le wallet à 0 partout ?')) return;
+  STATE.wallet = {};
+  Object.values(BIOME_RESOURCES).forEach(r => { STATE.wallet[r.id] = 0; });
+  saveWallet();
+  render();
+  flashAdminStatus('Wallet reset à 0');
+}
+
+function adminDropSelected(count){
+  const itemId = document.getElementById('admin-item-select').value;
+  const rarity = document.getElementById('admin-rarity-select').value;
+  const ilvl = Number(document.getElementById('admin-ilvl-select').value);
+  if(!itemId){ flashAdminStatus('Aucun item sélectionné', true); return; }
+  let dropped = 0;
+  for(let i = 0; i < count; i++){
+    const item = rollItem(itemId, { rarity, ilvl });
+    if(item){
+      STATE.chest.push(item);
+      dropped++;
+    }
+  }
+  saveChest();
+  render();
+  flashAdminStatus(`+${dropped} × ${itemId} (${rarity}, iLvl ${ilvl})`);
+}
+
+function adminDropRandom5(){
+  const all = getAllItems();
+  const itemIds = Object.keys(all);
+  let dropped = 0;
+  for(let i = 0; i < 5; i++){
+    const id = itemIds[Math.floor(Math.random() * itemIds.length)];
+    const item = rollItem(id, { rarity: 'epic', ilvl: 5 });
+    if(item){
+      STATE.chest.push(item);
+      dropped++;
+    }
+  }
+  saveChest();
+  render();
+  flashAdminStatus(`+${dropped} drops random Epic iLvl 5`);
+}
+
+function adminWipeChest(){
+  if(!confirm('Vider tout le coffre ? (les items équipés restent équipés)')) return;
+  // Garde les équipés dans le chest pour ne pas casser l'équipement
+  const equippedIds = new Set();
+  Object.values(STATE.equipped).forEach(eq => { if(eq?.instanceId) equippedIds.add(eq.instanceId); });
+  STATE.chest = STATE.chest.filter(i => equippedIds.has(i.instanceId));
+  saveChest();
+  render();
+  flashAdminStatus('Coffre wipé (équipés conservés)');
+}
+
+function flashAdminStatus(msg, isError){
+  const status = document.getElementById('admin-status');
+  status.textContent = '✓ ' + msg;
+  status.className = 'action-status' + (isError ? ' error' : '');
+  status.style.color = isError ? '' : 'var(--good)';
+  setTimeout(() => { status.style.color = ''; status.textContent = ''; }, 1500);
+}
+
 
 // === BOOT ===
 async function boot(){
@@ -1258,6 +1578,18 @@ async function boot(){
     });
   });
 
+  // Admin panel toggle (header button)
+  document.getElementById('btn-admin-toggle').addEventListener('click', () => {
+    STATE.adminPanelOpen = !STATE.adminPanelOpen;
+    render();
+    if(STATE.adminPanelOpen){
+      // Scroll to admin section
+      setTimeout(() => {
+        document.getElementById('admin-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  });
+
   // Transfer button
   document.getElementById('btn-transfer').addEventListener('click', doTransfer);
 
@@ -1268,6 +1600,26 @@ async function boot(){
   document.getElementById('picker-close').addEventListener('click', closePicker);
   document.getElementById('picker-modal').addEventListener('click', (e) => {
     if(e.target.id === 'picker-modal') closePicker();
+  });
+
+  // Admin event delegation
+  document.getElementById('admin-section').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    // Resource +N
+    if(btn.dataset.resAdd){
+      adminAddRes(btn.dataset.resAdd, Number(btn.dataset.amount));
+      return;
+    }
+    // Action buttons
+    const action = btn.dataset.action;
+    if(action === 'add-all-100') adminAddAll(100);
+    else if(action === 'add-all-1000') adminAddAll(1000);
+    else if(action === 'reset-wallet') adminResetWallet();
+    else if(action === 'drop-selected') adminDropSelected(1);
+    else if(action === 'drop-selected-5') adminDropSelected(5);
+    else if(action === 'drop-rng-5') adminDropRandom5();
+    else if(action === 'wipe-chest') adminWipeChest();
   });
 
   render();
