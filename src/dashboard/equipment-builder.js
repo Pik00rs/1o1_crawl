@@ -42,53 +42,102 @@ const PRIMARY_GLOBALDMG_PCT = '__primary_globalDmgPct__';
 const PRIMARY_ELEMDMG_PCT   = '__primary_elemDmgPct__';
 
 const STAT_MAP = {
-  // === STATS PRIMAIRES (appliquées directement sur stats final) ===
+  // === STATS PRIMAIRES ===
   maxHp:            PRIMARY_MAXHP,
   armor:            PRIMARY_ARMOR,
   globalDamagePct:  PRIMARY_GLOBALDMG_PCT,
-  elemDamagePct:    PRIMARY_ELEMDMG_PCT,  // % bonus sur dégâts magiques (on l'applique en pré-calcul)
+  elemDamagePct:    PRIMARY_ELEMDMG_PCT,
 
-  // === STATS SECONDAIRES (passives — aggregatePassives les lira) ===
-  // Crit
+  // === STATS DE BASE (déjà câblées) ===
   critChance:       'critChance',
-  critDamage:       'critMultiplier',     // /!\ catalogue dit "critDamage", moteur lit "critMultiplier"
-
-  // Pénétration / lifesteal / regen
+  critDamage:       'critMultiplier',
   armorPen:         'armorPen',
   lifesteal:        'lifesteal',
   hpRegen:          'hpRegen',
-
-  // Bonus élémentaires (additifs au roll si damageType matche)
   bonusFireDamage:   'bonusFire',
   bonusIceDamage:    'bonusIce',
   bonusShockDamage:  'bonusShock',
   bonusPoisonDamage: 'bonusPoison',
-  // bonusElemDamage : applique aux 4 — traité spécialement dans addBonus()
-
-  // Résistances
   fireResist:       'fireResist',
   iceResist:        'iceResist',
   shockResist:      'shockResist',
   poisonResist:     'poisonResist',
-
-  // Bouclier divin : utilise les 4 resist (pour les versions élémentaires)
-  // ou magicResist (pour la version globale)
-  divineShield:        'magicResist',     // global → magicResist
+  divineShield:        'magicResist',
   divineShieldFire:    'fireResist',
   divineShieldIce:     'iceResist',
   divineShieldShock:   'shockResist',
   divineShieldPoison:  'poisonResist',
-
-  // AP
   bonusAP:          'bonusAp',
-
-  // === NOUVEAUX (câblés au moteur via damage.js / attack.js / actions.js) ===
   dodgeChance:           'dodgeChance',
   blockChance:           'blockChance',
   firstHitReductionPct:  'firstHitReductionPct',
   doubleStrikeChance:    'doubleStrikeChance',
   freeMovement:          'freeMovement',
   armorAdjacent:         'armorAdjacent',
+
+  // === NOUVEAUX (53 affixes câblés) ===
+  // Multipliers conditionnels offensifs
+  fullHpDamageMult:      'fullHpDamageMult',
+  missingHpDamagePct:    'missingHpDamagePct',
+  executeDamageMult:     'executeDamageMult',
+  firstStrikeDamageMult: 'firstStrikeDamageMult',
+  firstStrikeChance:     'firstStrikeChance',
+  afterMoveDamageMult:   'afterMoveDamageMult',
+  noMoveDamageMult:      'noMoveDamageMult',
+  longMoveDamageMult:    'longMoveDamageMult',
+  armorDamageMult:       'armorDamageMult',
+  afflictedDamageBonus:  'afflictedDamageBonus',
+  backstabDamageMult:    'backstabDamageMult',
+  perBleedStackDamage:   'perBleedStackDamage',
+  pierceDamagePct:       'pierceDamagePct',
+  maxRangeDamage:        'maxRangeDamage',
+  headshotDamagePct:     'headshotDamagePct',
+  // Réductions défensives
+  lowHpReductionPct:     'lowHpReductionPct',
+  fortifyPct:            'fortifyPct',
+  // Crit alt
+  elemCritChance:        'elemCritChance',
+  elemCritDamage:        'elemCritDamage',
+  elemLifesteal:         'elemLifesteal',
+  elemStatusDuration:    'elemStatusDuration',
+  // Status
+  bleedDamage:           'bleedDamage',
+  bleedResist:           'bleedResist',
+  stunOnCritChance:      'stunOnCritChance',
+  // Triggers
+  triggerExplosion:      'triggerExplosion',
+  triggerParalyzed:      'triggerParalyzed',
+  triggerElectrocuted:   'triggerElectrocuted',
+  triggerSick:           'triggerSick',
+  // On-kill
+  cdReducOnKill:         'cdReducOnKill',
+  killReloadChance:      'killReloadChance',
+  freeSpellOnKillChance: 'freeSpellOnKillChance',
+  // Avoidance / reflects
+  parryChance:           'parryChance',
+  riposteChance:         'riposteChance',
+  thornsMeleePct:        'thornsMeleePct',
+  blockThornsDamage:     'blockThornsDamage',
+  // Repeat
+  multishotChance:       'multishotChance',
+  cleavePct:             'cleavePct',
+  spellEchoChance:       'spellEchoChance',
+  // Free actions
+  freeOpenerChance:      'freeOpenerChance',
+  freeShotChance:        'freeShotChance',
+  // Item modifiers
+  spellRange:            'spellRange',
+  spellAPCostReduction:  'spellAPCostReduction',
+  aoeRadius:             'aoeRadius',
+  bowRangeBonus:         'bowRangeBonus',
+  amuletElemDamage:      'amuletElemDamage',
+  amuletSpellPower:      'amuletSpellPower',
+  // Movement
+  fly:                   'fly',
+  teleport:              'teleport',  // tracké mais nécessite skill UI custom
+  // Loot
+  magicFind:             'magicFind',
+  essenceFind:           'essenceFind',
 };
 
 // Tous les affixes du catalog qui ne sont PAS dans STAT_MAP sont automatiquement ignorés
@@ -325,13 +374,43 @@ export function buildPlayerFromEquipped(equippedFromApi, level = 1){
 // à PASSIVE_STAT_KEYS dans player.js sinon elles ne seront pas agrégées.
 // Ici on les liste pour que le panel debug les voie de façon cohérente.
 const PASSIVE_STAT_KEYS = new Set([
+  // Base
   'lifesteal', 'armorPen', 'hpRegen',
   'critChance', 'critMultiplier', 'dodgeChance', 'blockChance',
   'bonusFire', 'bonusIce', 'bonusShock', 'bonusPoison',
   'fireResist', 'iceResist', 'shockResist', 'poisonResist', 'magicResist',
   'ccReduction',
-  // Nouveaux affixes câblés au moteur
+  // 1ère vague
   'firstHitReductionPct', 'doubleStrikeChance', 'freeMovement', 'armorAdjacent',
+  // Multipliers conditionnels offensifs
+  'fullHpDamageMult', 'missingHpDamagePct', 'executeDamageMult',
+  'firstStrikeDamageMult', 'firstStrikeChance',
+  'afterMoveDamageMult', 'noMoveDamageMult', 'longMoveDamageMult',
+  'armorDamageMult', 'afflictedDamageBonus', 'backstabDamageMult',
+  'perBleedStackDamage', 'pierceDamagePct', 'maxRangeDamage', 'headshotDamagePct',
+  // Réductions défensives
+  'lowHpReductionPct', 'fortifyPct',
+  // Crit alt
+  'elemCritChance', 'elemCritDamage', 'elemLifesteal', 'elemStatusDuration',
+  // Status
+  'bleedDamage', 'bleedResist', 'stunOnCritChance',
+  // Triggers
+  'triggerExplosion', 'triggerParalyzed', 'triggerElectrocuted', 'triggerSick',
+  // On-kill
+  'cdReducOnKill', 'killReloadChance', 'freeSpellOnKillChance',
+  // Avoidance
+  'parryChance', 'riposteChance', 'thornsMeleePct', 'blockThornsDamage',
+  // Repeat
+  'multishotChance', 'cleavePct', 'spellEchoChance',
+  // Free actions
+  'freeOpenerChance', 'freeShotChance',
+  // Item modifiers
+  'spellRange', 'spellAPCostReduction', 'aoeRadius', 'bowRangeBonus',
+  'amuletElemDamage', 'amuletSpellPower',
+  // Movement
+  'fly', 'teleport',
+  // Loot
+  'magicFind', 'essenceFind',
 ]);
 
 /**
