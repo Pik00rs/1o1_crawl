@@ -294,6 +294,14 @@
 </main>
 
 <script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
+
+// Garde d'auth : redirige vers login si non connecté
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+injectUserBar();
+
 import { loadCatalog, getAllItems, ilvlToRoman } from './items-catalog.js';
 import { BIOME_AFFINITY } from '../js/dungeon/generator.js';
 

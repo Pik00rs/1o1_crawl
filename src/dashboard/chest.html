@@ -623,13 +623,21 @@
 </main>
 
 <script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
+import { loadChest as apiLoadChest, saveChest as apiSaveChest,
+         loadEquipped as apiLoadEquipped, saveEquipped as apiSaveEquipped } from './api.js';
+import { refreshMeta, isFavorite, toggleFavorite, isInAnyBuild, canDelete, getBuildsContainingItem } from './player-meta.js';
+
+// Garde d'auth : redirige vers login si non connecté
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+await refreshMeta();
+injectUserBar();
 import {
   loadCatalog, getItem, getAllItems,
   rollItem, composeItemName, describeItemStats, ilvlToRoman
 } from './items-catalog.js';
-import {
-  isFavorite, toggleFavorite, isInAnyBuild, canDelete, getBuildsContainingItem
-} from './player-meta.js';
 
 // === STATE ===
 const STATE = {
@@ -683,53 +691,23 @@ const RARITY_LABELS = {
 // === BOOT ===
 async function boot(){
   await loadCatalog();
-  loadFromStorage();
+  await loadFromStorage();
   if(STATE.chest.length === 0){
-    seedChestWithMocks();
-    saveChest();
-  }
-  if(Object.keys(STATE.equipped).length === 0){
-    seedEquipped();
-    saveEquipped();
+    // Coffre vide à la première connexion : on NE seed PAS, l'utilisateur part de zéro.
+    // (Les anciens "mocks" sont retirés du flow Supabase.)
   }
   buildFilterButtons();
   attachEventHandlers();
   render();
 }
 
-function loadFromStorage(){
-  // Chest = array. Validation stricte du format.
-  try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]');
-    if(Array.isArray(raw) && raw.every(it => it && typeof it === 'object' && it.instanceId && it.itemId)){
-      STATE.chest = raw;
-    } else {
-      console.warn('[chest] Format invalide, reset.');
-      STATE.chest = [];
-      localStorage.removeItem(STORAGE_CHEST);
-    }
-  } catch {
-    STATE.chest = [];
-    localStorage.removeItem(STORAGE_CHEST);
-  }
-  // Equipped = objet {slot: instance}.
-  try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_EQUIPPED) || '{}');
-    if(raw && typeof raw === 'object' && !Array.isArray(raw)){
-      STATE.equipped = raw;
-    } else {
-      console.warn('[equipped] Format invalide, reset.');
-      STATE.equipped = {};
-      localStorage.removeItem(STORAGE_EQUIPPED);
-    }
-  } catch {
-    STATE.equipped = {};
-    localStorage.removeItem(STORAGE_EQUIPPED);
-  }
+async function loadFromStorage(){
+  STATE.chest = await apiLoadChest();
+  STATE.equipped = await apiLoadEquipped();
 }
 
-function saveChest(){ localStorage.setItem(STORAGE_CHEST, JSON.stringify(STATE.chest)); }
-function saveEquipped(){ localStorage.setItem(STORAGE_EQUIPPED, JSON.stringify(STATE.equipped)); }
+async function saveChest(){ await apiSaveChest(STATE.chest); }
+async function saveEquipped(){ await apiSaveEquipped(STATE.equipped); }
 
 function seedChestWithMocks(){
   const catalog = getAllItems();
@@ -1182,10 +1160,10 @@ function renderComparison(){
 
   // Branche le click favori
   wrap.querySelectorAll('.fav-toggle:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const iid = btn.dataset.favInstance;
-      toggleFavorite(iid);
+      await toggleFavorite(iid);
       renderComparison();
       renderGrid();
       renderActionBar();

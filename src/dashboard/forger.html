@@ -888,14 +888,25 @@
 </div>
 
 <script type="module">
+import { requireAuth, isAdmin } from './auth.js';
+import { injectUserBar } from './user-bar.js';
 import {
   loadCatalog, getItem, getAllItems, getAllAffixes, getAffix,
   composeItemName, ilvlToRoman,
   rollAffixValue, affixQualityPct, rollItem,
 } from './items-catalog.js';
 import {
-  isFavorite, isInAnyBuild, canDelete, getBuildsContainingItem
+  refreshMeta, isFavorite, isInAnyBuild, canDelete, getBuildsContainingItem
 } from './player-meta.js';
+import { loadChest as apiLoadChest, saveChest as apiSaveChest,
+         loadEquipped as apiLoadEquipped,
+         loadWallet as apiLoadWallet, saveWallet as apiSaveWallet } from './api.js';
+
+// Garde d'auth
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+await refreshMeta();
+injectUserBar();
 
 // === STATE ===
 const STATE = {
@@ -946,29 +957,20 @@ const POOL_LABELS = {
 };
 
 // === STORAGE ===
-function loadChest(){
-  try {
-    const raw = localStorage.getItem('rh_player_chest');
-    STATE.chest = raw ? JSON.parse(raw) : [];
-  } catch(e){ STATE.chest = []; }
+async function loadChest(){
+  STATE.chest = await apiLoadChest();
 }
-function saveChest(){
-  localStorage.setItem('rh_player_chest', JSON.stringify(STATE.chest));
+async function saveChest(){
+  await apiSaveChest(STATE.chest);
 }
-function loadEquipped(){
-  try {
-    const raw = localStorage.getItem('rh_player_equipped');
-    STATE.equipped = raw ? JSON.parse(raw) : {};
-  } catch(e){ STATE.equipped = {}; }
+async function loadEquipped(){
+  STATE.equipped = await apiLoadEquipped();
 }
-function loadWallet(){
-  try {
-    const raw = localStorage.getItem('rh_player_wallet');
-    STATE.wallet = raw ? JSON.parse(raw) : {};
-  } catch(e){ STATE.wallet = {}; }
+async function loadWallet(){
+  STATE.wallet = await apiLoadWallet();
 }
-function saveWallet(){
-  localStorage.setItem('rh_player_wallet', JSON.stringify(STATE.wallet));
+async function saveWallet(){
+  await apiSaveWallet(STATE.wallet);
 }
 
 function isEquipped(instanceId){
@@ -1938,9 +1940,15 @@ function flashAdminStatus(msg, isError){
 // === BOOT ===
 async function boot(){
   await loadCatalog();
-  loadChest();
-  loadEquipped();
-  loadWallet();
+  await loadChest();
+  await loadEquipped();
+  await loadWallet();
+
+  // Cache le bouton ADMIN si pas admin
+  const adminBtn = document.getElementById('btn-admin-toggle');
+  if(adminBtn && !isAdmin()){
+    adminBtn.style.display = 'none';
+  }
 
   // Mode tabs
   document.querySelectorAll('.mode-tab').forEach(t => {
@@ -1950,17 +1958,18 @@ async function boot(){
     });
   });
 
-  // Admin panel toggle (header button)
-  document.getElementById('btn-admin-toggle').addEventListener('click', () => {
-    STATE.adminPanelOpen = !STATE.adminPanelOpen;
-    render();
-    if(STATE.adminPanelOpen){
-      // Scroll to admin section
-      setTimeout(() => {
-        document.getElementById('admin-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
-    }
-  });
+  // Admin panel toggle (header button) — réservé aux admins
+  if(adminBtn && isAdmin()){
+    adminBtn.addEventListener('click', () => {
+      STATE.adminPanelOpen = !STATE.adminPanelOpen;
+      render();
+      if(STATE.adminPanelOpen){
+        setTimeout(() => {
+          document.getElementById('admin-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+      }
+    });
+  }
 
   // Transfer button
   document.getElementById('btn-transfer').addEventListener('click', doTransfer);

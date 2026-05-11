@@ -541,35 +541,37 @@
 <div class="flash-notif" id="flash-notif"></div>
 
 <script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
 import {
   loadCatalog, getItem, getAllItems,
   composeItemName, ilvlToRoman, describeItemStats,
 } from './items-catalog.js';
 import {
-  loadBuilds, getBuild, createBuild, updateBuild, deleteBuild,
+  refreshMeta, loadBuildsSync, getBuild, createBuild, updateBuild, deleteBuild,
   isFavorite, isInAnyBuild, MAX_BUILDS,
 } from './player-meta.js';
+import { loadChest as apiLoadChest, loadEquipped as apiLoadEquipped,
+         saveEquipped as apiSaveEquipped } from './api.js';
+
+// Garde d'auth
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+await refreshMeta();
+injectUserBar();
 
 // === STATE ===
 const STATE = {
   chest: [],
   equipped: {},
   // Editor state
-  editingBuildId: null,    // null = création, sinon ID du build en édition
+  editingBuildId: null,
   editorName: '',
-  editorItems: {},          // { slot: instanceId }
+  editorItems: {},
   // Picker
   pickerSlot: null,
 };
 
-// 8 slots du héro : mainhand, offhand, head, chest, legs, gloves, boots, amulet, ring
-// Layout grid 3x3 (D2-style) :
-//   amulet | head   | ring
-//   mainhand | chest | offhand
-//   (vide) | legs   | (vide)
-//   (vide) | gloves | (vide)
-//   (vide) | boots  | (vide)
-// On simplifie en 3 colonnes mais inline ordre logique
 const SLOT_LIST = [
   { slot: 'mainhand', label: 'Arme',     icon: '⚔️' },
   { slot: 'offhand',  label: 'Off-hand', icon: '🛡️' },
@@ -583,20 +585,14 @@ const SLOT_LIST = [
 ];
 
 // === STORAGE ===
-function loadChest(){
-  try {
-    const raw = localStorage.getItem('rh_player_chest');
-    STATE.chest = raw ? JSON.parse(raw) : [];
-  } catch(e){ STATE.chest = []; }
+async function loadChest(){
+  STATE.chest = await apiLoadChest();
 }
-function loadEquipped(){
-  try {
-    const raw = localStorage.getItem('rh_player_equipped');
-    STATE.equipped = raw ? JSON.parse(raw) : {};
-  } catch(e){ STATE.equipped = {}; }
+async function loadEquipped(){
+  STATE.equipped = await apiLoadEquipped();
 }
-function saveEquipped(){
-  localStorage.setItem('rh_player_equipped', JSON.stringify(STATE.equipped));
+async function saveEquipped(){
+  await apiSaveEquipped(STATE.equipped);
 }
 
 function isEquipped(instanceId){
@@ -614,13 +610,13 @@ function flash(msg, kind){
 
 // === RENDER ===
 function renderStatsMini(){
-  const builds = loadBuilds();
+  const builds = loadBuildsSync();
   document.getElementById('stats-mini').textContent = `${builds.length}/${MAX_BUILDS} builds`;
 }
 
 function renderBuildsList(){
   const list = document.getElementById('builds-list');
-  const builds = loadBuilds();
+  const builds = loadBuildsSync();
   document.getElementById('builds-count').textContent = `${builds.length}/${MAX_BUILDS}`;
 
   if(builds.length === 0){
@@ -641,10 +637,10 @@ function renderBuildsList(){
       e.stopPropagation();
       startEdit(buildId);
     });
-    card.querySelector('[data-action="delete"]')?.addEventListener('click', (e) => {
+    card.querySelector('[data-action="delete"]')?.addEventListener('click', async (e) => {
       e.stopPropagation();
       if(confirm('Supprimer ce build ? Les items resteront dans le coffre.')){
-        deleteBuild(buildId);
+        await deleteBuild(buildId);
         flash('Build supprimé', 'warn');
         render();
       }
@@ -710,7 +706,7 @@ function renderEditor(){
   }
 
   // Disable save si max atteint et en mode création
-  const builds = loadBuilds();
+  const builds = loadBuildsSync();
   if(!STATE.editingBuildId && builds.length >= MAX_BUILDS){
     saveBtn.disabled = true;
     saveBtn.textContent = `❌ MAX ${MAX_BUILDS} BUILDS ATTEINTS`;
@@ -805,12 +801,11 @@ function clearSlots(){
   STATE.editorItems = {};
   renderEditor();
 }
-function saveBuild(){
+async function saveBuild(){
   const name = document.getElementById('build-name').value.trim() || 'Sans nom';
   STATE.editorName = name;
   if(STATE.editingBuildId){
-    // UPDATE
-    const updated = updateBuild(STATE.editingBuildId, {
+    const updated = await updateBuild(STATE.editingBuildId, {
       name,
       items: { ...STATE.editorItems },
     });
@@ -818,19 +813,18 @@ function saveBuild(){
       flash(`Build "${name}" mis à jour`, 'good');
     }
   } else {
-    // CREATE
-    const created = createBuild(name, { ...STATE.editorItems });
+    const created = await createBuild(name, { ...STATE.editorItems });
     if(!created){
       flash(`Limite de ${MAX_BUILDS} builds atteinte`, 'warn');
       return;
     }
     flash(`Build "${name}" créé`, 'good');
   }
-  startCreate(); // reset après save
+  startCreate();
 }
 
 // === EQUIP ===
-function equipBuild(buildId){
+async function equipBuild(buildId){
   const b = getBuild(buildId);
   if(!b) return;
   // Pour chaque slot du build, vérifie que l'item existe encore et applique
@@ -853,7 +847,7 @@ function equipBuild(buildId){
     }
   }
 
-  saveEquipped();
+  await saveEquipped();
   const msg = `Build "${b.name}" équipé (${appliedCount} pièces${missingCount > 0 ? `, ${missingCount} manquantes` : ''})`;
   flash(msg, missingCount > 0 ? 'warn' : 'good');
 }
@@ -962,8 +956,8 @@ function closePicker(){
 // === BOOT ===
 async function boot(){
   await loadCatalog();
-  loadChest();
-  loadEquipped();
+  await loadChest();
+  await loadEquipped();
 
   document.getElementById('build-name').addEventListener('input', (e) => {
     STATE.editorName = e.target.value;

@@ -477,18 +477,24 @@
 </div>
 
 <script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
 import {
   loadCatalog, getItem,
   composeItemName, describeItemStats, ilvlToRoman
 } from './items-catalog.js';
+import { loadEquipped as apiLoadEquipped, saveEquipped as apiSaveEquipped,
+         loadChest as apiLoadChest, saveChest as apiSaveChest } from './api.js';
+
+// Garde d'auth
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+injectUserBar();
 
 // === STATE ===
 const STATE = {
   equipped: {},
 };
-
-const STORAGE_EQUIPPED = 'rh_player_equipped';
-const STORAGE_CHEST = 'rh_player_chest';
 
 const SLOT_LABELS = {
   mainhand: 'Arme',
@@ -522,28 +528,19 @@ const RARITY_LABELS = {
 // === BOOT ===
 async function boot(){
   await loadCatalog();
-  loadEquipped();
+  await loadEquipped();
   drawHeroSilhouette();
   renderAllSlots();
   renderStatsAggregate();
   attachHandlers();
 }
 
-function loadEquipped(){
-  try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_EQUIPPED) || '{}');
-    if(raw && typeof raw === 'object' && !Array.isArray(raw)){
-      STATE.equipped = raw;
-    } else {
-      STATE.equipped = {};
-    }
-  } catch {
-    STATE.equipped = {};
-  }
+async function loadEquipped(){
+  STATE.equipped = await apiLoadEquipped();
 }
 
-function saveEquipped(){
-  localStorage.setItem(STORAGE_EQUIPPED, JSON.stringify(STATE.equipped));
+async function saveEquipped(){
+  await apiSaveEquipped(STATE.equipped);
 }
 
 // Vrai mainhand est-il une arme 2H ?
@@ -845,22 +842,21 @@ function closeModal(){
   document.getElementById('modal-overlay').classList.remove('active');
 }
 
-function unequipSlot(slotKey){
+async function unequipSlot(slotKey){
   const item = STATE.equipped[slotKey];
   if(!item) return;
   if(!confirm(`Déséquiper ${composeItemName(item)} et le mettre dans le Coffre ?`)) return;
 
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]');
-    const chest = Array.isArray(raw) ? raw : [];
+    const chest = await apiLoadChest();
     chest.push(item);
-    localStorage.setItem(STORAGE_CHEST, JSON.stringify(chest));
+    await apiSaveChest(chest);
   } catch(e){
     console.error('Failed to push to chest:', e);
   }
 
   delete STATE.equipped[slotKey];
-  saveEquipped();
+  await saveEquipped();
   renderAllSlots();
   renderStatsAggregate();
   closeModal();

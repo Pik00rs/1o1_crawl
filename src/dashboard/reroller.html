@@ -638,6 +638,17 @@
 </main>
 
 <script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
+import { loadChest as apiLoadChest, saveChest as apiSaveChest,
+         loadWallet as apiLoadWallet, saveWallet as apiSaveWallet } from './api.js';
+import { refreshMeta } from './player-meta.js';
+
+// Garde d'auth
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+await refreshMeta();
+injectUserBar();
 import {
   loadCatalog, getItem, getAllItems, getAllAffixes, getAffix,
   composeItemName, ilvlToRoman,
@@ -694,24 +705,18 @@ const TAG_TO_BIOME = {
 // === BOOT ===
 async function boot(){
   await loadCatalog();
-  loadFromStorage();
+  await loadFromStorage();
   buildFilterButtons();
   attachHandlers();
   render();
 }
 
-function loadFromStorage(){
-  try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_CHEST) || '[]');
-    STATE.chest = Array.isArray(raw) && raw.every(i => i?.instanceId && i?.itemId) ? raw : [];
-  } catch { STATE.chest = []; }
-  try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_WALLET) || '{}');
-    STATE.wallet = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
-  } catch { STATE.wallet = {}; }
+async function loadFromStorage(){
+  STATE.chest = await apiLoadChest();
+  STATE.wallet = await apiLoadWallet();
 }
-function saveChest(){ localStorage.setItem(STORAGE_CHEST, JSON.stringify(STATE.chest)); }
-function saveWallet(){ localStorage.setItem(STORAGE_WALLET, JSON.stringify(STATE.wallet)); }
+async function saveChest(){ await apiSaveChest(STATE.chest); }
+async function saveWallet(){ await apiSaveWallet(STATE.wallet); }
 
 // === RESOURCE LOOKUP ===
 // Pour un item donné, retourne { biomeId, resource } à utiliser pour le coût.

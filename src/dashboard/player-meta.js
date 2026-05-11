@@ -1,93 +1,54 @@
 // src/dashboard/player-meta.js
-// Module partagé pour gérer favoris et builds (sets prédéfinis).
-// Logique métier centrale :
-//   - Un favori est un instanceId d'item dans rh_player_favorites
-//   - Un build est { id, name, items: { slot: instanceId | null } }
-//   - Si un item est dans AU MOINS UN build, il est forcément favori
-//   - Si un item est retiré de tous les builds, son favori se retire aussi
-//   - Limite max 5 builds
+// Module partagé favoris + builds. Backend = api.js (Supabase).
 //
-// API publique :
-//   loadFavorites(), saveFavorites(set)
-//   loadBuilds(), saveBuilds(arr)
-//   isFavorite(instanceId)
-//   toggleFavorite(instanceId) -> bool (nouveau état)
-//   isInAnyBuild(instanceId) -> bool
-//   getBuildsContainingItem(instanceId) -> Build[]
-//   canDelete(instanceId) -> bool  (false si favori)
-//   syncFavoritesWithBuilds() -> recalcule auto-favoris depuis builds
+// IMPORTANT : pour éviter d'avoir tous les appels en async dans les vues,
+// on garde un CACHE EN MÉMOIRE qui est rafraîchi via `refreshMeta()` au boot
+// de la page, puis lu de façon synchrone par les helpers `isFavorite()`,
+// `isInAnyBuild()`, etc. À chaque mutation, le cache est mis à jour AVANT
+// de persister (optimistic update), et la persistance se fait en arrière-plan.
 //
-//   createBuild(name, items) -> Build (auto-marque les items en favori, return null si >= 5)
-//   updateBuild(id, partialChanges) -> Build
-//   deleteBuild(id) -> bool (retire les favoris devenus orphelins)
-//   getBuild(id) -> Build
-//   MAX_BUILDS = 5
+// Usage type :
+//   import { refreshMeta, isFavorite, toggleFavorite, ... } from './player-meta.js';
+//   await refreshMeta();      // 1 fois au boot, après requireAuth()
+//   const fav = isFavorite(itemId); // sync
+//   await toggleFavorite(itemId);   // async (persiste)
+
+import {
+  loadFavorites as apiLoadFavorites,
+  saveFavorites as apiSaveFavorites,
+  loadBuilds as apiLoadBuilds,
+  saveBuilds as apiSaveBuilds,
+} from './api.js';
 
 export const MAX_BUILDS = 5;
 
-const STORAGE_KEYS = {
-  favorites: 'rh_player_favorites',
-  builds:    'rh_player_builds',
+// === CACHE ===
+let CACHE = {
+  favorites: new Set(),
+  builds: [],
+  loaded: false,
 };
 
-// === FAVORITES (Set<string instanceId>) ===
-export function loadFavorites(){
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.favorites);
-    const arr = raw ? JSON.parse(raw) : [];
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch(e){ return new Set(); }
+/**
+ * Recharge favoris + builds depuis l'API. À appeler 1 fois au boot après requireAuth().
+ */
+export async function refreshMeta(){
+  const [favs, builds] = await Promise.all([
+    apiLoadFavorites(),
+    apiLoadBuilds(),
+  ]);
+  CACHE.favorites = favs;
+  CACHE.builds = builds;
+  CACHE.loaded = true;
 }
-export function saveFavorites(favSet){
-  localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify([...favSet]));
-}
+
+// === FAVORITES ===
 export function isFavorite(instanceId){
-  return loadFavorites().has(instanceId);
+  return CACHE.favorites.has(instanceId);
 }
 
-/**
- * Toggle d'un favori manuel. Si l'item est dans un build et qu'on tente de retirer,
- * on REFUSE (l'item reste favori automatiquement à cause du build).
- * Retourne le nouvel état.
- */
-export function toggleFavorite(instanceId){
-  const favs = loadFavorites();
-  if(favs.has(instanceId)){
-    // Vérifie si on a le droit de retirer (pas dans un build)
-    if(isInAnyBuild(instanceId)){
-      return true; // reste favori, on n'a pas pu changer
-    }
-    favs.delete(instanceId);
-  } else {
-    favs.add(instanceId);
-  }
-  saveFavorites(favs);
-  return favs.has(instanceId);
-}
-
-// === BUILDS (array<Build>) ===
-// Build = { id: string, name: string, items: { [slot]: instanceId | null } }
-export function loadBuilds(){
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.builds);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch(e){ return []; }
-}
-export function saveBuilds(arr){
-  localStorage.setItem(STORAGE_KEYS.builds, JSON.stringify(arr));
-}
-export function getBuild(id){
-  return loadBuilds().find(b => b.id === id) || null;
-}
-
-/**
- * Retourne tous les builds qui contiennent cet instanceId.
- */
 export function getBuildsContainingItem(instanceId){
-  return loadBuilds().filter(b => {
-    return Object.values(b.items || {}).some(id => id === instanceId);
-  });
+  return CACHE.builds.filter(b => Object.values(b.items || {}).some(id => id === instanceId));
 }
 export function isInAnyBuild(instanceId){
   return getBuildsContainingItem(instanceId).length > 0;
@@ -101,88 +62,94 @@ export function canDelete(instanceId){
 }
 
 /**
- * Resynchronise les favoris en fonction des builds :
- *   - tous les items dans un build sont marqués favoris (ajout auto)
- *   - les items qui n'étaient favoris QUE par le fait d'être dans un build
- *     mais qui n'y sont plus, sont retirés (best-effort : on retire ceux qui ne sont plus
- *     dans aucun build mais le user peut les remettre manuellement)
- *
- * Pour simplifier, on adopte la règle :
- *   - Au moment d'ajouter à un build : on add aux favoris
- *   - Au moment de retirer d'un build : si plus dans aucun build, on retire des favoris
- * Cette fonction sert principalement après une suppression de build.
+ * Toggle un favori. Refuse si l'item est dans un build (il reste favori auto).
+ * Retourne le nouvel état booléen.
  */
-export function syncFavoritesAfterBuildChange(removedInstanceIds = []){
-  const favs = loadFavorites();
-  removedInstanceIds.forEach(id => {
-    if(!isInAnyBuild(id)){
-      favs.delete(id);
+export async function toggleFavorite(instanceId){
+  if(CACHE.favorites.has(instanceId)){
+    if(isInAnyBuild(instanceId)){
+      // Verrouillé par un build, on garde favori
+      return true;
     }
-  });
-  saveFavorites(favs);
+    CACHE.favorites.delete(instanceId);
+  } else {
+    CACHE.favorites.add(instanceId);
+  }
+  await apiSaveFavorites(CACHE.favorites);
+  return CACHE.favorites.has(instanceId);
 }
 
+// === BUILDS ===
+export function loadBuildsSync(){ return [...CACHE.builds]; }
+export function getBuild(id){ return CACHE.builds.find(b => b.id === id) || null; }
+
 /**
- * Crée un nouveau build. Marque tous ses items comme favoris.
- * @param {string} name
- * @param {object} items - { mainhand: instanceId, offhand: instanceId, ... } (slots vides = null ou absent)
- * @returns {Build|null} null si limite atteinte
+ * Crée un nouveau build (marque ses items en favori). Renvoie le build créé ou null si plein.
  */
-export function createBuild(name, items){
-  const builds = loadBuilds();
-  if(builds.length >= MAX_BUILDS) return null;
+export async function createBuild(name, items){
+  if(CACHE.builds.length >= MAX_BUILDS) return null;
   const id = `build_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  const build = { id, name: String(name || '').trim() || 'Sans nom', items: items || {} };
-  builds.push(build);
-  saveBuilds(builds);
-  // Auto-favori des items
-  const favs = loadFavorites();
-  Object.values(build.items).forEach(instanceId => {
-    if(instanceId) favs.add(instanceId);
-  });
-  saveFavorites(favs);
+  const build = {
+    id,
+    name: String(name || '').trim() || 'Sans nom',
+    items: items || {},
+  };
+  CACHE.builds.push(build);
+  // Auto-favori les items du build
+  Object.values(build.items).forEach(iid => { if(iid) CACHE.favorites.add(iid); });
+  await Promise.all([
+    apiSaveBuilds(CACHE.builds),
+    apiSaveFavorites(CACHE.favorites),
+  ]);
   return build;
 }
 
 /**
- * Met à jour un build (name et/ou items).
- * Réajuste les favoris : ajoute pour les nouveaux items, retire pour les anciens qui ne sont plus liés à aucun build.
+ * Update un build (name et/ou items). Réajuste les favoris.
  */
-export function updateBuild(id, changes){
-  const builds = loadBuilds();
-  const idx = builds.findIndex(b => b.id === id);
+export async function updateBuild(id, changes){
+  const idx = CACHE.builds.findIndex(b => b.id === id);
   if(idx === -1) return null;
-  const old = builds[idx];
+  const old = CACHE.builds[idx];
   const oldItemIds = new Set(Object.values(old.items || {}).filter(Boolean));
-
   if(typeof changes.name === 'string') old.name = changes.name.trim() || 'Sans nom';
   if(changes.items) old.items = changes.items;
-  builds[idx] = old;
-  saveBuilds(builds);
+  CACHE.builds[idx] = old;
 
-  // Ajoute favoris pour les nouveaux items
+  // Ajoute favoris pour nouveaux items
   const newItemIds = new Set(Object.values(old.items || {}).filter(Boolean));
-  const favs = loadFavorites();
-  newItemIds.forEach(iid => favs.add(iid));
-  saveFavorites(favs);
+  newItemIds.forEach(iid => CACHE.favorites.add(iid));
+  // Retire favoris pour items qui ne sont plus dans AUCUN build
+  oldItemIds.forEach(iid => {
+    if(!newItemIds.has(iid) && !isInAnyBuild(iid)){
+      CACHE.favorites.delete(iid);
+    }
+  });
 
-  // Retire les favoris pour ceux qui n'étaient là QUE par ce build et n'y sont plus
-  const removed = [...oldItemIds].filter(iid => !newItemIds.has(iid));
-  syncFavoritesAfterBuildChange(removed);
-
+  await Promise.all([
+    apiSaveBuilds(CACHE.builds),
+    apiSaveFavorites(CACHE.favorites),
+  ]);
   return old;
 }
 
 /**
- * Supprime un build et nettoie les favoris associés (si plus dans aucun autre build).
+ * Supprime un build et nettoie les favoris orphelins.
  */
-export function deleteBuild(id){
-  const builds = loadBuilds();
-  const target = builds.find(b => b.id === id);
+export async function deleteBuild(id){
+  const target = CACHE.builds.find(b => b.id === id);
   if(!target) return false;
   const removedIds = Object.values(target.items || {}).filter(Boolean);
-  const remaining = builds.filter(b => b.id !== id);
-  saveBuilds(remaining);
-  syncFavoritesAfterBuildChange(removedIds);
+  CACHE.builds = CACHE.builds.filter(b => b.id !== id);
+  // Pour chaque item retiré : si plus dans aucun autre build, retire le favori
+  removedIds.forEach(iid => {
+    if(!isInAnyBuild(iid)){
+      CACHE.favorites.delete(iid);
+    }
+  });
+  await Promise.all([
+    apiSaveBuilds(CACHE.builds),
+    apiSaveFavorites(CACHE.favorites),
+  ]);
   return true;
 }

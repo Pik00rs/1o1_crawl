@@ -383,6 +383,14 @@
 </div>
 
 <script type="module">
+import { requireAuth } from './auth.js';
+import { injectUserBar } from './user-bar.js';
+
+// Garde d'auth : redirige vers login si non connecté
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+injectUserBar();
+
 import { generateDungeonRun, ROOM_TYPE_LABELS } from '../js/dungeon/generator.js';
 import { formatItem } from '../js/dungeon/loot-roller.js';
 import { BIOMES, RARITIES } from './ascension-data.js';
