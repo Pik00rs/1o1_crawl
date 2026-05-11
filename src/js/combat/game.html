@@ -1,0 +1,3398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Reactor Hollow — Combat</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0a0a0f;
+    color: #aaa;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  #game-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    z-index: 1;
+  }
+
+  /* ================================================================ TOP BAR ================================================================ */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 44px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.4));
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 10px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #top-left { display: flex; flex-direction: column; gap: 2px; pointer-events: auto; }
+  #title { color: #ff5722; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+  #turn-text { color: #888; font-size: 9px; letter-spacing: 1px; }
+
+  #top-right {
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.4);
+    padding: 6px 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+    min-width: 130px;
+  }
+  .top-line { display: flex; align-items: center; gap: 6px; font-size: 9px; }
+  .top-line .lab { color: #666; letter-spacing: 1px; min-width: 18px; }
+  .top-line .val { color: #fff; font-weight: 600; margin-left: auto; font-size: 9px; }
+  #hp-bar-mini { height: 4px; background: #1a0a0a; flex: 1; min-width: 50px; }
+  #hp-bar-mini-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.3s, background 0.3s; }
+  #ap-mini { display: flex; gap: 2px; flex: 1; min-width: 50px; }
+  .ap-mini-dot { width: 8px; height: 8px; border: 1px solid #4fc3f7; background: transparent; border-radius: 50%; }
+  .ap-mini-dot.full { background: #4fc3f7; box-shadow: 0 0 3px #4fc3f7; }
+
+  /* ================================================================ SIDE BUTTONS ================================================================ */
+  #side-left { position: fixed; top: 56px; left: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  #side-right { position: fixed; top: 56px; right: 8px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  .icon-btn {
+    width: 38px; height: 38px;
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.4);
+    color: #aee6ff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+    transition: all 0.15s;
+    font-family: inherit;
+    padding: 0;
+  }
+  .icon-btn:hover, .icon-btn:active {
+    background: rgba(79,195,247,0.2);
+    border-color: #4fc3f7;
+    transform: scale(1.05);
+  }
+  .icon-btn.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+  #zoom-display {
+    background: rgba(20,20,28,0.92);
+    border: 1px solid rgba(79,195,247,0.3);
+    width: 38px; padding: 3px 0;
+    text-align: center; font-size: 9px; color: #aaa;
+    backdrop-filter: blur(6px);
+    letter-spacing: 1px;
+  }
+
+  /* ================================================================ ACTION BAR ================================================================ */
+  #action-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    min-height: 78px;
+    background: rgba(0,0,0,0.92);
+    border-top: 1px solid rgba(79,195,247,0.4);
+    display: flex; gap: 3px;
+    padding: 5px;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+  }
+  .action-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    background: rgba(20,20,28,0.95);
+    border: 1px solid #2a2a30;
+    color: #aaa;
+    cursor: pointer;
+    padding: 5px 2px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: all 0.15s;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+  .action-btn:hover:not(.disabled), .action-btn:active:not(.disabled) { border-color: #4fc3f7; color: #fff; }
+  .action-btn.selected {
+    border-color: #4fc3f7; background: rgba(79,195,247,0.2);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(79,195,247,0.5) inset;
+  }
+  .action-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+  .action-btn.move { border-left: 3px solid #4fc3f7; }
+  .action-btn.attack { border-left: 3px solid #ff5722; }
+  .action-btn.spell { border-left: 3px solid #9c27b0; }
+  .action-btn.pass { border-left: 3px solid #888; }
+  .ab-icon { font-size: 16px; line-height: 1; margin-bottom: 2px; }
+  .ab-name {
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.3px;
+    color: #fff; text-align: center;
+    white-space: nowrap; overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+  }
+  .ab-cost { font-size: 8px; letter-spacing: 0.5px; margin-top: 1px; }
+  .ab-dmg {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.3px;
+    margin-top: 1px; color: #ffd060;
+    text-shadow: 0 0 4px rgba(255,208,96,0.4);
+  }
+  .action-btn.move .ab-cost { color: #4fc3f7; }
+  .action-btn.attack .ab-cost { color: #ff8a4d; }
+  .action-btn.spell .ab-cost { color: #ce93d8; }
+  .action-btn.pass .ab-cost { color: #888; }
+  .action-btn.attack .ab-dmg { color: #ff8a4d; }
+  .action-btn.spell .ab-dmg { color: #ce93d8; }
+  .ab-info-btn {
+    position: absolute; top: 3px; right: 4px;
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .ab-info-btn:hover, .ab-info-btn:active { color: #fff; background: rgba(79,195,247,0.3); }
+
+  /* ================================================================ ACTION INFO POPUP ================================================================ */
+  #action-info-popup {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 32px);
+    max-width: 360px;
+    background: rgba(10,10,15,0.97);
+    border: 1px solid #4fc3f7;
+    backdrop-filter: blur(10px);
+    padding: 12px 14px;
+    z-index: 22;
+    display: none;
+    box-shadow: 0 4px 24px rgba(79,195,247,0.25);
+    font-size: 10px; line-height: 1.55;
+  }
+  #action-info-popup .aip-title {
+    font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+    color: #fff;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #2a2a30;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  #action-info-popup .aip-row { display: flex; justify-content: space-between; padding: 3px 0; color: #aaa; }
+  #action-info-popup .aip-row .lbl { color: #666; letter-spacing: 1px; text-transform: uppercase; font-size: 9px; }
+  #action-info-popup .aip-row .val { color: #fff; font-weight: 600; }
+  #action-info-popup .aip-section { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #2a2a30; }
+  #action-info-popup .aip-desc { color: #888; font-style: italic; line-height: 1.5; margin-top: 6px; }
+  #action-info-popup .aip-close {
+    width: 20px; height: 20px;
+    border: 1px solid #4fc3f7;
+    background: transparent;
+    color: #aee6ff;
+    cursor: pointer;
+    font-family: inherit; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #action-info-popup .aip-close:hover { background: #4fc3f7; color: #000; }
+
+  /* ================================================================ PANELS ================================================================ */
+  .panel {
+    position: fixed;
+    top: 56px; bottom: 90px; left: 8px;
+    width: calc(100vw - 16px);
+    max-width: 380px;
+    background: rgba(10,10,15,0.97);
+    border: 1px solid #4fc3f7;
+    z-index: 50;
+    transform: translateX(-110%);
+    transition: transform 0.25s ease-out;
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+    padding: 14px;
+  }
+  .panel.open { transform: translateX(0); }
+  .panel.right { left: auto; right: 8px; transform: translateX(110%); }
+  .panel.right.open { transform: translateX(0); }
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2a2a30;
+  }
+  .panel-title { color: #4fc3f7; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+  .panel-close {
+    width: 26px; height: 26px;
+    border: 1px solid #4fc3f7;
+    background: transparent;
+    color: #aee6ff;
+    cursor: pointer;
+    font-family: inherit; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .panel-close:hover { background: #4fc3f7; color: #000; }
+  .panel-section { margin-bottom: 14px; }
+  .panel-section-title { color: #666; font-size: 9px; letter-spacing: 1.5px; margin-bottom: 6px; }
+
+  #minimap {
+    display: block; width: 100%;
+    height: auto; aspect-ratio: 14/10;
+    background: #000;
+    border: 1px solid #2a2a30;
+    cursor: crosshair;
+    image-rendering: pixelated;
+  }
+  .enemy-card {
+    background: rgba(255,82,82,0.08);
+    border-left: 2px solid #ff5252;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 10px; line-height: 1.5;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .enemy-card:hover { background: rgba(255,82,82,0.15); }
+  .enemy-card-name { color: #ff5252; font-weight: 600; letter-spacing: 1px; display: flex; justify-content: space-between; }
+  .enemy-card-bar { height: 4px; background: #1a0a0a; margin: 4px 0; }
+  .enemy-card-bar-fill { height: 100%; }
+  .enemy-card-info { color: #aaa; font-size: 9px; }
+
+  .status-pill {
+    display: inline-block;
+    padding: 3px 7px;
+    background: rgba(79,195,247,0.12);
+    border: 1px solid #4fc3f7;
+    color: #aee6ff;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    margin: 0 4px 4px 0;
+  }
+
+  #log-entries { font-size: 10px; line-height: 1.6; }
+  #log-entries div {
+    margin-bottom: 4px;
+    padding: 3px 6px;
+    background: rgba(255,255,255,0.02);
+    animation: logIn 0.3s ease-out;
+  }
+  @keyframes logIn { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+  .log-damage { color: #ff8a8a; }
+  .log-heal { color: #8bc34a; }
+  .log-status { color: #ffb74d; }
+  .log-info { color: #aaa; }
+  .log-combat-end { color: #ffeb3b; font-weight: 700; }
+
+  .opt-btn {
+    display: block; width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid #2a2a30;
+    color: #aaa;
+    font-family: inherit;
+    font-size: 10px; letter-spacing: 1px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    text-align: left;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .opt-btn:hover { border-color: #4fc3f7; color: #fff; }
+  .opt-btn.active { background: #4fc3f7; color: #000; border-color: #4fc3f7; }
+  .biome-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+
+  /* ================================================================ TARGETING HINT ================================================================ */
+  #targeting-hint {
+    position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
+    padding: 8px 14px;
+    background: rgba(0,0,0,0.92);
+    border: 1px solid #4fc3f7;
+    color: #4fc3f7;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    display: none;
+    z-index: 20;
+    text-align: center;
+  }
+
+  /* ================================================================ ACTOR HUD OVERLAY ================================================================ */
+  /* Overlay HTML par-dessus le canvas iso : mini HP bar + chiffres + icônes de statuts au-dessus de chaque actor */
+  #actor-hud-layer {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 18;
+  }
+  .actor-hud {
+    position: absolute;
+    transform-origin: center bottom;
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    pointer-events: none;
+    font-family: 'Courier New', monospace;
+  }
+  .ah-hp-wrap {
+    width: 56px; height: 12px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .ah-hp-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #c82828 0%, #ff5252 100%);
+    transition: width 0.2s ease-out, background 0.2s;
+  }
+  .ah-hp-fill.healthy { background: linear-gradient(90deg, #2ea83f 0%, #5fff8c 100%); }
+  .ah-hp-fill.medium  { background: linear-gradient(90deg, #c89030 0%, #ffd060 100%); }
+  .ah-hp-fill.low     { background: linear-gradient(90deg, #c82828 0%, #ff5252 100%); }
+  .ah-hp-fill.flash   { animation: hpFlash 0.4s ease-out; }
+  @keyframes hpFlash {
+    0% { box-shadow: 0 0 12px 4px rgba(255,255,255,0.8) inset, 0 0 12px rgba(255,255,255,0.5); }
+    100% { box-shadow: none; }
+  }
+  .ah-hp-text {
+    position: relative; z-index: 2;
+    font-size: 9px; font-weight: 700;
+    color: #fff; text-shadow: 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000;
+    letter-spacing: 0.3px;
+  }
+  .ah-statuses {
+    display: flex; gap: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 80px;
+  }
+  .ah-status {
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(255,180,80,0.6);
+    color: #ffb74d;
+    font-size: 10px;
+    padding: 1px 3px;
+    line-height: 1;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .ah-status .dur { font-size: 8px; color: #aaa; font-weight: 700; }
+  .ah-status.dmg-status { border-color: rgba(255,82,82,0.6); color: #ff8a80; }
+  .ah-status.cc-status  { border-color: rgba(206,147,216,0.6); color: #ce93d8; }
+  .ah-status.buff-status { border-color: rgba(95,255,140,0.6); color: #5fff8c; }
+  .float-text {
+    position: fixed;
+    font-weight: 700; font-size: 16px;
+    pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+    text-shadow: 0 0 4px currentColor, 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000;
+    z-index: 25;
+    transform: translate(-50%, 0);
+    letter-spacing: 0.5px;
+    font-family: 'Courier New', monospace;
+  }
+  .float-text.dmg { color: #ff8a4d; }
+  .float-text.dmg-fire { color: #ff5722; }
+  .float-text.dmg-ice { color: #4fc3f7; }
+  .float-text.dmg-shock { color: #ce93d8; }
+  .float-text.dmg-poison { color: #8bc34a; }
+  .float-text.dmg-slash { color: #ff5252; }
+  .float-text.dmg-pierce { color: #ffeb3b; }
+  .float-text.dmg-blunt { color: #bdbdbd; }
+  .float-text.crit {
+    font-size: 28px;
+    color: #ffd060;
+    animation: floatUpCrit 1.5s ease-out forwards;
+    text-shadow: 0 0 8px #ffd060, 0 0 16px rgba(255,208,96,0.6), 0 2px 0 #000, -1px 0 0 #000, 1px 0 0 #000;
+  }
+  .float-text.heal {
+    color: #5fff8c;
+    font-size: 16px;
+  }
+  .float-text.heal::before { content: '+'; }
+  .float-text.miss {
+    color: #aaa;
+    font-size: 13px;
+    font-style: italic;
+  }
+  .float-text.block {
+    color: #4fc3f7;
+    font-size: 14px;
+  }
+  @keyframes floatUp {
+    0%   { transform: translate(-50%, 0)     scale(1.2); opacity: 0; }
+    15%  { transform: translate(-50%, -8px)  scale(1);   opacity: 1; }
+    80%  { transform: translate(-50%, -45px) scale(1);   opacity: 1; }
+    100% { transform: translate(-50%, -60px) scale(0.9); opacity: 0; }
+  }
+  @keyframes floatUpCrit {
+    0%   { transform: translate(-50%, 0)     scale(0.5); opacity: 0; }
+    10%  { transform: translate(-50%, -5px)  scale(1.4); opacity: 1; }
+    20%  { transform: translate(-50%, -10px) scale(1.1); opacity: 1; }
+    80%  { transform: translate(-50%, -55px) scale(1.1); opacity: 1; }
+    100% { transform: translate(-50%, -70px) scale(1);   opacity: 0; }
+  }
+
+  /* ================================================================ TOUCH RETICLE ================================================================ */
+  #touch-reticle {
+    position: fixed;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 2.5px solid;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 28;
+    display: none;
+    transition: border-color 0.1s, box-shadow 0.1s;
+  }
+  #touch-reticle::before {
+    content: ''; position: absolute;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+  }
+  #touch-reticle::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%;
+    width: 28px; height: 28px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.5;
+  }
+  #touch-reticle.valid { border-color: #4caf50; color: #69f0ae; box-shadow: 0 0 16px rgba(76,175,80,0.6); }
+  #touch-reticle.attack { border-color: #f44336; color: #ff8a80; box-shadow: 0 0 16px rgba(244,67,54,0.6); }
+  #touch-reticle.spell { border-color: #9c27b0; color: #ce93d8; box-shadow: 0 0 16px rgba(156,39,176,0.6); }
+  #touch-reticle.invalid { border-color: #666; color: #888; opacity: 0.5; }
+
+  /* ================================================================ CONFIRM POPUP ================================================================ */
+  #confirm-popup {
+    position: fixed;
+    background: rgba(0,0,0,0.95);
+    border: 1.5px solid #4fc3f7;
+    backdrop-filter: blur(10px);
+    padding: 8px 10px 10px;
+    z-index: 29;
+    display: none;
+    transform: translate(-50%, 0);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    min-width: 180px;
+  }
+  #confirm-popup .cp-label {
+    font-size: 10px; letter-spacing: 1.5px; color: #fff;
+    margin-bottom: 6px; text-align: center; font-weight: 700;
+  }
+  #confirm-popup .cp-info {
+    font-size: 9px; color: #888; margin-bottom: 8px;
+    padding: 4px 6px; background: rgba(20,20,28,0.7);
+    border-left: 2px solid #4fc3f7;
+  }
+  #confirm-popup .cp-info-row {
+    display: flex; justify-content: space-between;
+    padding: 2px 0; font-family: inherit;
+  }
+  #confirm-popup .cp-info-row .lbl { color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+  #confirm-popup .cp-info-row .val { color: #fff; font-weight: 700; }
+  #confirm-popup .cp-info-row.dmg .val { color: #ffd060; }
+  #confirm-popup .cp-info-row.crit .val { color: #ff8a80; }
+  #confirm-popup .cp-info-row.status .val { color: #ffb74d; }
+  #confirm-popup .cp-info-row.target .val { color: #ff8a80; }
+  #confirm-popup .cp-buttons { display: flex; gap: 6px; }
+  #confirm-popup button {
+    width: 56px; height: 48px;
+    background: rgba(20,20,28,0.85);
+    border: 1.5px solid;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 18px; font-weight: 700;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: transform 0.1s, background 0.15s;
+  }
+  #confirm-popup button:active { transform: scale(0.92); }
+  #confirm-popup .cp-go { border-color: #4caf50; color: #4caf50; flex: 1; }
+  #confirm-popup .cp-go:hover, #confirm-popup .cp-go:active { background: rgba(76,175,80,0.25); }
+  #confirm-popup .cp-go .lab { font-size: 8px; letter-spacing: 1px; color: #69f0ae; margin-top: 2px; }
+  #confirm-popup .cp-cancel { border-color: #f44336; color: #f44336; flex: 1; }
+  #confirm-popup .cp-cancel:hover, #confirm-popup .cp-cancel:active { background: rgba(244,67,54,0.25); }
+  #confirm-popup .cp-cancel .lab { font-size: 8px; letter-spacing: 1px; color: #ff8a80; margin-top: 2px; }
+
+  /* ================================================================ COMBAT END MODAL ================================================================ */
+  #combat-end {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: rgba(10,10,15,0.98);
+    border: 2px solid;
+    padding: 30px 36px; min-width: 280px;
+    text-align: center; z-index: 200;
+    display: none;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+  }
+  #combat-end h2 { font-size: 24px; margin-bottom: 14px; letter-spacing: 3px; font-weight: 800; }
+  #combat-end button {
+    background: #4fc3f7; color: #000;
+    border: none; padding: 10px 20px; margin-top: 14px;
+    cursor: pointer; font-family: inherit; font-weight: 700;
+    letter-spacing: 1.5px; font-size: 11px;
+    text-transform: uppercase;
+  }
+  #combat-end button:hover { background: #6ed5ff; }
+
+  /* ================================================================ ERROR ================================================================ */
+  #error-display {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    display: none;
+    background: #2a0808;
+    border: 1px solid #ff5252;
+    padding: 16px;
+    color: #ff8a80;
+    font-size: 12px;
+    max-width: 80vw;
+    z-index: 100;
+  }
+  #error-display pre { background: rgba(0,0,0,0.4); padding: 8px; overflow-x: auto; font-size: 10px; color: #ffcdd2; margin-top: 8px; }
+
+  @keyframes loaderSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(700%); } }
+</style>
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<div id="touch-reticle"></div>
+
+<!-- Overlay HUD : HP bars + statuts au-dessus des actors -->
+<div id="actor-hud-layer"></div>
+
+<div id="confirm-popup">
+  <div class="cp-label" id="cp-action-label">▸ CONFIRMER</div>
+  <div class="cp-info" id="cp-action-info" style="display:none;"></div>
+  <div class="cp-buttons">
+    <button class="cp-cancel" id="cp-cancel-btn"><span>✗</span><span class="lab">CANCEL</span></button>
+    <button class="cp-go" id="cp-go-btn"><span>✓</span><span class="lab">GO</span></button>
+  </div>
+</div>
+
+<div id="error-display"></div>
+
+<div id="boot-loader" style="position:fixed; inset:0; background:#08080c; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; font-family:'JetBrains Mono', monospace;">
+  <div style="font-size:14px; letter-spacing:3px; color:#aee6ff;">▸ LOADING TILE LIBRARY</div>
+  <div style="width:200px; height:3px; background:#1a1a24; border-radius:2px; overflow:hidden;">
+    <div style="width:30%; height:100%; background:linear-gradient(90deg, transparent, #aee6ff, transparent); animation: loaderSlide 1.4s linear infinite;"></div>
+  </div>
+  <div style="font-size:9px; color:#666; letter-spacing:1px;">Rasterizing 150 SVG tiles…</div>
+</div>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div id="top-left">
+    <div id="title">▸ R_HOLLOW</div>
+    <div id="dungeon-hud" style="display:none; color:#ffd060; font-size:10px; letter-spacing:1.2px; margin-top:2px; text-shadow:0 0 6px rgba(255,208,96,0.4);"></div>
+    <div id="turn-text">TURN 1</div>
+  </div>
+  <div id="top-right">
+    <div class="top-line">
+      <span class="lab">HP</span>
+      <div id="hp-bar-mini"><div id="hp-bar-mini-fill"></div></div>
+      <span class="val" id="hp-text">100/100</span>
+    </div>
+    <div class="top-line">
+      <span class="lab">AP</span>
+      <div id="ap-mini"></div>
+      <span class="val" id="ap-text">6/6</span>
+    </div>
+  </div>
+</div>
+
+<!-- LEFT ICON BUTTONS (no map-builder per design decision) -->
+<div id="side-left">
+  <button class="icon-btn" id="btn-map" title="Map">🗺</button>
+  <button class="icon-btn" id="btn-stuff" title="Stuff &amp; stats">🎒</button>
+  <button class="icon-btn" id="btn-enemies" title="Enemies info">👹</button>
+  <button class="icon-btn" id="btn-log" title="Combat log">📜</button>
+  <button class="icon-btn" id="btn-options" title="Options">⚙</button>
+</div>
+
+<!-- RIGHT ICON BUTTONS -->
+<div id="side-right">
+  <button class="icon-btn" id="btn-zoom-in" title="Zoom in">+</button>
+  <div id="zoom-display">100%</div>
+  <button class="icon-btn" id="btn-zoom-out" title="Zoom out">−</button>
+  <button class="icon-btn" id="btn-center" title="Center camera">⊙</button>
+</div>
+
+<!-- TARGETING HINT -->
+<div id="targeting-hint">
+  <span id="targeting-text">▸ SELECT TARGET</span>
+</div>
+
+<!-- ACTION BAR -->
+<div id="action-bar"></div>
+
+<!-- ACTION INFO POPUP -->
+<div id="action-info-popup">
+  <div id="aip-content"></div>
+</div>
+
+<!-- =============================================================
+     PANEL : MAP
+     ============================================================= -->
+<div class="panel" id="panel-map">
+  <div class="panel-header">
+    <span class="panel-title">▸ MAP &amp; ENEMIES</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ MINI-MAP · TAP TO PAN</div>
+    <canvas id="minimap" width="280" height="200"></canvas>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ ENEMIES</div>
+    <div id="enemy-list-mini"></div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ YOUR STATUSES</div>
+    <div id="player-status-list">
+      <span style="color:#666; font-size:10px;">No active statuses</span>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================
+     PANEL : LOG
+     ============================================================= -->
+<div class="panel" id="panel-log">
+  <div class="panel-header">
+    <span class="panel-title">▸ COMBAT LOG</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div id="log-entries"></div>
+</div>
+
+<!-- =============================================================
+     PANEL : STUFF & STATS
+     ============================================================= -->
+<div class="panel" id="panel-stuff">
+  <div class="panel-header">
+    <span class="panel-title">▸ STUFF &amp; STATS</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ EQUIPMENT</div>
+    <div id="equipment-list"></div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ FINAL STATS</div>
+    <div id="final-stats"></div>
+  </div>
+</div>
+
+<!-- =============================================================
+     PANEL : ENEMIES
+     ============================================================= -->
+<div class="panel" id="panel-enemies">
+  <div class="panel-header">
+    <span class="panel-title">▸ ENEMIES</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div id="enemies-detail-list"></div>
+</div>
+
+<!-- =============================================================
+     PANEL : OPTIONS
+     ============================================================= -->
+<div class="panel right" id="panel-options">
+  <div class="panel-header">
+    <span class="panel-title">▸ OPTIONS</span>
+    <button class="panel-close" data-close>×</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ BIOME</div>
+    <div class="biome-grid" id="biome-buttons"></div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ DISPLAY</div>
+    <button class="opt-btn" id="opt-grid">Toggle GRID</button>
+    <button class="opt-btn" id="opt-night">Toggle NIGHT</button>
+    <button class="opt-btn" id="opt-bevel">Toggle BEVEL</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ ACTIONS</div>
+    <button class="opt-btn" id="opt-restart">▸ RESTART COMBAT</button>
+  </div>
+  <div class="panel-section">
+    <div class="panel-section-title">▸ NAV</div>
+    <a href="index.html" class="opt-btn" style="display:block; text-align:left; text-decoration:none;">DASHBOARD</a>
+  </div>
+</div>
+
+<!-- =============================================================
+     COMBAT END MODAL
+     ============================================================= -->
+<div id="combat-end">
+  <h2 id="end-title">VICTORY</h2>
+  <div id="end-content"></div>
+  <button onclick="restartCombat()">▶ RESTART</button>
+</div>
+
+<script type="module">
+// ============================================================================
+// IMPORTS — moteur + rendu iso + input
+// ============================================================================
+import { state, resetState } from './src/js/core/state.js';
+import { DATA, loadAllData } from './src/js/data/loader.js';
+import { createPlayer } from './src/js/entities/player.js';
+import { createEnemy } from './src/js/entities/enemy.js';
+import { computeInitiative, startTurn, getCurrentActor, endTurn } from './src/js/core/turn.js';
+import { getPlayerSkills, selectMove, selectSkill, executeAction } from './src/js/combat/actions.js';
+import { resetPerCombatFlags } from './src/js/combat/attack.js';
+import { getReachableCells } from './src/js/grid/pathfinding.js';
+import { isWall as gridIsWall, getActorAt, key as gridKey, getCellsInAOE } from './src/js/grid/grid.js';
+
+// === Supabase auth + API (pour persistance progression / chest / wallet) ===
+import { requireAuth } from './src/dashboard/auth.js';
+import {
+  markDungeonCleared as apiMarkCleared,
+  loadChest as apiLoadChest,
+  saveChest as apiSaveChest,
+  loadWallet as apiLoadWallet,
+  saveWallet as apiSaveWallet,
+} from './src/dashboard/api.js';
+
+// Garde d'auth : si l'utilisateur n'est pas connecté, on redirige vers login.
+// Vu que game.html peut être ouvert directement par URL, c'est une sécurité.
+const _authOk = await requireAuth();
+if(!_authOk) { throw new Error('redirected to login'); }
+
+import { renderFrame } from './src/js/render/iso-engine.js';
+import { TILE_W, TILE_H, screenToIso, isoToScreen } from './src/js/render/iso-projection.js';
+import { ParticleSystem } from './src/js/render/particles.js';
+import { rng, pickWeighted } from './src/js/render/iso-utils.js';
+import { getBiome, listBiomeConfigs, listBiomeIds, preloadAllBiomes } from './src/js/render/biomes/svg-loader.js';
+import { createIsoInput } from './src/js/render/iso-input.js';
+
+// ============================================================================
+// STUBS DOM : le moteur (turn.js, attack.js, etc.) appelle render()/log() qui
+// vont chercher des éléments du HTML legacy ('grid', 'log', 'actions'...).
+// On les crée en éléments cachés pour qu'aucun code legacy ne crash.
+// game.html pilote son propre rendu canvas, ces stubs sont invisibles.
+// ============================================================================
+function ensureStubElement(id, tag = 'div'){
+  if(document.getElementById(id)) return;
+  const el = document.createElement(tag);
+  el.id = id;
+  el.style.display = 'none';
+  document.body.appendChild(el);
+}
+[
+  'grid', 'timeline', 'log', 'actions', 'equipment', 'end-turn-btn',
+  'hp-fill', 'ap-fill', 'armor-text', 'status-text', 'player-name',
+].forEach(id => ensureStubElement(id));
+
+// ============================================================================
+// CANVAS SETUP
+// ============================================================================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const mctx = minimap.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+mctx.imageSmoothingEnabled = false;
+
+const viewport = { width: 0, height: 0 };
+function resize(){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  viewport.width = window.innerWidth;
+  viewport.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ============================================================================
+// VIEW STATE (caméra + options visuelles)
+// ============================================================================
+const view = { camX: 0, camY: 0, zoom: 1 };
+const visualOptions = { showGrid: false, bevel: true, night: false, fxLevel: 1 };
+const particles = new ParticleSystem();
+
+// ============================================================================
+// RENDER STATE — décor (tileGrid, biome) géré ici, le combat est dans state{}
+// ============================================================================
+const render = {
+  biomeId: 'inferno',
+  mapSeed: 7,
+  tileGrid: {},
+  hover: null,        // { gx, gy } sous le curseur
+  reachableMap: new Map(),  // pour afficher le coût AP du path
+  validTargetsSet: new Set(), // miroir de state.validTargets en Set "x,y"
+  aoePreviewSet: new Set(),
+  selectedAction: null, // skill sélectionné (référence vers state.selectedSkill)
+  openPanel: null,
+  time: 0,
+  // Animation des actors
+  actorAnims: new Map(), // actor.id -> { ax, ay, idle, target, moveT, moveFrom, path, pathStep }
+};
+
+// ============================================================================
+// CUSTOM RUN / MAP BUILDER : lecture des localStorage
+// Priorité : (1) Playtest run > (2) Map builder map > (3) tutorial par défaut
+// ============================================================================
+function readPlaytestRun(){
+  const urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get('run') !== 'custom') return null;
+  try {
+    const raw = localStorage.getItem('rh_active_run');
+    if(!raw) return null;
+    return JSON.parse(raw);
+  } catch(e){ return null; }
+}
+
+function readBuilderMap(){
+  try {
+    const raw = localStorage.getItem('reactor_hollow_map');
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    localStorage.removeItem('reactor_hollow_map');
+    return data;
+  } catch(e){ return null; }
+}
+
+// ============================================================================
+// GENERATION DU TILEGRID DE RENDU (décor seulement, indépendant du game state)
+// ============================================================================
+function genTileMap(builderMapData = null){
+  render.tileGrid = {};
+  const biome = getBiome(render.biomeId);
+  const r = rng(render.mapSeed * 7919 + render.biomeId.charCodeAt(0) * 13);
+  const hasTypes = biome.config.tileTypes && biome.config.tileTypes.length > 0 && biome.config.tileTypes[0] !== '_stub';
+
+  if(builderMapData && builderMapData.tiles){
+    // Utilise la map du builder
+    state.gridWidth = builderMapData.width;
+    state.gridHeight = builderMapData.height;
+    for(let y = 0; y < state.gridHeight; y++){
+      for(let x = 0; x < state.gridWidth; x++){
+        const tileId = (builderMapData.tiles[y] && builderMapData.tiles[y][x]) || null;
+        let cat = 'base';
+        if(tileId){
+          const m = tileId.match(/_([BFP])\d+$/);
+          if(m){
+            if(m[1] === 'F') cat = 'furnished';
+            else if(m[1] === 'P') cat = 'blocking';
+          }
+        }
+        let typeIdx;
+        if(cat === 'blocking' || !hasTypes){
+          typeIdx = hasTypes ? pickWeighted(biome.config.tileWeights, r()) : 0;
+        } else {
+          typeIdx = biome.config.tileTypes.indexOf(tileId);
+          if(typeIdx < 0) typeIdx = pickWeighted(biome.config.tileWeights, r());
+        }
+        const tileObj = {
+          type: typeIdx,
+          seed: (x*101 + y*239 + render.mapSeed*7) % 9999,
+          microElev: (Math.sin(x*1.7 + y*2.3)*0.5 + Math.cos(x*0.7 + y*1.4)*0.5) * 0.6,
+          tintShift: (r() - 0.5) * 0.18,
+          noiseSeeds: [r(), r(), r(), r(), r()],
+          isWall: false, prop: null,
+          builderTileId: tileId,
+        };
+        if(cat === 'blocking'){
+          tileObj.isWall = true;
+          tileObj.prop = tileId;
+          // Synchronise avec state.walls pour le pathfinding
+          state.walls.add(gridKey(x, y));
+        }
+        render.tileGrid[gridKey(x, y)] = tileObj;
+      }
+    }
+  } else {
+    // Génération aléatoire (pas de builder map)
+    for(let x = 0; x < state.gridWidth; x++){
+      for(let y = 0; y < state.gridHeight; y++){
+        const type = hasTypes ? pickWeighted(biome.config.tileWeights, r()) : 0;
+        render.tileGrid[gridKey(x, y)] = {
+          type,
+          seed: (x*101 + y*239 + render.mapSeed*7) % 9999,
+          microElev: (Math.sin(x*1.7 + y*2.3)*0.5 + Math.cos(x*0.7 + y*1.4)*0.5) * 0.6,
+          tintShift: (r() - 0.5) * 0.18,
+          noiseSeeds: [r(), r(), r(), r(), r()],
+          isWall: false, prop: null,
+        };
+      }
+    }
+    // Synchronise les walls de la room avec le tileGrid (pour le rendu)
+    for(const wallKey of state.walls){
+      const t = render.tileGrid[wallKey];
+      if(t){
+        t.isWall = true;
+        const propsArr = biome.config.props || [];
+        if(propsArr.length > 0){
+          t.prop = propsArr[(r() * propsArr.length) | 0];
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// DUNGEON HUD : affiche "Room X/N · BIOME D-level" pour les runs Ascension
+// ============================================================================
+const DUNGEON_BIOME_LABELS = {
+  inferno: '🔥 INFERNO', cryo: '❄ CRYO', toxic: '☣ TOXIC',
+  voidnet: '⚡ VOIDNET', crimson: '🩸 CRIMSON',
+};
+function updateDungeonHud(playtestRun){
+  const hud = document.getElementById('dungeon-hud');
+  if(!hud) return;
+  if(!playtestRun || !playtestRun.biomeId || typeof playtestRun.level !== 'number'){
+    hud.style.display = 'none';
+    hud.textContent = '';
+    return;
+  }
+  // Le run consomme la première room à chaque init, donc le total d'origine
+  // peut être lu via run.roomCount, et le current = roomCount - rooms.length + 1.
+  const total = playtestRun.roomCount || playtestRun.rooms.length;
+  const remaining = playtestRun.rooms.length;
+  const current = Math.max(1, total - remaining + 1);
+  const biomeLabel = DUNGEON_BIOME_LABELS[playtestRun.biomeId] || playtestRun.biomeId.toUpperCase();
+  hud.textContent = `${biomeLabel} · D${playtestRun.level} · ROOM ${current}/${total}`;
+  hud.style.display = 'block';
+}
+
+// ============================================================================
+// INIT COMBAT — lit playtest ou builder ou défaut, lance le moteur
+// ============================================================================
+async function initCombat(){
+  resetState();
+  if(typeof resetDungeonEndFlags === 'function') resetDungeonEndFlags();
+
+  // Cleanup overlays HUD précédents (changement de room ou nouveau combat)
+  if(typeof _actorHudEls !== 'undefined'){
+    for(const [, el] of _actorHudEls){ el.remove(); }
+    _actorHudEls.clear();
+    _actorHpLast.clear();
+  }
+
+  const playtestRun = readPlaytestRun();
+  const builderMap = readBuilderMap();
+
+  // Détermine la room à utiliser
+  let roomData;
+  let playerCfg = {};
+  const hasPlayerOverride = playtestRun && playtestRun.player && (playtestRun.player.equipment || playtestRun.player.stats);
+
+  if(playtestRun && playtestRun.rooms && playtestRun.rooms.length > 0){
+    roomData = playtestRun.rooms[0];
+    playerCfg = {
+      level: playtestRun.player?.level || 1,
+      stuff: playtestRun.player?.stuff || 'balanced',
+      customModifiers: playtestRun.player?.customModifiers || [],
+    };
+    if(playtestRun.player?.equipment){
+      playerCfg.equipment = playtestRun.player.equipment;
+    }
+    if(playtestRun.player?.stats){
+      playerCfg.stats = playtestRun.player.stats;
+    }
+    if(playtestRun.biomeId && ['cryo','inferno','toxic','crimson','voidnet'].includes(playtestRun.biomeId)){
+      render.biomeId = playtestRun.biomeId;
+    }
+    updateDungeonHud(playtestRun);
+  } else if(hasPlayerOverride){
+    // Mode debug-combat : pas de rooms, mais on veut quand même les stats custom du player
+    const tutorial = DATA.rooms.tutorial;
+    if(!tutorial) throw new Error('No tutorial room in DATA');
+    roomData = tutorial;
+    playerCfg = {
+      level: playtestRun.player?.level || 1,
+      stuff: playtestRun.player?.stuff || 'balanced',
+      customModifiers: playtestRun.player?.customModifiers || [],
+    };
+    if(playtestRun.player?.equipment) playerCfg.equipment = playtestRun.player.equipment;
+    if(playtestRun.player?.stats) playerCfg.stats = playtestRun.player.stats;
+    if(playtestRun.biomeId && ['cryo','inferno','toxic','crimson','voidnet'].includes(playtestRun.biomeId)){
+      render.biomeId = playtestRun.biomeId;
+    }
+    updateDungeonHud(null);
+  } else {
+    // Pas de playtest, on prend la room tutorial (par défaut)
+    const tutorial = DATA.rooms.tutorial;
+    if(!tutorial) throw new Error('No tutorial room in DATA');
+    roomData = tutorial;
+    updateDungeonHud(null);
+  }
+
+  // Si un builder map existe, il override les dimensions/walls de la room
+  if(builderMap){
+    state.gridWidth = builderMap.width;
+    state.gridHeight = builderMap.height;
+    state.walls = new Set();
+    // Les walls seront ajoutés dans genTileMap (pour les blocking tiles)
+    if(['cryo','inferno','toxic','crimson','voidnet'].includes(builderMap.biome)){
+      render.biomeId = builderMap.biome;
+    }
+  } else {
+    state.gridWidth = roomData.width;
+    state.gridHeight = roomData.height;
+    state.walls = new Set(roomData.walls || []);
+  }
+
+  // Crée le joueur
+  const startPos = roomData.playerStart || { x: 1, y: 2 };
+  state.player = createPlayer({ ...playerCfg, x: startPos.x, y: startPos.y });
+
+  // Reset les flags par-combat (firstHitConsumed, fortify, backstabbedTargets, etc.)
+  resetPerCombatFlags(state.player);
+
+  // === MULTI-ROOM HP PERSISTENCE ===
+  // Si on est dans un dungeon run et qu'un HP courant a été sauvegardé entre
+  // les rooms, on le restaure (sinon on garde le HP max comme set par createPlayer).
+  // Les effets/buffs/debuffs/cooldowns ne sont PAS persistés (volontairement,
+  // c'est la spec : "tout les effets se dissipent").
+  if(playtestRun && typeof playtestRun.playerHp === 'number' && playtestRun.playerHp > 0){
+    state.player.hp = Math.min(playtestRun.playerHp, state.player.maxHp);
+  }
+
+  // Crée les ennemis
+  state.enemies = (roomData.enemies || []).map((e, i) => {
+    const enemy = createEnemy(`${e.type}_${i}`, e.type, e.x, e.y);
+    // Override le nom avec celui d'Ascension (source de vérité côté UI player-facing)
+    if(e.displayName && enemy){
+      enemy.name = e.displayName;
+    }
+    return enemy;
+  });
+  state.actors = [state.player, ...state.enemies];
+  computeInitiative();
+
+  // Init anims pour tous les actors
+  render.actorAnims.clear();
+  for(const a of state.actors){
+    render.actorAnims.set(a.id, {
+      ax: a.x, ay: a.y,
+      idle: Math.random() * Math.PI * 2,
+      target: null, moveT: 0, moveFrom: null,
+      path: null, pathStep: 0,
+    });
+  }
+
+  // Génère le tileGrid de rendu (ajoutera les walls du builder dans state.walls)
+  genTileMap(builderMap);
+
+  // Démarre le tour
+  startTurn(getCurrentActor());
+
+  log('▸ Combat started in ' + render.biomeId.toUpperCase(), '#aee6ff');
+  log(`▸ ${state.enemies.length} enemy(ies) detected`, '#aaa');
+  if(state.player.level && state.player.stuffPreset){
+    log(`▸ Lvl ${state.player.level} · Stuff "${state.player.stuffPreset}" · ${state.player.maxHp} HP`, '#888');
+  }
+
+  refreshSelection();
+  updateUI();
+}
+
+// ============================================================================
+// SELECTION HELPERS
+// ============================================================================
+// Quand le moteur sélectionne un skill (state.selectedSkill, state.targetingMode,
+// state.validTargets), on doit synchroniser nos sets de rendu.
+
+function refreshSelection(){
+  // valid targets : state.validTargets est déjà un Set "x,y"
+  render.validTargetsSet = state.validTargets || new Set();
+  // reachable map (pour afficher coût AP du path)
+  if(state.targetingMode === 'move' && state.player && !state.player.isDead){
+    render.reachableMap = getReachableCells(state.player, state.player.ap);
+  } else {
+    render.reachableMap = new Map();
+  }
+  render.selectedAction = state.selectedSkill;
+}
+
+// Wrappers : on appelle les fonctions du moteur puis on resync le rendu.
+
+function doSelectMove(){
+  selectMove();
+  refreshSelection();
+  showTargetingHint('MOVE');
+  updateActionButtons();
+}
+
+function doSelectSkill(skill){
+  selectSkill(skill);
+  refreshSelection();
+  showTargetingHint(skill.name);
+  updateActionButtons();
+}
+
+function doExecuteAction(gx, gy){
+  if(state.combatOver) return;
+  // L'action doit être valide pour cette tile
+  if(!state.validTargets.has(gridKey(gx, gy))) return;
+
+  const skBefore = state.selectedSkill;
+
+  // Animation de mouvement si applicable
+  if(skBefore?.id === 'move'){
+    const path = bfsPath(state.player, gx, gy);
+    if(path && path.length > 0){
+      const anim = render.actorAnims.get(state.player.id);
+      if(anim){
+        anim.path = path;
+        anim.pathStep = 0;
+        anim.moveFrom = { x: anim.ax, y: anim.ay };
+        anim.target = { x: path[0].x, y: path[0].y };
+        anim.moveT = 0;
+      }
+    }
+  }
+
+  executeAction(gx, gy);
+  refreshSelection();
+  hideTargetingHint();
+  updateUI();
+
+  // Si après l'action c'est encore au joueur (cas typique), on rafraîchit
+  // Si c'est l'ennemi, le moteur s'occupe d'appeler endTurn() via setTimeout
+}
+
+function doEndTurn(){
+  if(state.combatOver) return;
+  const cur = getCurrentActor();
+  if(cur?.isPlayer){
+    log('▸ End of turn', '#666');
+    endTurn();
+    refreshSelection();
+    updateUI();
+  }
+}
+
+// ============================================================================
+// PATH POUR ANIMATION (BFS 8-dir, identique au moteur)
+// ============================================================================
+function bfsPath(actor, tx, ty){
+  if(actor.x === tx && actor.y === ty) return [];
+  const startK = actor.x + ',' + actor.y;
+  const cameFrom = new Map();
+  const visited = new Set([startK]);
+  const queue = [{ x: actor.x, y: actor.y }];
+  while(queue.length){
+    const cur = queue.shift();
+    if(cur.x === tx && cur.y === ty){
+      const path = [];
+      let k = cur.x + ',' + cur.y;
+      while(k !== startK){
+        const [px, py] = k.split(',').map(Number);
+        path.push({ x: px, y: py });
+        k = cameFrom.get(k);
+      }
+      return path.reverse();
+    }
+    for(let dx = -1; dx <= 1; dx++){
+      for(let dy = -1; dy <= 1; dy++){
+        if(dx === 0 && dy === 0) continue;
+        const nx = cur.x + dx, ny = cur.y + dy;
+        const nk = nx + ',' + ny;
+        if(visited.has(nk)) continue;
+        if(nx < 0 || ny < 0 || nx >= state.gridWidth || ny >= state.gridHeight) continue;
+        if(gridIsWall(nx, ny)) continue;
+        const a = getActorAt(nx, ny);
+        if(a && a !== actor) continue;
+        visited.add(nk);
+        cameFrom.set(nk, cur.x + ',' + cur.y);
+        queue.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return null;
+}
+
+// ============================================================================
+// ANIMATION ACTORS
+// ============================================================================
+function updateActorAnims(){
+  for(const a of state.actors){
+    if(!a) continue;
+    const anim = render.actorAnims.get(a.id);
+    if(!anim) continue;
+    anim.idle += 0.06;
+
+    // Si la position logique a bougé sans qu'on ait une anim en cours, on snap
+    if(!anim.target && (a.x !== anim.ax || a.y !== anim.ay)){
+      // Animation simple vers la nouvelle position
+      anim.moveFrom = { x: anim.ax, y: anim.ay };
+      anim.target = { x: a.x, y: a.y };
+      anim.moveT = 0;
+    }
+
+    if(anim.target){
+      anim.moveT += 0.18;
+      if(anim.moveT >= 1){
+        anim.ax = anim.target.x;
+        anim.ay = anim.target.y;
+        // Path multi-step (pour le joueur en mouvement)
+        if(anim.path && anim.pathStep < anim.path.length - 1){
+          anim.pathStep++;
+          anim.moveFrom = { x: anim.ax, y: anim.ay };
+          anim.target = { x: anim.path[anim.pathStep].x, y: anim.path[anim.pathStep].y };
+          anim.moveT = 0;
+        } else {
+          anim.target = null;
+          anim.path = null;
+          anim.pathStep = 0;
+          anim.moveT = 0;
+          // Petit dust à l'arrivée
+          const sp = isoToScreen(anim.ax, anim.ay, getElev(anim.ax, anim.ay), viewport, view);
+          particles.emitDust(sp.x, sp.y + 4);
+        }
+      } else {
+        const t = anim.moveT;
+        const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+        anim.ax = anim.moveFrom.x + (anim.target.x - anim.moveFrom.x) * ease;
+        anim.ay = anim.moveFrom.y + (anim.target.y - anim.moveFrom.y) * ease;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// ACTORS POUR LE RENDU (combinent state + anim + visual config)
+// ============================================================================
+const ACTOR_VISUALS = {
+  player: {
+    archetype: 'hero',
+    bodyColor: '#3a4a5c', accentColor: '#4fc3f7', glowColor: '#aee6ff',
+    skinColor: '#f4d4a8', hairColor: '#2c3640', capeColor: '#1a2230',
+  },
+  enemy_default: {
+    archetype: 'hero',
+    bodyColor: '#4a2c30', accentColor: '#ff8080', glowColor: '#ffaaaa',
+    skinColor: '#d4a890', hairColor: '#1a0808', capeColor: '#2a0a0a',
+  },
+  enemy_caster: {
+    archetype: 'hero',
+    bodyColor: '#5e2c70', accentColor: '#e040fb', glowColor: '#ce93d8',
+    skinColor: '#c0a4d0', hairColor: '#3a1c4c', capeColor: '#2a0a35',
+  },
+  enemy_brute: {
+    archetype: 'hero',
+    bodyColor: '#8b1f15', accentColor: '#ffb74d', glowColor: '#ff8a4d',
+    skinColor: '#a06850', hairColor: '#1a0a08', capeColor: '#3a0a05',
+  },
+};
+
+function getRenderActors(){
+  const out = [];
+  for(const a of state.actors){
+    if(!a || a.isDead) continue;
+    const anim = render.actorAnims.get(a.id) || { ax: a.x, ay: a.y, idle: 0, target: null };
+    let visual = ACTOR_VISUALS.enemy_default;
+    if(a.isPlayer) visual = ACTOR_VISUALS.player;
+    else if(a.ai === 'caster') visual = ACTOR_VISUALS.enemy_caster;
+    else if(a.ai === 'aggressive' && a.hp >= 25) visual = ACTOR_VISUALS.enemy_brute;
+    out.push({
+      ...visual,
+      isPlayer: a.isPlayer,
+      isDead: false,
+      gx: a.x, gy: a.y,
+      ax: anim.ax, ay: anim.ay,
+      idle: anim.idle,
+      target: anim.target,
+      hp: a.hp, maxHp: a.maxHp,
+      armor: a.armor || 0,
+      dodge: a.dodgeChance || 0,
+      fireRes: a.fireResist || 0,
+      name: (a.name || '?').toUpperCase(),
+      tier: a.isPlayer ? '' : ((a.ai || '').toUpperCase()),
+      // intent désactivé (decision: just HP+name pour ennemis)
+      intent: null,
+    });
+  }
+  return out;
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+function getElev(gx, gy){
+  const t = render.tileGrid[gridKey(gx, gy)];
+  return t ? t.microElev : 0;
+}
+
+function getValidityAt(gx, gy){
+  const k = gridKey(gx, gy);
+  if(!state.validTargets || !state.validTargets.has(k)) return null;
+  if(state.targetingMode === 'move') return 'valid';
+  const sk = state.selectedSkill;
+  if(sk?.type === 'spell') return 'spell';
+  if(sk?.type === 'attack') return 'attack';
+  return null;
+}
+
+// ============================================================================
+// INPUT (souris + touch via iso-input.js)
+// ============================================================================
+const reticleEl = document.getElementById('touch-reticle');
+const confirmPopupEl = document.getElementById('confirm-popup');
+const cpLabelEl = document.getElementById('cp-action-label');
+
+const inputHandler = createIsoInput({
+  canvas,
+  viewportRef: viewport,
+  viewRef: view,
+  gridSizeRef: { get gridW(){ return state.gridWidth; }, get gridH(){ return state.gridHeight; } },
+  getElev,
+  getValidity: getValidityAt,
+  hasActiveAction: () => !!state.selectedSkill && !state.combatOver,
+  onHover: (tile) => {
+    render.hover = tile;
+    updateAoePreview();
+  },
+  onSelect: (tile) => {
+    if(state.combatOver) return;
+    if(!state.selectedSkill) return;
+    doExecuteAction(tile.gx, tile.gy);
+  },
+  onCancel: () => {
+    if(state.selectedSkill){
+      state.selectedSkill = null;
+      state.targetingMode = null;
+      state.validTargets = new Set();
+      state.aoePreview = new Set();
+      refreshSelection();
+      hideTargetingHint();
+      updateActionButtons();
+    } else {
+      closeAllPanels();
+    }
+  },
+  onZoomChange: updateZoomDisplay,
+  reticleEl,
+  confirmPopupEl,
+  cpLabelEl,
+  cpGoBtn: document.getElementById('cp-go-btn'),
+  cpCancelBtn: document.getElementById('cp-cancel-btn'),
+  getActionLabel: (tile) => {
+    const sk = state.selectedSkill;
+    const infoEl = document.getElementById('cp-action-info');
+
+    // Move : info minimaliste
+    if(sk?.id === 'move'){
+      if(infoEl) infoEl.style.display = 'none';
+      return `▸ MOVE → (${tile.gx},${tile.gy})`;
+    }
+
+    if(!sk || (sk.type !== 'attack' && sk.type !== 'spell')){
+      if(infoEl) infoEl.style.display = 'none';
+      return `▸ ${sk?.name?.toUpperCase() || 'ACTION'}`;
+    }
+
+    // Attaque/sort : on construit le panneau info
+    const target = state.enemies.find(e => !e.isDead && e.x === tile.gx && e.y === tile.gy);
+    const summary = getSkillFullSummary(sk);
+    const rangeStr = summary.range ? `${summary.range[0]}-${summary.range[1]}` : '—';
+    const typeStr = summary.type.toUpperCase();
+    const typeColor = sk.type === 'spell' ? '#ce93d8' : '#ff8a4d';
+
+    const rows = [];
+    // Cible
+    if(target){
+      rows.push(`<div class="cp-info-row target"><span class="lbl">▸ Target</span><span class="val">${target.name.toUpperCase()} (${target.hp}/${target.maxHp})</span></div>`);
+    }
+    // Damage
+    rows.push(`<div class="cp-info-row dmg"><span class="lbl">▸ Damage</span><span class="val" style="color:${typeColor};">${rangeStr} ${typeStr}</span></div>`);
+    // Crit
+    if(summary.critChance > 0){
+      rows.push(`<div class="cp-info-row crit"><span class="lbl">▸ Crit</span><span class="val">${summary.critChance}% · ×${(1 + summary.critMult/100).toFixed(2)}</span></div>`);
+    }
+    // AOE
+    if(sk.aoe){
+      rows.push(`<div class="cp-info-row"><span class="lbl">▸ AOE</span><span class="val">${sk.aoe*2+1}×${sk.aoe*2+1}</span></div>`);
+    }
+    // Statuts
+    for(const s of summary.statuses){
+      rows.push(`<div class="cp-info-row status"><span class="lbl">▸ ${s.icon} ${s.name}</span><span class="val">${s.chance}% · ${s.duration}t</span></div>`);
+    }
+    // AP cost
+    rows.push(`<div class="cp-info-row"><span class="lbl">▸ Cost</span><span class="val">${sk.cost} AP</span></div>`);
+
+    if(infoEl){
+      infoEl.innerHTML = rows.join('');
+      infoEl.style.display = 'block';
+    }
+
+    if(sk.type === 'attack' && target){
+      return `▸ ${sk.name.toUpperCase()}`;
+    }
+    if(sk.type === 'spell'){
+      return `▸ ${sk.name.toUpperCase()} @ (${tile.gx},${tile.gy})`;
+    }
+    return `▸ ${sk.name.toUpperCase()}`;
+  },
+  getActionColor: () => {
+    const sk = state.selectedSkill;
+    if(sk?.id === 'move') return '#69f0ae';
+    if(sk?.type === 'attack') return '#ff8a80';
+    if(sk?.type === 'spell') return '#ce93d8';
+    return '#aee6ff';
+  },
+});
+
+function updateAoePreview(){
+  const sk = state.selectedSkill;
+  render.aoePreviewSet = new Set();
+  if(!sk?.aoe || !render.hover) return;
+  const cells = getCellsInAOE(render.hover.gx, render.hover.gy, sk.aoe);
+  for(const c of cells) render.aoePreviewSet.add(gridKey(c.x, c.y));
+}
+
+// Keyboard pan WASD
+const keys = {};
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = true;
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if(['w','a','s','d'].includes(k)) keys[k] = false;
+});
+
+// ============================================================================
+// UI : ACTION BAR
+// ============================================================================
+function rebuildActionBar(){
+  const bar = document.getElementById('action-bar');
+  bar.innerHTML = '';
+
+  const isPlayerTurn = getCurrentActor()?.isPlayer && !state.combatOver;
+
+  // Bouton MOVE (toujours premier)
+  const moveBtn = document.createElement('button');
+  moveBtn.className = 'action-btn move';
+  moveBtn.dataset.actionId = 'move';
+  moveBtn.innerHTML = `
+    <div class="ab-icon">🏃</div>
+    <div class="ab-name">MOVE</div>
+    <div class="ab-cost">1 AP / case</div>
+    <div class="ab-info-btn" data-info="move">ⓘ</div>
+  `;
+  if(!isPlayerTurn || state.player.ap < 1) moveBtn.classList.add('disabled');
+  if(state.selectedSkill?.id === 'move') moveBtn.classList.add('selected');
+  moveBtn.addEventListener('click', e => {
+    if(e.target.classList.contains('ab-info-btn')){ e.stopPropagation(); showActionInfo('move'); return; }
+    if(moveBtn.classList.contains('disabled')) return;
+    if(state.selectedSkill?.id === 'move'){
+      // Toggle off
+      state.selectedSkill = null;
+      state.targetingMode = null;
+      state.validTargets = new Set();
+      refreshSelection();
+      hideTargetingHint();
+      updateActionButtons();
+      return;
+    }
+    doSelectMove();
+    closeAllPanels();
+    hideActionInfo();
+  });
+  bar.appendChild(moveBtn);
+
+  // Boutons skills (depuis getPlayerSkills())
+  if(state.player && !state.player.isDead){
+    const skills = getPlayerSkills();
+    for(const sk of skills){
+      const btn = document.createElement('button');
+      const cssClass = sk.type === 'spell' ? 'spell' : 'attack';
+      btn.className = 'action-btn ' + cssClass;
+      btn.dataset.actionId = sk.id;
+      const cd = state.player.cooldowns[sk.id] || 0;
+      const cdStr = sk.cooldown ? (cd > 0 ? ` · CD${cd}` : ` · CD${sk.cooldown}`) : '';
+      const icon = sk.type === 'spell' ? (sk.damageType === 'fire' ? '🔥' : sk.damageType === 'ice' ? '❄️' : sk.damageType === 'shock' ? '⚡' : sk.damageType === 'poison' ? '☣️' : '✨') : '⚔';
+      const nameShort = sk.name.length > 10 ? sk.name.toUpperCase().slice(0, 9) + '…' : sk.name.toUpperCase();
+      const dmgStr = getSkillShortStats(sk);
+      const dmgLine = dmgStr ? `<div class="ab-dmg">${dmgStr}</div>` : '';
+      btn.innerHTML = `
+        <div class="ab-icon">${icon}</div>
+        <div class="ab-name" title="${sk.name}">${nameShort}</div>
+        <div class="ab-cost">${sk.cost} AP${cdStr}</div>
+        ${dmgLine}
+        <div class="ab-info-btn" data-info="${sk.id}">ⓘ</div>
+      `;
+      const isDisabled = !isPlayerTurn || state.player.ap < sk.cost || cd > 0;
+      if(isDisabled) btn.classList.add('disabled');
+      if(state.selectedSkill?.id === sk.id) btn.classList.add('selected');
+      btn.addEventListener('click', e => {
+        if(e.target.classList.contains('ab-info-btn')){
+          e.stopPropagation();
+          showActionInfoFromSkill(sk);
+          return;
+        }
+        if(btn.classList.contains('disabled')) return;
+        if(state.selectedSkill?.id === sk.id){
+          state.selectedSkill = null;
+          state.targetingMode = null;
+          state.validTargets = new Set();
+          refreshSelection();
+          hideTargetingHint();
+          updateActionButtons();
+          return;
+        }
+        doSelectSkill(sk);
+        closeAllPanels();
+        hideActionInfo();
+      });
+      bar.appendChild(btn);
+    }
+  }
+
+  // Bouton END TURN
+  const endBtn = document.createElement('button');
+  endBtn.className = 'action-btn pass';
+  endBtn.innerHTML = `
+    <div class="ab-icon">▶</div>
+    <div class="ab-name">END</div>
+    <div class="ab-cost">turn</div>
+  `;
+  if(!isPlayerTurn) endBtn.classList.add('disabled');
+  endBtn.addEventListener('click', () => {
+    if(endBtn.classList.contains('disabled')) return;
+    doEndTurn();
+  });
+  bar.appendChild(endBtn);
+}
+
+// =============================================================================
+// SKILL SUMMARY — helper qui calcule damage range + effets pour affichage
+// =============================================================================
+// Calcule le dmg range affiché pour un skill (en tenant compte de l'arme et damageMult).
+function getSkillDamageRange(skill){
+  // 1) Skill a son propre damage (sorts)
+  let range = null;
+  if(skill.damage && Array.isArray(skill.damage)){
+    range = [...skill.damage];
+  }
+  // 2) Sinon, prend l'arme source (attaques d'arme)
+  else if(skill.source?.damage && Array.isArray(skill.source.damage)){
+    range = [...skill.source.damage];
+  }
+  // 3) Sinon, prend le player.damage (poing nu fallback)
+  else if(state.player?.damage && Array.isArray(state.player.damage)){
+    range = [...state.player.damage];
+  }
+  if(!range) return null;
+
+  // Applique damageMult du skill (ex: heavy = ×1.5/1.6)
+  if(skill.damageMult && skill.damageMult !== 1){
+    range = [
+      Math.max(1, Math.round(range[0] * skill.damageMult)),
+      Math.max(1, Math.round(range[1] * skill.damageMult)),
+    ];
+  }
+
+  // Applique bonus élémentaire flat si type magique et arme matche
+  if(skill.damageType && state.player){
+    const flat =
+      skill.damageType === 'fire'   ? (state.player.bonusFire   || 0) :
+      skill.damageType === 'ice'    ? (state.player.bonusIce    || 0) :
+      skill.damageType === 'shock'  ? (state.player.bonusShock  || 0) :
+      skill.damageType === 'poison' ? (state.player.bonusPoison || 0) : 0;
+    if(flat > 0){
+      range[0] += flat;
+      range[1] += flat;
+    }
+  }
+  return range;
+}
+
+// Retourne une string courte pour affichage sous le bouton skill, ex: "4-7 dmg"
+function getSkillShortStats(skill){
+  const range = getSkillDamageRange(skill);
+  if(!range) return null;
+  return `${range[0]}-${range[1]}`;
+}
+
+// Retourne un résumé complet pour le confirm popup ou tooltip
+// Returns { range, type, statuses: [{id, name, chance, duration}], critChance, critMult }
+function getSkillFullSummary(skill){
+  const range = getSkillDamageRange(skill);
+  const type = skill.damageType || skill.source?.damageType || state.player?.damageType || 'blunt';
+  const statuses = [];
+  if(skill.applyStatus){
+    const sdef = DATA.statuses?.[skill.applyStatus.id];
+    statuses.push({
+      id: skill.applyStatus.id,
+      name: sdef?.name || skill.applyStatus.id,
+      icon: sdef?.icon || '◇',
+      chance: skill.applyStatus.chance ?? 100,
+      duration: skill.applyStatus.duration ?? 1,
+    });
+  }
+  const critChance = (state.player?.critChance || 5) + (skill.critBonus || 0);
+  const critMult = state.player?.critMultiplier || 50;
+  return { range, type, statuses, critChance, critMult };
+}
+
+function updateActionButtons(){
+  // Refresh complète (rapide). Plus simple que update sélectif.
+  rebuildActionBar();
+}
+
+// ============================================================================
+// ACTION INFO POPUP
+// ============================================================================
+const aipEl = document.getElementById('action-info-popup');
+const aipContent = document.getElementById('aip-content');
+
+function showActionInfo(actId){
+  if(actId === 'move'){
+    aipContent.innerHTML = `
+      <div class="aip-title">
+        <span style="color:#69f0ae;">▸ MOVE</span>
+        <button class="aip-close" id="aip-close-btn">×</button>
+      </div>
+      <div class="aip-row"><span class="lbl">▸ Cost</span><span class="val">1 AP / tile</span></div>
+      <div class="aip-row"><span class="lbl">▸ Direction</span><span class="val">8 (incl. diag)</span></div>
+      <div class="aip-desc">Move along a path. 1 AP per tile. Walls and enemies block the path.</div>
+    `;
+    aipEl.style.display = 'block';
+    document.getElementById('aip-close-btn').addEventListener('click', e => { e.stopPropagation(); hideActionInfo(); });
+  }
+}
+
+function showActionInfoFromSkill(sk){
+  const dmgStr = sk.damage ? `${sk.damage[0]}-${sk.damage[1]}` : '—';
+  const typeStr = sk.damageType ? sk.damageType.toUpperCase() : '—';
+  const rangeStr = sk.range ? sk.range : '—';
+  const aoeStr = sk.aoe ? `${sk.aoe*2+1}×${sk.aoe*2+1}` : 'Single';
+  const cdStr = sk.cooldown ? `${sk.cooldown} turn(s)` : 'None';
+  let typeColor = '#aee6ff';
+  if(sk.type === 'attack') typeColor = '#ff8a4d';
+  if(sk.type === 'spell') typeColor = '#ce93d8';
+
+  let html = `
+    <div class="aip-title">
+      <span style="color:${typeColor};">▸ ${sk.name.toUpperCase()}</span>
+      <button class="aip-close" id="aip-close-btn">×</button>
+    </div>
+    <div class="aip-row"><span class="lbl">▸ AP Cost</span><span class="val">${sk.cost} AP</span></div>
+    <div class="aip-row"><span class="lbl">▸ Cooldown</span><span class="val">${cdStr}</span></div>
+    <div class="aip-row"><span class="lbl">▸ Range</span><span class="val">${rangeStr}</span></div>
+    <div class="aip-row"><span class="lbl">▸ AOE</span><span class="val">${aoeStr}</span></div>
+    <div class="aip-section">
+      <div class="aip-row"><span class="lbl">▸ Damage</span><span class="val" style="color:${typeColor};">${dmgStr}</span></div>
+      <div class="aip-row"><span class="lbl">▸ Type</span><span class="val" style="color:${typeColor};">${typeStr}</span></div>
+      ${sk.damageMult && sk.damageMult !== 1 ? `<div class="aip-row"><span class="lbl">▸ Multiplier</span><span class="val">×${sk.damageMult}</span></div>` : ''}
+    </div>
+    ${sk.applyStatus ? `
+      <div class="aip-section">
+        <div class="aip-row"><span class="lbl">▸ Status</span><span class="val" style="color:#ffb74d;">${sk.applyStatus.id}</span></div>
+        <div class="aip-row"><span class="lbl">▸ Chance</span><span class="val">${sk.applyStatus.chance ?? 100}%</span></div>
+        <div class="aip-row"><span class="lbl">▸ Duration</span><span class="val">${sk.applyStatus.duration} turn(s)</span></div>
+      </div>
+    ` : ''}
+    ${sk.source ? `
+      <div class="aip-section">
+        <div class="aip-row"><span class="lbl">▸ Source</span><span class="val" style="color:#aee6ff; font-size:9px;">${sk.source.name || ''}</span></div>
+      </div>
+    ` : ''}
+    ${sk.description ? `<div class="aip-desc">${sk.description}</div>` : ''}
+  `;
+  aipContent.innerHTML = html;
+  aipEl.style.display = 'block';
+  document.getElementById('aip-close-btn').addEventListener('click', e => { e.stopPropagation(); hideActionInfo(); });
+}
+
+function hideActionInfo(){
+  aipEl.style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if(aipEl.style.display !== 'block') return;
+  if(e.target.closest('#action-info-popup')) return;
+  if(e.target.classList.contains('ab-info-btn')) return;
+  hideActionInfo();
+});
+
+// ============================================================================
+// UI : top bar, panels, etc.
+// ============================================================================
+// updateLightUI : rafraîchit HP/AP/turn (appelé à chaque tick = 60fps)
+// updateUI : rebuild complet (action bar, panels) — appelé sur events
+function updateLightUI(){
+  if(!state.player) return;
+  // HP
+  const hpFill = document.getElementById('hp-bar-mini-fill');
+  const ratio = Math.max(0, state.player.hp) / state.player.maxHp;
+  hpFill.style.width = `${ratio * 100}%`;
+  hpFill.style.background = ratio > 0.5 ? 'linear-gradient(90deg,#4caf50,#8bc34a)' : ratio > 0.25 ? '#ffb300' : '#f44336';
+  document.getElementById('hp-text').textContent = `${Math.max(0, state.player.hp)}/${state.player.maxHp}`;
+  // AP
+  const apMini = document.getElementById('ap-mini');
+  const maxAp = state.player.maxAp + (state.player.bonusAp || 0);
+  // Rebuild seulement si nb d'AP a changé (perf)
+  const expectedDots = maxAp;
+  if(apMini.children.length !== expectedDots){
+    apMini.innerHTML = '';
+    for(let i = 0; i < maxAp; i++){
+      const d = document.createElement('div');
+      d.className = 'ap-mini-dot';
+      apMini.appendChild(d);
+    }
+  }
+  for(let i = 0; i < maxAp; i++){
+    const d = apMini.children[i];
+    if(!d) continue;
+    d.classList.toggle('full', i < state.player.ap);
+  }
+  document.getElementById('ap-text').textContent = `${state.player.ap}/${maxAp}`;
+  // Turn
+  document.getElementById('turn-text').textContent = `TURN ${state.turn + 1}`;
+}
+
+function updateUI(){
+  if(!state.player) return;
+  updateLightUI();
+  rebuildActionBar();
+  if(render.openPanel === 'enemies') renderEnemiesPanel();
+  if(render.openPanel === 'stuff') renderStuffPanel();
+  if(render.openPanel === 'map'){ drawMinimap(); renderEnemyListMini(); renderPlayerStatusList(); }
+}
+
+// Détection d'un changement d'actor courant pour rebuild la action bar
+let _lastTurnIdx = -1;
+let _lastApValue = -1;
+function detectTurnChange(){
+  if(!state.player) return;
+  const idx = state.currentActorIdx;
+  const ap = state.player.ap;
+  if(idx !== _lastTurnIdx || ap !== _lastApValue){
+    _lastTurnIdx = idx;
+    _lastApValue = ap;
+    rebuildActionBar();
+    // Si le panel map est ouvert, le mettre à jour aussi (HP ennemis bouge)
+    if(render.openPanel === 'map'){ drawMinimap(); renderEnemyListMini(); }
+    if(render.openPanel === 'enemies') renderEnemiesPanel();
+  }
+}
+
+// ============================================================================
+// PANELS
+// ============================================================================
+function openPanel(id){
+  closeAllPanels();
+  const p = document.getElementById('panel-' + id);
+  if(p){
+    p.classList.add('open');
+    render.openPanel = id;
+    document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('btn-' + id);
+    if(btn) btn.classList.add('active');
+    if(id === 'map'){ drawMinimap(); renderEnemyListMini(); renderPlayerStatusList(); }
+    if(id === 'stuff') renderStuffPanel();
+    if(id === 'enemies') renderEnemiesPanel();
+  }
+}
+function closeAllPanels(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+  render.openPanel = null;
+}
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAllPanels));
+document.getElementById('btn-map').addEventListener('click', () => render.openPanel === 'map' ? closeAllPanels() : openPanel('map'));
+document.getElementById('btn-stuff').addEventListener('click', () => render.openPanel === 'stuff' ? closeAllPanels() : openPanel('stuff'));
+document.getElementById('btn-enemies').addEventListener('click', () => render.openPanel === 'enemies' ? closeAllPanels() : openPanel('enemies'));
+document.getElementById('btn-log').addEventListener('click', () => render.openPanel === 'log' ? closeAllPanels() : openPanel('log'));
+document.getElementById('btn-options').addEventListener('click', () => render.openPanel === 'options' ? closeAllPanels() : openPanel('options'));
+
+// ----- ENEMY LIST MINI (panel map) -----
+function renderEnemyListMini(){
+  const list = document.getElementById('enemy-list-mini');
+  if(!list) return;
+  list.innerHTML = '';
+  for(const e of state.enemies){
+    if(e.isDead){
+      const div = document.createElement('div');
+      div.className = 'enemy-card';
+      div.style.opacity = '0.3';
+      div.style.borderLeftColor = '#666';
+      div.innerHTML = `<div class="enemy-card-name"><span style="color:#666">${e.name}</span><span style="color:#666">DEAD</span></div>`;
+      list.appendChild(div);
+      continue;
+    }
+    const card = document.createElement('div');
+    card.className = 'enemy-card';
+    const r = e.hp / e.maxHp;
+    const col = r > 0.5 ? '#4caf50' : r > 0.25 ? '#ffb300' : '#f44336';
+    card.innerHTML = `
+      <div class="enemy-card-name"><span>${e.name}</span><span style="font-size:8px;color:#888;letter-spacing:1px;">${(e.ai||'').toUpperCase()}</span></div>
+      <div class="enemy-card-bar"><div class="enemy-card-bar-fill" style="width:${r*100}%; background:${col};"></div></div>
+      <div class="enemy-card-info">HP <span style="color:#fff;">${e.hp}/${e.maxHp}</span></div>
+    `;
+    card.addEventListener('click', () => {
+      const sp = isoToScreen(e.x, e.y, 0, viewport, { camX: 0, camY: 0, zoom: view.zoom });
+      view.camX = viewport.width/2 - sp.x;
+      view.camY = viewport.height/2 - sp.y;
+      closeAllPanels();
+    });
+    list.appendChild(card);
+  }
+}
+
+function renderPlayerStatusList(){
+  const list = document.getElementById('player-status-list');
+  if(!list) return;
+  if(!state.player.statuses?.length){
+    list.innerHTML = `<span style="color:#666; font-size:10px;">No active statuses</span>`;
+    return;
+  }
+  list.innerHTML = '';
+  for(const s of state.player.statuses){
+    const def = DATA.statuses?.[s.id];
+    const span = document.createElement('span');
+    span.className = 'status-pill';
+    span.textContent = `${def?.icon || '•'} ${def?.name || s.id} ${s.duration}t`;
+    list.appendChild(span);
+  }
+}
+
+// ----- ENEMIES PANEL (détaillé) -----
+function renderEnemiesPanel(){
+  const list = document.getElementById('enemies-detail-list');
+  if(!list) return;
+  list.innerHTML = '';
+  const alive = state.enemies.filter(e => !e.isDead);
+  const dead = state.enemies.filter(e => e.isDead);
+
+  if(alive.length === 0){
+    list.innerHTML = `<div style="padding:24px; text-align:center; color:#4caf50; font-size:11px; letter-spacing:1.5px;">▸ ALL ENEMIES DEFEATED</div>`;
+    return;
+  }
+  for(const e of alive){
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: rgba(20,8,8,0.6);
+      border: 1px solid #2a0808;
+      border-left: 3px solid #ff5252;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 10px; line-height: 1.5;
+      cursor: pointer;
+      transition: background 0.15s;
+    `;
+    const ratio = e.hp / e.maxHp;
+    const hpColor = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#f44336';
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="color:#ff5252; font-weight:700; letter-spacing:1.5px; font-size:12px;">${e.name}</span>
+        <span style="color:#666; font-size:8px; letter-spacing:1px;">${(e.ai||'').toUpperCase()}</span>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-bottom:2px;">
+          <span>HP</span><span style="color:#fff;">${e.hp}/${e.maxHp}</span>
+        </div>
+        <div style="height:6px; background:#1a0808; border:1px solid #3a1414;">
+          <div style="height:100%; width:${ratio*100}%; background:${hpColor}; transition:width 0.3s;"></div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed #2a1010;">
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">ARMOR</div>
+          <div style="color:#fff; font-weight:700; font-size:13px;">${e.armor || 0}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">DMG</div>
+          <div style="color:#fff; font-weight:700; font-size:11px;">${e.attackPower ? e.attackPower[0] + '-' + e.attackPower[1] : '?'}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:8px; color:#666; letter-spacing:1px;">RANGE</div>
+          <div style="color:#fff; font-weight:700; font-size:13px;">${e.range || 1}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px; padding-top:6px; border-top:1px dashed #2a1010; font-size:9px; color:#888;">
+        ▸ Pos : <span style="color:#fff;">(${e.x}, ${e.y})</span>
+        · Dist : <span style="color:#fff;">${Math.max(Math.abs(e.x-state.player.x), Math.abs(e.y-state.player.y))}</span>
+      </div>
+      <div style="margin-top:8px; font-size:9px; color:#666; letter-spacing:1px; text-align:right;">▸ TAP TO CENTER</div>
+    `;
+    card.addEventListener('click', () => {
+      const sp = isoToScreen(e.x, e.y, 0, viewport, { camX: 0, camY: 0, zoom: view.zoom });
+      view.camX = viewport.width/2 - sp.x;
+      view.camY = viewport.height/2 - sp.y;
+      closeAllPanels();
+    });
+    list.appendChild(card);
+  }
+  if(dead.length){
+    const sep = document.createElement('div');
+    sep.style.cssText = 'margin-top:14px; padding-top:10px; border-top:1px solid #2a2a30; font-size:9px; letter-spacing:1.5px; color:#666;';
+    sep.textContent = `▸ DEFEATED (${dead.length})`;
+    list.appendChild(sep);
+    for(const e of dead){
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:6px 8px; background:rgba(0,0,0,0.4); margin-top:4px; opacity:0.5; font-size:10px; color:#666; border-left:2px solid #444;';
+      div.innerHTML = `<span style="color:#888;">${e.name}</span> <span style="float:right; color:#666; font-size:9px; letter-spacing:1px;">DEAD</span>`;
+      list.appendChild(div);
+    }
+  }
+}
+
+// ----- STUFF PANEL -----
+function renderStuffPanel(){
+  const eq = state.player.equipment || {};
+  const list = document.getElementById('equipment-list');
+  list.innerHTML = '';
+
+  for(const [slotKey, item] of Object.entries(eq)){
+    if(!item) continue;
+    const card = document.createElement('div');
+    const tierColor = item.tierColor || '#4fc3f7';
+    card.style.cssText = `
+      background: rgba(20,20,28,0.6);
+      border: 1px solid #2a2a30;
+      border-left: 3px solid ${tierColor};
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 10px;
+      line-height: 1.5;
+    `;
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span style="font-weight:700; color:#fff; letter-spacing:1px;">${item.icon || ''} ${item.name}</span>
+      </div>
+      <div style="font-size:8px; letter-spacing:1px; color:#666; text-transform:uppercase; margin-bottom:6px;">
+        ${slotKey}
+      </div>
+    `;
+    if(item.damage){
+      html += `<div style="color:#ff8a4d;">▸ Damage <span style="color:#fff; float:right;">${item.damage[0]}-${item.damage[1]} ${item.damageType || ''}</span></div>`;
+    }
+    if(item.range){
+      html += `<div style="color:#888;">▸ Range <span style="color:#fff; float:right;">${item.range}</span></div>`;
+    }
+    if(item.spell){
+      const sp = DATA.spells?.[item.spell];
+      if(sp){
+        html += `<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #2a2a30;">`;
+        html += `<div><span style="color:#ce93d8;">✦ ${sp.name}</span> <span style="color:#888; float:right; font-size:9px;">${sp.cost} AP${sp.cooldown ? ' · CD' + sp.cooldown : ''}</span></div>`;
+        html += `<div style="font-size:9px; color:#666;">${sp.damage ? sp.damage[0] + '-' + sp.damage[1] : '?'} ${sp.damageType || ''} · Range ${sp.range}${sp.aoe ? ' · AOE' : ''}</div>`;
+        html += `</div>`;
+      }
+    }
+    if(item.passive){
+      html += `<div style="margin-top:6px; padding-top:6px; border-top:1px dashed #2a2a30;">`;
+      for(const [k, v] of Object.entries(item.passive)){
+        const isPct = ['lifesteal','critChance','dodgeChance','fireResist','iceResist','shockResist','poisonResist','magicResist','blockChance','ccReduction'].includes(k);
+        html += `<div style="color:#8bc34a;">+ ${v}${isPct ? '%' : ''} <span style="color:#aaa;">${k}</span></div>`;
+      }
+      html += `</div>`;
+    }
+    card.innerHTML = html;
+    list.appendChild(card);
+  }
+
+  // Final stats
+  const fs = state.player.finalStats || {};
+  const stats = document.getElementById('final-stats');
+  stats.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:6px;';
+  const rows = [
+    ['HP', state.player.maxHp, ''],
+    ['Damage', state.player.damage ? `${state.player.damage[0]}-${state.player.damage[1]}` : '-', ''],
+    ['Armor', state.player.armor, ''],
+    ['Crit', state.player.critChance, '%'],
+    ['Crit Mult', state.player.critMultiplier, '%'],
+    ['Dodge', state.player.dodgeChance, '%'],
+    ['Lifesteal', state.player.lifesteal, '%'],
+    ['HP Regen', state.player.hpRegen, '/turn'],
+    ['Bonus Fire', state.player.bonusFire, ''],
+    ['Fire Res', state.player.fireResist, '%'],
+    ['Ice Res', state.player.iceResist, '%'],
+  ];
+  for(const [label, val, suffix] of rows){
+    if(val === undefined || val === null) continue;
+    const cell = document.createElement('div');
+    cell.style.cssText = 'background: rgba(20,20,28,0.6); border: 1px solid #2a2a30; border-left: 2px solid #4fc3f7; padding: 6px 9px; font-size: 10px;';
+    cell.innerHTML = `
+      <div style="font-size:8px; letter-spacing:1px; color:#666; text-transform:uppercase;">${label}</div>
+      <div style="color:#fff; font-weight:700; font-size:12px; margin-top:2px;">${val}${suffix}</div>
+    `;
+    grid.appendChild(cell);
+  }
+  stats.appendChild(grid);
+}
+
+// ----- MINIMAP -----
+function drawMinimap(){
+  const w = minimap.width, h = minimap.height;
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0, 0, w, h);
+  const sx = w / state.gridWidth, sy = h / state.gridHeight;
+  const biome = getBiome(render.biomeId);
+  for(let x = 0; x < state.gridWidth; x++){
+    for(let y = 0; y < state.gridHeight; y++){
+      const t = render.tileGrid[gridKey(x, y)];
+      if(!t) continue;
+      mctx.fillStyle = t.isWall ? '#222' : (biome.config.base || '#1a1a24');
+      mctx.fillRect(x * sx, y * sy, sx - 0.3, sy - 0.3);
+    }
+  }
+  if(state.player){
+    mctx.fillStyle = '#4fc3f7';
+    mctx.fillRect(state.player.x * sx - 1, state.player.y * sy - 1, sx + 2, sy + 2);
+  }
+  for(const e of state.enemies){
+    if(e.isDead) continue;
+    mctx.fillStyle = '#ff5252';
+    mctx.fillRect(e.x * sx - 1, e.y * sy - 1, sx + 2, sy + 2);
+  }
+}
+
+minimap.addEventListener('click', e => {
+  const r = minimap.getBoundingClientRect();
+  const mx = (e.clientX - r.left) / r.width;
+  const my = (e.clientY - r.top) / r.height;
+  const gx = mx * state.gridWidth;
+  const gy = my * state.gridHeight;
+  const sp = isoToScreen(gx, gy, 0, viewport, { camX: 0, camY: 0, zoom: view.zoom });
+  view.camX = viewport.width/2 - sp.x;
+  view.camY = viewport.height/2 - sp.y;
+  closeAllPanels();
+});
+
+// ----- TARGETING HINT -----
+function showTargetingHint(name){
+  const t = document.getElementById('targeting-hint');
+  t.style.display = 'block';
+  document.getElementById('targeting-text').textContent = `▸ TARGET FOR ${name.toUpperCase()} · ESC TO CANCEL`;
+}
+function hideTargetingHint(){
+  document.getElementById('targeting-hint').style.display = 'none';
+  inputHandler.hideReticle();
+  inputHandler.hideConfirmPopup();
+}
+
+// ----- LOG -----
+// Wrapper autour du log() du moteur. On push dans state.log via le moteur,
+// et c'est syncLogPanel() qui s'occupe d'ajouter au DOM (single source of truth).
+function log(msg, type = 'info'){
+  state.log.push({ msg, type });
+}
+
+// syncLogPanel : observe la croissance de state.log et ajoute les nouveaux
+// messages au DOM. Appelé dans la boucle tick() (16ms).
+let _lastLogLen = 0;
+function syncLogPanel(){
+  if(!state.log) return;
+  if(state.log.length === _lastLogLen) return;
+  const entries = document.getElementById('log-entries');
+  if(!entries){ _lastLogLen = state.log.length; return; }
+  for(let i = _lastLogLen; i < state.log.length; i++){
+    const entry = state.log[i];
+    const div = document.createElement('div');
+    div.className = 'log-' + (entry.type || 'info');
+    div.innerHTML = entry.msg;
+    entries.appendChild(div);
+  }
+  while(entries.children.length > 50) entries.removeChild(entries.firstChild);
+  entries.scrollTop = entries.scrollHeight;
+  _lastLogLen = state.log.length;
+}
+
+// ----- COMBAT END HOOK -----
+// Le moteur gère le modal lui-même via ui/combat-end.js (il fait endEl.style.display = 'block').
+// Notre HTML a les mêmes IDs (combat-end, end-title, end-content) donc tout marche
+// out of the box. Le bouton "Restart" appelle window.restartCombat (défini ci-dessous).
+//
+// Pour les runs Ascension multi-room, on hijack restartCombat pour soit :
+//   - charger la prochaine room du donjon
+//   - afficher l'écran de défaite et retourner au hub
+//   - afficher l'écran de loot final et retourner au hub
+
+window.restartCombat = async function(){
+  const modal = document.getElementById('combat-end');
+  const raw = localStorage.getItem('rh_active_run');
+
+  // Pas de run Ascension = comportement original (Map Builder ou tutorial)
+  if(!raw){
+    if(modal) modal.style.display = 'none';
+    await initCombat();
+    return;
+  }
+
+  let run;
+  try { run = JSON.parse(raw); } catch(e){
+    if(modal) modal.style.display = 'none';
+    await initCombat();
+    return;
+  }
+
+  // Mode debug-combat : pas de logique de progression, juste restart le même combat
+  if(run.debugMode){
+    if(modal) modal.style.display = 'none';
+    await initCombat();
+    return;
+  }
+
+  // Détection victoire vs défaite. Le moteur affiche le modal soit quand
+  // tous les ennemis sont morts (victoire), soit quand le joueur meurt (défaite).
+  // On lit le titre du modal s'il est visible.
+  const endTitle = document.getElementById('end-title');
+  const titleText = (endTitle?.textContent || '').toUpperCase();
+  const playerDead = state.player && state.player.isDead;
+  const isDefeat = playerDead || titleText.includes('DEFEAT') || titleText.includes('GAME OVER') || titleText.includes('LOSE');
+
+  if(isDefeat){
+    // ÉCHEC : on perd la run, retour hub.
+    showDungeonDefeatScreen(run);
+    localStorage.removeItem('rh_active_run');
+    return;
+  }
+
+  // VICTOIRE : la première room est clean. On la pop.
+  run.rooms.shift();
+
+  if(run.rooms.length === 0){
+    // Toutes les rooms sont clean → succès du donjon.
+    await saveDungeonProgress(run);
+    showDungeonVictoryScreen(run);
+    localStorage.removeItem('rh_active_run');
+    return;
+  }
+
+  // Sauvegarde le HP courant du joueur pour qu'il soit restauré dans la prochaine room.
+  // Les effets/buffs/cooldowns ne sont volontairement PAS persistés (spec).
+  if(state.player && typeof state.player.hp === 'number'){
+    run.playerHp = state.player.hp;
+  }
+
+  // Sinon, on re-persiste la run réduite et on relance le combat avec la prochaine room.
+  localStorage.setItem('rh_active_run', JSON.stringify(run));
+  if(modal) modal.style.display = 'none';
+  await initCombat();
+};
+
+// ============================================================================
+// DUNGEON RUN : écrans victoire/défaite + sauvegarde de progression
+// ============================================================================
+function showDungeonVictoryScreen(run){
+  const modal = document.getElementById('combat-end');
+  const title = document.getElementById('end-title');
+  const content = document.getElementById('end-content');
+  if(!modal || !title || !content) return;
+
+  const biomeLabel = DUNGEON_BIOME_LABELS[run.biomeId] || run.biomeId.toUpperCase();
+  title.innerHTML = '▸ DUNGEON CLEAR ◂';
+  title.style.color = '#ffd060';
+  title.style.textShadow = '0 0 20px rgba(255,208,96,0.6)';
+
+  // Construit le HTML du loot — format v3 avec affixes
+  const loot = run.finalLoot || { items: [], resource: null };
+  const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  const itemsHtml = (loot.items || []).map(item => {
+    const rar = (item.rarity || 'common').toUpperCase();
+    const rarColors = {
+      COMMON: '#a89878', MAGIC: '#6aaaff', RARE: '#ffcc44',
+      EPIC: '#cc44ff', LEGENDARY: '#ff8800', SET: '#66ff66',
+    };
+    const color = rarColors[rar] || '#a89878';
+    const star = item.isBossDrop ? ' ★' : '';
+    const ilvlStr = ROMAN[item.ilvl] || (item.ilvl || '?');
+
+    // Compose le nom : préfixe + nom de base + suffixe (selon les affixes)
+    const prefix = (item.affixes || []).find(a => a.type === 'prefix');
+    const suffix = (item.affixes || []).find(a => a.type === 'suffix');
+    let displayName = item.itemId;
+    if(prefix) displayName = `${prefix.name} ${displayName}`;
+    if(suffix) displayName = `${displayName} ${suffix.name}`;
+
+    // Liste des affixes
+    const affixLines = (item.affixes || []).map(a => {
+      const aColor = a.type === 'prefix' ? '#6aaaff' : '#cc44ff';
+      const label = (a.label || '').replace('X', a.value);
+      return `<div style="color:${aColor}; font-size:9px;">+ ${label}</div>`;
+    }).join('');
+
+    // Implicit (armures)
+    let implicitLine = '';
+    if(item.implicit){
+      const label = (item.implicit.label || '').replace('X', item.implicit.value);
+      implicitLine = `<div style="color:#aae; font-size:9px;">◆ ${label}</div>`;
+    }
+
+    return `<div style="padding:6px 10px; margin:3px 0; background:#1a0a14; border-left:3px solid ${color}; text-align:left; font-size:11px;">
+      <div style="color:${color}; font-weight:bold;">${displayName}${star}</div>
+      <div style="color:#666; font-size:9px; margin-top:2px;">iLvl ${ilvlStr} · ${rar}</div>
+      ${implicitLine}
+      ${affixLines}
+    </div>`;
+  }).join('');
+
+  const resourceHtml = loot.resource ? `
+    <div style="margin-top:12px; padding:10px 12px; background:#1a0a14; border-left:3px solid #ffd060; text-align:left; display:flex; align-items:center; gap:10px;">
+      <div style="font-size:24px;">${loot.resource.icon}</div>
+      <div>
+        <div style="font-size:9px; color:#888; letter-spacing:1px;">${loot.resource.name.toUpperCase()}</div>
+        <div style="font-size:16px; color:#ffd060; font-weight:bold;">+${loot.resource.amount}</div>
+      </div>
+    </div>` : '';
+
+  content.innerHTML = `
+    <div style="font-size:11px; color:#888; letter-spacing:2px; margin-bottom:14px;">${biomeLabel} · D${run.level} · ${run.roomCount} rooms</div>
+    <div style="max-height:50vh; overflow-y:auto; margin-bottom:14px;">
+      ${itemsHtml}
+      ${resourceHtml}
+    </div>
+  `;
+
+  // Remplace le bouton RESTART par un bouton retour hub
+  const btn = modal.querySelector('button');
+  if(btn){
+    btn.textContent = '▶ COLLECT & RETURN';
+    btn.onclick = () => { window.location.href = './index.html'; };
+  }
+
+  modal.style.display = 'block';
+  updateDungeonHud(null); // efface le HUD top-bar
+}
+
+function showDungeonDefeatScreen(run){
+  const modal = document.getElementById('combat-end');
+  const title = document.getElementById('end-title');
+  const content = document.getElementById('end-content');
+  if(!modal || !title || !content) return;
+
+  const biomeLabel = DUNGEON_BIOME_LABELS[run.biomeId] || run.biomeId.toUpperCase();
+  const total = run.roomCount || (run.rooms.length);
+  const reachedRoom = total - run.rooms.length + 1;
+
+  title.innerHTML = '☠ YOU DIED ☠';
+  title.style.color = '#ff5252';
+  title.style.textShadow = '0 0 16px rgba(255,82,82,0.8)';
+
+  content.innerHTML = `
+    <div style="font-size:11px; color:#888; letter-spacing:2px; margin-bottom:10px;">${biomeLabel} · D${run.level}</div>
+    <div style="font-size:13px; color:#aaa; margin-bottom:6px;">Tombé en Room ${reachedRoom}/${total}</div>
+    <div style="font-size:11px; color:#666; line-height:1.5;">Le loot de ce donjon est perdu.</div>
+  `;
+
+  const btn = modal.querySelector('button');
+  if(btn){
+    btn.textContent = '⌂ RETOUR HUB';
+    btn.onclick = () => { window.location.href = './index.html'; };
+  }
+
+  modal.style.display = 'block';
+  updateDungeonHud(null);
+}
+
+async function saveDungeonProgress(run){
+  // Sauvegarde dans Supabase : marque le donjon cleared, push items dans chest, crédite ressources.
+  try {
+    // 1. Marquer le donjon comme cleared via api
+    if(run.biomeId && run.level){
+      try {
+        await apiMarkCleared(run.biomeId, run.level);
+      } catch(e){
+        console.error('[game] markDungeonCleared failed:', e);
+      }
+    }
+
+    // 2. Pousser les items du loot dans le chest Supabase
+    if(run.finalLoot && Array.isArray(run.finalLoot.items) && run.finalLoot.items.length > 0){
+      try {
+        const chest = await apiLoadChest();
+        run.finalLoot.items.forEach((item) => {
+          if(!item) return;
+          const safe = { ...item };
+          if(!safe.instanceId){
+            safe.instanceId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+          }
+          if(!safe.droppedAt) safe.droppedAt = Date.now();
+          chest.push(safe);
+        });
+        await apiSaveChest(chest);
+      } catch(e){
+        console.error('[game] saveChest after dungeon failed:', e);
+      }
+    }
+
+    // 3. Crédit ressources au wallet Supabase
+    if(run.finalLoot && run.finalLoot.resource){
+      try {
+        const wallet = await apiLoadWallet();
+        const resId = run.finalLoot.resource.id;
+        wallet[resId] = (wallet[resId] || 0) + (run.finalLoot.resource.amount || 0);
+        await apiSaveWallet(wallet);
+      } catch(e){
+        console.error('[game] saveWallet after dungeon failed:', e);
+      }
+    }
+  } catch(e){
+    console.error('Failed to save dungeon progress:', e);
+  }
+}
+
+// ============================================================================
+// ZOOM CONTROLS
+// ============================================================================
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+  view.zoom = Math.min(2.5, view.zoom * 1.15);
+  updateZoomDisplay();
+});
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+  view.zoom = Math.max(0.4, view.zoom / 1.15);
+  updateZoomDisplay();
+});
+document.getElementById('btn-center').addEventListener('click', () => {
+  view.camX = 0; view.camY = 0;
+});
+function updateZoomDisplay(){
+  document.getElementById('zoom-display').textContent = `${Math.round(view.zoom * 100)}%`;
+}
+
+// ============================================================================
+// OPTIONS
+// ============================================================================
+document.getElementById('opt-grid').addEventListener('click', e => {
+  visualOptions.showGrid = !visualOptions.showGrid;
+  e.target.classList.toggle('active', visualOptions.showGrid);
+});
+document.getElementById('opt-night').addEventListener('click', e => {
+  visualOptions.night = !visualOptions.night;
+  e.target.classList.toggle('active', visualOptions.night);
+});
+document.getElementById('opt-bevel').addEventListener('click', e => {
+  visualOptions.bevel = !visualOptions.bevel;
+  e.target.classList.toggle('active', !visualOptions.bevel);
+});
+document.getElementById('opt-restart').addEventListener('click', async () => {
+  closeAllPanels();
+  await window.restartCombat();
+});
+
+// ============================================================================
+// LOOP
+// ============================================================================
+// =============================================================================
+// COMBAT EVENTS → FLOAT TEXTS
+// Consomme state.combatEvents et spawn des éléments DOM .float-text.
+// Le ticker vide la queue. Chaque event est consommé une seule fois.
+// =============================================================================
+function spawnFloatText(text, screenX, screenY, cssClass = 'dmg', offsetMs = 0){
+  setTimeout(() => {
+    const el = document.createElement('div');
+    el.className = 'float-text ' + cssClass;
+    el.textContent = text;
+    el.style.left = screenX + 'px';
+    el.style.top = screenY + 'px';
+    document.body.appendChild(el);
+    // Auto-remove après animation (1.5s max pour les crits)
+    setTimeout(() => el.remove(), 1600);
+  }, offsetMs);
+}
+
+let _lastFloatStackY = new Map(); // pour stacker plusieurs floats sur même actor
+function getFloatScreenPos(gx, gy){
+  // Convertit position grille → écran CSS pixel (isoToScreen retourne déjà du CSS pixel
+  // car le canvas a un ctx.setTransform(dpr, dpr) qui scale tout le rendu).
+  const actor = state.player && state.player.x === gx && state.player.y === gy
+    ? state.player
+    : state.enemies.find(e => e.x === gx && e.y === gy && !e.isDead);
+
+  let ax = gx, ay = gy;
+  if(actor){
+    const anim = render.actorAnims.get(actor.id);
+    if(anim){ ax = anim.ax; ay = anim.ay; }
+  }
+  const elev = getElev ? getElev(gx, gy) : 0;
+  const sp = isoToScreen(ax, ay, elev, viewport, view);
+
+  // Stack si plusieurs floats récents sur la même cellule
+  const key = `${gx},${gy}`;
+  const now = Date.now();
+  const last = _lastFloatStackY.get(key);
+  let stackOffset = 0;
+  if(last && (now - last.t) < 600){
+    stackOffset = (last.offset || 0) + 18;
+  }
+  _lastFloatStackY.set(key, { t: now, offset: stackOffset });
+  if(_lastFloatStackY.size > 50){
+    for(const [k, v] of _lastFloatStackY){
+      if(now - v.t > 1500) _lastFloatStackY.delete(k);
+    }
+  }
+  // Offset vertical pour mettre le float au-dessus du sprite.
+  // TILE_H * view.zoom donne la hauteur d'une tile à l'écran, on prend ~1.5 tile au-dessus.
+  const spriteOffsetCss = (TILE_H || 32) * view.zoom * 1.5;
+  return {
+    x: sp.x,
+    y: sp.y - spriteOffsetCss - stackOffset,
+  };
+}
+
+function processCombatEvents(){
+  if(!state.combatEvents || state.combatEvents.length === 0) return;
+  const events = state.combatEvents;
+  state.combatEvents = [];
+  for(const evt of events){
+    if(evt.x == null || evt.y == null) continue;
+    const pos = getFloatScreenPos(evt.x, evt.y);
+
+    if(evt.type === 'damage'){
+      const dmgClass = `dmg-${evt.damageType || 'blunt'}`;
+      if(evt.isCrit){
+        spawnFloatText(`${evt.value}!`, pos.x, pos.y, 'crit');
+      } else {
+        const txt = evt.blocked ? `${evt.value} ⛨` : String(evt.value);
+        spawnFloatText(txt, pos.x, pos.y, dmgClass);
+      }
+    } else if(evt.type === 'heal'){
+      spawnFloatText(String(evt.value), pos.x, pos.y, 'heal');
+    } else if(evt.type === 'miss'){
+      spawnFloatText(evt.value, pos.x, pos.y, 'miss');
+    } else if(evt.type === 'status'){
+      // Affichage statut appliqué (peut être ajouté plus tard)
+    }
+  }
+}
+
+// =============================================================================
+// ACTOR HUDS : HP bar + statuts au-dessus de chaque actor
+// =============================================================================
+const _actorHudEls = new Map(); // actorId → DOM element
+const _actorHpLast = new Map(); // actorId → last HP (pour détecter flash)
+
+function getStatusCss(statusId){
+  // Map status → couleur category
+  if(['burning','bleeding','poisoned'].includes(statusId)) return 'dmg-status';
+  if(['stunned','frozen','chilled','shocked','paralyzed','electrocuted','sick'].includes(statusId)) return 'cc-status';
+  return 'buff-status';
+}
+
+function updateActorHuds(){
+  const layer = document.getElementById('actor-hud-layer');
+  if(!layer || !state.actors) return;
+
+  const seenIds = new Set();
+  // Offset vertical du HUD au-dessus du sprite (scale avec zoom).
+  // Le sprite occupe ~2 tiles de haut visuellement, on positionne le HUD ~1.5 tile au-dessus du sol.
+  const spriteOffsetCss = (TILE_H || 32) * view.zoom * 1.7;
+
+  for(const actor of state.actors){
+    if(!actor || actor.isDead){
+      // Si élément encore visible, on le retire
+      const el = _actorHudEls.get(actor?.id);
+      if(el){ el.remove(); _actorHudEls.delete(actor.id); }
+      continue;
+    }
+    const id = actor.id;
+    seenIds.add(id);
+
+    // Position screen via anim courant (isoToScreen → CSS pixels)
+    const anim = render.actorAnims.get(id) || { ax: actor.x, ay: actor.y };
+    const elev = getElev(actor.x, actor.y);
+    const sp = isoToScreen(anim.ax, anim.ay, elev, viewport, view);
+    const screenX = sp.x;
+    const screenY = sp.y - spriteOffsetCss;
+
+    let el = _actorHudEls.get(id);
+    if(!el){
+      el = document.createElement('div');
+      el.className = 'actor-hud';
+      // structure : HP bar + statuses
+      el.innerHTML = `
+        <div class="ah-hp-wrap">
+          <div class="ah-hp-fill"></div>
+          <div class="ah-hp-text"></div>
+        </div>
+        <div class="ah-statuses"></div>
+      `;
+      layer.appendChild(el);
+      _actorHudEls.set(id, el);
+    }
+    el.style.left = screenX + 'px';
+    el.style.top = screenY + 'px';
+    // Scale partiel avec le zoom (limité pour lisibilité)
+    const hudScale = Math.max(0.7, Math.min(1.4, view.zoom));
+    el.style.transform = `translate(-50%, -100%) scale(${hudScale})`;
+
+    // Update HP bar
+    const hpFill = el.querySelector('.ah-hp-fill');
+    const hpText = el.querySelector('.ah-hp-text');
+    const ratio = Math.max(0, Math.min(1, actor.hp / Math.max(1, actor.maxHp)));
+    hpFill.style.width = (ratio * 100) + '%';
+    hpFill.classList.toggle('healthy', ratio > 0.5);
+    hpFill.classList.toggle('medium', ratio > 0.25 && ratio <= 0.5);
+    hpFill.classList.toggle('low', ratio <= 0.25);
+    hpText.textContent = `${Math.max(0, Math.round(actor.hp))}/${actor.maxHp}`;
+
+    // Flash si HP a changé depuis dernière frame
+    const lastHp = _actorHpLast.get(id);
+    if(lastHp != null && lastHp !== actor.hp){
+      hpFill.classList.remove('flash');
+      // Force reflow pour relancer l'animation
+      void hpFill.offsetWidth;
+      hpFill.classList.add('flash');
+    }
+    _actorHpLast.set(id, actor.hp);
+
+    // Update statuses (mini icones)
+    const statusesEl = el.querySelector('.ah-statuses');
+    const statuses = actor.statuses || [];
+    if(statuses.length === 0){
+      statusesEl.innerHTML = '';
+    } else {
+      statusesEl.innerHTML = statuses.map(s => {
+        const def = DATA.statuses?.[s.id];
+        const icon = def?.icon || '◇';
+        const cls = getStatusCss(s.id);
+        return `<span class="ah-status ${cls}" title="${def?.name || s.id} (${s.duration}t)">${icon}<span class="dur">${s.duration}</span></span>`;
+      }).join('');
+    }
+  }
+
+  // Cleanup orphans (actors qu'on n'a pas vus cette frame — morts ou retirés)
+  for(const [id, el] of _actorHudEls){
+    if(!seenIds.has(id)){
+      el.remove();
+      _actorHudEls.delete(id);
+      _actorHpLast.delete(id);
+    }
+  }
+}
+
+function tick(){
+  updateActorAnims();
+  particles.update();
+  if(keys.w) view.camY += 5;
+  if(keys.s) view.camY -= 5;
+  if(keys.a) view.camX += 5;
+  if(keys.d) view.camX -= 5;
+  syncLogPanel();
+  updateLightUI();      // HP/AP/turn (cheap)
+  detectTurnChange();   // rebuild action bar quand l'actor change
+  detectDungeonRoomEnd(); // multi-room : auto-charge la prochaine room dès que clean
+  processCombatEvents();  // spawn float texts pour dmg/heal/miss
+  updateActorHuds();      // refresh mini HP bars + statuts au-dessus des actors
+}
+setInterval(tick, 16);
+
+// ============================================================================
+// MULTI-ROOM AUTO-TRANSITION
+// Pour les runs Ascension, dès que tous les ennemis sont morts (ou que le joueur
+// meurt), on auto-trigger la transition sans attendre que l'utilisateur clique
+// sur le bouton Restart du modal externe.
+// ============================================================================
+let _dungeonEndHandled = false;
+let _dungeonEndTriggerTime = 0;
+let _modalObserver = null;
+
+// Setup au boot : observer le modal combat-end et le cacher tant qu'on est
+// dans une run Ascension multi-room (sauf à la défaite ou victoire finale).
+function setupDungeonModalObserver(){
+  if(_modalObserver) return;
+  const modal = document.getElementById('combat-end');
+  if(!modal) return;
+
+  _modalObserver = new MutationObserver(() => {
+    // Si on est dans une run multi-room ET qu'on n'a pas encore montré
+    // notre propre écran final → cacher le modal du moteur externe.
+    if(localStorage.getItem('rh_active_run') && !_dungeonShowingFinalScreen){
+      if(modal.style.display !== 'none'){
+        modal.style.display = 'none';
+      }
+    }
+  });
+  _modalObserver.observe(modal, {
+    attributes: true,
+    attributeFilter: ['style', 'class'],
+    childList: true,
+    subtree: true,
+  });
+}
+
+// Flag : true quand on a explicitement déclenché un écran final (victory/defeat)
+// → laisse le modal s'afficher dans ce cas
+let _dungeonShowingFinalScreen = false;
+
+function detectDungeonRoomEnd(){
+  // Skip si pas de run Ascension
+  const raw = localStorage.getItem('rh_active_run');
+  if(!raw) { _dungeonEndHandled = false; return; }
+  if(_dungeonEndHandled) return;
+  if(!state.player || !state.enemies) return;
+
+  // Setup observer la première fois qu'on est dans un run
+  setupDungeonModalObserver();
+
+  const playerDead = state.player.isDead || state.player.hp <= 0;
+  const aliveEnemies = state.enemies.filter(e => !e.isDead && e.hp > 0);
+  const allEnemiesDead = state.enemies.length > 0 && aliveEnemies.length === 0;
+
+  if(!playerDead && !allEnemiesDead) return;
+
+  // Lance le timer si c'est la première fois qu'on détecte la fin
+  if(_dungeonEndTriggerTime === 0){
+    _dungeonEndTriggerTime = performance.now();
+    return;
+  }
+
+  // Délai de 800ms pour laisser jouer les anims de mort
+  if(performance.now() - _dungeonEndTriggerTime < 800) return;
+
+  // Maintenant on déclenche la transition
+  _dungeonEndHandled = true;
+  _dungeonEndTriggerTime = 0;
+
+  // Cache le modal externe s'il est apparu (au cas où l'observer arrive après)
+  const modal = document.getElementById('combat-end');
+  if(modal) modal.style.display = 'none';
+
+  // Joue la transition (fade noir + label) puis charge la suite
+  performRoomTransition();
+}
+
+async function performRoomTransition(){
+  const raw = localStorage.getItem('rh_active_run');
+  if(!raw){ window.restartCombat(); return; }
+  let run;
+  try { run = JSON.parse(raw); } catch(e){ window.restartCombat(); return; }
+
+  // Détecte victoire vs défaite
+  const playerDead = state.player && (state.player.isDead || state.player.hp <= 0);
+  const isFinalRoom = run.rooms.length === 1 && !playerDead; // après le shift il restera 0
+  const isDefeat = playerDead;
+
+  // Si défaite OU victoire finale → on autorise notre écran final, pas de fade
+  if(isDefeat || isFinalRoom){
+    _dungeonShowingFinalScreen = true;
+    window.restartCombat();
+    return;
+  }
+
+  // Sinon : transition mid-dungeon avec couloir + hero qui marche
+  const totalRooms = run.roomCount || run.rooms.length;
+  const remainingAfterShift = run.rooms.length - 1;
+  const nextRoomNum = totalRooms - remainingAfterShift + 1;
+  // Le label affiche la PROCHAINE room (celle qu'on s'apprête à entrer)
+  await showRoomTransitionOverlay(nextRoomNum, totalRooms, run.biomeId);
+  // Charge la prochaine room après que l'utilisateur ait cliqué CONTINUER
+  await window.restartCombat();
+  // Fade out
+  await hideRoomTransitionOverlay();
+}
+
+const RT_BIOME_LABELS = {
+  cryo:    { label: '❄ CRYO',    color: '#aee6ff' },
+  inferno: { label: '🔥 INFERNO', color: '#ff8a4d' },
+  toxic:   { label: '☣ TOXIC',   color: '#a8e065' },
+  voidnet: { label: '⚡ VOIDNET', color: '#3df0ff' },
+  crimson: { label: '🩸 CRIMSON', color: '#ff5252' },
+};
+
+let _rtAnimFrame = null;
+
+function ensureRoomTransitionOverlay(){
+  let el = document.getElementById('room-transition');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'room-transition';
+  el.style.cssText = `
+    position: fixed; inset: 0; z-index: 9999;
+    background: #000; opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px;
+    color: #ffd060;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    text-align: center;
+    padding: 24px 16px;
+    box-sizing: border-box;
+  `;
+  el.innerHTML = `
+    <div id="rt-biome" style="
+      font-size: 11px; letter-spacing: 4px; opacity: 0.85;
+      color: var(--rt-biome-color, #ffd060);
+      text-shadow: 0 0 8px var(--rt-biome-glow, rgba(255,208,96,0.4));
+    "></div>
+    <div id="rt-label" style="
+      font-size: 32px; font-weight: 800; letter-spacing: 4px;
+      text-shadow: 0 0 24px rgba(255,208,96,0.6);
+      line-height: 1;
+      white-space: nowrap;
+    "></div>
+    <div id="rt-hp" style="
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; letter-spacing: 2px;
+      color: #d8c8a0;
+      margin-top: 2px;
+    "></div>
+    <div id="rt-sub" style="
+      font-size: 10px; letter-spacing: 3px; opacity: 0.55;
+      margin-top: 4px;
+    ">▸ NEXT ROOM ◂</div>
+
+    <canvas id="rt-corridor" width="320" height="220" style="
+      width: min(360px, 78vw); height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      margin-top: 6px;
+      border: 1px solid #2a1830;
+      box-shadow: 0 0 28px rgba(255,170,32,0.15);
+    "></canvas>
+
+    <button id="rt-continue" style="
+      margin-top: 14px;
+      padding: 14px 36px;
+      background: #ffd060;
+      color: #0a0510;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      cursor: pointer;
+      min-height: 52px;
+      text-transform: uppercase;
+      transition: all 0.15s;
+      box-shadow: 0 0 18px rgba(255,208,96,0.5);
+    ">▸ CONTINUER ◂</button>
+  `;
+  document.body.appendChild(el);
+
+  const btn = el.querySelector('#rt-continue');
+  btn.addEventListener('mouseenter', () => { btn.style.background = '#ffe890'; btn.style.boxShadow = '0 0 28px rgba(255,208,96,0.85)'; });
+  btn.addEventListener('mouseleave', () => { btn.style.background = '#ffd060'; btn.style.boxShadow = '0 0 18px rgba(255,208,96,0.5)'; });
+  btn.addEventListener('mousedown', () => { btn.style.transform = 'scale(0.96)'; });
+  btn.addEventListener('mouseup', () => { btn.style.transform = ''; });
+  btn.addEventListener('touchstart', () => { btn.style.transform = 'scale(0.96)'; }, { passive: true });
+  btn.addEventListener('touchend', () => { btn.style.transform = ''; }, { passive: true });
+
+  return el;
+}
+
+// Démarre l'animation pixel-art du couloir + hero qui marche
+function startCorridorAnimation(){
+  const canvas = document.getElementById('rt-corridor');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const W = canvas.width;
+  const H = canvas.height;
+  let t = 0;
+
+  function draw(){
+    // Background gradient
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#0e0820');
+    sky.addColorStop(1, '#02010a');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // Vanishing point
+    const vpX = W / 2;
+    const vpY = H * 0.42;
+    const floorY = H * 0.78;
+
+    // === SOL : tiles de profondeur qui défilent (parallax) ===
+    // On dessine plusieurs lignes à des distances qui simulent la perspective.
+    // Les lignes scroll vers le joueur (taille augmente, y descend).
+    const scroll = (t * 0.04) % 1;
+    for(let i = -1; i < 12; i++){
+      // i = profondeur de la tile (0 = près, 11 = loin)
+      const depth = i + scroll;
+      // Position Y avec perspective : near=H, far=floorY (vanishing)
+      const ratio = 1 - 1 / (1 + depth * 0.35);
+      const yNear = H + 4 - ratio * (H - floorY);
+      const ratioNext = 1 - 1 / (1 + (depth + 1) * 0.35);
+      const yFar = H + 4 - ratioNext * (H - floorY);
+      // Largeur du sol à cette profondeur (convergence cohérente avec les murs : 0.40)
+      const wNear = W * (1 - ratio * 0.40);
+      const wFar = W * (1 - ratioNext * 0.40);
+      const xNearL = (W - wNear) / 2;
+      const xNearR = xNearL + wNear;
+      const xFarL = (W - wFar) / 2;
+      const xFarR = xFarL + wFar;
+
+      // Trapézoïde du sol (alterne couleurs pour effet damier-stripe)
+      const isStrip = i % 2 === 0;
+      ctx.fillStyle = isStrip ? '#1a1418' : '#0e0a0c';
+      ctx.beginPath();
+      ctx.moveTo(xNearL, yNear);
+      ctx.lineTo(xNearR, yNear);
+      ctx.lineTo(xFarR, yFar);
+      ctx.lineTo(xFarL, yFar);
+      ctx.closePath();
+      ctx.fill();
+
+      // Ligne de séparation (subtile)
+      ctx.strokeStyle = 'rgba(60,40,40,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xNearL, yNear);
+      ctx.lineTo(xFarL, yFar);
+      ctx.moveTo(xNearR, yNear);
+      ctx.lineTo(xFarR, yFar);
+      ctx.stroke();
+    }
+
+    // === MURS : trapèzes latéraux + briques sur les côtés qui défilent ===
+    // Convergence : les murs se rejoignent à vpX * 0.40 (plus serré = couloir plus profond)
+    const wallConvergeL = vpX * 0.40;
+    const wallConvergeR = W - vpX * 0.40;
+
+    // Mur gauche
+    ctx.fillStyle = '#1a0e14';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(wallConvergeL, vpY);
+    ctx.lineTo(wallConvergeL, floorY);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+    // Mur droit
+    ctx.beginPath();
+    ctx.moveTo(W, 0);
+    ctx.lineTo(wallConvergeR, vpY);
+    ctx.lineTo(wallConvergeR, floorY);
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // Plafond (sombre)
+    const ceilGrad = ctx.createLinearGradient(0, 0, 0, vpY);
+    ceilGrad.addColorStop(0, '#02010a');
+    ceilGrad.addColorStop(1, '#1a0a14');
+    ctx.fillStyle = ceilGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(W, 0);
+    ctx.lineTo(wallConvergeR, vpY);
+    ctx.lineTo(wallConvergeL, vpY);
+    ctx.closePath();
+    ctx.fill();
+
+    // === Atténuation au point de fuite : noir profond au fond du couloir ===
+    // Le rectangle de fin est entre wallConvergeL/R en X, et entre vpY/floorY en Y.
+    // On dessine un noir presque pur dessus pour qu'on ne voie pas "où ça finit".
+    ctx.fillStyle = '#000';
+    ctx.fillRect(wallConvergeL, vpY, wallConvergeR - wallConvergeL, floorY - vpY);
+    // Petit gradient subtil aux bords pour adoucir
+    const vpFade = ctx.createRadialGradient(vpX, (vpY + floorY) / 2, 0, vpX, (vpY + floorY) / 2, 80);
+    vpFade.addColorStop(0, 'rgba(0,0,0,1)');
+    vpFade.addColorStop(0.7, 'rgba(0,0,0,0.7)');
+    vpFade.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = vpFade;
+    ctx.fillRect(vpX - 80, (vpY + floorY) / 2 - 80, 160, 160);
+
+    // === HERO + TORCHE (la torche est tenue dans la main du hero) ===
+    // Ordre de rendu : on dessine d'abord la lueur de la torche (en arrière-plan),
+    // puis le hero, puis la flamme par-dessus.
+    const torchPulse = 0.78 + Math.sin(t * 0.18) * 0.16 + Math.sin(t * 0.07) * 0.06;
+
+    // Calcule la position de la torche (suit le bras gauche du hero qui balance)
+    // armL : décalage Y du bras gauche (frame 0 = +1, frame 2 = -1, sinon 0)
+    const SCALE = 3;
+    const frame = Math.floor(t / 9) % 4;
+    const armL = (frame === 0) ? 1 : (frame === 2 ? -1 : 0);
+    // Bobbing du hero (cohérent avec drawHeroBack)
+    const bob = (frame === 0 || frame === 2) ? 0 : -1;
+    const heroYOffset = bob * SCALE;
+
+    // Position de la main gauche du hero (pixel coords du sprite : x=2, y≈14)
+    // baseX du sprite = vpX - 8*SCALE, baseY = floorY-4 + heroYOffset, sprite hauteur=24
+    const heroBaseX = vpX - 8 * SCALE;
+    const heroBaseY = (floorY - 4) + heroYOffset;
+    // La main gauche est à (x=2, y=14+armL) dans le sprite, et le sprite va de y=0 (top) à y=24 (bottom = baseY)
+    const handX = heroBaseX + 2 * SCALE + SCALE / 2;
+    const handY = heroBaseY + (14 + armL) * SCALE - 24 * SCALE;
+
+    // Position du bout de la torche (la flamme) : on prolonge depuis la main vers le haut-gauche
+    const torchTipX = handX - 5; // un peu à gauche de la main
+    const torchTipY = handY - 8; // au-dessus de la main
+
+    // Halo de lumière émanant de la flamme
+    const haloRadius = 60 + Math.sin(t * 0.15) * 4;
+    const halo = ctx.createRadialGradient(torchTipX, torchTipY, 0, torchTipX, torchTipY, haloRadius);
+    halo.addColorStop(0, `rgba(255,200,110,${0.55 * torchPulse})`);
+    halo.addColorStop(0.35, `rgba(255,140,60,${0.30 * torchPulse})`);
+    halo.addColorStop(1, 'rgba(255,140,60,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(torchTipX - haloRadius, torchTipY - haloRadius, haloRadius * 2, haloRadius * 2);
+
+    // Lueur projetée sur le sol près du hero (pool de lumière au sol, subtil)
+    const groundGlow = ctx.createRadialGradient(vpX, floorY, 0, vpX, floorY, 65);
+    groundGlow.addColorStop(0, `rgba(255,150,70,${0.10 * torchPulse})`);
+    groundGlow.addColorStop(1, 'rgba(255,140,60,0)');
+    ctx.fillStyle = groundGlow;
+    ctx.beginPath();
+    ctx.ellipse(vpX, floorY, 50, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // === HERO PIXEL ART (vu de dos, cycle de marche 4 frames) ===
+    drawHeroBack(ctx, vpX, floorY - 4, t);
+
+    // === TORCHE (tige + flamme), dessinée APRÈS le hero pour passer devant le bras ===
+    // Tige (rect oblique : depuis la main vers la flamme)
+    ctx.fillStyle = '#3a1810';
+    // Tige courbée : 3 segments pour donner un peu d'angle
+    ctx.fillRect(handX - 1, handY - 2, 2, 2);   // base près de la main
+    ctx.fillRect(handX - 2, handY - 4, 2, 2);   // milieu
+    ctx.fillRect(handX - 3, handY - 6, 2, 2);   // proche de la flamme
+    // Highlight bois
+    ctx.fillStyle = '#5a2818';
+    ctx.fillRect(handX - 2, handY - 3, 1, 1);
+    ctx.fillRect(handX - 3, handY - 5, 1, 1);
+
+    // Flamme (rect avec flicker) au bout de la torche
+    const flameW = 3 + Math.sin(t * 0.3) * 0.5;
+    const flameH = 5 + Math.sin(t * 0.45) * 1;
+    // Flamme externe orange
+    ctx.fillStyle = '#ff8a3d';
+    ctx.fillRect(torchTipX - flameW/2 - 1, torchTipY - flameH, flameW + 2, flameH);
+    // Flamme interne jaune
+    ctx.fillStyle = '#ffe890';
+    ctx.fillRect(torchTipX - flameW/2, torchTipY - flameH + 1, flameW, flameH - 2);
+    // Cœur blanc (très bright)
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(torchTipX - 0.5, torchTipY - flameH + 2, 1, flameH - 3);
+
+    // === Particules ambiantes de poussière (très subtil) ===
+    for(let i = 0; i < 12; i++){
+      const seed = i * 137;
+      const px = (seed * 17 + t * 0.5) % W;
+      const py = ((seed * 7) % (H - 40)) + 20 + Math.sin(t * 0.04 + i) * 3;
+      const alpha = 0.18 + Math.sin(t * 0.05 + i * 0.7) * 0.1;
+      ctx.fillStyle = `rgba(200,180,140,${alpha})`;
+      ctx.fillRect(px | 0, py | 0, 1, 1);
+    }
+
+    // === Étincelles qui s'envolent de la torche (occasionnellement) ===
+    for(let i = 0; i < 4; i++){
+      const sparkSeed = (i * 73 + Math.floor(t / 3)) % 100;
+      if(sparkSeed > 60) continue; // 40% des frames ont une étincelle
+      const sparkAge = (t * 0.5 + i * 8) % 30; // cycle de 30 frames
+      const sparkX = torchTipX + Math.sin(sparkAge * 0.3 + i) * (sparkAge * 0.4);
+      const sparkY = torchTipY - sparkAge * 0.6;
+      const sparkAlpha = Math.max(0, 1 - sparkAge / 30);
+      ctx.fillStyle = `rgba(255,200,80,${sparkAlpha * 0.7})`;
+      ctx.fillRect(sparkX | 0, sparkY | 0, 1, 1);
+    }
+
+    t++;
+    _rtAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function stopCorridorAnimation(){
+  if(_rtAnimFrame){
+    cancelAnimationFrame(_rtAnimFrame);
+    _rtAnimFrame = null;
+  }
+}
+
+// Hero pixel art de dos, 32×40 logique scaled up
+// Cycle de marche : alterne 4 frames (jambe gauche / pose / jambe droite / pose)
+function drawHeroBack(ctx, cx, footY, t){
+  const SCALE = 3;
+  // Bobbing : le perso bobble légèrement vers le haut/bas pendant la marche
+  const frame = Math.floor(t / 9) % 4; // cycle de marche, 9 ticks = ~150ms par frame
+  const bob = (frame === 0 || frame === 2) ? 0 : -1; // step up sur les poses
+  const yOffset = bob * SCALE;
+
+  const baseX = cx - 8 * SCALE;
+  const baseY = footY + yOffset;
+
+  // PALETTE
+  const C_HAIR = '#2a1810';
+  const C_SKIN = '#a06850';
+  const C_CAPE = '#3a2030';
+  const C_CAPE_SHADOW = '#1e1018';
+  const C_TUNIC = '#3a4a5c';
+  const C_TUNIC_DARK = '#1e2a36';
+  const C_BELT = '#2a1a14';
+  const C_PANT = '#1a141c';
+  const C_BOOT = '#0e0a0c';
+  const C_GLINT = '#4fc3f7';
+
+  // Définit chaque "pixel" en (x, y, color) relatif à baseX/baseY
+  // 0,0 est en haut-gauche du sprite, le perso fait 16px de large × 24px de haut
+  function px(x, y, color){
+    ctx.fillStyle = color;
+    ctx.fillRect(baseX + x * SCALE, baseY + y * SCALE - 24 * SCALE, SCALE, SCALE);
+  }
+  function rect(x, y, w, h, color){
+    ctx.fillStyle = color;
+    ctx.fillRect(baseX + x * SCALE, baseY + y * SCALE - 24 * SCALE, w * SCALE, h * SCALE);
+  }
+
+  // === TÊTE (rangée 0-5) ===
+  // Cheveux foncés vu de dos
+  rect(5, 0, 6, 1, C_HAIR);
+  rect(4, 1, 8, 1, C_HAIR);
+  rect(4, 2, 8, 1, C_HAIR);
+  rect(4, 3, 8, 1, C_HAIR);
+  // Petit highlight cheveux
+  px(6, 0, '#3a2418');
+  px(9, 0, '#3a2418');
+  // Nuque
+  rect(6, 4, 4, 1, C_SKIN);
+  // Bord cou
+  rect(5, 5, 6, 1, C_TUNIC_DARK);
+
+  // === ÉPAULES + CAPE (rangée 6-15) ===
+  // Cape large derrière qui bouge légèrement
+  const capeSwayL = (frame === 1) ? -1 : 0;
+  const capeSwayR = (frame === 3) ? 1 : 0;
+  // Cape contour
+  rect(2 + capeSwayL, 7, 4, 9, C_CAPE_SHADOW);
+  rect(10 - capeSwayR, 7, 4, 9, C_CAPE_SHADOW);
+  // Cape corps
+  rect(3 + capeSwayL, 6, 10, 11, C_CAPE);
+  // Pli central de la cape
+  rect(7, 7, 2, 9, C_CAPE_SHADOW);
+  // Bord lumineux sur la cape (highlight)
+  rect(3 + capeSwayL, 6, 1, 8, '#4a2a3a');
+  rect(12 - capeSwayR, 6, 1, 8, '#1e1018');
+
+  // Tunique visible au-dessus de la cape (épaules)
+  rect(5, 6, 6, 1, C_TUNIC);
+  // Petit accent cyan (col / accent)
+  px(7, 6, C_GLINT);
+  px(8, 6, C_GLINT);
+
+  // === BRAS (rangée 7-14) ===
+  // Bras qui balancent légèrement en sens opposé des jambes
+  const armL = (frame === 0) ? 1 : (frame === 2 ? -1 : 0);
+  const armR = -armL;
+  // Bras gauche (côté gauche du sprite)
+  rect(2, 8 + armL, 1, 6, C_TUNIC_DARK);
+  px(2, 14 + armL, C_SKIN);
+  // Bras droit
+  rect(13, 8 + armR, 1, 6, C_TUNIC_DARK);
+  px(13, 14 + armR, C_SKIN);
+
+  // === CEINTURE ===
+  rect(4, 16, 8, 1, C_BELT);
+  px(7, 16, '#5a3018'); // boucle
+  px(8, 16, '#5a3018');
+
+  // === JAMBES (rangée 17-22) - cycle de marche 4 frames ===
+  // Frame 0 : jambe gauche avancée, droite reculée
+  // Frame 1 : pose neutre (sortie de pas)
+  // Frame 2 : jambe droite avancée, gauche reculée
+  // Frame 3 : pose neutre (sortie de pas inverse)
+  let lLegX, lLegY, rLegX, rLegY;
+  switch(frame){
+    case 0: lLegX = 5; lLegY = 17; rLegX = 9; rLegY = 18; break;
+    case 1: lLegX = 5; lLegY = 17; rLegX = 9; rLegY = 17; break;
+    case 2: lLegX = 5; lLegY = 18; rLegX = 9; rLegY = 17; break;
+    case 3: lLegX = 5; lLegY = 17; rLegX = 9; rLegY = 17; break;
+  }
+
+  // Jambe gauche
+  rect(lLegX, lLegY, 2, 5, C_PANT);
+  // Botte
+  rect(lLegX, lLegY + 5, 2, 1, C_BOOT);
+  // Jambe droite
+  rect(rLegX, rLegY, 2, 5, C_PANT);
+  rect(rLegX, rLegY + 5, 2, 1, C_BOOT);
+
+  // === OMBRE AU SOL (ellipse subtile sous les pieds) ===
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  const shadowSize = 9 + (frame === 1 || frame === 3 ? 0 : -1);
+  ctx.beginPath();
+  ctx.ellipse(cx, footY + 1, shadowSize, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function showRoomTransitionOverlay(roomNum, totalRooms, biomeId){
+  return new Promise(resolve => {
+    const el = ensureRoomTransitionOverlay();
+    const biomeMeta = RT_BIOME_LABELS[biomeId] || { label: '', color: '#ffd060' };
+    el.style.setProperty('--rt-biome-color', biomeMeta.color);
+    el.style.setProperty('--rt-biome-glow', biomeMeta.color + '66');
+    el.querySelector('#rt-biome').textContent = biomeMeta.label;
+    el.querySelector('#rt-label').textContent = `ROOM ${roomNum} / ${totalRooms}`;
+
+    // Affiche les HP du joueur (HP entre les rooms — c'est avec ça qu'il entre dans la prochaine)
+    const hpEl = el.querySelector('#rt-hp');
+    if(hpEl && state.player){
+      const hp = Math.max(0, Math.round(state.player.hp || 0));
+      const maxHp = state.player.maxHp || 100;
+      const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+      // Couleur selon ratio HP : vert > jaune > orange > rouge
+      let hpColor = '#3df068';
+      if(pct < 70) hpColor = '#ffd060';
+      if(pct < 40) hpColor = '#ff8830';
+      if(pct < 20) hpColor = '#ff5252';
+      hpEl.innerHTML = `
+        <span style="opacity:0.6; letter-spacing:1.5px;">▸ HP</span>
+        <span style="
+          position: relative;
+          display: inline-block;
+          width: 80px; height: 8px;
+          background: #1a0a14; border: 1px solid #3a2840;
+        ">
+          <span style="
+            position: absolute; top: 0; left: 0; bottom: 0;
+            width: ${pct}%; background: ${hpColor};
+            box-shadow: 0 0 6px ${hpColor};
+            transition: width 0.3s;
+          "></span>
+        </span>
+        <span style="color: ${hpColor}; font-weight: bold; min-width: 56px;">${hp}/${maxHp}</span>
+      `;
+    } else if(hpEl){
+      hpEl.innerHTML = '';
+    }
+
+    // Setup le bouton CONTINUER : il résout la promesse au clic
+    const btn = el.querySelector('#rt-continue');
+    let resolved = false;
+    const onClick = () => {
+      if(resolved) return;
+      resolved = true;
+      btn.removeEventListener('click', onClick);
+      // Stop l'anim canvas pour économiser la perf pendant la transition
+      stopCorridorAnimation();
+      resolve();
+    };
+    btn.addEventListener('click', onClick);
+
+    // Affiche
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'auto';
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      // Démarre l'animation du couloir
+      startCorridorAnimation();
+    });
+  });
+}
+
+function hideRoomTransitionOverlay(){
+  return new Promise(resolve => {
+    const el = document.getElementById('room-transition');
+    if(!el){ resolve(); return; }
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    setTimeout(() => { resolve(); }, 420);
+  });
+}
+
+// Reset le flag à chaque init de combat (appelé depuis initCombat plus bas via resetDungeonEndFlags())
+function resetDungeonEndFlags(){
+  _dungeonEndHandled = false;
+  _dungeonEndTriggerTime = 0;
+  // _dungeonShowingFinalScreen NE doit PAS être reset ici : il bloque
+  // l'observer pendant l'écran final. Il sera reset au retour hub manuel.
+}
+
+function renderLoop(){
+  let targetColor = '#f44336';
+  let targetStroke = '#ff8a80';
+  const sk = state.selectedSkill;
+  if(sk){
+    if(sk.type === 'spell'){ targetColor = '#9c27b0'; targetStroke = '#ce93d8'; }
+    else if(sk.id === 'move'){ targetColor = '#4caf50'; targetStroke = '#69f0ae'; }
+  }
+
+  // reachableSet pour overlay (mode move uniquement)
+  const reachableSet = (sk?.id === 'move')
+    ? new Set([...render.reachableMap.keys()])
+    : new Set();
+
+  // validTargets pour overlay (modes attack/spell uniquement)
+  const validTargetsForRender = (sk && sk.id !== 'move')
+    ? state.validTargets
+    : new Set();
+
+  renderFrame(ctx, {
+    viewport,
+    tileGrid: render.tileGrid,
+    gridW: state.gridWidth,
+    gridH: state.gridHeight,
+    actors: getRenderActors(),
+    hover: render.hover,
+    reachableSet,
+    validTargets: validTargetsForRender,
+    aoePreview: render.aoePreviewSet,
+    biome: getBiome(render.biomeId),
+    particles,
+    time: render.time++,
+    view,
+    options: { ...visualOptions, targetColor, targetStroke },
+  });
+
+  // Path overlay (trait blanc + coût AP)
+  drawPathOverlay();
+
+  if(render.openPanel === 'map') drawMinimap();
+
+  requestAnimationFrame(renderLoop);
+}
+
+function drawPathOverlay(){
+  const sk = state.selectedSkill;
+  if(!sk || sk.id !== 'move') return;
+  if(!render.hover) return;
+  if(!state.player || state.player.isDead) return;
+  const k = gridKey(render.hover.gx, render.hover.gy);
+  if(!state.validTargets.has(k)) return;
+
+  const path = bfsPath(state.player, render.hover.gx, render.hover.gy);
+  if(!path || path.length === 0) return;
+
+  ctx.save();
+  // Trait pointillé sombre
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  const anim = render.actorAnims.get(state.player.id) || { ax: state.player.x, ay: state.player.y };
+  const sStart = isoToScreen(anim.ax, anim.ay, getElev(state.player.x, state.player.y), viewport, view);
+  ctx.moveTo(sStart.x, sStart.y);
+  for(const p of path){
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, view);
+    ctx.lineTo(sp.x, sp.y);
+  }
+  ctx.stroke();
+  // Trait blanc principal
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(sStart.x, sStart.y);
+  for(const p of path){
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, view);
+    ctx.lineTo(sp.x, sp.y);
+  }
+  ctx.stroke();
+  // Pastilles aux points de passage
+  for(let i = 0; i < path.length - 1; i++){
+    const p = path[i];
+    const sp = isoToScreen(p.x, p.y, getElev(p.x, p.y), viewport, view);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // Destination + label
+  const last = path[path.length - 1];
+  const sLast = isoToScreen(last.x, last.y, getElev(last.x, last.y), viewport, view);
+  ctx.fillStyle = '#4caf50';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(sLast.x, sLast.y, 6, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  const cost = render.reachableMap.get(gridKey(last.x, last.y));
+  if(cost !== undefined){
+    const labelX = sLast.x + 14;
+    const labelY = sLast.y - 14;
+    const labelText = `${cost} AP`;
+    ctx.font = 'bold 12px monospace';
+    const tw = ctx.measureText(labelText).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(labelX - 4, labelY - 12, tw + 8, 16);
+    ctx.strokeStyle = cost > state.player.ap ? '#f44336' : '#4caf50';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(labelX - 4, labelY - 12, tw + 8, 16);
+    ctx.fillStyle = cost > state.player.ap ? '#ff8a80' : '#69f0ae';
+    ctx.fillText(labelText, labelX, labelY);
+  }
+  ctx.restore();
+}
+
+// ============================================================================
+// BOOT (async : load data + biomes en parallèle)
+// ============================================================================
+(async () => {
+  const loader = document.getElementById('boot-loader');
+  try {
+    await Promise.all([
+      loadAllData(),
+      preloadAllBiomes(),
+    ]);
+    window.__DATA__ = DATA;
+
+    // Construire les boutons de biome
+    const biomeButtons = document.getElementById('biome-buttons');
+    biomeButtons.innerHTML = '';
+    for(const cfg of listBiomeConfigs()){
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn' + (cfg.id === render.biomeId ? ' active' : '');
+      btn.dataset.biome = cfg.id;
+      btn.textContent = cfg.displayName || cfg.name || cfg.id;
+      btn.style.textAlign = 'center';
+      btn.addEventListener('click', () => {
+        render.biomeId = cfg.id;
+        // Re-génère le tileGrid avec le nouveau biome (sans toucher au state combat)
+        const oldWalls = new Set(state.walls);
+        state.walls = new Set();  // sera repeuplé par genTileMap si builder
+        genTileMap(null);
+        // Re-applique les walls de la room originale (pas de builder ici)
+        for(const k of oldWalls) state.walls.add(k);
+        // Re-marque les tiles wall correspondantes
+        for(const k of state.walls){
+          const t = render.tileGrid[k];
+          if(t){ t.isWall = true; }
+        }
+        document.querySelectorAll('#biome-buttons button').forEach(b => b.classList.toggle('active', b.dataset.biome === render.biomeId));
+      });
+      biomeButtons.appendChild(btn);
+    }
+
+    // Init combat (lit playtest / builder / tutorial)
+    await initCombat();
+
+    if(loader) loader.style.display = 'none';
+    updateZoomDisplay();
+    renderLoop();
+  } catch(e){
+    console.error('Boot failed:', e);
+    if(loader){
+      loader.innerHTML = `<div style="color:#f44336; font-size:13px; max-width:400px; text-align:center; padding:20px;">
+        <strong>⚠ Boot failed</strong><br><br>
+        <span style="font-size:11px; color:#ff8a80;">${e.message || e}</span><br><br>
+        <a href="index.html" style="color:#4fc3f7;">↩ Back to dashboard</a>
+      </div>`;
+    }
+  }
+})();
+
+// Cross-tab : si le map builder pousse une nouvelle map, la prend en compte
+window.addEventListener('storage', async (e) => {
+  if(e.key === 'reactor_hollow_map' && e.newValue){
+    await initCombat();
+  }
+});
+
+window.addEventListener('error', ev => {
+  const display = document.getElementById('error-display');
+  display.style.display = 'block';
+  display.innerHTML = `
+    <strong>⚠ Erreur :</strong>
+    <pre>${ev.message}\nSource: ${ev.filename}:${ev.lineno}</pre>
+    <p style="margin-top:10px; color:#aaa">Vérifie la console.</p>
+  `;
+});
+</script>
+</body>
+</html>
