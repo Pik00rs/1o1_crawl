@@ -2541,16 +2541,18 @@ function updateActorHuds(){
     seenIds.add(id);
 
     // Position screen via anim courant (isoToScreen → CSS pixels).
-    // L'ancienne HP bar canvas était à : cy - 30, avec cy = sp.y - 10 * zoom.
-    // Donc on positionne le HUD avec transform translate(-50%, -100%) à ce y exact :
-    //   y = sp.y - 10*zoom - 30  (top de la barre dans l'ancien code)
-    // Comme on translate -100% (le HUD pousse vers le haut depuis cette position),
-    // on met top à : sp.y - 10*zoom - 5 (à ras du sprite, le HUD remonte de sa hauteur)
+    // translate(-50%, -100%) → le HUD pousse vers le haut depuis screenY.
+    // Donc plus screenY est proche de sp.y, plus le HUD est BAS (proche du sprite).
     const anim = render.actorAnims.get(id) || { ax: actor.x, ay: actor.y };
     const elev = getElev(actor.x, actor.y);
     const sp = isoToScreen(anim.ax, anim.ay, elev, viewport, view);
     const screenX = sp.x;
-    const screenY = sp.y - 10 * view.zoom - 5; // -5 = petit gap au-dessus du nom
+    // Pour l'ennemi : le HUD se colle proche du sprite (bas du HUD ~à la hauteur des yeux).
+    // Pour le joueur : on laisse un peu plus d'espace pour ne pas écraser le nom canvas.
+    const verticalOffset = actor.isPlayer
+      ? (10 * view.zoom + 5)    // joueur : un peu d'air
+      : (10 * view.zoom - 6);   // ennemi : très collé au sprite
+    const screenY = sp.y - verticalOffset;
 
     let el = _actorHudEls.get(id);
     if(!el){
