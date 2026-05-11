@@ -1189,8 +1189,10 @@ function openDungeonPanel(dungeon, cardEl){
         const built = buildPlayerFromEquipped(equippedFromDb, 1);
         realEquipment = built.equipment;
         realStats = built.stats;
-        console.log('[ascension] player equipment from DB:', realEquipment);
-        console.log('[ascension] player stats computed:', realStats);
+        console.log('[ascension] equipment from DB:', equippedFromDb);
+        console.log('[ascension] equipment built for game:', realEquipment);
+        console.log('[ascension] stats computed for game:', realStats);
+        console.log('[ascension] debug:', built.debug);
       } catch(eqErr){
         console.error('[ascension] failed to build player from equipped, falling back to default:', eqErr);
       }

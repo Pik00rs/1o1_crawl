@@ -244,6 +244,92 @@
   .stat-row .lbl { color: var(--text-1); }
   .stat-row .val { color: var(--text-0); font-weight: bold; }
 
+  /* === DEBUG PANEL === */
+  .debug-panel {
+    margin-top: 14px;
+    border-color: #2a3a50;
+    background: linear-gradient(to bottom, var(--bg-1) 0%, #0d1218 100%);
+  }
+  .debug-panel h3 {
+    color: #3df0ff;
+    border-bottom-color: rgba(61, 240, 255, 0.2);
+  }
+  .debug-section {
+    margin-top: 12px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-left: 2px solid #3df0ff;
+  }
+  .debug-section:first-child { margin-top: 0; }
+  .debug-section__title {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #88aacc;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .debug-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px 14px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+  }
+  .debug-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    color: #d8d8d8;
+  }
+  .debug-row .k { color: #88aacc; }
+  .debug-row .v { color: #ffd060; font-weight: bold; }
+  .debug-row.bonus .v { color: #5fff8c; }
+  .debug-row.bonus .v::before { content: '+'; }
+
+  .debug-slot {
+    margin-bottom: 8px;
+    padding-left: 6px;
+    border-left: 1px dashed rgba(95, 255, 140, 0.3);
+  }
+  .debug-slot__name {
+    font-size: 10px;
+    color: #c8a040;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+  .debug-slot__passives {
+    font-size: 10px;
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+  }
+  .debug-slot__passives span { color: #5fff8c; margin-right: 8px; }
+
+  .debug-ignored {
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    color: #ffa550;
+    line-height: 1.6;
+  }
+  .debug-ignored__pill {
+    display: inline-block;
+    background: rgba(255, 165, 80, 0.1);
+    border: 1px solid rgba(255, 165, 80, 0.4);
+    padding: 1px 6px;
+    margin: 2px 4px 2px 0;
+    border-radius: 2px;
+  }
+  .debug-ignored__pill .n {
+    color: #ffd060;
+    font-weight: bold;
+    margin-left: 4px;
+  }
+  .debug-empty {
+    color: #5a6878;
+    font-style: italic;
+    font-size: 10px;
+    padding: 4px 0;
+  }
+
   /* === MODAL === */
   .modal-overlay {
     position: fixed;
@@ -463,6 +549,26 @@
     <div class="stats-grid" id="stats-aggregate"></div>
   </section>
 
+  <!-- DEBUG COMBAT — montre ce qui est ENVOYÉ AU MOTEUR -->
+  <section class="stats-panel debug-panel">
+    <h3>🔍 DEBUG COMBAT (ce qui part vraiment au donjon)</h3>
+
+    <div class="debug-section">
+      <div class="debug-section__title">⚔ STATS MOTEUR</div>
+      <div class="debug-grid" id="debug-engine-stats"></div>
+    </div>
+
+    <div class="debug-section">
+      <div class="debug-section__title">🛠 PASSIFS AGRÉGÉS PAR SLOT</div>
+      <div id="debug-passives"></div>
+    </div>
+
+    <div class="debug-section">
+      <div class="debug-section__title">⚠ AFFIXES IGNORÉS (non câblés au moteur)</div>
+      <div id="debug-ignored" class="debug-ignored"></div>
+    </div>
+  </section>
+
 </main>
 
 <!-- MODAL -->
@@ -485,6 +591,7 @@ import {
 } from './items-catalog.js';
 import { loadEquipped as apiLoadEquipped, saveEquipped as apiSaveEquipped,
          loadChest as apiLoadChest, saveChest as apiSaveChest } from './api.js';
+import { buildPlayerFromEquipped } from './equipment-builder.js';
 
 // Garde d'auth
 const _ok = await requireAuth();
@@ -717,14 +824,153 @@ function renderStatsAggregate(){
   const entries = Object.entries(totals).filter(([_, v]) => v !== 0);
   if(entries.length === 0){
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-2); font-size:11px; padding:14px;">Aucun équipement</div>';
+  } else {
+    grid.innerHTML = entries.map(([k, v]) => `
+      <div class="stat-row">
+        <span class="lbl">${k}</span>
+        <span class="val">+${v}</span>
+      </div>
+    `).join('');
+  }
+  // Render aussi le panel debug combat à chaque mise à jour
+  renderDebugCombat();
+}
+
+// =============================================================================
+// DEBUG COMBAT : montre exactement ce qui sera envoyé au moteur
+// =============================================================================
+function renderDebugCombat(){
+  const elEngine   = document.getElementById('debug-engine-stats');
+  const elPassives = document.getElementById('debug-passives');
+  const elIgnored  = document.getElementById('debug-ignored');
+  if(!elEngine || !elPassives || !elIgnored) return;
+
+  // Si aucun équipement, vide tout
+  const hasAnyItem = Object.values(STATE.equipped || {}).some(Boolean);
+  if(!hasAnyItem){
+    elEngine.innerHTML   = '<div class="debug-empty">Aucun équipement à analyser</div>';
+    elPassives.innerHTML = '<div class="debug-empty">—</div>';
+    elIgnored.innerHTML  = '<div class="debug-empty">—</div>';
     return;
   }
-  grid.innerHTML = entries.map(([k, v]) => `
-    <div class="stat-row">
-      <span class="lbl">${k}</span>
-      <span class="val">+${v}</span>
-    </div>
-  `).join('');
+
+  let built;
+  try {
+    built = buildPlayerFromEquipped(STATE.equipped, 1);
+  } catch(e){
+    elEngine.innerHTML = `<div class="debug-empty" style="color:#ff5959;">Erreur build : ${e.message}</div>`;
+    return;
+  }
+
+  const { stats, equipment, debug } = built;
+
+  // ---- 1) STATS MOTEUR ----
+  // On affiche les stats finales qui partiront au combat.
+  // Ordre logique : Vitalité / Combat / Défense / Bonus élémentaires / Résistances / Utilitaires
+  const ORDER = [
+    // Vitalité & AP
+    ['maxHp',          'PV max'],
+    ['maxAp',          'AP par tour'],
+    ['bonusAp',        'AP bonus'],
+    ['hpRegen',        'PV regen/tour'],
+    // Combat - offensive
+    ['damage',         'Dégâts'],
+    ['damageType',     'Type dégâts'],
+    ['range',          'Portée'],
+    ['critChance',     'Crit %', '%'],
+    ['critMultiplier', 'Crit dmg %', '%'],
+    ['lifesteal',      'Vol de vie', '%'],
+    ['armorPen',       'Pénétration armure'],
+    // Combat - défense
+    ['armor',          'Armure'],
+    ['dodgeChance',    'Esquive %', '% (UNUSED)'],   // pas câblé moteur — flag
+    ['blockChance',    'Blocage %', '% (UNUSED)'],   // pas câblé moteur — flag
+    // Élémentaires - bonus offensifs
+    ['bonusFire',      'Bonus dégâts Feu'],
+    ['bonusIce',       'Bonus dégâts Glace'],
+    ['bonusShock',     'Bonus dégâts Foudre'],
+    ['bonusPoison',    'Bonus dégâts Poison'],
+    // Élémentaires - résistances
+    ['fireResist',     'Résist. Feu %', '%'],
+    ['iceResist',      'Résist. Glace %', '%'],
+    ['shockResist',    'Résist. Foudre %', '%'],
+    ['poisonResist',   'Résist. Poison %', '%'],
+    ['magicResist',    'Résist. Magique %', '%'],
+    // CC
+    ['ccReduction',    'Réduc CC %', '% (UNUSED)'],
+    // Mobilité
+    ['moveSpeed',      'Vitesse case/tour'],
+    ['initiative',     'Initiative'],
+  ];
+
+  const engineRows = [];
+  for(const [key, label, suffix] of ORDER){
+    let val = stats[key];
+    if(val == null) continue;
+    if(key === 'damage' && Array.isArray(val)){
+      val = `${val[0]}-${val[1]}`;
+    } else if(typeof val === 'number'){
+      val = String(val);
+    }
+    // 0 = on l'affiche pour clarté (sauf les UNUSED qui sont déjà flaggés)
+    engineRows.push(`
+      <div class="debug-row">
+        <span class="k">${label}</span>
+        <span class="v">${val}${suffix || ''}</span>
+      </div>
+    `);
+  }
+  elEngine.innerHTML = engineRows.join('');
+
+  // ---- 2) PASSIFS PAR SLOT ----
+  // Pour chaque item équipé, affiche son passive (les stats secondaires qui seront
+  // agrégées par aggregatePassives() côté player.js + les primaires connues)
+  const SLOT_ORDER = ['mainhand','offhand','head','chest','legs','gloves','boots','amulet','ring'];
+  const slotRows = [];
+  for(const slot of SLOT_ORDER){
+    const it = STATE.equipped[slot];
+    if(!it) continue;
+    const tpl = getItem(it.itemId);
+    const name = tpl ? `${tpl.icon || '◇'} ${tpl.name}` : it.itemId;
+    const ilvl = it.ilvl ? ` (T${ilvlToRoman(it.ilvl)})` : '';
+    // Items rendus au format game ont .passive
+    const gameItem = equipment[slot];
+    const passiveStr = gameItem?.passive
+      ? Object.entries(gameItem.passive).map(([k,v]) => `<span>${k}=${v}</span>`).join('')
+      : '<i style="color:#5a6878;">aucun passif</i>';
+    // Damage (pour mainhand) déjà scalé
+    const dmgStr = gameItem?.damage
+      ? `<span>damage=${gameItem.damage[0]}-${gameItem.damage[1]}</span>`
+      : '';
+    const spellStr = gameItem?.spell
+      ? `<span style="color:#ce93d8;">spell=${gameItem.spell}</span>`
+      : '';
+    slotRows.push(`
+      <div class="debug-slot">
+        <div class="debug-slot__name">${slot.toUpperCase()} · ${name}${ilvl}</div>
+        <div class="debug-slot__passives">${dmgStr}${spellStr}${passiveStr}</div>
+      </div>
+    `);
+  }
+  elPassives.innerHTML = slotRows.length > 0
+    ? slotRows.join('')
+    : '<div class="debug-empty">Aucun slot équipé</div>';
+
+  // ---- 3) AFFIXES IGNORÉS ----
+  const ignored = debug?.ignoredAffixes || {};
+  const ignoredEntries = Object.entries(ignored);
+  if(ignoredEntries.length === 0){
+    elIgnored.innerHTML = '<div style="color:#5fff8c;">✓ Tous tes affixes sont pris en compte par le moteur 🎉</div>';
+  } else {
+    const pills = ignoredEntries
+      .sort((a, b) => b[1] - a[1])
+      .map(([affixId, n]) => `<span class="debug-ignored__pill">${affixId}<span class="n">×${n}</span></span>`)
+      .join('');
+    elIgnored.innerHTML = `
+      <div style="margin-bottom:6px; color:#88aacc;">Ces affixes sont sur ton stuff mais ne sont PAS lus par le moteur (effets non implémentés) :</div>
+      <div>${pills}</div>
+    `;
+  }
 }
 
 // === MODAL ===
