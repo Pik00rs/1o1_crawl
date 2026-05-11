@@ -336,6 +336,35 @@
     grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
     gap: 6px;
   }
+  .picker-filters {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .picker-filters-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-2);
+    text-transform: uppercase;
+  }
+  .picker-filter-toggle {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+    padding: 4px 9px;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .picker-filter-toggle:hover { background: var(--bg-3); color: var(--text-0); }
+  .picker-filter-toggle.active {
+    background: rgba(255,136,48,0.2);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
   /* Preview de l'item cliqué dans la grille (avant validation) */
   .picker-preview-card {
     background: var(--bg-2);
@@ -751,6 +780,11 @@
       <button class="modal-close" id="picker-close">✕</button>
     </div>
     <div class="modal-body">
+      <div class="picker-filters" id="picker-filters">
+        <span class="picker-filters-label">▸ AFFICHER</span>
+        <button class="picker-filter-toggle" data-pfilter="equipped">⚔ Équipés</button>
+        <button class="picker-filter-toggle" data-pfilter="favorites">★ Favoris</button>
+      </div>
       <div style="font-size:9px; letter-spacing:2px; color:var(--text-2); text-transform:uppercase; margin-bottom:6px;">▸ Items disponibles</div>
       <div class="modal-grid" id="picker-grid"></div>
 
@@ -769,6 +803,9 @@ import {
   composeItemName, ilvlToRoman,
   rollAffixValue, affixQualityPct, rollItem,
 } from './items-catalog.js';
+import {
+  isFavorite, isInAnyBuild, canDelete, getBuildsContainingItem
+} from './player-meta.js';
 
 // === STATE ===
 const STATE = {
@@ -786,6 +823,7 @@ const STATE = {
   // Modal picker
   pickerTarget: null, // 'source' | 'target' | 'upgrade'
   pickerPreviewItemId: null, // Item cliqué dans le modal mais pas encore validé (preview live)
+  pickerFilters: { equipped: true, favorites: true }, // toggle: true = afficher la catégorie
   // Admin panel toggle
   adminPanelOpen: false,
 };
@@ -1142,6 +1180,12 @@ function renderTransferAction(){
     status.className = 'action-status error';
     return;
   }
+  if(!canDelete(source.instanceId)){
+    btn.disabled = true;
+    status.textContent = `L'émetteur est un favori (★) et ne peut pas être détruit. Retire-le des favoris dans le coffre.`;
+    status.className = 'action-status error';
+    return;
+  }
 
   btn.disabled = false;
   const sourceLbl = (sourceAffix.label || '').replace('X', sourceAffix.value);
@@ -1155,6 +1199,11 @@ function doTransfer(){
   const source = STATE.chest.find(i => i.instanceId === STATE.sourceItemId);
   const target = STATE.chest.find(i => i.instanceId === STATE.targetItemId);
   if(!source || !target) return;
+  // Sécurité ultime : on ne détruit JAMAIS un favori
+  if(!canDelete(source.instanceId)){
+    alert('Impossible : l\'item émetteur est un favori. Retire-le des favoris dans le coffre d\'abord.');
+    return;
+  }
   const sourceAffix = source.affixes[STATE.sourceAffixIdx];
   if(!sourceAffix) return;
 
@@ -1379,25 +1428,55 @@ function openPicker(target){
   STATE.pickerTarget = target;
   STATE.pickerPreviewItemId = null; // reset preview à chaque ouverture
   const modal = document.getElementById('picker-modal');
-  const grid = document.getElementById('picker-grid');
   const titleEl = document.getElementById('picker-title');
-  const footer = document.getElementById('picker-footer');
 
-  let titleText, candidates, emptyMsg;
+  let titleText;
   if(target === 'source'){
     titleText = 'Choisir l\'émetteur (sera détruit)';
-    candidates = filterPickerForSource();
-    emptyMsg = 'Aucun item compatible.<br>Il faut un item du <b>même type</b> (mêmes pools d\'affixes) que le récepteur, <b>même iLvl</b>, non équipé, avec au moins 1 affixe.';
   } else if(target === 'target'){
     titleText = 'Choisir le récepteur (sera gardé)';
+  } else {
+    titleText = 'Choisir l\'item à améliorer';
+  }
+  titleEl.textContent = titleText;
+
+  // Maj les toggles de filtres
+  document.querySelectorAll('.picker-filter-toggle').forEach(b => {
+    b.classList.toggle('active', STATE.pickerFilters[b.dataset.pfilter] === true);
+  });
+
+  refreshPickerGrid();
+  renderPickerPreview();
+  modal.classList.add('open');
+}
+
+/**
+ * Construit la grille d'items dans le picker selon STATE.pickerTarget et les filtres user.
+ * Réutilisable lors d'un changement de filtre sans fermer/rouvrir.
+ */
+function refreshPickerGrid(){
+  const grid = document.getElementById('picker-grid');
+  const footer = document.getElementById('picker-footer');
+
+  let candidates, emptyMsg;
+  if(STATE.pickerTarget === 'source'){
+    candidates = filterPickerForSource();
+    emptyMsg = 'Aucun item compatible.<br>Il faut un item du <b>même type</b> (mêmes pools d\'affixes), <b>même iLvl</b>, non équipé, <b>non favori</b> (les favoris sont protégés de la destruction), avec au moins 1 affixe.';
+  } else if(STATE.pickerTarget === 'target'){
     candidates = filterPickerForTarget();
     emptyMsg = 'Aucun item dans le coffre avec des affixes.';
   } else {
-    titleText = 'Choisir l\'item à améliorer';
     candidates = filterPickerForUpgrade();
     emptyMsg = 'Coffre vide.';
   }
-  titleEl.textContent = titleText;
+
+  // Filtres user : équipés et favoris (toggles affichage)
+  // showEquipped=false → exclut les items équipés ; showFavorites=false → exclut les favoris
+  candidates = candidates.filter(item => {
+    if(!STATE.pickerFilters.equipped && isEquipped(item.instanceId)) return false;
+    if(!STATE.pickerFilters.favorites && isFavorite(item.instanceId)) return false;
+    return true;
+  });
 
   if(candidates.length === 0){
     grid.innerHTML = `<div class="modal-empty">${emptyMsg}</div>`;
@@ -1407,17 +1486,19 @@ function openPicker(target){
     candidates.forEach(item => {
       const tpl = getItem(item.itemId);
       if(!tpl) return;
+      const equipped = isEquipped(item.instanceId);
+      const fav = isFavorite(item.instanceId);
       const cell = document.createElement('button');
       cell.className = 'pick-cell r-' + item.rarity;
       cell.dataset.instanceId = item.instanceId;
-      cell.title = composeItemName(item) + ' iLvl ' + ilvlToRoman(item.ilvl);
+      cell.title = composeItemName(item) + ' iLvl ' + ilvlToRoman(item.ilvl) + (equipped ? ' [ÉQUIPÉ]' : '') + (fav ? ' ★' : '');
       cell.innerHTML = `
         <span>${SLOT_ICONS[tpl.slot] || tpl.icon || '?'}</span>
         <span class="ilvl-badge">${ilvlToRoman(item.ilvl)}</span>
-        ${isEquipped(item.instanceId) ? '<span class="equipped-badge">EQ</span>' : ''}
+        ${equipped ? '<span class="equipped-badge">EQ</span>' : ''}
+        ${fav ? '<span style="position:absolute; top:0; right:0; font-size:10px; color:#ffd84d; padding:1px 3px; text-shadow:0 0 3px #000;">★</span>' : ''}
       `;
       cell.addEventListener('click', () => {
-        // Click = preview seulement, pas validation
         STATE.pickerPreviewItemId = item.instanceId;
         renderPickerPreview();
       });
@@ -1425,9 +1506,6 @@ function openPicker(target){
     });
     footer.style.display = '';
   }
-
-  renderPickerPreview();
-  modal.classList.add('open');
 }
 
 /**
@@ -1573,6 +1651,8 @@ function filterPickerForSource(){
   return STATE.chest.filter(item => {
     if(item.instanceId === STATE.targetItemId) return false;
     if(isEquipped(item.instanceId)) return false;
+    // Les favoris ne peuvent pas être détruits = pas utilisables comme source
+    if(!canDelete(item.instanceId)) return false;
     if(!item.affixes || item.affixes.length === 0) return false;
     // Même iLvl
     if(item.ilvl !== target.ilvl) return false;
@@ -1770,6 +1850,25 @@ async function boot(){
     if(e.target.id === 'picker-modal') closePicker();
   });
   document.getElementById('picker-validate').addEventListener('click', validatePicker);
+
+  // Picker filter toggles (équipés/favoris)
+  document.querySelectorAll('.picker-filter-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.pfilter;
+      STATE.pickerFilters[key] = !STATE.pickerFilters[key];
+      btn.classList.toggle('active', STATE.pickerFilters[key]);
+      // Reset preview si l'item qu'on regardait n'est plus dans la grille
+      refreshPickerGrid();
+      // Si l'item en preview n'est plus listé, on annule sa preview
+      if(STATE.pickerPreviewItemId){
+        const stillVisible = document.querySelector(`.pick-cell[data-instance-id="${STATE.pickerPreviewItemId}"]`);
+        if(!stillVisible){
+          STATE.pickerPreviewItemId = null;
+        }
+      }
+      renderPickerPreview();
+    });
+  });
 
   // Admin event delegation
   document.getElementById('admin-section').addEventListener('click', (e) => {

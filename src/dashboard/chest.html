@@ -124,6 +124,22 @@
     word-break: break-word;
     line-height: 1.2;
   }
+  .fav-toggle {
+    display: inline-block;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+    font-size: 13px;
+    padding: 0 4px;
+    cursor: pointer;
+    margin-left: 4px;
+    font-family: inherit;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .fav-toggle.on { color: #ffd84d; border-color: #ffd84d; }
+  .fav-toggle.off:hover { color: #ffd84d; border-color: #ffd84d; }
+  .fav-toggle.locked { cursor: not-allowed; opacity: 0.7; color: #ffd84d; border-color: rgba(255,216,77,0.4); }
   .cmp-item-meta {
     font-size: 10px; color: var(--text-1);
   }
@@ -350,6 +366,38 @@
     box-shadow: 0 0 0 2px var(--accent), 0 0 12px rgba(255, 179, 71, 0.6);
     z-index: 3;
   }
+  /* Item équipé : double-bordure verte + badge "EQ" */
+  .item-cell.equipped {
+    box-shadow: inset 0 0 0 2px rgba(95, 255, 140, 0.5);
+  }
+  .item-cell.equipped.selected {
+    box-shadow: inset 0 0 0 2px rgba(95, 255, 140, 0.5), 0 0 0 2px var(--accent), 0 0 12px rgba(255, 179, 71, 0.6);
+  }
+  .item-cell .eq-badge {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    font-size: 7px;
+    font-weight: bold;
+    background: rgba(95, 255, 140, 0.9);
+    color: #000;
+    padding: 1px 3px;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    border-radius: 1px;
+    z-index: 4;
+  }
+  /* Item favori : étoile en haut à droite */
+  .item-cell .fav-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 11px;
+    color: #ffd84d;
+    text-shadow: 0 0 4px rgba(0,0,0,0.8), 0 0 6px rgba(255,216,77,0.6);
+    line-height: 1;
+    z-index: 4;
+  }
   .item-cell.empty {
     cursor: default;
     background: var(--bg-1);
@@ -489,6 +537,14 @@
     <div class="filter-row" id="filter-slot"></div>
     <div class="filter-row" id="filter-rarity"></div>
     <div class="filter-row" id="filter-ilvl"></div>
+    <div class="filter-row" id="filter-sort">
+      <span class="filter-label">TRI</span>
+      <button class="filter-btn" data-sort="recent">⏰ Récent</button>
+      <button class="filter-btn" data-sort="ilvl-desc">↓ Tier</button>
+      <button class="filter-btn" data-sort="ilvl-asc">↑ Tier</button>
+      <button class="filter-btn" data-sort="rarity-desc">↓ Rareté</button>
+      <button class="filter-btn" data-sort="rarity-asc">↑ Rareté</button>
+    </div>
   </section>
 
   <!-- ACTION BAR -->
@@ -533,6 +589,9 @@ import {
   loadCatalog, getItem, getAllItems,
   rollItem, composeItemName, describeItemStats, ilvlToRoman
 } from './items-catalog.js';
+import {
+  isFavorite, toggleFavorite, isInAnyBuild, canDelete, getBuildsContainingItem
+} from './player-meta.js';
 
 // === STATE ===
 const STATE = {
@@ -540,6 +599,7 @@ const STATE = {
   equipped: {},
   selectedIds: new Set(),
   filter: { slot: 'all', rarity: 'all', ilvl: 'all', search: '' },
+  sort: 'recent', // 'recent' | 'ilvl-asc' | 'ilvl-desc' | 'rarity-desc' | 'rarity-asc'
   page: 1,
   itemsPerPage: 40,
   focusedItemId: null,
@@ -750,6 +810,13 @@ function onIlvlFilterClick(lv){
     b.classList.toggle('active', b.dataset.ilvl === String(lv)));
   render();
 }
+function onSortClick(s){
+  STATE.sort = s;
+  STATE.page = 1;
+  document.querySelectorAll('#filter-sort .filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.sort === s));
+  render();
+}
 
 // === EVENT HANDLERS ===
 function attachEventHandlers(){
@@ -757,6 +824,12 @@ function attachEventHandlers(){
     STATE.filter.search = e.target.value.toLowerCase().trim();
     STATE.page = 1;
     render();
+  });
+
+  // Sort buttons (déjà rendus en HTML, juste à brancher)
+  document.querySelectorAll('#filter-sort .filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sort === STATE.sort);
+    b.addEventListener('click', () => onSortClick(b.dataset.sort));
   });
 
   document.getElementById('btn-select-all').addEventListener('click', () => {
@@ -883,16 +956,28 @@ function equipItem(instanceId){
 }
 
 function destroySelected(){
-  STATE.chest = STATE.chest.filter(i => !STATE.selectedIds.has(i.instanceId));
+  // Exclut les favoris : ils ne peuvent pas être détruits
+  const toDestroy = [...STATE.selectedIds].filter(iid => canDelete(iid));
+  const protectedCount = STATE.selectedIds.size - toDestroy.length;
+  if(toDestroy.length === 0){
+    alert('Aucun item à détruire : tous les sélectionnés sont des favoris.\nRetire-les des favoris (★) d\'abord.');
+    return;
+  }
+  STATE.chest = STATE.chest.filter(i => !toDestroy.includes(i.instanceId));
   STATE.selectedIds.clear();
   STATE.focusedItemId = null;
   saveChest();
   render();
+  if(protectedCount > 0){
+    setTimeout(() => alert(`${toDestroy.length} item(s) détruit(s). ${protectedCount} favori(s) protégé(s) ont été conservés.`), 100);
+  }
 }
 
-// === FILTERING ===
+// === FILTERING / SORTING ===
+const RARITY_ORDER = { common: 0, magic: 1, rare: 2, epic: 3, legendary: 4 };
+
 function getFilteredItems(){
-  return STATE.chest.filter(item => {
+  const filtered = STATE.chest.filter(item => {
     const tpl = getItem(item.itemId);
     if(!tpl) return false;
     if(STATE.filter.slot !== 'all' && tpl.slot !== STATE.filter.slot) return false;
@@ -905,6 +990,27 @@ function getFilteredItems(){
     }
     return true;
   });
+
+  // Tri
+  switch(STATE.sort){
+    case 'ilvl-asc':
+      filtered.sort((a, b) => a.ilvl - b.ilvl || (b.droppedAt || 0) - (a.droppedAt || 0));
+      break;
+    case 'ilvl-desc':
+      filtered.sort((a, b) => b.ilvl - a.ilvl || (b.droppedAt || 0) - (a.droppedAt || 0));
+      break;
+    case 'rarity-desc':
+      filtered.sort((a, b) => (RARITY_ORDER[b.rarity] || 0) - (RARITY_ORDER[a.rarity] || 0));
+      break;
+    case 'rarity-asc':
+      filtered.sort((a, b) => (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0));
+      break;
+    case 'recent':
+    default:
+      filtered.sort((a, b) => (b.droppedAt || 0) - (a.droppedAt || 0));
+      break;
+  }
+  return filtered;
 }
 
 // === RENDER ===
@@ -924,6 +1030,11 @@ function renderStatsMini(){
   `;
 }
 
+// Check si un item est équipé (vérifie tous les slots du héro)
+function isItemEquipped(instanceId){
+  return Object.values(STATE.equipped).some(it => it?.instanceId === instanceId);
+}
+
 function renderGrid(){
   const grid = document.getElementById('grid');
   const filtered = getFilteredItems();
@@ -937,15 +1048,20 @@ function renderGrid(){
   pageItems.forEach(item => {
     const tpl = getItem(item.itemId);
     if(!tpl) return;
+    const equipped = isItemEquipped(item.instanceId);
+    const fav = isFavorite(item.instanceId);
     const cell = document.createElement('button');
     cell.className = 'item-cell r-' + item.rarity;
     if(STATE.selectedIds.has(item.instanceId)) cell.classList.add('selected');
-    cell.title = composeItemName(item);
-    // Slot icon (pas l'icon de l'item lui-même)
+    if(equipped) cell.classList.add('equipped');
+    if(fav) cell.classList.add('favorited');
+    cell.title = composeItemName(item) + (equipped ? ' [ÉQUIPÉ]' : '') + (fav ? ' ★' : '');
     const slotIcon = SLOT_ICONS[tpl.slot] || tpl.icon || '?';
     cell.innerHTML = `
       <span class="item-icon">${slotIcon}</span>
       <span class="ilvl-badge">${ilvlToRoman(item.ilvl)}</span>
+      ${equipped ? '<span class="eq-badge">EQ</span>' : ''}
+      ${fav ? '<span class="fav-badge">★</span>' : ''}
     `;
     cell.addEventListener('click', () => onCellClick(item));
     grid.appendChild(cell);
@@ -1017,30 +1133,53 @@ function renderComparison(){
   wrap.innerHTML = `
     <div class="cmp-side">
       <h3 class="selected">▸ SÉLECTIONNÉ</h3>
-      ${renderItemCard(item)}
+      ${renderItemCard(item, { interactive: true })}
     </div>
     <div class="cmp-divider"></div>
     <div class="cmp-side">
       <h3 class="equipped">◆ ÉQUIPÉ — ${slotLabel(equippedSlot)}</h3>
-      ${equippedItem ? renderItemCard(equippedItem) : '<div class="cmp-empty">Aucun item équipé</div>'}
+      ${equippedItem ? renderItemCard(equippedItem, { interactive: false }) : '<div class="cmp-empty">Aucun item équipé</div>'}
     </div>
   `;
+
+  // Branche le click favori
+  wrap.querySelectorAll('.fav-toggle:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const iid = btn.dataset.favInstance;
+      toggleFavorite(iid);
+      renderComparison();
+      renderGrid();
+      renderActionBar();
+    });
+  });
 }
 
 function slotLabel(slot){
   return SLOT_LABELS[slot] || slot;
 }
 
-function renderItemCard(item){
+function renderItemCard(item, opts){
   const tpl = getItem(item.itemId);
   if(!tpl) return '';
   const stats = describeItemStats(item);
+  const showFav = opts && opts.interactive;
+  const fav = isFavorite(item.instanceId);
+  const builds = getBuildsContainingItem(item.instanceId);
+  const lockedByBuild = builds.length > 0;
+  // Étoile : cliquable (data-attr) si interactive. Si dans un build, on désactive le toggle.
+  const favBtn = showFav
+    ? `<button class="fav-toggle ${fav ? 'on' : 'off'} ${lockedByBuild ? 'locked' : ''}"
+         data-fav-instance="${item.instanceId}"
+         title="${lockedByBuild ? `Verrouillé : item dans ${builds.length} build(s)` : (fav ? 'Retirer des favoris' : 'Ajouter aux favoris')}"
+         ${lockedByBuild ? 'disabled' : ''}>${fav ? '★' : '☆'}</button>`
+    : '';
   return `
     <div class="cmp-item">
       <div class="cmp-item-icon" style="border-color: var(--r-${item.rarity}-bright)">${tpl.icon || '?'}</div>
       <div class="cmp-item-info">
-        <div class="cmp-item-name" style="color: var(--r-${item.rarity}-bright)">${composeItemName(item)}</div>
-        <div class="cmp-item-meta">iLvl ${ilvlToRoman(item.ilvl)} · ${RARITY_LABELS[item.rarity] || item.rarity} · ${slotLabel(tpl.slot)}</div>
+        <div class="cmp-item-name" style="color: var(--r-${item.rarity}-bright)">${composeItemName(item)} ${favBtn}</div>
+        <div class="cmp-item-meta">iLvl ${ilvlToRoman(item.ilvl)} · ${RARITY_LABELS[item.rarity] || item.rarity} · ${slotLabel(tpl.slot)}${lockedByBuild ? ` · 🔒 ${builds.map(b => b.name).join(', ')}` : ''}</div>
       </div>
     </div>
     <div class="cmp-stats">

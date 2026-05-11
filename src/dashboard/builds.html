@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Builds — REACTOR HOLLOW</title>
+<style>
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #3df0ff;
+    --good: #5fff8c;
+    --bad: #ff5959;
+    --warn: #ffaa44;
+    --fav: #ffd84d;
+    --r-common-bright: #c0c0c0;
+    --r-magic-bright: #6aaaff;
+    --r-rare-bright: #ffd84d;
+    --r-epic-bright: #cc44ff;
+    --r-legendary-bright: #ff7a00;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .header {
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border-2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .back-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 6px 12px;
+    color: var(--text-0);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .back-btn:hover { background: var(--bg-3); }
+  .title {
+    font-size: 16px; letter-spacing: 2px;
+    font-weight: bold;
+  }
+  .title .acc { color: var(--accent); }
+  .stats-mini { margin-left: auto; font-size: 11px; color: var(--text-1); }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px;
+  }
+
+  .section {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .count {
+    color: var(--text-2);
+    font-size: 10px;
+    margin-left: auto;
+  }
+
+  /* === LIST OF BUILDS === */
+  .builds-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .build-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .build-card:hover { border-color: var(--accent); }
+  .build-card.editing { border-color: var(--accent); background: rgba(61, 240, 255, 0.06); }
+  .build-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .build-name {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--accent);
+    flex: 1;
+    word-break: break-word;
+  }
+  .build-slots-preview {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .build-mini-slot {
+    aspect-ratio: 1;
+    background: var(--bg-3);
+    border: 1px solid var(--border-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 16px;
+  }
+  .build-mini-slot.r-common    { border-color: var(--r-common-bright); background: rgba(192,192,192,0.05); }
+  .build-mini-slot.r-magic     { border-color: var(--r-magic-bright); background: rgba(106,170,255,0.08); }
+  .build-mini-slot.r-rare      { border-color: var(--r-rare-bright); background: rgba(255,216,77,0.08); }
+  .build-mini-slot.r-epic      { border-color: var(--r-epic-bright); background: rgba(204,68,255,0.08); }
+  .build-mini-slot.r-legendary { border-color: var(--r-legendary-bright); background: rgba(255,122,0,0.10); }
+  .build-mini-slot.invalid {
+    border-color: var(--bad);
+    color: var(--bad);
+    background: rgba(255, 89, 89, 0.05);
+  }
+  .build-mini-slot.empty {
+    color: var(--text-2);
+    font-size: 10px;
+    opacity: 0.5;
+  }
+  .build-mini-slot .ilvl-tag {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    font-size: 7px;
+    color: var(--text-0);
+    background: rgba(0,0,0,0.7);
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .build-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .build-btn {
+    flex: 1;
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    font-family: inherit;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 6px;
+    cursor: pointer;
+    min-width: 60px;
+  }
+  .build-btn:hover { background: var(--accent); color: #000; }
+  .build-btn.equip { background: rgba(95, 255, 140, 0.15); border-color: var(--good); color: var(--good); }
+  .build-btn.equip:hover { background: var(--good); color: #000; }
+  .build-btn.del { background: rgba(255, 89, 89, 0.1); border-color: var(--bad); color: var(--bad); }
+  .build-btn.del:hover { background: var(--bad); color: #000; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-2);
+    padding: 30px 16px;
+    font-size: 11px;
+    border: 1px dashed var(--border-2);
+  }
+
+  /* === EDITOR / CREATOR === */
+  .editor-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .name-input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-0);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  .name-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .action-btn {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #000;
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .action-btn:hover:not(:disabled) { background: #5dffff; }
+  .action-btn:disabled {
+    background: var(--bg-2);
+    color: var(--text-2);
+    border-color: var(--border-2);
+    cursor: not-allowed;
+  }
+  .action-btn.secondary {
+    background: var(--bg-2);
+    border-color: var(--border-2);
+    color: var(--text-0);
+  }
+  .action-btn.secondary:hover { background: var(--bg-3); }
+  .action-btn.warn {
+    background: rgba(255, 170, 68, 0.1);
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+  .action-btn.warn:hover { background: var(--warn); color: #000; }
+
+  /* === SLOTS GRID (D2-style) === */
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .slot-cell {
+    aspect-ratio: 1;
+    background: var(--bg-2);
+    border: 2px dashed var(--border-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.1s;
+    padding: 4px;
+  }
+  .slot-cell:hover { border-color: var(--accent); }
+  .slot-cell.filled {
+    border-style: solid;
+  }
+  .slot-cell.filled.r-common    { border-color: var(--r-common-bright); background: rgba(192,192,192,0.05); }
+  .slot-cell.filled.r-magic     { border-color: var(--r-magic-bright); background: rgba(106,170,255,0.08); }
+  .slot-cell.filled.r-rare      { border-color: var(--r-rare-bright); background: rgba(255,216,77,0.08); }
+  .slot-cell.filled.r-epic      { border-color: var(--r-epic-bright); background: rgba(204,68,255,0.08); }
+  .slot-cell.filled.r-legendary { border-color: var(--r-legendary-bright); background: rgba(255,122,0,0.10); }
+  .slot-cell .slot-name {
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+  }
+  .slot-cell .slot-icon {
+    font-size: 32px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+  }
+  .slot-cell.empty .slot-icon {
+    color: var(--text-2);
+    opacity: 0.3;
+  }
+  .slot-cell .ilvl-mini {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 9px;
+    font-weight: bold;
+    color: var(--text-0);
+    text-shadow: 0 0 3px #000;
+  }
+  .slot-cell .item-name-mini {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    font-size: 7px;
+    color: var(--text-1);
+    line-height: 1;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .slot-cell.invalid {
+    border-color: var(--bad);
+    background: rgba(255, 89, 89, 0.08);
+  }
+  .slot-cell.invalid .slot-icon { color: var(--bad); }
+  .slot-cell .clear-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid var(--border-2);
+    color: var(--bad);
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    font-family: inherit;
+  }
+  .slot-cell .clear-btn:hover {
+    background: var(--bad);
+    color: #000;
+  }
+
+  .editor-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* === ITEM PICKER MODAL === */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-1);
+    border: 1px solid var(--accent);
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-2);
+  }
+  .modal-header .title {
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .modal-close {
+    background: transparent;
+    border: 0;
+    color: var(--text-1);
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .modal-body {
+    overflow-y: auto;
+    padding: 12px;
+    flex: 1;
+  }
+  .modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 6px;
+  }
+  .pick-cell {
+    aspect-ratio: 1;
+    background: var(--bg-2);
+    border: 2px solid;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 22px;
+    transition: transform 0.1s;
+    color: var(--text-0);
+    font-family: inherit;
+  }
+  .pick-cell:hover { transform: scale(1.05); }
+  .pick-cell.r-common { border-color: var(--r-common-bright); background: rgba(192,192,192,0.05); }
+  .pick-cell.r-magic { border-color: var(--r-magic-bright); background: rgba(106,170,255,0.08); }
+  .pick-cell.r-rare { border-color: var(--r-rare-bright); background: rgba(255,216,77,0.08); }
+  .pick-cell.r-epic { border-color: var(--r-epic-bright); background: rgba(204,68,255,0.08); }
+  .pick-cell.r-legendary { border-color: var(--r-legendary-bright); background: rgba(255,122,0,0.10); }
+  .pick-cell .ilvl-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    font-size: 8px;
+    padding: 1px 3px;
+    color: var(--text-0);
+  }
+  .pick-cell .equipped-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: var(--good);
+    color: #000;
+    font-size: 8px;
+    padding: 1px 3px;
+    font-weight: bold;
+  }
+  .pick-cell .fav-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 10px;
+    color: var(--fav);
+    padding: 1px 3px;
+    text-shadow: 0 0 3px #000;
+  }
+  .modal-empty {
+    text-align: center;
+    color: var(--text-2);
+    padding: 30px;
+    font-size: 11px;
+  }
+
+  /* Notif flash */
+  .flash-notif {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-1);
+    border: 1px solid var(--accent);
+    padding: 10px 16px;
+    font-size: 11px;
+    z-index: 200;
+    box-shadow: 0 0 16px rgba(61,240,255,0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .flash-notif.show { opacity: 1; }
+  .flash-notif.good { border-color: var(--good); box-shadow: 0 0 16px rgba(95,255,140,0.4); color: var(--good); }
+  .flash-notif.warn { border-color: var(--warn); box-shadow: 0 0 16px rgba(255,170,68,0.4); color: var(--warn); }
+
+  /* === MOBILE === */
+  @media (max-width: 600px) {
+    .container { padding: 8px; }
+    .title { font-size: 13px; }
+    .stats-mini { display: none; }
+    .builds-list { grid-template-columns: 1fr; }
+    .slots-grid { gap: 6px; max-width: 100%; }
+    .slot-cell .slot-icon { font-size: 22px; }
+    .section { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="../../index.html" class="back-btn">← RETOUR</a>
+  <div class="title"><span class="acc">📁</span> BUILDS</div>
+  <div class="stats-mini" id="stats-mini"></div>
+</header>
+
+<main class="container">
+
+  <!-- LIST OF BUILDS -->
+  <section class="section">
+    <div class="section-title">
+      <span>📁 Mes builds</span>
+      <span class="count" id="builds-count"></span>
+    </div>
+    <div id="builds-list"></div>
+  </section>
+
+  <!-- EDITOR -->
+  <section class="section">
+    <div class="section-title">
+      <span id="editor-title">➕ Créer un nouveau build</span>
+    </div>
+
+    <div class="editor-controls">
+      <input type="text" class="name-input" id="build-name" placeholder="Nom du build (ex: 'Glass Cannon', 'Tank Pyro'...)" maxlength="40">
+    </div>
+
+    <div class="slots-grid" id="slots-grid"></div>
+
+    <div class="editor-actions">
+      <button class="action-btn" id="btn-save">💾 ENREGISTRER</button>
+      <button class="action-btn secondary" id="btn-cancel" style="display:none;">✕ ANNULER</button>
+      <button class="action-btn warn" id="btn-clear-slots">🧹 Vider</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ITEM PICKER MODAL -->
+<div class="modal-overlay" id="picker-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title" id="picker-title">Choisir un item</div>
+      <button class="modal-close" id="picker-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid" id="picker-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FLASH -->
+<div class="flash-notif" id="flash-notif"></div>
+
+<script type="module">
+import {
+  loadCatalog, getItem, getAllItems,
+  composeItemName, ilvlToRoman, describeItemStats,
+} from './items-catalog.js';
+import {
+  loadBuilds, getBuild, createBuild, updateBuild, deleteBuild,
+  isFavorite, isInAnyBuild, MAX_BUILDS,
+} from './player-meta.js';
+
+// === STATE ===
+const STATE = {
+  chest: [],
+  equipped: {},
+  // Editor state
+  editingBuildId: null,    // null = création, sinon ID du build en édition
+  editorName: '',
+  editorItems: {},          // { slot: instanceId }
+  // Picker
+  pickerSlot: null,
+};
+
+// 8 slots du héro : mainhand, offhand, head, chest, legs, gloves, boots, amulet, ring
+// Layout grid 3x3 (D2-style) :
+//   amulet | head   | ring
+//   mainhand | chest | offhand
+//   (vide) | legs   | (vide)
+//   (vide) | gloves | (vide)
+//   (vide) | boots  | (vide)
+// On simplifie en 3 colonnes mais inline ordre logique
+const SLOT_LIST = [
+  { slot: 'mainhand', label: 'Arme',     icon: '⚔️' },
+  { slot: 'offhand',  label: 'Off-hand', icon: '🛡️' },
+  { slot: 'head',     label: 'Tête',     icon: '🪖' },
+  { slot: 'chest',    label: 'Torse',    icon: '🦺' },
+  { slot: 'legs',     label: 'Jambes',   icon: '👖' },
+  { slot: 'gloves',   label: 'Mains',    icon: '🧤' },
+  { slot: 'boots',    label: 'Pieds',    icon: '👢' },
+  { slot: 'amulet',   label: 'Amulette', icon: '📿' },
+  { slot: 'ring',     label: 'Anneau',   icon: '💍' },
+];
+
+// === STORAGE ===
+function loadChest(){
+  try {
+    const raw = localStorage.getItem('rh_player_chest');
+    STATE.chest = raw ? JSON.parse(raw) : [];
+  } catch(e){ STATE.chest = []; }
+}
+function loadEquipped(){
+  try {
+    const raw = localStorage.getItem('rh_player_equipped');
+    STATE.equipped = raw ? JSON.parse(raw) : {};
+  } catch(e){ STATE.equipped = {}; }
+}
+function saveEquipped(){
+  localStorage.setItem('rh_player_equipped', JSON.stringify(STATE.equipped));
+}
+
+function isEquipped(instanceId){
+  return Object.values(STATE.equipped).some(it => it?.instanceId === instanceId);
+}
+
+// === FLASH NOTIF ===
+function flash(msg, kind){
+  const el = document.getElementById('flash-notif');
+  el.className = 'flash-notif show' + (kind ? ' ' + kind : '');
+  el.textContent = msg;
+  clearTimeout(flash._t);
+  flash._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// === RENDER ===
+function renderStatsMini(){
+  const builds = loadBuilds();
+  document.getElementById('stats-mini').textContent = `${builds.length}/${MAX_BUILDS} builds`;
+}
+
+function renderBuildsList(){
+  const list = document.getElementById('builds-list');
+  const builds = loadBuilds();
+  document.getElementById('builds-count').textContent = `${builds.length}/${MAX_BUILDS}`;
+
+  if(builds.length === 0){
+    list.innerHTML = `<div class="empty-state">Aucun build enregistré.<br>Crée ton premier build ci-dessous.</div>`;
+    return;
+  }
+
+  list.innerHTML = `<div class="builds-list">` + builds.map(b => renderBuildCard(b)).join('') + `</div>`;
+
+  // Bind handlers
+  list.querySelectorAll('[data-build-id]').forEach(card => {
+    const buildId = card.dataset.buildId;
+    card.querySelector('[data-action="equip"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      equipBuild(buildId);
+    });
+    card.querySelector('[data-action="edit"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startEdit(buildId);
+    });
+    card.querySelector('[data-action="delete"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(confirm('Supprimer ce build ? Les items resteront dans le coffre.')){
+        deleteBuild(buildId);
+        flash('Build supprimé', 'warn');
+        render();
+      }
+    });
+  });
+}
+
+function renderBuildCard(build){
+  // Pour chaque slot, soit l'item existe encore (rarity valide), soit il est INVALIDE (détruit/manquant)
+  const slotsHtml = SLOT_LIST.slice(0, 9).map(s => {
+    const iid = build.items[s.slot];
+    if(!iid){
+      return `<div class="build-mini-slot empty">·</div>`;
+    }
+    const item = STATE.chest.find(i => i.instanceId === iid);
+    if(!item){
+      // Item détruit ou plus présent
+      return `<div class="build-mini-slot invalid" title="${s.label} : item introuvable">⚠</div>`;
+    }
+    return `<div class="build-mini-slot r-${item.rarity}" title="${s.label} : ${composeItemName(item)}">
+      ${s.icon}
+      <span class="ilvl-tag">${ilvlToRoman(item.ilvl)}</span>
+    </div>`;
+  }).join('');
+
+  const isEditing = STATE.editingBuildId === build.id;
+  const filledCount = Object.values(build.items || {}).filter(iid => iid && STATE.chest.find(i => i.instanceId === iid)).length;
+  const totalSlots = Object.values(build.items || {}).filter(iid => iid).length;
+  const invalidCount = totalSlots - filledCount;
+
+  return `
+    <div class="build-card ${isEditing ? 'editing' : ''}" data-build-id="${build.id}">
+      <div class="build-card-header">
+        <span class="build-name">${escapeHtml(build.name)}</span>
+        <span style="font-size:9px; color:var(--text-2);">${filledCount}/${totalSlots}${invalidCount > 0 ? ` <b style="color:var(--bad);">⚠${invalidCount}</b>` : ''}</span>
+      </div>
+      <div class="build-slots-preview">${slotsHtml}</div>
+      <div class="build-actions">
+        <button class="build-btn equip" data-action="equip">⚔ Équiper</button>
+        <button class="build-btn" data-action="edit">✎ Modifier</button>
+        <button class="build-btn del" data-action="delete">🗑 Suppr.</button>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function renderEditor(){
+  const titleEl = document.getElementById('editor-title');
+  const cancelBtn = document.getElementById('btn-cancel');
+  const saveBtn = document.getElementById('btn-save');
+  if(STATE.editingBuildId){
+    titleEl.innerHTML = '✎ Modifier le build';
+    cancelBtn.style.display = '';
+    saveBtn.textContent = '💾 ENREGISTRER LES MODIFS';
+  } else {
+    titleEl.innerHTML = '➕ Créer un nouveau build';
+    cancelBtn.style.display = 'none';
+    saveBtn.textContent = '💾 ENREGISTRER';
+  }
+
+  // Disable save si max atteint et en mode création
+  const builds = loadBuilds();
+  if(!STATE.editingBuildId && builds.length >= MAX_BUILDS){
+    saveBtn.disabled = true;
+    saveBtn.textContent = `❌ MAX ${MAX_BUILDS} BUILDS ATTEINTS`;
+  } else {
+    saveBtn.disabled = false;
+  }
+
+  // Render slots grid
+  const grid = document.getElementById('slots-grid');
+  grid.innerHTML = SLOT_LIST.slice(0, 9).map(s => renderSlotCell(s)).join('');
+  grid.querySelectorAll('[data-slot]').forEach(cell => {
+    cell.addEventListener('click', (e) => {
+      if(e.target.classList.contains('clear-btn')) return;
+      openPicker(cell.dataset.slot);
+    });
+  });
+  grid.querySelectorAll('.clear-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const slot = btn.dataset.clearSlot;
+      delete STATE.editorItems[slot];
+      renderEditor();
+    });
+  });
+
+  // Bind name input
+  const nameInput = document.getElementById('build-name');
+  nameInput.value = STATE.editorName;
+}
+
+function renderSlotCell(s){
+  const iid = STATE.editorItems[s.slot];
+  if(!iid){
+    return `
+      <button class="slot-cell empty" data-slot="${s.slot}" title="Cliquez pour assigner un ${s.label}">
+        <span class="slot-name">${s.label}</span>
+        <span class="slot-icon">${s.icon}</span>
+      </button>
+    `;
+  }
+  const item = STATE.chest.find(i => i.instanceId === iid);
+  if(!item){
+    return `
+      <button class="slot-cell invalid" data-slot="${s.slot}" title="${s.label} : item introuvable">
+        <span class="slot-name">${s.label}</span>
+        <span class="slot-icon">⚠</span>
+        <button class="clear-btn" data-clear-slot="${s.slot}" title="Vider ce slot">✕</button>
+      </button>
+    `;
+  }
+  const tpl = getItem(item.itemId);
+  const icon = tpl?.icon || s.icon;
+  return `
+    <button class="slot-cell filled r-${item.rarity}" data-slot="${s.slot}" title="${s.label} : ${composeItemName(item)}">
+      <span class="slot-name">${s.label}</span>
+      <span class="slot-icon">${icon}</span>
+      <span class="item-name-mini">${escapeHtml(tpl?.name || '?')}</span>
+      <span class="ilvl-mini">${ilvlToRoman(item.ilvl)}</span>
+      <button class="clear-btn" data-clear-slot="${s.slot}" title="Retirer">✕</button>
+    </button>
+  `;
+}
+
+function render(){
+  renderStatsMini();
+  renderBuildsList();
+  renderEditor();
+}
+
+// === EDITOR ACTIONS ===
+function startCreate(){
+  STATE.editingBuildId = null;
+  STATE.editorName = '';
+  STATE.editorItems = {};
+  render();
+}
+function startEdit(buildId){
+  const b = getBuild(buildId);
+  if(!b) return;
+  STATE.editingBuildId = buildId;
+  STATE.editorName = b.name;
+  STATE.editorItems = { ...(b.items || {}) };
+  render();
+  // Scroll to editor
+  document.querySelector('.section:nth-child(2)')?.scrollIntoView({ behavior: 'smooth' });
+}
+function cancelEdit(){
+  startCreate();
+  flash('Édition annulée');
+}
+function clearSlots(){
+  STATE.editorItems = {};
+  renderEditor();
+}
+function saveBuild(){
+  const name = document.getElementById('build-name').value.trim() || 'Sans nom';
+  STATE.editorName = name;
+  if(STATE.editingBuildId){
+    // UPDATE
+    const updated = updateBuild(STATE.editingBuildId, {
+      name,
+      items: { ...STATE.editorItems },
+    });
+    if(updated){
+      flash(`Build "${name}" mis à jour`, 'good');
+    }
+  } else {
+    // CREATE
+    const created = createBuild(name, { ...STATE.editorItems });
+    if(!created){
+      flash(`Limite de ${MAX_BUILDS} builds atteinte`, 'warn');
+      return;
+    }
+    flash(`Build "${name}" créé`, 'good');
+  }
+  startCreate(); // reset après save
+}
+
+// === EQUIP ===
+function equipBuild(buildId){
+  const b = getBuild(buildId);
+  if(!b) return;
+  // Pour chaque slot du build, vérifie que l'item existe encore et applique
+  let appliedCount = 0;
+  let missingCount = 0;
+  Object.entries(b.items || {}).forEach(([slot, iid]) => {
+    if(!iid) return;
+    const item = STATE.chest.find(i => i.instanceId === iid);
+    if(!item){ missingCount++; return; }
+    STATE.equipped[slot] = item;
+    appliedCount++;
+  });
+
+  // Gère l'arme 2 mains : si mainhand est 2H, offhand doit être vide
+  const mh = STATE.equipped.mainhand;
+  if(mh){
+    const mhTpl = getItem(mh.itemId);
+    if(mhTpl && mhTpl.handed === 2){
+      delete STATE.equipped.offhand;
+    }
+  }
+
+  saveEquipped();
+  const msg = `Build "${b.name}" équipé (${appliedCount} pièces${missingCount > 0 ? `, ${missingCount} manquantes` : ''})`;
+  flash(msg, missingCount > 0 ? 'warn' : 'good');
+}
+
+// === PICKER ===
+function openPicker(slot){
+  STATE.pickerSlot = slot;
+  const modal = document.getElementById('picker-modal');
+  const grid = document.getElementById('picker-grid');
+  const titleEl = document.getElementById('picker-title');
+  const slotDef = SLOT_LIST.find(s => s.slot === slot);
+  titleEl.textContent = `Choisir ${slotDef ? slotDef.label.toLowerCase() : slot}`;
+
+  // Candidats : items du coffre dont tpl.slot === slot
+  // Pour mainhand : weapon 1H ou 2H (tpl.slot === 'mainhand')
+  // Pour offhand : tpl.slot === 'offhand' ET compatible avec mainhand sélectionnée (si présente)
+  const candidates = STATE.chest.filter(item => {
+    const tpl = getItem(item.itemId);
+    if(!tpl) return false;
+    return tpl.slot === slot;
+  });
+
+  // Cas spécial offhand : doit être compatible avec mainhand en cours dans STATE.editorItems
+  let finalCandidates = candidates;
+  if(slot === 'offhand'){
+    const mhId = STATE.editorItems.mainhand;
+    const mhItem = mhId ? STATE.chest.find(i => i.instanceId === mhId) : null;
+    if(mhItem){
+      const mhTpl = getItem(mhItem.itemId);
+      if(mhTpl){
+        if(mhTpl.handed === 2){
+          // 2H : aucun off-hand possible
+          finalCandidates = [];
+        } else if(mhTpl.category){
+          // 1H : off-hand doit avoir compatibleWith incluant cette catégorie
+          finalCandidates = candidates.filter(ohItem => {
+            const ohTpl = getItem(ohItem.itemId);
+            if(!ohTpl || !ohTpl.compatibleWith) return false;
+            return ohTpl.compatibleWith.includes(mhTpl.category);
+          });
+        }
+      }
+    }
+  }
+
+  if(finalCandidates.length === 0){
+    let msg = 'Aucun item dans le coffre pour ce slot.';
+    if(slot === 'offhand' && STATE.editorItems.mainhand){
+      const mhItem = STATE.chest.find(i => i.instanceId === STATE.editorItems.mainhand);
+      const mhTpl = mhItem ? getItem(mhItem.itemId) : null;
+      if(mhTpl && mhTpl.handed === 2){
+        msg = 'Arme 2 mains équipée : pas d\'off-hand possible.';
+      } else if(mhTpl){
+        msg = `Aucun off-hand compatible avec "${mhTpl.name}" (${mhTpl.category}).`;
+      }
+    }
+    grid.innerHTML = `<div class="modal-empty">${msg}</div>`;
+  } else {
+    grid.innerHTML = '';
+    finalCandidates.forEach(item => {
+      const tpl = getItem(item.itemId);
+      if(!tpl) return;
+      const equipped = isEquipped(item.instanceId);
+      const fav = isFavorite(item.instanceId);
+      const cell = document.createElement('button');
+      cell.className = 'pick-cell r-' + item.rarity;
+      cell.title = composeItemName(item) + ' iLvl ' + ilvlToRoman(item.ilvl);
+      cell.innerHTML = `
+        <span>${tpl.icon || '?'}</span>
+        <span class="ilvl-badge">${ilvlToRoman(item.ilvl)}</span>
+        ${equipped ? '<span class="equipped-badge">EQ</span>' : ''}
+        ${fav ? '<span class="fav-badge">★</span>' : ''}
+      `;
+      cell.addEventListener('click', () => {
+        STATE.editorItems[slot] = item.instanceId;
+        // Si on assigne mainhand 2H, vire l'offhand
+        if(slot === 'mainhand'){
+          if(tpl.handed === 2 && STATE.editorItems.offhand){
+            delete STATE.editorItems.offhand;
+            flash('Arme 2 mains : off-hand retiré', 'warn');
+          } else if(STATE.editorItems.offhand){
+            // Vérifie compat offhand existant
+            const ohItem = STATE.chest.find(i => i.instanceId === STATE.editorItems.offhand);
+            const ohTpl = ohItem ? getItem(ohItem.itemId) : null;
+            if(ohTpl && ohTpl.compatibleWith && !ohTpl.compatibleWith.includes(tpl.category)){
+              delete STATE.editorItems.offhand;
+              flash(`Off-hand incompatible avec ${tpl.category} : retiré`, 'warn');
+            }
+          }
+        }
+        closePicker();
+        renderEditor();
+      });
+      grid.appendChild(cell);
+    });
+  }
+
+  modal.classList.add('open');
+}
+
+function closePicker(){
+  document.getElementById('picker-modal').classList.remove('open');
+  STATE.pickerSlot = null;
+}
+
+// === BOOT ===
+async function boot(){
+  await loadCatalog();
+  loadChest();
+  loadEquipped();
+
+  document.getElementById('build-name').addEventListener('input', (e) => {
+    STATE.editorName = e.target.value;
+  });
+  document.getElementById('btn-save').addEventListener('click', saveBuild);
+  document.getElementById('btn-cancel').addEventListener('click', cancelEdit);
+  document.getElementById('btn-clear-slots').addEventListener('click', () => {
+    if(Object.keys(STATE.editorItems).length === 0) return;
+    if(confirm('Vider tous les slots du build en cours ?')){
+      clearSlots();
+    }
+  });
+
+  document.getElementById('picker-close').addEventListener('click', closePicker);
+  document.getElementById('picker-modal').addEventListener('click', (e) => {
+    if(e.target.id === 'picker-modal') closePicker();
+  });
+
+  render();
+}
+
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#ff5959;font-family:monospace;">Erreur de chargement: ${e.message}</div>`;
+});
+</script>
+
+</body>
+</html>
