@@ -76,8 +76,14 @@ const CAPS = {
 
 /**
  * Convertit un item Supabase en item "game-ready" (template enrichi).
+ *
+ * Important : `passive` ne contient QUE les stats que player.js/aggregatePassives
+ * accepte (crit, resist, lifesteal, etc.) — voir PASSIVE_STAT_KEYS dans player.js.
+ * Les stats primaires (maxHp, armor) sont retournées séparément via primaryBoosts
+ * pour être appliquées directement sur le `stats` final.
+ *
  * @param {object} item - { instanceId, itemId, ilvl, rarity, implicit, affixes }
- * @returns {object|null} item au format game.html / player.js
+ * @returns {{ gameItem: object, primaryBoosts: { maxHp, armor, globalDmgPct } } | null}
  */
 function buildGameItem(item){
   if(!item || !item.itemId) return null;
@@ -96,33 +102,33 @@ function buildGameItem(item){
     ];
   }
 
-  // Agréger l'implicit + les affixes en un objet `passive`
-  // Plus globalDmg/divineShield qui ne mappent pas 1-pour-1 — on les met dans des champs spéciaux
+  // Séparation des bonus :
+  // - primaryBoosts : maxHp, armor, globalDmgPct (vont sur stats final directement)
+  // - passive : tout le reste (crit, resist, lifesteal, etc.) → géré par aggregatePassives()
   const passive = {};
-  let globalDmgPct = 0;       // % à appliquer sur damage du joueur (sera traité en stats finales)
-  let divineShield = 0;        // %réduction dégâts éléments (on l'ajoute à magicResist)
+  const primaryBoosts = { maxHp: 0, armor: 0, globalDmgPct: 0 };
+  let divineShield = 0;
 
-  function addToPassive(stat, value){
-    if(!stat || value == null) return;
+  function addBonus(stat, value){
+    if(!stat || value == null || value === 0) return;
+    // Stats primaires : direct dans primaryBoosts (PAS dans passive,
+    // car player.js/aggregatePassives ne lit pas maxHp/armor dans passive)
+    if(stat === 'maxHp'){ primaryBoosts.maxHp += value; return; }
+    if(stat === 'armor'){ primaryBoosts.armor += value; return; }
+    if(stat === 'globalDmg'){ primaryBoosts.globalDmgPct += value; return; }
+    if(stat === 'divineShield'){ divineShield += value; return; }
+    // Stats secondaires : passive (sera lu par aggregatePassives dans player.js)
     const target = STAT_ALIAS[stat];
-    if(target === undefined){
-      // Pas dans le mapping : ignore (probablement un affixe spécial type "armorPen" qui passe)
-      return;
-    }
-    if(target === null){
-      if(stat === 'globalDmg') globalDmgPct += value;
-      else if(stat === 'divineShield') divineShield += value;
-      return;
-    }
+    if(target === undefined || target === null) return; // pas dans le mapping
     passive[target] = (passive[target] || 0) + value;
   }
 
   // Implicit
   if(tpl.implicit && item.implicit){
-    addToPassive(tpl.implicit.id, item.implicit.value || 0);
+    addBonus(tpl.implicit.id, item.implicit.value || 0);
   }
   // Affixes
-  (item.affixes || []).forEach(a => addToPassive(a.stat, a.value || 0));
+  (item.affixes || []).forEach(a => addBonus(a.stat, a.value || 0));
 
   // divineShield → on l'agrège à magicResist (proche sémantiquement : % réduction de dégâts magiques)
   if(divineShield > 0){
@@ -132,10 +138,8 @@ function buildGameItem(item){
   if(Object.keys(passive).length > 0){
     out.passive = passive;
   }
-  // On garde le globalDmgPct pour le retourner via la fonction principale
-  out._globalDmgPct = globalDmgPct;
 
-  return out;
+  return { gameItem: out, primaryBoosts };
 }
 
 /**
@@ -146,26 +150,32 @@ function buildGameItem(item){
  * @returns {{ equipment: object, stats: object }}
  */
 export function buildPlayerFromEquipped(equippedFromApi, level = 1){
-  // 1) Transforme chaque slot en game-item enrichi
+  // 1) Transforme chaque slot en game-item enrichi.
+  //    Récupère aussi les primaryBoosts (maxHp/armor/globalDmgPct) à appliquer
+  //    directement sur stats — car player.js/aggregatePassives ne traite QUE
+  //    les stats secondaires (cf. PASSIVE_STAT_KEYS).
   const equipment = {};
+  let totalMaxHpBoost = 0;
+  let totalArmorBoost = 0;
   let totalGlobalDmgPct = 0;
   for(const [slot, item] of Object.entries(equippedFromApi || {})){
-    const gi = buildGameItem(item);
-    if(gi){
-      equipment[slot] = gi;
-      totalGlobalDmgPct += gi._globalDmgPct || 0;
+    const res = buildGameItem(item);
+    if(res){
+      equipment[slot] = res.gameItem;
+      totalMaxHpBoost   += res.primaryBoosts.maxHp || 0;
+      totalArmorBoost   += res.primaryBoosts.armor || 0;
+      totalGlobalDmgPct += res.primaryBoosts.globalDmgPct || 0;
     }
   }
 
-  // 2) Calcule les stats finales en partant des bases (level scaling sur HP)
-  //    et en ajoutant les passifs agrégés des items.
+  // 2) Stats finales : base + level + bonus primaires de l'équipement
   const stats = {
-    maxHp:           BASE_STATS.baseMaxHp + (level - 1) * BASE_STATS.hpPerLevel,
+    maxHp:           BASE_STATS.baseMaxHp + (level - 1) * BASE_STATS.hpPerLevel + totalMaxHpBoost,
     maxAp:           BASE_STATS.baseMaxAp,
     bonusAp:         BASE_STATS.bonusAp,
     damage:          [...BASE_STATS.baseDamage],
     damageType:      BASE_STATS.damageType,
-    armor:           BASE_STATS.baseArmor,
+    armor:           BASE_STATS.baseArmor + totalArmorBoost,
     dodgeChance:     BASE_STATS.baseDodgeChance,
     blockChance:     BASE_STATS.baseBlockChance,
     critChance:      BASE_STATS.baseCritChance,
@@ -188,8 +198,7 @@ export function buildPlayerFromEquipped(equippedFromApi, level = 1){
     ccReduction:     BASE_STATS.baseCcReduction,
   };
 
-  // 3) Si on a une arme : son `damage` (déjà scalé iLvl) remplace les damage de base
-  //    + on prend son damageType et range et appliedStatus.
+  // 3) Arme équipée : damage range + damageType + range
   if(equipment.mainhand){
     const mh = equipment.mainhand;
     if(mh.damage) stats.damage = [...mh.damage];
@@ -197,7 +206,7 @@ export function buildPlayerFromEquipped(equippedFromApi, level = 1){
     if(mh.range) stats.range = mh.range;
   }
 
-  // 4) Applique le bonus globalDmg total en pourcent sur les dégâts
+  // 4) Bonus globalDmg en %
   if(totalGlobalDmgPct !== 0){
     const m = 1 + totalGlobalDmgPct / 100;
     stats.damage = [
@@ -206,11 +215,13 @@ export function buildPlayerFromEquipped(equippedFromApi, level = 1){
     ];
   }
 
-  // 5) Note : les `passive` des items sont AUSSI agrégés par aggregatePassives() dans
-  //    createPlayer. On laisse cette logique à player.js — on n'ajoute donc PAS ici
-  //    les passives à stats. Si on le faisait, on doublerait les bonus.
+  // 5) Note : les `passive` des items (crit, resist, lifesteal, etc.) seront
+  //    agrégés par aggregatePassives() dans player.js. On NE les agrège PAS
+  //    ici sinon ils seraient comptés en double.
+  //    Par contre maxHp/armor sont DÉJÀ agrégés ici (ligne 2) car player.js
+  //    skip ces clés dans aggregatePassives.
 
-  // 6) Applique les caps
+  // 6) Caps
   for(const [stat, cap] of Object.entries(CAPS)){
     if(stats[stat] > cap) stats[stat] = cap;
   }
