@@ -169,6 +169,57 @@ export async function saveBuilds(arr){
   }
 }
 
+// === PROGRESS (donjons clean par biome) ===
+// Forme retournée : { biomeId: { tier, clearedDungeons: [int] } }
+export async function loadProgress(){
+  const { data, error } = await supabase
+    .from('progress')
+    .select('biome_id, tier, cleared_dungeons')
+    .eq('user_id', userId());
+  if(error){ console.error('[api] loadProgress:', error); return {}; }
+  const out = {};
+  (data || []).forEach(r => {
+    out[r.biome_id] = {
+      tier: r.tier || 1,
+      clearedDungeons: Array.isArray(r.cleared_dungeons) ? r.cleared_dungeons : [],
+    };
+  });
+  return out;
+}
+
+/**
+ * Marque un donjon comme cleared (ajout idempotent à clearedDungeons).
+ * @param {string} biomeId
+ * @param {number} dungeonLevel  1 à 6
+ */
+export async function markDungeonCleared(biomeId, dungeonLevel){
+  const uid = userId();
+  // Charge l'état actuel pour ce biome
+  const { data: existing, error: errFetch } = await supabase
+    .from('progress')
+    .select('cleared_dungeons, tier')
+    .eq('user_id', uid)
+    .eq('biome_id', biomeId)
+    .maybeSingle();
+  if(errFetch){ console.error('[api] markDungeonCleared fetch:', errFetch); return; }
+  const current = existing
+    ? { tier: existing.tier || 1, cleared: Array.isArray(existing.cleared_dungeons) ? existing.cleared_dungeons : [] }
+    : { tier: 1, cleared: [] };
+  if(!current.cleared.includes(dungeonLevel)){
+    current.cleared.push(dungeonLevel);
+    current.cleared.sort((a, b) => a - b);
+  }
+  const { error: errUp } = await supabase
+    .from('progress')
+    .upsert({
+      user_id: uid,
+      biome_id: biomeId,
+      tier: current.tier,
+      cleared_dungeons: current.cleared,
+    }, { onConflict: 'user_id,biome_id' });
+  if(errUp) console.error('[api] markDungeonCleared upsert:', errUp);
+}
+
 // === BULK LOAD ===
 export async function loadAllPlayerData(){
   const [chest, equipped, wallet, favorites, builds] = await Promise.all([

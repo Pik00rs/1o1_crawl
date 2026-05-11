@@ -342,7 +342,9 @@ export const ASCENSION_DATA = Object.fromEntries(
 );
 
 // === PLAYER PROGRESS ===
-// Hydraté depuis localStorage si dispo, sinon valeurs mock pour la démo.
+// Objet MUTABLE qu'on hydrate au boot via `hydrateProgress(data)`.
+// Tant qu'on n'a pas appelé hydrateProgress, tous les biomes sont "vides"
+// (tier 1, aucun donjon clean).
 const DEFAULT_PROGRESS = {
   inferno: { tier: 1, clearedDungeons: [] },
   cryo:    { tier: 1, clearedDungeons: [] },
@@ -351,30 +353,29 @@ const DEFAULT_PROGRESS = {
   crimson: { tier: 1, clearedDungeons: [] },
 };
 
-function loadPlayerProgress(){
-  try {
-    if(typeof localStorage === 'undefined') return DEFAULT_PROGRESS;
-    const raw = localStorage.getItem('rh_player_progress');
-    if(!raw) return DEFAULT_PROGRESS;
-    const parsed = JSON.parse(raw);
-    // Merge with default to ensure all biomes are present
-    const merged = { ...DEFAULT_PROGRESS };
-    for(const biomeId of Object.keys(DEFAULT_PROGRESS)){
-      if(parsed[biomeId]){
-        merged[biomeId] = {
-          tier: parsed[biomeId].tier || 1,
-          clearedDungeons: Array.isArray(parsed[biomeId].clearedDungeons) ? parsed[biomeId].clearedDungeons : [],
-        };
-      }
-    }
-    return merged;
-  } catch(e){
-    console.error('Failed to load progress, using defaults:', e);
-    return DEFAULT_PROGRESS;
+// Clone profond du défaut au démarrage
+export const PLAYER_PROGRESS = JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
+
+/**
+ * Remplit PLAYER_PROGRESS depuis un objet { biomeId: { tier, clearedDungeons } }
+ * (typiquement le retour de apiLoadProgress).
+ * Les biomes manquants conservent leurs valeurs par défaut.
+ */
+export function hydrateProgress(data){
+  // Reset à default pour purger d'anciennes valeurs
+  for(const biomeId of Object.keys(DEFAULT_PROGRESS)){
+    PLAYER_PROGRESS[biomeId] = { tier: 1, clearedDungeons: [] };
+  }
+  if(!data || typeof data !== 'object') return;
+  for(const biomeId of Object.keys(data)){
+    if(!PLAYER_PROGRESS[biomeId]) continue;
+    const src = data[biomeId];
+    PLAYER_PROGRESS[biomeId] = {
+      tier: Number(src.tier) || 1,
+      clearedDungeons: Array.isArray(src.clearedDungeons) ? [...src.clearedDungeons] : [],
+    };
   }
 }
-
-export const PLAYER_PROGRESS = loadPlayerProgress();
 
 // Helper : statut d'un donjon
 export function getDungeonStatus(biomeId, dungeonLevel){
@@ -387,4 +388,4 @@ export function getDungeonStatus(biomeId, dungeonLevel){
   return 'locked';
 }
 
-export default { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, getDungeonStatus, ENEMY_NAMES };
+export default { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, hydrateProgress, getDungeonStatus, ENEMY_NAMES };

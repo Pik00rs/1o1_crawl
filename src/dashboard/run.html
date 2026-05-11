@@ -547,6 +547,8 @@ import { ROOM_TYPE_LABELS } from '../js/dungeon/generator.js';
 import { formatItem } from '../js/dungeon/loot-roller.js';
 import { BIOMES, RARITIES } from './ascension-data.js';
 import { getEnemySprite } from '../js/render/enemies/index.js';
+import { loadEquipped as apiLoadEquipped, markDungeonCleared as apiMarkCleared } from './api.js';
+import { loadCatalog, getItem } from './items-catalog.js';
 
 // === ENEMY DISPLAY NAMES ===
 const ENEMY_NAMES = {
@@ -567,18 +569,97 @@ const ENEMY_NAMES = {
   crimson_minibossExecutioner: 'Exécuteur d\'Arène', crimson_boss: 'Champion du Sang',
 };
 
-// === PLAYER STATE (mock pour l'instant) ===
+// === PLAYER STATE — calculé depuis l'équipement réel ===
+const BASE_HP = 100; // HP de base sans équipement (aligné avec index.html)
+
+const ILVL_MULTIPLIER = {
+  1: 0.50, 2: 0.65, 3: 0.80, 4: 0.95, 5: 1.00,
+  6: 1.15, 7: 1.30, 8: 1.50, 9: 1.75, 10: 2.10,
+};
+
 const PLAYER = {
   name: 'KAEL',
-  hp: 95,
-  hpMax: 95,
+  hp: BASE_HP,
+  hpMax: BASE_HP,
+  damageMin: 5,
+  damageMax: 10,
+  // Stats agrégées issues de l'équipement
+  bonusCritChance: 0,    // %
+  bonusCritDmg: 0,       // %
+  bonusGlobalDmg: 0,     // %
+  bonusArmor: 0,         // flat
+  bonusDivineShield: 0,  // %
 };
+
+/**
+ * Calcule HP max et bonus stats à partir de l'équipement.
+ * Mise à jour de PLAYER en place.
+ */
+function computePlayerStats(equipped){
+  let hp = BASE_HP;
+  let armor = 0;
+  let divine = 0;
+  let critChance = 0;
+  let critDmg = 0;
+  let globalDmg = 0;
+
+  Object.values(equipped || {}).forEach(item => {
+    if(!item) return;
+    // Implicit
+    if(item.implicit){
+      const imp = item.implicit;
+      if(imp.id === 'maxHp') hp += imp.value || 0;
+      else if(imp.id === 'armor') armor += imp.value || 0;
+      else if(imp.id === 'divineShield') divine += imp.value || 0;
+    }
+    // Affixes
+    (item.affixes || []).forEach(a => {
+      const v = a.value || 0;
+      switch(a.stat){
+        case 'maxHp':       hp += v; break;
+        case 'armor':       armor += v; break;
+        case 'divineShield':divine += v; break;
+        case 'critChance':  critChance += v; break;
+        case 'critDmg':     critDmg += v; break;
+        case 'globalDmg':   globalDmg += v; break;
+      }
+    });
+  });
+
+  PLAYER.hpMax = hp;
+  PLAYER.bonusArmor = armor;
+  PLAYER.bonusDivineShield = divine;
+  PLAYER.bonusCritChance = critChance;
+  PLAYER.bonusCritDmg = critDmg;
+  PLAYER.bonusGlobalDmg = globalDmg;
+
+  // Damage : depuis l'arme principale (mainhand)
+  const mh = equipped?.mainhand;
+  if(mh){
+    const tpl = getItem(mh.itemId);
+    if(tpl && tpl.damage){
+      const mult = ILVL_MULTIPLIER[mh.ilvl] || 1;
+      PLAYER.damageMin = Math.round(tpl.damage[0] * mult);
+      PLAYER.damageMax = Math.round(tpl.damage[1] * mult);
+    }
+  } else {
+    PLAYER.damageMin = 5;
+    PLAYER.damageMax = 10;
+  }
+}
 
 // === RUN STATE ===
 let run = null;
 
 // === BOOTSTRAP ===
-function boot(){
+async function boot(){
+  // Charge catalog et équipement réel en parallèle
+  const [_, equipped] = await Promise.all([
+    loadCatalog(),
+    apiLoadEquipped(),
+  ]);
+  computePlayerStats(equipped);
+
   run = loadPersistedRun();
   if(!run){
     showEmptyState();
@@ -793,7 +874,10 @@ function startCombat(room){
 
   // Compute combat parameters based on room type and dungeon level
   const totalEnemyHP = computeRoomDifficulty(room);
-  let playerDmgPerTick = 25 + run.level * 4; // joueur tape de plus en plus
+  // Player damage = arme équipée (avec bonus globalDmg en %)
+  const baseDmgMin = PLAYER.damageMin;
+  const baseDmgMax = PLAYER.damageMax;
+  const globalDmgMult = 1 + (PLAYER.bonusGlobalDmg / 100);
   let enemyDmgPerTick = computeEnemyDmg(room, run.level);
   let remainingHP = totalEnemyHP;
   let aliveEnemies = [...room.enemies];
@@ -806,8 +890,15 @@ function startCombat(room){
       // Si on n'a pas tué tout après maxTicks → on continue jusqu'à ce que ça finisse
     }
 
-    // 1. Player attacks first
-    const damage = playerDmgPerTick + Math.floor(Math.random() * 10) - 5;
+    // 1. Player attacks first — utilise l'arme équipée
+    let damage = baseDmgMin + Math.floor(Math.random() * (baseDmgMax - baseDmgMin + 1));
+    damage = Math.round(damage * globalDmgMult);
+    // Roll critique
+    const isCrit = Math.random() * 100 < PLAYER.bonusCritChance;
+    if(isCrit){
+      // Crit dmg : 150% base + bonus
+      damage = Math.round(damage * (1.5 + PLAYER.bonusCritDmg / 100));
+    }
     remainingHP -= damage;
 
     // Mark enemies as dead progressively (visuel)
@@ -818,7 +909,7 @@ function startCombat(room){
       killNextEnemy();
     }
 
-    addLogLine(`Joueur frappe pour ${damage} dégâts`, 'hit');
+    addLogLine(`Joueur frappe pour ${damage} dégâts${isCrit ? ' (CRIT !)' : ''}`, isCrit ? 'kill' : 'hit');
 
     if(remainingHP <= 0){
       // All enemies dead
@@ -828,12 +919,20 @@ function startCombat(room){
       return;
     }
 
-    // 2. Enemies retaliate
+    // 2. Enemies retaliate — réduction par armure
     setTimeout(() => {
-      const dmg = enemyDmgPerTick + Math.floor(Math.random() * 8) - 4;
+      let rawDmg = enemyDmgPerTick + Math.floor(Math.random() * 8) - 4;
+      // Réduction armure : chaque point d'armure réduit 1 dégât (cap min 1)
+      const armorReduction = PLAYER.bonusArmor || 0;
+      let dmg = Math.max(1, rawDmg - armorReduction);
+      // Réduction divine shield : % de dégâts élémentaires/magiques absorbés (simplification : on l'applique en flat)
+      if(PLAYER.bonusDivineShield > 0){
+        dmg = Math.max(1, Math.round(dmg * (1 - PLAYER.bonusDivineShield / 100)));
+      }
       PLAYER.hp -= dmg;
       run.state.playerHP = PLAYER.hp;
-      addLogLine(`Ennemis frappent pour ${dmg} dégâts`, 'dmg');
+      const armorTag = armorReduction > 0 ? ` (−${rawDmg - dmg} bloqué)` : '';
+      addLogLine(`Ennemis frappent pour ${dmg} dégâts${armorTag}`, 'dmg');
       renderPlayerBar();
 
       if(PLAYER.hp <= 0){
@@ -997,9 +1096,18 @@ function renderVictory(){
     </div>
   `;
 
-  document.getElementById('claim-btn').addEventListener('click', () => {
-    // Marquer le donjon comme clean dans PLAYER_PROGRESS via localStorage
-    saveProgress();
+  document.getElementById('claim-btn').addEventListener('click', async () => {
+    // VICTOIRE confirmée : marque le donjon comme cleared dans Supabase.
+    // Garde-fou supplémentaire : on refuse de marquer cleared si isFailed.
+    if(run.state.isFailed){
+      console.warn('[run] refus de marquer cleared : isFailed=true');
+    } else {
+      try {
+        await apiMarkCleared(run.biomeId, run.level);
+      } catch(err){
+        console.error('Failed to mark cleared:', err);
+      }
+    }
     clearPersistedRun();
     window.location.href = '../../index.html';
   });
@@ -1007,6 +1115,11 @@ function renderVictory(){
 
 function renderDefeat(){
   stopAllAnimations();
+  // GARDE-FOU : on s'assure que isFailed est bien à true et qu'on ne marquera
+  // JAMAIS cleared depuis ce flux. (Ceinture+bretelles.)
+  run.state.isFailed = true;
+  run.state.isComplete = false;
+
   const stage = document.getElementById('stage');
   stage.className = 'stage defeat';
   const room = run.rooms[run.state.currentRoomIndex];
@@ -1028,32 +1141,15 @@ function renderDefeat(){
   `;
 
   document.getElementById('defeat-back').addEventListener('click', () => {
+    // Mort : on nettoie la run sans rien marquer cleared.
     clearPersistedRun();
     window.location.href = '../../index.html';
   });
 }
 
 // =================================================================
-// === PROGRESS PERSISTENCE ===
-// On sauvegarde le statut "cleared" dans localStorage pour
-// que la page Ascension reflète la progression.
+// === (Plus de saveProgress local : tout passe par apiMarkCleared)
 // =================================================================
-
-function saveProgress(){
-  try {
-    const KEY = 'rh_player_progress';
-    const raw = localStorage.getItem(KEY);
-    const progress = raw ? JSON.parse(raw) : {};
-    if(!progress[run.biomeId]) progress[run.biomeId] = { tier: 1, clearedDungeons: [] };
-    if(!progress[run.biomeId].clearedDungeons.includes(run.level)){
-      progress[run.biomeId].clearedDungeons.push(run.level);
-    }
-    // TODO : ajouter les items au chest, les ressources au wallet
-    localStorage.setItem(KEY, JSON.stringify(progress));
-  } catch(e){
-    console.error('Failed to save progress:', e);
-  }
-}
 
 // =================================================================
 // === EMPTY STATE (no run found) ===
@@ -1076,7 +1172,9 @@ function showEmptyState(){
 }
 
 // === GO ===
-boot();
+boot().catch(err => {
+  console.error('[run] boot failed:', err);
+});
 </script>
 
 </body>
