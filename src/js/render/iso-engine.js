@@ -1,5 +1,8 @@
 // src/js/render/iso-engine.js
 // Moteur de rendu iso 2.5D avec caméra et zoom.
+//
+// Note : la HP bar canvas a été retirée pour laisser place à l'overlay DOM
+// (cf. game.html → updateActorHuds). Le nom + intent restent en canvas.
 
 import { isoToScreen, TILE_W, TILE_H } from './iso-projection.js';
 import { drawTileBase, drawTileOverlay } from './tile-base.js';
@@ -7,15 +10,6 @@ import { drawSky, drawVignette, emitAmbientEmbers } from './effects.js';
 import { hexToRgba } from './iso-utils.js';
 import { getCharacterRenderer } from './characters/index.js';
 
-/**
- * Render frame complète.
- *
- * @param {CanvasRenderingContext2D} ctx
- * @param {object} params - { viewport, tileGrid, gridW, gridH, actors, hover,
- *                             reachableSet, validTargets, biome, particles,
- *                             time, view: {camX, camY, zoom}, options,
- *                             aoePreview }
- */
 export function renderFrame(ctx, params){
   const {
     viewport,
@@ -36,11 +30,9 @@ export function renderFrame(ctx, params){
 
   const zoom = view.zoom || 1;
 
-  // 1) Ciel + ambiance
   drawSky(ctx, viewport, biome.config, time, options);
   emitAmbientEmbers(particles, viewport, biome.config, time, options.fxLevel ?? 1);
 
-  // 2) Tuiles : tri back-to-front
   const tileOrder = [];
   for(let y = 0; y < gridH; y++){
     for(let x = 0; x < gridW; x++){
@@ -53,7 +45,6 @@ export function renderFrame(ctx, params){
     drawTile(ctx, x, y, tileGrid, biome, time, hover, reachableSet, validTargets, aoePreview, viewport, view, options);
   }
 
-  // 3) Props et entités
   const upper = [];
   for(const [x, y] of tileOrder){
     const tile = tileGrid[x+','+y];
@@ -74,10 +65,7 @@ export function renderFrame(ctx, params){
     }
   }
 
-  // 4) Particules
   particles.render(ctx);
-
-  // 5) Vignette finale
   drawVignette(ctx, viewport);
 }
 
@@ -87,7 +75,6 @@ function drawTile(ctx, gx, gy, tileGrid, biome, time, hover, reachableSet, valid
 
   const sp = isoToScreen(gx, gy, tile.microElev || 0, viewport, view);
 
-  // Skip if off-screen (perf)
   const margin = 100;
   if(sp.x < -margin || sp.x > viewport.width + margin || sp.y < -margin || sp.y > viewport.height + margin) return;
 
@@ -99,11 +86,9 @@ function drawTile(ctx, gx, gy, tileGrid, biome, time, hover, reachableSet, valid
     zoom,
   });
 
-  // Tile-type detail
   const tileTypeName = biome.config.tileTypes[tile.type];
   const tileRenderer = biome.tiles[tileTypeName];
   if(tileRenderer && zoom >= 0.7){
-    // Skip details when zoomed too far out
     ctx.save();
     ctx.translate(sp.x, sp.y);
     ctx.scale(zoom, zoom);
@@ -112,14 +97,12 @@ function drawTile(ctx, gx, gy, tileGrid, biome, time, hover, reachableSet, valid
     ctx.restore();
   }
 
-  // Reachable overlay (MOVE) - vert vif
   if(reachableSet && reachableSet.has(gx+','+gy) && !tile.isWall){
     const pulse = 0.30 + Math.sin(time*0.06) * 0.06;
     drawTileOverlay(ctx, sp.x, sp.y, '#4caf50', pulse, 'fill', zoom);
     drawTileOverlay(ctx, sp.x, sp.y, '#69f0ae', 0.85, 'stroke', zoom);
   }
 
-  // Valid target overlay (ATTACK or SPELL) - couleur selon type
   if(validTargets && validTargets.has(gx+','+gy)){
     const col = options.targetColor || '#ff5252';
     const colStroke = options.targetStroke || '#ff8a80';
@@ -128,13 +111,11 @@ function drawTile(ctx, gx, gy, tileGrid, biome, time, hover, reachableSet, valid
     drawTileOverlay(ctx, sp.x, sp.y, colStroke, 0.95, 'stroke', zoom);
   }
 
-  // AOE preview (orange vif sous le hover de spell)
   if(aoePreview && aoePreview.has(gx+','+gy)){
     drawTileOverlay(ctx, sp.x, sp.y, '#ff9800', 0.50, 'fill', zoom);
     drawTileOverlay(ctx, sp.x, sp.y, '#ffc947', 1.0, 'stroke', zoom);
   }
 
-  // Hover stroke (toujours visible, blanc)
   if(hover && hover.gx === gx && hover.gy === gy && !tile.isWall){
     drawTileOverlay(ctx, sp.x, sp.y, '#ffffff', 1.0, 'stroke', zoom);
   }
@@ -178,7 +159,7 @@ function drawActor(ctx, actor, biome, time, viewport, view, options, hover){
     ctx.fillRect(sp.x - 26 * zoom, sp.y - 18 * zoom, 52 * zoom, 36 * zoom);
   }
 
-  // Le perso (avec scale pour le zoom)
+  // Le perso
   ctx.save();
   ctx.translate(sp.x, sp.y);
   ctx.scale(zoom, zoom);
@@ -186,13 +167,11 @@ function drawActor(ctx, actor, biome, time, viewport, view, options, hover){
   renderer(ctx, 0, 0, actor, time, { fxLevel });
   ctx.restore();
 
-  // HP bar + intent au-dessus (en taille screen, pas zoom)
+  // Name + Intent au-dessus (HP bar gérée par overlay DOM cf. game.html updateActorHuds)
   if(!actor.isPlayer && actor.maxHp){
     const cy = sp.y - 10 * zoom + (Math.sin(actor.idle ?? 0) * 1.2 * zoom);
-    const w = 30, h = 3;
-    const ratio = (actor.hp || 0) / actor.maxHp;
 
-    // Hover ring
+    // Hover ring (au survol)
     if(hover && hover.gx === Math.round(actor.ax) && hover.gy === Math.round(actor.ay)){
       ctx.strokeStyle = `rgba(255,82,82,${0.7 + Math.sin(time*0.15)*0.3})`;
       ctx.lineWidth = 2;
@@ -210,12 +189,6 @@ function drawActor(ctx, actor, biome, time, viewport, view, options, hover){
       ctx.textAlign = 'center';
       ctx.fillText('▸ ' + actor.intent.name, sp.x, cy - 34);
     }
-
-    // HP bar
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(sp.x - w/2 - 1, cy - 30, w+2, h+2);
-    ctx.fillStyle = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#f44336';
-    ctx.fillRect(sp.x - w/2, cy - 29, w * ratio, h);
 
     // Name
     ctx.fillStyle = '#ffb74d';
