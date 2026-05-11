@@ -1,473 +1,207 @@
-// src/js/render/enemies/toxic_alpha.js
-// Alpha Mutant — ÉLITE.
-// Plus grand (1.4x), mâchoire ressortie agressive, crête dorsale de spores,
-// yeux VIOLETS brillants (contraste signature), posture droite et dominante.
+// src/js/render/characters/enemies/toxic_alpha.js
+// Alpha Putréfié — ÉLITE, mâchoire ressortie, crête dorsale de spores, yeux violets.
+import { hexToRgba, shade } from '../../iso-utils.js';
 
-export const palette = {
-  flesh:        '#7fa055',
-  fleshDark:    '#4a6030',
-  fleshLight:   '#a8c878',
-  fleshBack:    '#a08858',
-  bile:         '#a8e065',
-  bileDark:     '#7fc844',
-  bileBright:   '#c8d845',
-  scar:         '#5a3818',
-  necrosis:     '#5a3825',
-  necrosisDark: '#2a1808',
-  pus:          '#d8c870',
-  bone:         '#d4c0a0',
-  boneDark:     '#7a6850',
-  // Violet pour le contraste — les yeux et la crête
-  violet:       '#a060c0',
-  violetCore:   '#d8a0e8',
-  violetDark:   '#5a2870',
-  buffAura:     'rgba(160,96,192,0.35)',
-  shadow:       'rgba(20,30,10,0.85)',
+export const toxicAlphaConfig = {
+  id: 'toxic_alpha', name: 'ALPHA', archetype: 'toxic_alpha',
+  bodyColor: '#6a8828', accentColor: '#a040a0', glowColor: '#c8e848',
+  skinColor: '#7a9828', hairColor: '#5a2848', capeColor: '#2a3810',
+  height: 'large', weapon: 'fangs',
 };
 
-export function draw(ctx, sx, sy, t, opts){
-  opts = opts || {};
-  const p = palette;
-  const bob = Math.sin(t * 0.04) * 0.7;
-  const breathe = Math.sin(t * 0.03) * 0.4;
-  sx = Math.round(sx + (opts.bodyShift || 0));
-  sy = Math.round(sy + bob);
+export function drawToxicAlpha(ctx, cx, cy, actor, time, options = {}){
+  const fxLevel = options.fxLevel ?? 1;
+  const idle = actor.idle ?? 0;
+  const moving = !!actor.target;
+  const bob = Math.sin(idle * 0.9) * 1.0;
+  const breathe = Math.sin(idle * 0.65) * 0.5;
+  const stride = moving ? Math.sin(time * 0.4) * 1.4 : 0;
+  cy = cy - 12 + bob;
 
-  const armRaise = opts.armRaise || 0;
-  const buffActive = opts.buffActive || 0;
-  const roar = opts.roar || 0;
+  // Halo violet + vert (signature alpha)
+  if(fxLevel >= 1){
+    const auraPulse = 0.45 + Math.sin(time * 0.06) * 0.15;
+    const aura = ctx.createRadialGradient(cx, cy - 2, 2, cx, cy - 2, 20);
+    aura.addColorStop(0, hexToRgba(actor.accentColor, auraPulse * 0.5));
+    aura.addColorStop(0.4, hexToRgba(actor.glowColor, auraPulse * 0.3));
+    aura.addColorStop(1, hexToRgba(actor.accentColor, 0));
+    ctx.fillStyle = aura;
+    ctx.fillRect(cx - 20, cy - 22, 40, 38);
+  }
 
-  // Shadow (large)
-  ctx.fillStyle = p.shadow;
-  ctx.beginPath();
-  ctx.ellipse(sx, sy + 9, 18, 4.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Buff aura (violet)
-  if(buffActive > 0){
-    for(let i = 0; i < 4; i++){
-      const r = 24 + i * 7 + Math.sin(t * 0.12 + i) * 3;
-      const a = buffActive * 0.18 * (1 - i * 0.22);
-      ctx.fillStyle = `rgba(160,96,192,${a})`;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy + 4, r, r * 0.4, 0, 0, Math.PI * 2);
-      ctx.fill();
+  // Spores violets flottants (signature)
+  if(fxLevel >= 1){
+    for(let i = 0; i < 5; i++){
+      const t = (time * 0.03 + i * 0.4) % 1;
+      const sx = cx + Math.sin(i * 1.5 + time * 0.04) * 9;
+      const sy = cy - 8 - t * 16;
+      ctx.fillStyle = hexToRgba(actor.accentColor, (1 - t) * 0.6);
+      ctx.fillRect(Math.round(sx), Math.round(sy), 1, 1);
     }
   }
 
-  // Body glow (mix green + violet hint)
-  const glow = 0.4 + Math.sin(t * 0.05) * 0.1;
-  const bg = ctx.createRadialGradient(sx, sy - 16, 5, sx, sy - 16, 36);
-  bg.addColorStop(0, `rgba(168,224,101,${glow * 0.5})`);
-  bg.addColorStop(0.6, `rgba(160,96,192,${glow * 0.3})`);
-  bg.addColorStop(1, 'rgba(160,96,192,0)');
-  ctx.fillStyle = bg;
-  ctx.fillRect(sx - 36, sy - 50, 72, 70);
-
-  // === LEGS (épaisses, musclées) ===
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 10, sy - 1, 8, 11);
-  ctx.fillRect(sx + 2, sy - 1, 8, 11);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 10, sy - 1, 2, 11);
-  // Knee detail (necrotic)
-  ctx.fillStyle = p.necrosis;
-  ctx.fillRect(sx - 9, sy + 4, 3, 2);
-  ctx.fillRect(sx + 3, sy + 4, 3, 2);
-
-  // Feet (clawed)
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(sx - 12, sy + 10, 11, 4);
-  ctx.fillRect(sx + 1, sy + 10, 11, 4);
-  // Big claws
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx - 12, sy + 13, 1, 2);
-  ctx.fillRect(sx - 9, sy + 13, 1, 2);
-  ctx.fillRect(sx - 5, sy + 13, 1, 2);
-  ctx.fillRect(sx - 2, sy + 13, 1, 2);
-  ctx.fillRect(sx + 1, sy + 13, 1, 2);
-  ctx.fillRect(sx + 4, sy + 13, 1, 2);
-  ctx.fillRect(sx + 7, sy + 13, 1, 2);
-  ctx.fillRect(sx + 10, sy + 13, 1, 2);
-
-  // === SPORE CREST (dorsal — peeks behind shoulders) ===
-  drawSporeCrest(ctx, sx, sy - 32 + breathe, t, p);
-
-  // === TORSO (large, muscular) ===
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 13, sy - 24 + breathe, 26, 23);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 13, sy - 24 + breathe, 26, 21);
-  ctx.fillStyle = p.fleshLight;
-  ctx.fillRect(sx - 13, sy - 24 + breathe, 3, 23);
-
-  // Pectoral musculature
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 11, sy - 19 + breathe, 9, 6);
-  ctx.fillRect(sx + 2, sy - 19 + breathe, 9, 6);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 11, sy - 19 + breathe, 9, 4);
-  ctx.fillRect(sx + 2, sy - 19 + breathe, 9, 4);
-
-  // Abdomen (ribs/scales pattern)
-  ctx.strokeStyle = p.fleshDark;
-  ctx.lineWidth = 0.6;
-  ctx.beginPath();
-  ctx.moveTo(sx - 10, sy - 11 + breathe); ctx.lineTo(sx + 10, sy - 11 + breathe);
-  ctx.moveTo(sx - 10, sy - 7 + breathe); ctx.lineTo(sx + 10, sy - 7 + breathe);
-  ctx.moveTo(sx - 9, sy - 4 + breathe); ctx.lineTo(sx + 9, sy - 4 + breathe);
-  ctx.stroke();
-
-  // Necrotic patches
-  ctx.fillStyle = p.necrosis;
-  ctx.beginPath();
-  ctx.moveTo(sx - 7, sy - 16 + breathe);
-  ctx.lineTo(sx - 3, sy - 12 + breathe);
-  ctx.lineTo(sx - 6, sy - 7 + breathe);
-  ctx.lineTo(sx - 9, sy - 11 + breathe);
-  ctx.closePath();
-  ctx.fill();
-
-  // Pustules
-  const pulse = 0.7 + Math.sin(t * 0.12) * 0.3;
-  ctx.fillStyle = p.bileBright;
-  ctx.beginPath();
-  ctx.arc(sx + 5, sy - 9 + breathe, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = `rgba(216,200,112,${pulse})`;
-  ctx.fillRect(sx + 4, sy - 10 + breathe, 1, 1);
-  ctx.fillStyle = p.bileBright;
-  ctx.beginPath();
-  ctx.arc(sx - 5, sy - 6 + breathe, 1, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Violet veins (ancreur de l'identité Alpha)
-  ctx.strokeStyle = p.violet;
-  ctx.lineWidth = 0.7;
-  ctx.beginPath();
-  ctx.moveTo(sx - 11, sy - 22 + breathe);
-  ctx.lineTo(sx - 8, sy - 17 + breathe);
-  ctx.lineTo(sx - 4, sy - 14 + breathe);
-  ctx.moveTo(sx + 11, sy - 22 + breathe);
-  ctx.lineTo(sx + 8, sy - 17 + breathe);
-  ctx.lineTo(sx + 4, sy - 14 + breathe);
-  ctx.stroke();
-
-  // Shoulder pads (massive, organic)
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 17, sy - 25 + breathe, 6, 8);
-  ctx.fillRect(sx + 11, sy - 25 + breathe, 6, 8);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 17, sy - 25 + breathe, 6, 2);
-  ctx.fillRect(sx + 11, sy - 25 + breathe, 6, 2);
-  // Bone spikes on shoulders
-  ctx.fillStyle = p.bone;
-  ctx.beginPath();
-  ctx.moveTo(sx - 17, sy - 25 + breathe);
-  ctx.lineTo(sx - 14, sy - 30 + breathe);
-  ctx.lineTo(sx - 11, sy - 25 + breathe);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(sx + 11, sy - 25 + breathe);
-  ctx.lineTo(sx + 14, sy - 30 + breathe);
-  ctx.lineTo(sx + 17, sy - 25 + breathe);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = p.boneDark;
-  ctx.fillRect(sx - 14, sy - 28 + breathe, 1, 2);
-  ctx.fillRect(sx + 13, sy - 28 + breathe, 1, 2);
-
-  // === ARMS (massive, muscular) ===
-  // Left arm
-  ctx.save();
-  ctx.translate(sx - 16, sy - 18 + breathe);
-  ctx.rotate(armRaise);
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(-3, 0, 5, 16);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(-3, 0, 1, 16);
-  ctx.fillStyle = p.necrosis;
-  ctx.fillRect(-2, 7, 2, 3);
-  // Hand (clawed)
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(-3, 16, 6, 5);
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(-3, 20, 1, 2);
-  ctx.fillRect(-1, 20, 1, 2);
-  ctx.fillRect(1, 20, 1, 2);
-  ctx.fillRect(3, 20, 1, 2);
-  ctx.restore();
-
-  // Right arm
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx + 13, sy - 18 + breathe, 5, 16);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx + 17, sy - 18 + breathe, 1, 16);
-  ctx.fillStyle = p.necrosis;
-  ctx.fillRect(sx + 14, sy - 11 + breathe, 2, 3);
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(sx + 12, sy - 2 + breathe, 6, 5);
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx + 12, sy + 2 + breathe, 1, 2);
-  ctx.fillRect(sx + 14, sy + 2 + breathe, 1, 2);
-  ctx.fillRect(sx + 16, sy + 2 + breathe, 1, 2);
-
-  // === HEAD (large, dominant, mâchoire ressortie) ===
-  // Cranium
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 8, sy - 38 + breathe, 16, 14);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 8, sy - 38 + breathe, 16, 11);
-  ctx.fillStyle = p.fleshLight;
-  ctx.fillRect(sx - 8, sy - 38 + breathe, 2, 14);
-
-  // === PROTRUDING JAW (signature) ===
-  ctx.fillStyle = p.fleshDark;
-  ctx.beginPath();
-  ctx.moveTo(sx - 7, sy - 28 + breathe);
-  ctx.lineTo(sx + 7, sy - 28 + breathe);
-  ctx.lineTo(sx + 9 - roar * 2, sy - 24 + breathe + roar * 3);
-  ctx.lineTo(sx - 9 + roar * 2, sy - 24 + breathe + roar * 3);
-  ctx.closePath();
-  ctx.fill();
-  // Lower jaw pulled forward
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 7, sy - 27 + breathe, 14, 2 + roar);
-
-  // Mouth (large fanged) — opens in roar
-  ctx.fillStyle = '#1a0808';
-  const mouthH = 2 + roar * 4;
-  ctx.fillRect(sx - 6, sy - 26 + breathe, 12, mouthH);
-  // Big fangs
-  ctx.fillStyle = p.bone;
-  for(let i = 0; i < 5; i++){
-    const fx = sx - 5 + i * 3;
-    ctx.beginPath();
-    ctx.moveTo(fx - 0.5, sy - 26 + breathe);
-    ctx.lineTo(fx, sy - 26 + breathe + mouthH * 0.7);
-    ctx.lineTo(fx + 0.5, sy - 26 + breathe);
-    ctx.closePath();
-    ctx.fill();
-  }
-  // Lower fangs (when roaring)
-  if(roar > 0.5){
-    ctx.fillStyle = p.bone;
-    ctx.beginPath();
-    ctx.moveTo(sx - 4, sy - 26 + breathe + mouthH);
-    ctx.lineTo(sx - 4, sy - 26 + breathe + mouthH - 2);
-    ctx.lineTo(sx - 3, sy - 26 + breathe + mouthH);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(sx + 4, sy - 26 + breathe + mouthH);
-    ctx.lineTo(sx + 4, sy - 26 + breathe + mouthH - 2);
-    ctx.lineTo(sx + 3, sy - 26 + breathe + mouthH);
-    ctx.closePath();
-    ctx.fill();
+  // Jambes massives
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.fillRect(cx - 7, cy + 7 + stride, 5, 10);
+  ctx.fillRect(cx + 2, cy + 7 - stride, 5, 10);
+  // Plaques violettes
+  ctx.fillStyle = '#5a2848';
+  ctx.fillRect(cx - 6, cy + 10 + stride, 3, 3);
+  ctx.fillRect(cx + 3, cy + 12 - stride, 3, 3);
+  // Pieds griffus
+  ctx.fillStyle = '#2a1408';
+  ctx.fillRect(cx - 8, cy + 16 + stride, 6, 2);
+  ctx.fillRect(cx + 2, cy + 16 - stride, 6, 2);
+  // Griffes pieds
+  for(let i = 0; i < 3; i++){
+    ctx.fillRect(cx - 8 + i * 2, cy + 18 + stride, 0.8, 1.5);
+    ctx.fillRect(cx + 2 + i * 2, cy + 18 - stride, 0.8, 1.5);
   }
 
-  // === EYES (VIOLET — signature contraste) ===
+  // TORSE VOÛTÉ massif
+  ctx.fillStyle = actor.bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(cx - 9, cy + 7);
+  ctx.lineTo(cx + 9, cy + 7);
+  ctx.lineTo(cx + 8, cy - 8 + breathe);
+  ctx.lineTo(cx - 8, cy - 8 + breathe);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.beginPath();
+  ctx.moveTo(cx + 9, cy + 7);
+  ctx.lineTo(cx + 8, cy - 8 + breathe);
+  ctx.lineTo(cx + 3, cy - 8 + breathe);
+  ctx.lineTo(cx + 3, cy + 7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = shade(actor.bodyColor, 0.25);
+  ctx.fillRect(cx - 8, cy - 7 + breathe, 2, 14);
+
+  // PLAQUES NÉCROSÉES VIOLETTES multiples (signature)
+  ctx.fillStyle = '#5a2848';
+  ctx.fillRect(cx - 6, cy - 5 + breathe, 4, 3);
+  ctx.fillRect(cx + 2, cy + 0 + breathe, 4, 3);
+  ctx.fillRect(cx - 3, cy + 2 + breathe, 3, 2);
+  // Centres purulents
+  ctx.fillStyle = '#8a3a6a';
+  ctx.fillRect(cx - 5, cy - 4 + breathe, 1, 1);
+  ctx.fillRect(cx + 3, cy + 1 + breathe, 1, 1);
+  ctx.fillStyle = actor.accentColor;
+  ctx.fillRect(cx + 4, cy + 1 + breathe, 0.5, 0.5);
+
+  // Veines violettes pulsantes
+  const veinPulse = 0.7 + Math.sin(time * 0.08) * 0.2;
+  ctx.strokeStyle = hexToRgba(actor.accentColor, veinPulse);
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 7, cy - 6 + breathe); ctx.lineTo(cx - 4, cy + 1 + breathe);
+  ctx.moveTo(cx + 6, cy - 5 + breathe); ctx.lineTo(cx + 3, cy + 2 + breathe);
+  ctx.stroke();
+
+  // BRAS MASSIFS
+  ctx.fillStyle = shade(actor.bodyColor, -0.1);
+  ctx.fillRect(cx - 10, cy - 7 + breathe, 3, 11);
+  ctx.fillRect(cx + 7, cy - 7 + breathe, 3, 11);
+  // Plaques bras
+  ctx.fillStyle = '#5a2848';
+  ctx.fillRect(cx - 10, cy - 4 + breathe, 3, 2);
+  ctx.fillRect(cx + 7, cy - 4 + breathe, 3, 2);
+  // Griffes (poings massifs)
+  ctx.fillStyle = '#1a0805';
+  ctx.fillRect(cx - 10, cy + 4 + breathe, 3, 3);
+  ctx.fillRect(cx + 7, cy + 4 + breathe, 3, 3);
+  for(let i = 0; i < 4; i++){
+    ctx.fillRect(cx - 10 + i * 0.7, cy + 7 + breathe, 0.5, 2);
+    ctx.fillRect(cx + 7 + i * 0.7, cy + 7 + breathe, 0.5, 2);
+  }
+
+  // CRÊTE DORSALE DE SPORES VIOLETTES (signature) — derrière la tête, sortant du dos
+  drawSporeRidge(ctx, cx, cy - 8 + breathe, time, actor);
+
+  // TÊTE plus large (signature)
+  ctx.fillStyle = actor.skinColor;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 13 + breathe, 5.5, 5.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = shade(actor.skinColor, -0.2);
+  ctx.beginPath();
+  ctx.ellipse(cx + 2, cy - 13 + breathe, 3, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Plaques tête
+  ctx.fillStyle = '#5a2848';
+  ctx.fillRect(cx - 4, cy - 16 + breathe, 2, 2);
+  ctx.fillRect(cx + 1, cy - 17 + breathe, 2, 2);
+
+  // YEUX VIOLETS (signature, distinct du brute jaune)
+  const eyePulse = 0.92 + Math.sin(time * 0.09) * 0.08;
   ctx.fillStyle = '#000';
-  ctx.fillRect(sx - 5, sy - 35 + breathe, 3, 3);
-  ctx.fillRect(sx + 2, sy - 35 + breathe, 3, 3);
-  // Violet glow
-  const eyePulse = 0.92 + Math.sin(t * 0.09) * 0.08;
-  ctx.fillStyle = `rgba(160,96,192,${eyePulse})`;
-  ctx.fillRect(sx - 4, sy - 34 + breathe, 2, 2);
-  ctx.fillRect(sx + 3, sy - 34 + breathe, 2, 2);
-  ctx.fillStyle = `rgba(216,160,232,${eyePulse})`;
-  ctx.fillRect(sx - 4, sy - 34 + breathe, 1, 1);
-  ctx.fillRect(sx + 3, sy - 34 + breathe, 1, 1);
-  // Halo violet
-  ctx.fillStyle = `rgba(160,96,192,${eyePulse * 0.4})`;
-  ctx.fillRect(sx - 5, sy - 35 + breathe, 4, 4);
-  ctx.fillRect(sx + 2, sy - 35 + breathe, 4, 4);
+  ctx.fillRect(cx - 3.5, cy - 14 + breathe, 2, 1.5);
+  ctx.fillRect(cx + 1.5, cy - 14 + breathe, 2, 1.5);
+  ctx.fillStyle = hexToRgba(actor.accentColor, eyePulse);
+  ctx.fillRect(cx - 3.5, cy - 14 + breathe, 1.5, 1);
+  ctx.fillRect(cx + 1.5, cy - 14 + breathe, 1.5, 1);
+  ctx.fillStyle = hexToRgba('#e090e0', eyePulse);
+  ctx.fillRect(cx - 3.3, cy - 14 + breathe, 0.5, 0.5);
+  ctx.fillRect(cx + 1.7, cy - 14 + breathe, 0.5, 0.5);
 
-  // Brow ridges (intimidating)
-  ctx.fillStyle = p.scar;
-  ctx.fillRect(sx - 6, sy - 36 + breathe, 4, 1);
-  ctx.fillRect(sx + 2, sy - 36 + breathe, 4, 1);
-
-  // Cranial scar
-  ctx.strokeStyle = p.scar;
-  ctx.lineWidth = 0.6;
+  // MÂCHOIRE RESSORTIE avec CROCS (signature)
+  // Lower jaw extending forward
+  ctx.fillStyle = shade(actor.skinColor, -0.2);
   ctx.beginPath();
-  ctx.moveTo(sx - 3, sy - 38 + breathe);
-  ctx.lineTo(sx, sy - 36 + breathe);
-  ctx.lineTo(sx + 3, sy - 37 + breathe);
-  ctx.stroke();
+  ctx.moveTo(cx - 4, cy - 10 + breathe);
+  ctx.lineTo(cx + 4, cy - 10 + breathe);
+  ctx.lineTo(cx + 5, cy - 7 + breathe);
+  ctx.lineTo(cx - 5, cy - 7 + breathe);
+  ctx.closePath();
+  ctx.fill();
+  // Mouth opening
+  ctx.fillStyle = '#000';
+  ctx.fillRect(cx - 3, cy - 10 + breathe, 6, 2);
+  // CROCS supérieurs (visible)
+  ctx.fillStyle = '#d8c8a0';
+  ctx.beginPath();
+  ctx.moveTo(cx - 3, cy - 10 + breathe);
+  ctx.lineTo(cx - 2.5, cy - 7 + breathe);
+  ctx.lineTo(cx - 2, cy - 10 + breathe);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + 2, cy - 10 + breathe);
+  ctx.lineTo(cx + 2.5, cy - 7 + breathe);
+  ctx.lineTo(cx + 3, cy - 10 + breathe);
+  ctx.closePath();
+  ctx.fill();
+  // Drool
+  ctx.fillStyle = hexToRgba(actor.glowColor, 0.85);
+  ctx.fillRect(cx - 2.5, cy - 7 + breathe, 0.5, 2);
+  ctx.fillRect(cx + 2.5, cy - 7 + breathe, 0.5, 2);
 }
 
-function drawSporeCrest(ctx, lx, ly, t, p){
-  // 5 pointes de spores derrière la tête, chacune pulsant
-  const positions = [-7, -4, 0, 4, 7];
-  for(let i = 0; i < positions.length; i++){
-    const dx = positions[i];
-    const h = 4 + Math.abs(dx) * 0.5;
-    const pulse = 0.85 + Math.sin(t * 0.1 + i) * 0.15;
-    // Halo violet
-    ctx.fillStyle = `rgba(160,96,192,${pulse * 0.3})`;
+function drawSporeRidge(ctx, lx, ly, time, actor){
+  // 5 spores en crête (signature)
+  for(let i = 0; i < 5; i++){
+    const offset = (i - 2) * 2;
+    const t = time * 0.05 + i * 0.8;
+    const pulse = 0.7 + Math.sin(t) * 0.3;
+    const h = 4 + Math.abs(offset) * 0.3;
+    // Stalk
+    ctx.fillStyle = shade(actor.accentColor, -0.4);
+    ctx.fillRect(lx + offset - 0.5, ly - h, 1, h);
+    // Bulb
+    ctx.fillStyle = actor.accentColor;
     ctx.beginPath();
-    ctx.arc(lx + dx, ly - h, h, 0, Math.PI * 2);
+    ctx.arc(lx + offset, ly - h, 1.2, 0, Math.PI * 2);
     ctx.fill();
-    // Pointe
-    ctx.fillStyle = p.violetDark;
-    ctx.beginPath();
-    ctx.moveTo(lx + dx, ly - h - 4);
-    ctx.lineTo(lx + dx - 2, ly);
-    ctx.lineTo(lx + dx + 2, ly);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = p.violet;
-    ctx.beginPath();
-    ctx.moveTo(lx + dx, ly - h - 4);
-    ctx.lineTo(lx + dx, ly);
-    ctx.lineTo(lx + dx + 2, ly);
-    ctx.closePath();
-    ctx.fill();
-    // Bright tip
-    ctx.fillStyle = `rgba(216,160,232,${pulse})`;
-    ctx.fillRect(Math.round(lx + dx - 0.5), ly - h - 3, 1, 2);
+    ctx.fillStyle = hexToRgba('#e090e0', pulse);
+    ctx.fillRect(lx + offset - 0.3, ly - h - 0.3, 0.7, 0.7);
+    // Spore particle release
+    if(((time + i * 7) % 30) < 5){
+      ctx.fillStyle = hexToRgba(actor.accentColor, 0.6);
+      ctx.fillRect(lx + offset, ly - h - 2, 0.5, 0.5);
+    }
   }
 }
 
-export const attacks = {
-  idle: {
-    id: 'idle', name: 'IDLE', icon: '◇',
-    duration: 9999, looping: true,
-    description: 'Posture dominante, crête de spores qui pulse, yeux violets brillants. Respiration grave.',
-    phases: [{ from: 0, to: 9999, label: 'Loop' }],
-    update(frame){
-      const fx = [];
-      if(frame % 18 === 0){
-        fx.push({ type: 'ash', dx: 0, dy: -36, count: 1, color: '#a060c0' });
-      }
-      if(frame % 24 === 0){
-        fx.push({ type: 'ash', dx: -8, dy: -32, count: 1, color: '#7fc844' });
-        fx.push({ type: 'ash', dx: 8, dy: -32, count: 1, color: '#7fc844' });
-      }
-      return { opts: {}, fx };
-    },
-  },
-
-  bite: {
-    id: 'bite', name: 'ALPHA BITE', icon: '🦷',
-    duration: 80,
-    description: '80% Poison forte (5 tours, 4 PV). 40% lifesteal. Charge avec les mâchoires, frappe puissante avec lifesteal violet.',
-    phases: [
-      { from: 0, to: 25, label: 'Anticipation' },
-      { from: 25, to: 38, label: 'Frappe' },
-      { from: 38, to: 60, label: 'Drain' },
-      { from: 60, to: 80, label: 'Recovery' },
-    ],
-    update(frame){
-      const opts = {};
-      const fx = [];
-      if(frame < 25){
-        const p = frame / 25;
-        opts.armRaise = -p * 1.0;
-        opts.roar = p * 0.4;
-      } else if(frame < 38){
-        const p = (frame - 25) / 13;
-        opts.armRaise = -1.0 + p * 1.5;
-        opts.roar = 0.4 + p * 0.6;
-        if(frame === 25){
-          fx.push({ type: 'sparks', dx: -18, dy: -22, count: 12, color: '#a8e065' });
-          fx.push({ type: 'flash', dx: -18, dy: -22, color: '#c8d845', size: 14 });
-          fx.push({ type: 'shockwave', dx: -18, dy: -16, color: '#a060c0', maxRadius: 28 });
-        }
-      } else if(frame < 60){
-        const p = (frame - 38) / 22;
-        opts.armRaise = 0.5 - p * 0.4;
-        opts.roar = 1 - p;
-        opts.buffActive = (1 - p) * 0.4;
-        // Lifesteal drain particles
-        if(frame % 3 === 0){
-          fx.push({ type: 'sparks', dx: -18 + (frame - 38), dy: -16, count: 1, color: '#a060c0' });
-        }
-      } else {
-        const p = (frame - 60) / 20;
-        opts.armRaise = 0.1 - 0.1 * p;
-        opts.buffActive = Math.max(0, 0.4 - p);
-      }
-      return { opts, fx };
-    },
-  },
-
-  buffAllies: {
-    id: 'buffAllies', name: 'ALPHA ROAR', icon: '📢',
-    duration: 90,
-    description: 'Donne +20% damage aux mutants alliés adjacents. Anim : rugit, lève la tête, aura violette se diffuse autour.',
-    phases: [
-      { from: 0, to: 25, label: 'Charge' },
-      { from: 25, to: 60, label: 'Roar' },
-      { from: 60, to: 90, label: 'Recovery' },
-    ],
-    update(frame){
-      const opts = {};
-      const fx = [];
-      if(frame < 25){
-        const p = frame / 25;
-        opts.roar = p * 0.5;
-        opts.buffActive = p * 0.4;
-        if(frame % 4 === 0){
-          fx.push({ type: 'sparks', dx: 0, dy: -28, count: 1, color: '#a060c0' });
-        }
-      } else if(frame < 60){
-        opts.roar = 1;
-        opts.buffActive = 1 + Math.sin(frame * 0.2) * 0.2;
-        if(frame === 25){
-          fx.push({ type: 'flash', dx: 0, dy: -28, color: '#d8a0e8', size: 26 });
-          fx.push({ type: 'shockwave', dx: 0, dy: 4, color: '#a060c0', maxRadius: 50 });
-          fx.push({ type: 'sparks', dx: 0, dy: -22, count: 18, color: '#a060c0' });
-        }
-        if(frame === 30){
-          fx.push({ type: 'shockwave', dx: 0, dy: 4, color: '#d8a0e8', maxRadius: 40 });
-        }
-        if(frame === 38){
-          fx.push({ type: 'shockwave', dx: 0, dy: 4, color: '#a060c0', maxRadius: 30 });
-        }
-      } else {
-        const p = (frame - 60) / 30;
-        opts.roar = 1 - p;
-        opts.buffActive = Math.max(0, 1 - p);
-      }
-      return { opts, fx };
-    },
-  },
-
-  walk: {
-    id: 'walk', name: 'WALK', icon: '🏃',
-    duration: 220,
-    looping: true,
-    description: 'Marche dominante, posture droite. Aller-retour 110/110.',
-    phases: [
-      { from: 0, to: 110, label: 'Avancée' },
-      { from: 110, to: 220, label: 'Retour' },
-    ],
-    update(frame){
-      const opts = {};
-      const fx = [];
-      const half = 110;
-      let p;
-      if(frame < half){
-        p = frame / half;
-        opts.bodyShift = p * 38;
-      } else {
-        p = (frame - half) / half;
-        opts.bodyShift = (1 - p) * 38;
-      }
-      opts.bodyShift += Math.sin(frame * 0.18) * 0.7;
-      if(frame % 14 === 0){
-        fx.push({ type: 'ash', dx: -5, dy: 13, count: 3, color: '#7fc844' });
-        fx.push({ type: 'ash', dx: 5, dy: 13, count: 3, color: '#7fc844' });
-        fx.push({ type: 'ash', dx: 0, dy: -32, count: 1, color: '#a060c0' });
-      }
-      return { opts, fx };
-    },
-  },
-};
-
-export const meta = { width: 36, height: 60, groundOffsetY: 0 };
-export default { draw, attacks, palette, meta };
+export default { drawToxicAlpha, toxicAlphaConfig };

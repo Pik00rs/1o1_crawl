@@ -1,546 +1,239 @@
-// src/js/render/enemies/toxic_boss.js
-// Bête Putréfiée — BOSS final Toxic.
-// Quadrupède bestial 1.5x, énorme, dos courbé. Pustules violettes sur le dos.
-// CŒUR EXPOSÉ sur le poitrail (orbe VIOLET pulsant — contrepoint au cœur thermonucléaire
-// du Pyromancien et au cœur de glace de la Cryo-Reine. Trio de bosses : feu rouge / glace bleue / poison violet).
+// src/js/render/characters/enemies/toxic_boss.js
+// BÊTE PUTRÉFIÉE — BOSS final Toxic, QUADRUPÈDE.
+// Posture quadrupède, pustules violettes dorsales, cœur violet poitrail.
+import { hexToRgba, shade } from '../../iso-utils.js';
 
-export const palette = {
-  flesh:        '#5a6840',
-  fleshDark:    '#28301a',
-  fleshLight:   '#8a9858',
-  fleshBack:    '#7a5838',  // dos brun-rouge
-  fleshBackDk:  '#3a2818',
-  necrosis:     '#5a3825',
-  necrosisDark: '#1a0a05',
-  bile:         '#a8e065',
-  bileBright:   '#c8d845',
-  pustule:      '#a060c0',  // pustules violettes
-  pustuleHot:   '#d8a0e8',
-  pustuleCore:  '#fff8ff',
-  pustuleDark:  '#5a2870',
-  bone:         '#d4c0a0',
-  boneDark:     '#7a6850',
-  fang:         '#e8d8a0',
-  // Cœur
-  heart:        '#a060c0',
-  heartCore:    '#fff8ff',
-  heartRing:    '#7a3a8a',
-  heartDeep:    '#5a2870',
-  saliva:       '#a8e065',
-  scar:         '#5a3018',
-  shadow:       'rgba(20,30,10,0.9)',
+export const toxicBossConfig = {
+  id: 'toxic_boss', name: 'BÊTE PUTRÉFIÉE', archetype: 'toxic_boss',
+  bodyColor: '#5a7818', accentColor: '#a040a0', glowColor: '#c8e848',
+  skinColor: '#7a9828', hairColor: '#3a5018', capeColor: '#5a2848',
+  height: 'boss', weapon: 'maw',
 };
 
-export function draw(ctx, sx, sy, t, opts){
-  opts = opts || {};
-  const p = palette;
-  const breathe = Math.sin(t * 0.04) * 1.0; // grosse respiration
-  const sway = Math.sin(t * 0.025 + 1.3) * 0.7;
-  sx = Math.round(sx + (opts.bodyShift || 0) + sway);
-  sy = Math.round(sy + Math.sin(t * 0.05) * 0.6);
+export function drawToxicBoss(ctx, cx, cy, actor, time, options = {}){
+  const fxLevel = options.fxLevel ?? 1;
+  const idle = actor.idle ?? 0;
+  const moving = !!actor.target;
+  const bob = Math.sin(idle * 0.7) * 0.8;
+  const breathe = Math.sin(idle * 0.5) * 0.6;
+  const stride = moving ? Math.sin(time * 0.35) * 1.5 : 0;
+  cy = cy - 8 + bob; // Quadrupède plus bas que humanoïdes
 
-  const heartFlare = opts.heartFlare || 0;
-  const lunge = opts.lunge || 0; // 0..1, charge mordante
-  const regenGlow = opts.regenGlow || 0;
-  const phase2 = opts.phase2 || 0;
+  // ═══ HALO BOSS (vert + violet, large) ═══
+  if(fxLevel >= 1){
+    const auraPulse = 0.6 + Math.sin(time * 0.05) * 0.15;
+    const aura = ctx.createRadialGradient(cx, cy - 2, 4, cx, cy - 2, 30);
+    aura.addColorStop(0, hexToRgba(actor.glowColor, auraPulse * 0.4));
+    aura.addColorStop(0.3, hexToRgba(actor.accentColor, auraPulse * 0.4));
+    aura.addColorStop(0.7, hexToRgba(actor.glowColor, auraPulse * 0.15));
+    aura.addColorStop(1, hexToRgba(actor.accentColor, 0));
+    ctx.fillStyle = aura;
+    ctx.fillRect(cx - 30, cy - 30, 60, 60);
+  }
 
-  // Shadow (très large pour le quadrupède)
-  ctx.fillStyle = p.shadow;
-  ctx.beginPath();
-  ctx.ellipse(sx, sy + 16, 30, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Outer purple-green glow
-  const outerGlow = 0.5 + heartFlare * 0.4 + Math.sin(t * 0.05) * 0.15;
-  const og = ctx.createRadialGradient(sx, sy - 4, 8, sx, sy - 4, 60);
-  og.addColorStop(0, `rgba(160,96,192,${outerGlow * 0.5})`);
-  og.addColorStop(0.4, `rgba(127,200,68,${outerGlow * 0.3})`);
-  og.addColorStop(1, 'rgba(127,200,68,0)');
-  ctx.fillStyle = og;
-  ctx.fillRect(sx - 60, sy - 60, 120, 100);
-
-  // Inner heart glow
-  const coreGlow = 0.7 + heartFlare * 0.3 + Math.sin(t * 0.1) * 0.15;
-  const cg = ctx.createRadialGradient(sx - 6, sy - 4, 1, sx - 6, sy - 4, 22);
-  cg.addColorStop(0, `rgba(255,248,255,${coreGlow * 0.6})`);
-  cg.addColorStop(0.4, `rgba(216,160,232,${coreGlow * 0.5})`);
-  cg.addColorStop(1, 'rgba(160,96,192,0)');
-  ctx.fillStyle = cg;
-  ctx.fillRect(sx - 28, sy - 26, 44, 44);
-
-  // Regen aura (when active)
-  if(regenGlow > 0){
-    for(let i = 0; i < 4; i++){
-      const r = 32 + i * 7;
-      const a = regenGlow * 0.18 * (1 - i * 0.22);
-      ctx.fillStyle = `rgba(168,224,101,${a})`;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy + 6, r, r * 0.4, 0, 0, Math.PI * 2);
-      ctx.fill();
+  // Spores ambiants
+  if(fxLevel >= 1){
+    for(let i = 0; i < 6; i++){
+      const t = (time * 0.03 + i * 0.35) % 1;
+      const sx = cx + Math.sin(i * 1.5 + time * 0.04) * 12;
+      const sy = cy - 8 - t * 16;
+      ctx.fillStyle = hexToRgba(actor.accentColor, (1 - t) * 0.6);
+      ctx.fillRect(Math.round(sx), Math.round(sy), 1, 1);
     }
   }
 
-  ctx.save();
-  // Apply lunge (forward shift + slight rotation toward target)
-  ctx.translate(sx, sy);
-  ctx.rotate(lunge * -0.15);
-  sx = 0; sy = 0;
-
-  // === HIND LEGS (back) ===
-  // Right hind (further)
-  ctx.fillStyle = p.fleshBackDk;
-  ctx.fillRect(sx + 14, sy + 2, 6, 14);
-  ctx.fillStyle = p.fleshBack;
-  ctx.fillRect(sx + 14, sy + 2, 1, 14);
-  // Foot/paw with claws
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(sx + 13, sy + 14, 8, 4);
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx + 13, sy + 17, 1, 1);
-  ctx.fillRect(sx + 15, sy + 17, 1, 1);
-  ctx.fillRect(sx + 17, sy + 17, 1, 1);
-  ctx.fillRect(sx + 19, sy + 17, 1, 1);
-
-  // Left hind (closer)
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx + 8, sy + 2, 6, 14);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx + 8, sy + 2, 1, 14);
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(sx + 7, sy + 14, 8, 4);
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx + 7, sy + 17, 1, 1);
-  ctx.fillRect(sx + 9, sy + 17, 1, 1);
-  ctx.fillRect(sx + 11, sy + 17, 1, 1);
-  ctx.fillRect(sx + 13, sy + 17, 1, 1);
-
-  // === FRONT LEGS ===
-  // Right front (further)
-  ctx.fillStyle = p.fleshBackDk;
-  ctx.fillRect(sx - 14, sy + 2, 6, 14);
-  ctx.fillStyle = p.fleshBack;
-  ctx.fillRect(sx - 14, sy + 2, 1, 14);
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(sx - 15, sy + 14, 8, 4);
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx - 15, sy + 17, 1, 1);
-  ctx.fillRect(sx - 13, sy + 17, 1, 1);
-  ctx.fillRect(sx - 11, sy + 17, 1, 1);
-  ctx.fillRect(sx - 9, sy + 17, 1, 1);
-
-  // Left front (closer, biggest)
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 20, sy + 2, 7, 14);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 20, sy + 2, 2, 14);
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(sx - 21, sy + 14, 9, 4);
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx - 21, sy + 17, 1, 2);
-  ctx.fillRect(sx - 19, sy + 17, 1, 2);
-  ctx.fillRect(sx - 17, sy + 17, 1, 2);
-  ctx.fillRect(sx - 15, sy + 17, 1, 2);
-
-  // === BODY (long, hunched, quadrupedal) ===
-  ctx.fillStyle = p.fleshBackDk;
-  ctx.beginPath();
-  // Top of back (curved hump)
-  ctx.moveTo(sx - 22, sy - 4 + breathe);
-  ctx.quadraticCurveTo(sx - 8, sy - 14 + breathe, sx + 6, sy - 12 + breathe);
-  ctx.quadraticCurveTo(sx + 18, sy - 8 + breathe, sx + 22, sy - 2 + breathe);
-  ctx.lineTo(sx + 20, sy + 6);
-  ctx.lineTo(sx - 20, sy + 6);
-  ctx.closePath();
-  ctx.fill();
-
-  // Lighter back
-  ctx.fillStyle = p.fleshBack;
-  ctx.beginPath();
-  ctx.moveTo(sx - 20, sy - 4 + breathe);
-  ctx.quadraticCurveTo(sx - 8, sy - 13 + breathe, sx + 6, sy - 11 + breathe);
-  ctx.quadraticCurveTo(sx + 16, sy - 7 + breathe, sx + 20, sy - 1 + breathe);
-  ctx.lineTo(sx + 18, sy + 4);
-  ctx.lineTo(sx - 18, sy + 4);
-  ctx.closePath();
-  ctx.fill();
-
-  // Belly (lighter color, underside)
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 18, sy + 2, 36, 5);
-  ctx.fillStyle = p.fleshLight;
-  ctx.fillRect(sx - 18, sy + 2, 36, 1);
-
-  // === PUSTULES ON BACK (signature violet) ===
-  drawPustule(ctx, sx - 14, sy - 9 + breathe, t, 1.0, p);
-  drawPustule(ctx, sx - 6, sy - 13 + breathe, t + 30, 1.3, p);
-  drawPustule(ctx, sx + 4, sy - 11 + breathe, t + 60, 1.0, p);
-  drawPustule(ctx, sx + 12, sy - 7 + breathe, t + 90, 0.9, p);
-  drawPustule(ctx, sx - 10, sy - 5 + breathe, t + 120, 0.7, p);
-  drawPustule(ctx, sx + 8, sy - 3 + breathe, t + 150, 0.8, p);
-  // Phase 2: extra pustules emerging
-  if(phase2 > 0){
-    drawPustule(ctx, sx, sy - 14 + breathe, t + 200, 1.0 * phase2, p);
-    drawPustule(ctx, sx - 18, sy - 8 + breathe, t + 250, 0.9 * phase2, p);
-    drawPustule(ctx, sx + 18, sy - 4 + breathe, t + 300, 0.9 * phase2, p);
+  // ═══ 4 PATTES (quadrupède) ═══
+  // Pattes avant (gauche, droite)
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.fillRect(cx - 11, cy + 4 + stride, 4, 12);
+  ctx.fillRect(cx - 5, cy + 4 - stride, 4, 12);
+  // Pattes arrière
+  ctx.fillRect(cx + 1, cy + 4 + stride, 4, 12);
+  ctx.fillRect(cx + 7, cy + 4 - stride, 4, 12);
+  // Plaques sur pattes
+  ctx.fillStyle = '#5a2848';
+  ctx.fillRect(cx - 10, cy + 7 + stride, 2, 2);
+  ctx.fillRect(cx + 8, cy + 9 - stride, 2, 2);
+  // Griffes
+  ctx.fillStyle = '#1a0805';
+  for(let leg of [-11, -5, 1, 7]){
+    const offset = (leg === -11 || leg === 1) ? stride : -stride;
+    for(let c = 0; c < 3; c++){
+      ctx.fillRect(cx + leg + c, cy + 16 + offset, 0.8, 2);
+    }
   }
 
-  // Necrotic patches on flank
-  ctx.fillStyle = p.necrosis;
+  // ═══ CORPS LONG (signature quadrupède) ═══
+  ctx.fillStyle = actor.bodyColor;
   ctx.beginPath();
-  ctx.moveTo(sx - 14, sy);
-  ctx.lineTo(sx - 8, sy + 2);
-  ctx.lineTo(sx - 12, sy + 5);
-  ctx.lineTo(sx - 16, sy + 3);
-  ctx.closePath();
+  ctx.ellipse(cx, cy - 1 + breathe, 13, 6, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = p.necrosisDark;
-  ctx.fillRect(sx - 12, sy + 2, 1, 1);
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 2 + breathe, 13, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Top highlight
+  ctx.fillStyle = shade(actor.bodyColor, 0.2);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 4 + breathe, 11, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  // === HEART (THE focal point — exposed on chest/poitrail, at front-left) ===
-  // Position : visible sur la poitrine vue de profil
-  const hx = sx - 12;
-  const hy = sy - 4 + breathe;
-  // Outer ring (deep purple)
-  ctx.fillStyle = p.heartRing;
+  // ═══ PUSTULES VIOLETTES DORSALES (signature) ═══
+  drawDorsalPustules(ctx, cx, cy - 5 + breathe, time, actor);
+
+  // ═══ CŒUR VIOLET POITRAIL (signature focal point) ═══
+  drawToxicHeart(ctx, cx - 8, cy + 0 + breathe, time, actor);
+
+  // Plaques nécrosées sur flanc
+  ctx.fillStyle = '#5a2848';
+  ctx.fillRect(cx - 4, cy + 1 + breathe, 4, 3);
+  ctx.fillRect(cx + 4, cy + 0 + breathe, 4, 3);
+  ctx.fillStyle = '#8a3a6a';
+  ctx.fillRect(cx - 3, cy + 2 + breathe, 1, 1);
+  ctx.fillRect(cx + 5, cy + 1 + breathe, 1, 1);
+
+  // Veines pulsantes
+  const veinPulse = 0.7 + Math.sin(time * 0.08) * 0.2;
+  ctx.strokeStyle = hexToRgba(actor.accentColor, veinPulse);
+  ctx.lineWidth = 0.5;
   ctx.beginPath();
-  ctx.arc(hx, hy, 7, 0, Math.PI * 2);
-  ctx.fill();
-  // Mid (almost black)
-  ctx.fillStyle = p.heartDeep;
-  ctx.beginPath();
-  ctx.arc(hx, hy, 6, 0, Math.PI * 2);
-  ctx.fill();
-  // Heart pulse
-  const corePulse = 0.9 + Math.sin(t * 0.1) * 0.1 + heartFlare * 0.2;
-  ctx.fillStyle = `rgba(160,96,192,${corePulse})`;
-  ctx.beginPath();
-  ctx.arc(hx, hy, 5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = `rgba(216,160,232,${corePulse})`;
-  ctx.beginPath();
-  ctx.arc(hx, hy, 3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = `rgba(255,248,255,${corePulse})`;
-  ctx.beginPath();
-  ctx.arc(hx, hy, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  // Rotating particles (purple)
-  for(let i = 0; i < 4; i++){
-    const angle = (i / 4) * Math.PI * 2 + t * 0.05;
-    const x = hx + Math.cos(angle) * 4;
-    const y = hy + Math.sin(angle) * 4;
-    ctx.fillStyle = `rgba(216,160,232,${corePulse})`;
-    ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
-  }
-  // Veins extending into the body from the heart
-  ctx.strokeStyle = p.heartRing;
-  ctx.lineWidth = 0.7;
-  ctx.beginPath();
-  ctx.moveTo(hx, hy - 7); ctx.lineTo(hx - 3, hy - 12);
-  ctx.moveTo(hx + 7, hy); ctx.lineTo(hx + 12, hy - 2);
-  ctx.moveTo(hx, hy + 7); ctx.lineTo(hx + 2, hy + 11);
+  ctx.moveTo(cx - 10, cy + 1 + breathe); ctx.lineTo(cx - 5, cy + 2 + breathe);
+  ctx.moveTo(cx + 5, cy + 1 + breathe); ctx.lineTo(cx + 10, cy + 0 + breathe);
   ctx.stroke();
 
-  // === HEAD (large monstrous head, jaws extended toward camera/left) ===
-  // Skull
-  ctx.fillStyle = p.fleshBackDk;
+  // ═══ TÊTE MASSIVE (signature) ═══
+  // Cou + tête
+  ctx.fillStyle = shade(actor.bodyColor, -0.1);
+  ctx.fillRect(cx - 16, cy - 6 + breathe, 6, 5);
+  // Tête
+  ctx.fillStyle = actor.bodyColor;
   ctx.beginPath();
-  ctx.moveTo(sx - 25, sy - 6 + breathe);
-  ctx.lineTo(sx - 32 - lunge * 4, sy - 4 + breathe);
-  ctx.lineTo(sx - 34 - lunge * 4, sy + 2 + breathe);
-  ctx.lineTo(sx - 28 - lunge * 4, sy + 6 + breathe);
-  ctx.lineTo(sx - 22, sy + 6 + breathe);
+  ctx.ellipse(cx - 17, cy - 4 + breathe, 5, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.beginPath();
+  ctx.ellipse(cx - 17, cy - 2 + breathe, 5, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Plaques violettes tête
+  ctx.fillStyle = '#5a2848';
+  ctx.fillRect(cx - 19, cy - 6 + breathe, 2, 2);
+  ctx.fillRect(cx - 16, cy - 7 + breathe, 2, 2);
+
+  // Cornes courtes
+  ctx.fillStyle = '#3a1a08';
+  ctx.beginPath();
+  ctx.moveTo(cx - 19, cy - 6 + breathe);
+  ctx.lineTo(cx - 20, cy - 9 + breathe);
+  ctx.lineTo(cx - 18, cy - 6 + breathe);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = p.fleshBack;
   ctx.beginPath();
-  ctx.moveTo(sx - 24, sy - 5 + breathe);
-  ctx.lineTo(sx - 31 - lunge * 4, sy - 3 + breathe);
-  ctx.lineTo(sx - 33 - lunge * 4, sy + 1 + breathe);
-  ctx.lineTo(sx - 27 - lunge * 4, sy + 5 + breathe);
-  ctx.lineTo(sx - 22, sy + 5 + breathe);
+  ctx.moveTo(cx - 16, cy - 6 + breathe);
+  ctx.lineTo(cx - 15, cy - 9 + breathe);
+  ctx.lineTo(cx - 14, cy - 6 + breathe);
   ctx.closePath();
   ctx.fill();
 
-  // Eye (single, malicious)
-  const eyeX = sx - 28 - lunge * 4;
-  const eyeY = sy - 1 + breathe;
+  // YEUX violets brillants (2 yeux)
+  const eyePulse = 0.92 + Math.sin(time * 0.09) * 0.08;
   ctx.fillStyle = '#000';
-  ctx.fillRect(eyeX - 2, eyeY - 1, 4, 2);
-  const eyePulse = 0.92 + Math.sin(t * 0.1) * 0.08;
-  ctx.fillStyle = `rgba(160,96,192,${eyePulse})`;
-  ctx.fillRect(eyeX - 1, eyeY, 2, 1);
-  ctx.fillStyle = `rgba(216,160,232,${eyePulse})`;
-  ctx.fillRect(eyeX, eyeY, 1, 1);
+  ctx.fillRect(cx - 19, cy - 4 + breathe, 1.5, 1.5);
+  ctx.fillRect(cx - 16, cy - 4 + breathe, 1.5, 1.5);
+  ctx.fillStyle = hexToRgba(actor.accentColor, eyePulse);
+  ctx.fillRect(cx - 18.7, cy - 4 + breathe, 1, 1);
+  ctx.fillRect(cx - 15.7, cy - 4 + breathe, 1, 1);
+  ctx.fillStyle = hexToRgba('#e090e0', eyePulse);
+  ctx.fillRect(cx - 18.5, cy - 4 + breathe, 0.5, 0.5);
+  ctx.fillRect(cx - 15.5, cy - 4 + breathe, 0.5, 0.5);
 
-  // Mouth (large, fanged, opens during lunge)
-  const mouthOpen = lunge;
-  ctx.fillStyle = '#1a0808';
-  ctx.beginPath();
-  ctx.moveTo(sx - 22, sy + 2 + breathe);
-  ctx.lineTo(sx - 33 - lunge * 4, sy + 2 + breathe);
-  ctx.lineTo(sx - 31 - lunge * 4, sy + 6 + breathe + mouthOpen * 4);
-  ctx.lineTo(sx - 22, sy + 5 + breathe);
-  ctx.closePath();
-  ctx.fill();
-
-  // Top fangs
+  // MÂCHOIRE AVEC CROCS (signature)
+  ctx.fillStyle = '#000';
+  ctx.fillRect(cx - 21, cy - 2 + breathe, 7, 2);
+  // Crocs supérieurs
+  ctx.fillStyle = '#d8c8a0';
   for(let i = 0; i < 4; i++){
-    const fx = sx - 24 - i * 2.5;
-    ctx.fillStyle = p.fang;
     ctx.beginPath();
-    ctx.moveTo(fx - 0.5, sy + 2 + breathe);
-    ctx.lineTo(fx, sy + 4 + breathe + mouthOpen * 2);
-    ctx.lineTo(fx + 0.5, sy + 2 + breathe);
+    ctx.moveTo(cx - 21 + i * 2, cy - 2 + breathe);
+    ctx.lineTo(cx - 20 + i * 2, cy + 1 + breathe);
+    ctx.lineTo(cx - 19.5 + i * 2, cy - 2 + breathe);
     ctx.closePath();
     ctx.fill();
   }
-  // Bottom fangs (when open)
-  if(mouthOpen > 0.3){
-    for(let i = 0; i < 3; i++){
-      const fx = sx - 25 - i * 3;
-      ctx.fillStyle = p.fang;
-      ctx.beginPath();
-      ctx.moveTo(fx - 0.5, sy + 5 + breathe + mouthOpen * 3);
-      ctx.lineTo(fx, sy + 3 + breathe + mouthOpen * 2);
-      ctx.lineTo(fx + 0.5, sy + 5 + breathe + mouthOpen * 3);
-      ctx.closePath();
-      ctx.fill();
+  // Saliva
+  ctx.fillStyle = hexToRgba(actor.glowColor, 0.85);
+  ctx.fillRect(cx - 19, cy + 1 + breathe, 0.5, 2);
+  ctx.fillRect(cx - 17, cy + 1 + breathe, 0.5, 1.5);
+}
+
+function drawDorsalPustules(ctx, lx, ly, time, actor){
+  // 6 pustules le long du dos
+  const pustules = [
+    [-10, 0], [-6, 0.7], [-2, 1.4], [2, 0], [6, 0.7], [10, 1.4]
+  ];
+  for(const [dx, offset] of pustules){
+    const pulse = 0.7 + Math.sin(time * 0.06 + offset) * 0.3;
+    // Base
+    ctx.fillStyle = shade(actor.capeColor, -0.3);
+    ctx.beginPath();
+    ctx.arc(lx + dx, ly, 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Mid
+    ctx.fillStyle = actor.capeColor;
+    ctx.beginPath();
+    ctx.arc(lx + dx, ly, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Hot core
+    ctx.fillStyle = hexToRgba(actor.accentColor, pulse);
+    ctx.beginPath();
+    ctx.arc(lx + dx, ly, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hexToRgba('#e090e0', pulse);
+    ctx.fillRect(lx + dx - 0.3, ly - 0.3, 0.5, 0.5);
+    // Spore release
+    if(((time + dx * 3) % 40) < 5){
+      ctx.fillStyle = hexToRgba(actor.accentColor, 0.6);
+      ctx.fillRect(lx + dx, ly - 3, 0.5, 0.5);
     }
   }
+}
 
-  // Saliva drip from mouth
-  if(t % 60 < 30){
-    const len = Math.floor((t % 30) / 8);
-    ctx.fillStyle = p.saliva;
-    ctx.fillRect(sx - 30, sy + 6 + breathe + mouthOpen * 3, 1, 2 + len);
-    ctx.fillStyle = p.bileBright;
-    ctx.fillRect(sx - 30, sy + 6 + breathe + mouthOpen * 3, 1, 1);
+function drawToxicHeart(ctx, lx, ly, time, actor){
+  // Ring violet sombre
+  ctx.fillStyle = '#2a0828';
+  ctx.beginPath();
+  ctx.arc(lx, ly, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  // Ring violet vif
+  ctx.fillStyle = actor.accentColor;
+  ctx.beginPath();
+  ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+  ctx.fill();
+  // Core glow
+  const pulse = 0.9 + Math.sin(time * 0.08) * 0.1;
+  ctx.fillStyle = hexToRgba('#e090e0', pulse);
+  ctx.beginPath();
+  ctx.arc(lx, ly, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = hexToRgba('#fff', pulse);
+  ctx.beginPath();
+  ctx.arc(lx, ly, 1.3, 0, Math.PI * 2);
+  ctx.fill();
+  // Particules orbitales
+  for(let i = 0; i < 4; i++){
+    const angle = (i / 4) * Math.PI * 2 + time * 0.05;
+    const x = lx + Math.cos(angle) * 1.7;
+    const y = ly + Math.sin(angle) * 1.7;
+    ctx.fillStyle = hexToRgba(actor.accentColor, pulse);
+    ctx.fillRect(Math.round(x), Math.round(y), 0.5, 0.5);
   }
-
-  // Skull plates (bone visible on top of head)
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx - 28 - lunge * 2, sy - 5 + breathe, 4, 1);
-  ctx.fillRect(sx - 26 - lunge * 1, sy - 6 + breathe, 2, 1);
-
-  ctx.restore();
+  // Cross
+  ctx.strokeStyle = hexToRgba(actor.accentColor, pulse * 0.5);
+  ctx.lineWidth = 0.3;
+  ctx.beginPath();
+  ctx.moveTo(lx - 5, ly); ctx.lineTo(lx + 5, ly);
+  ctx.moveTo(lx, ly - 5); ctx.lineTo(lx, ly + 5);
+  ctx.stroke();
 }
 
-function drawPustule(ctx, lx, ly, t, scale, p){
-  const r = 2.5 * scale;
-  const pulse = 0.85 + Math.sin(t * 0.12) * 0.15;
-  // Halo violet
-  ctx.fillStyle = `rgba(160,96,192,${pulse * 0.4 * scale})`;
-  ctx.beginPath();
-  ctx.arc(lx, ly, r * 1.8, 0, Math.PI * 2);
-  ctx.fill();
-  // Outer
-  ctx.fillStyle = p.pustuleDark;
-  ctx.beginPath();
-  ctx.arc(lx, ly, r, 0, Math.PI * 2);
-  ctx.fill();
-  // Inner
-  ctx.fillStyle = p.pustule;
-  ctx.beginPath();
-  ctx.arc(lx, ly, r * 0.7, 0, Math.PI * 2);
-  ctx.fill();
-  // Hot center
-  ctx.fillStyle = `rgba(216,160,232,${pulse})`;
-  ctx.fillRect(Math.round(lx - 0.5), Math.round(ly - 0.5), 1, 1);
-}
-
-export const attacks = {
-  idle: {
-    id: 'idle', name: 'IDLE', icon: '◇',
-    duration: 9999, looping: true,
-    description: 'Respiration lourde quadrupède, pustules violettes pulsent, salive qui dégouline. Cœur violet pulse régulièrement.',
-    phases: [{ from: 0, to: 9999, label: 'Loop' }],
-    update(frame){
-      const fx = [];
-      if(frame % 14 === 0){
-        fx.push({ type: 'ash', dx: -28, dy: 4, count: 1, color: '#a8e065' });
-      }
-      if(frame % 22 === 0){
-        fx.push({ type: 'ash', dx: -8, dy: -16, count: 1, color: '#a060c0' });
-        fx.push({ type: 'ash', dx: 8, dy: -16, count: 1, color: '#a060c0' });
-      }
-      return { opts: {}, fx };
-    },
-  },
-
-  lunge: {
-    id: 'lunge', name: 'PUTREFIED LUNGE', icon: '🦷',
-    duration: 100,
-    description: 'Charge mordante avec projectile de bave en arc. 60% Poison forte. 30% lifesteal.',
-    phases: [
-      { from: 0, to: 25, label: 'Charge' },
-      { from: 25, to: 45, label: 'Bite' },
-      { from: 45, to: 75, label: 'Drain' },
-      { from: 75, to: 100, label: 'Recovery' },
-    ],
-    projectile: {
-      spawnFrame: 35,
-      spawnOffset: { dx: -32, dy: 6 }, // depuis la gueule
-      travelFrames: 18,
-      arc: 10,
-      drawProjectile(ctx, x, y, vx, vy, t){
-        // Boule de bave putréfiée avec halo violet-vert
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, 16);
-        grad.addColorStop(0, 'rgba(216,160,232,0.85)');
-        grad.addColorStop(0.3, 'rgba(168,224,101,0.7)');
-        grad.addColorStop(0.7, 'rgba(127,200,68,0.5)');
-        grad.addColorStop(1, 'rgba(160,96,192,0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(x - 16, y - 16, 32, 32);
-        // Core
-        ctx.fillStyle = '#a060c0';
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#7fc844';
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(Math.round(x - 0.5), Math.round(y - 0.5), 1, 1);
-        // Drips
-        ctx.fillStyle = '#7fc844';
-        ctx.fillRect(Math.round(x - 4 + Math.sin(t * 0.5) * 2), Math.round(y + 5), 1, 2);
-        ctx.fillRect(Math.round(x + 3 + Math.cos(t * 0.4) * 2), Math.round(y + 6), 1, 2);
-      },
-      trailColor: '#a060c0',
-      onHit: {
-        flash: '#d8a0e8', flashSize: 22,
-        sparks: 20, color: '#a060c0',
-        shockwave: '#7a3a8a', shockwaveRadius: 44,
-        ash: 12, color: '#a8e065',
-      },
-    },
-    update(frame){
-      const opts = {};
-      const fx = [];
-      if(frame < 25){
-        const p = frame / 25;
-        opts.lunge = p * 0.4;
-        opts.heartFlare = p;
-        opts.bodyShift = -p * 4;
-        if(frame % 4 === 0){
-          fx.push({ type: 'sparks', dx: -28, dy: 4, count: 1, color: '#a060c0' });
-        }
-      } else if(frame < 45){
-        const p = (frame - 25) / 20;
-        opts.lunge = 0.4 + p * 0.6;
-        opts.heartFlare = 1 - p * 0.5;
-        opts.bodyShift = -4 + p * 8;
-        if(frame === 25){
-          fx.push({ type: 'flash', dx: -32, dy: 4, color: '#d8a0e8', size: 18 });
-          fx.push({ type: 'shockwave', dx: -20, dy: 8, color: '#a060c0', maxRadius: 30 });
-        }
-        if(frame === 35){
-          fx.push({ type: 'sparks', dx: -32, dy: 6, count: 14, color: '#a8e065' });
-          fx.push({
-            type: 'projectile',
-            dx: -32, dy: 6,
-            useAttackProjectile: 'lunge',
-          });
-        }
-      } else if(frame < 75){
-        const p = (frame - 45) / 30;
-        opts.lunge = 1 - p;
-        opts.heartFlare = (1 - p) * 0.4;
-        opts.bodyShift = 4 - p * 4;
-        // Drain particles back to boss
-        if(frame % 4 === 0){
-          fx.push({ type: 'sparks', dx: -28, dy: 4, count: 1, color: '#7a3a8a' });
-        }
-      } else {
-        const p = (frame - 75) / 25;
-        opts.lunge = 0;
-      }
-      return { opts, fx };
-    },
-  },
-
-  regen: {
-    id: 'regen', name: 'REGENERATION', icon: '✚',
-    duration: 70, passive: true,
-    description: 'Régénère 5 PV/tour. Visuel : aura verte qui pulse, pustules qui se referment, cœur violet qui s\'intensifie.',
-    phases: [
-      { from: 0, to: 25, label: 'Activation' },
-      { from: 25, to: 70, label: 'Sustain' },
-    ],
-    update(frame){
-      const opts = {};
-      const fx = [];
-      if(frame < 25){
-        const p = frame / 25;
-        opts.regenGlow = p;
-        opts.heartFlare = p * 0.6;
-        if(frame === 0){
-          fx.push({ type: 'flash', dx: -8, dy: -4, color: '#d8a0e8', size: 24 });
-          fx.push({ type: 'shockwave', dx: 0, dy: 6, color: '#a8e065', maxRadius: 50 });
-        }
-      } else {
-        opts.regenGlow = 1 + Math.sin(frame * 0.15) * 0.15;
-        opts.heartFlare = 0.6 + Math.sin(frame * 0.1) * 0.2;
-        if(frame % 5 === 0){
-          const angle = Math.random() * Math.PI * 2;
-          fx.push({ type: 'sparks', dx: Math.cos(angle) * 28, dy: -4 + Math.sin(angle) * 12, count: 1, color: '#c8e845' });
-        }
-      }
-      return { opts, fx };
-    },
-  },
-
-  spawnGrafted: {
-    id: 'spawnGrafted', name: 'SPAWN GRAFTED (P2)', icon: '🧬',
-    duration: 100,
-    description: 'À 50% HP : invoque 2 Greffés. Pustules éclatent, deux mutations émergent du dos. Cœur violet pulse au max.',
-    phases: [
-      { from: 0, to: 30, label: 'Phase shift' },
-      { from: 30, to: 70, label: 'Pustules burst' },
-      { from: 70, to: 100, label: 'Manifest' },
-    ],
-    update(frame){
-      const opts = {};
-      const fx = [];
-      if(frame < 30){
-        const p = frame / 30;
-        opts.phase2 = p;
-        opts.heartFlare = p;
-        if(frame === 0){
-          fx.push({ type: 'flash', dx: -8, dy: -4, color: '#d8a0e8', size: 30 });
-          fx.push({ type: 'shockwave', dx: 0, dy: 4, color: '#a060c0', maxRadius: 56 });
-        }
-      } else if(frame < 70){
-        opts.phase2 = 1;
-        opts.heartFlare = 1;
-        // Pustule explosions
-        if(frame % 4 === 0){
-          const idx = Math.floor((frame - 30) / 4) % 6;
-          const positions = [[-14, -9], [-6, -13], [4, -11], [12, -7], [-10, -5], [8, -3]];
-          const [px, py] = positions[idx];
-          fx.push({ type: 'sparks', dx: px, dy: py, count: 6, color: '#a060c0' });
-          fx.push({ type: 'flash', dx: px, dy: py, color: '#d8a0e8', size: 8 });
-        }
-        if(frame === 30){
-          fx.push({ type: 'shockwave', dx: 0, dy: -6, color: '#7a3a8a', maxRadius: 42 });
-        }
-      } else {
-        const p = (frame - 70) / 30;
-        opts.phase2 = 1;
-        opts.heartFlare = 1 - p * 0.3;
-        if(frame === 70){
-          fx.push({ type: 'flash', dx: -16, dy: 4, color: '#a8e065', size: 22 });
-          fx.push({ type: 'flash', dx: 16, dy: 4, color: '#a8e065', size: 22 });
-          fx.push({ type: 'sparks', dx: -16, dy: 4, count: 18, color: '#7fc844' });
-          fx.push({ type: 'sparks', dx: 16, dy: 4, count: 18, color: '#7fc844' });
-        }
-      }
-      return { opts, fx };
-    },
-  },
-};
-
-export const meta = { width: 80, height: 50, groundOffsetY: 0 };
-export default { draw, attacks, palette, meta };
+export default { drawToxicBoss, toxicBossConfig };

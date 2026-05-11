@@ -1,273 +1,150 @@
-// src/js/render/enemies/inferno_charger.js
-// Charge Cendreuse — berserker dégénéré qui charge.
-// Silhouette voûtée, large mais pas armurée, bras pendants,
-// crâne à moitié calciné apparent (mâchoire visible), corps craqué partout.
+// src/js/render/characters/enemies/inferno_charger.js
+// Charge Cendreuse — silhouette voûtée, crâne calciné mâchoire exposée.
+import { hexToRgba, shade } from '../../iso-utils.js';
 
-export const palette = {
-  flesh:       '#5a3525',  // chair carbonisée
-  fleshDark:   '#3a2018',
-  fleshLight:  '#7a4530',
-  bone:        '#d4c8a0',  // crâne
-  boneDark:    '#8a7858',
-  crack:       '#ff6f1a',
-  crackHot:    '#ffb347',
-  crackCore:   '#ffe080',
-  shadow:      'rgba(0,0,0,0.7)',
+export const infernoChargerConfig = {
+  id: 'inferno_charger', name: 'CHARGE CENDREUSE', archetype: 'inferno_charger',
+  bodyColor: '#3a1810', accentColor: '#ff4818', glowColor: '#ffb060',
+  skinColor: '#2a1408', hairColor: '#0a0402', capeColor: '#1a0805',
+  height: 'medium', weapon: 'none',
 };
 
-export function draw(ctx, sx, sy, t, opts){
-  opts = opts || {};
-  const p = palette;
-  const bob = Math.sin(t * 0.05) * 0.6;
-  const twitch = (t % 80 < 5) ? (Math.random() - 0.5) * 1.5 : 0;
-  sx = Math.round(sx + (opts.bodyShift || 0) + twitch);
-  sy = Math.round(sy + bob);
+export function drawInfernoCharger(ctx, cx, cy, actor, time, options = {}){
+  const fxLevel = options.fxLevel ?? 1;
+  const idle = actor.idle ?? 0;
+  const moving = !!actor.target;
+  const bob = Math.sin(idle * 1.2) * 1.1;
+  const breathe = Math.sin(idle * 0.9) * 0.5;
+  const stride = moving ? Math.sin(time * 0.5) * 1.7 : 0;
+  cy = cy - 9 + bob; // voûté = un peu plus bas
 
-  const lean = opts.lean || 0; // pour la charge
-  const trailIntensity = opts.trailIntensity || 0;
+  // Halo orange feu intense
+  if(fxLevel >= 1){
+    const auraPulse = 0.5 + Math.sin(time * 0.08) * 0.15;
+    const aura = ctx.createRadialGradient(cx, cy - 2, 2, cx, cy - 2, 15);
+    aura.addColorStop(0, hexToRgba(actor.glowColor, auraPulse * 0.6));
+    aura.addColorStop(0.5, hexToRgba(actor.accentColor, auraPulse * 0.4));
+    aura.addColorStop(1, hexToRgba(actor.accentColor, 0));
+    ctx.fillStyle = aura;
+    ctx.fillRect(cx - 15, cy - 17, 30, 30);
+  }
 
-  // Shadow
-  ctx.fillStyle = p.shadow;
-  ctx.beginPath();
-  ctx.ellipse(sx, sy + 7, 14, 3.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Glow / fire trail (charge mode)
-  if(trailIntensity > 0){
-    for(let i = 0; i < 6; i++){
-      const dx = -i * 4;
-      const a = trailIntensity * (1 - i / 6) * 0.5;
-      ctx.fillStyle = `rgba(255,107,26,${a})`;
-      ctx.fillRect(sx + dx - 8, sy - 18, 16, 22);
+  // Embers flottants ambiants (signature)
+  if(fxLevel >= 1){
+    for(let i = 0; i < 3; i++){
+      const t = (time * 0.04 + i * 0.7) % 1;
+      const ex = cx + Math.sin(i * 2.1 + time * 0.05) * 5;
+      const ey = cy - 4 - t * 14;
+      const a = 1 - t;
+      ctx.fillStyle = hexToRgba(actor.accentColor, a * 0.7);
+      ctx.fillRect(Math.round(ex), Math.round(ey), 1, 1);
     }
   }
 
-  // Body glow (perma)
-  const glow = 0.35 + Math.sin(t * 0.07) * 0.15;
-  const bg = ctx.createRadialGradient(sx, sy - 8, 4, sx, sy - 8, 26);
-  bg.addColorStop(0, `rgba(255,107,26,${glow})`);
-  bg.addColorStop(1, 'rgba(255,107,26,0)');
-  ctx.fillStyle = bg;
-  ctx.fillRect(sx - 26, sy - 34, 52, 50);
-
-  ctx.save();
-  ctx.translate(sx, sy);
-  ctx.rotate(lean);
-  sx = 0; sy = 0;
-
-  // Legs (épaisses, écartées)
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 8, sy - 1, 6, 9);
-  ctx.fillRect(sx + 2, sy - 1, 6, 9);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 8, sy - 1, 2, 9);
-  ctx.fillStyle = p.fleshLight;
-  ctx.fillRect(sx + 2, sy - 1, 1, 9);
-
-  // Feet
-  ctx.fillStyle = '#1a0805';
-  ctx.fillRect(sx - 9, sy + 8, 8, 3);
-  ctx.fillRect(sx + 1, sy + 8, 8, 3);
-
-  // Torso (large, voûté)
-  ctx.fillStyle = p.fleshDark;
+  // Jambes carbonisées
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.fillRect(cx - 5, cy + 6 + stride, 4, 9);
+  ctx.fillRect(cx + 1, cy + 6 - stride, 4, 9);
+  // Fissures jambes
+  ctx.strokeStyle = hexToRgba(actor.accentColor, 0.8);
+  ctx.lineWidth = 0.4;
   ctx.beginPath();
-  ctx.moveTo(sx - 11, sy - 18);
-  ctx.lineTo(sx + 11, sy - 18);
-  ctx.lineTo(sx + 9, sy - 1);
-  ctx.lineTo(sx - 9, sy - 1);
+  ctx.moveTo(cx - 3, cy + 8 + stride); ctx.lineTo(cx - 4, cy + 13 + stride);
+  ctx.moveTo(cx + 3, cy + 8 - stride); ctx.lineTo(cx + 2, cy + 13 - stride);
+  ctx.stroke();
+  // Pieds nus carbonisés
+  ctx.fillStyle = actor.hairColor;
+  ctx.fillRect(cx - 6, cy + 14 + stride, 5, 2);
+  ctx.fillRect(cx + 1, cy + 14 - stride, 5, 2);
+
+  // Torse voûté (silhouette penchée)
+  ctx.fillStyle = actor.bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(cx - 7, cy + 5);
+  ctx.lineTo(cx + 7, cy + 5);
+  ctx.lineTo(cx + 6, cy - 6 + breathe);
+  ctx.lineTo(cx - 6, cy - 6 + breathe);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = shade(actor.bodyColor, -0.4);
+  ctx.beginPath();
+  ctx.moveTo(cx + 7, cy + 5);
+  ctx.lineTo(cx + 6, cy - 6 + breathe);
+  ctx.lineTo(cx + 2, cy - 6 + breathe);
+  ctx.lineTo(cx + 2, cy + 5);
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 9, sy - 17, 18, 16);
-  ctx.fillStyle = p.fleshLight;
-  ctx.fillRect(sx - 9, sy - 17, 2, 16);
-
-  // Big cracks (3 majeures)
-  const crackPulse = 0.85 + Math.sin(t * 0.08) * 0.15;
-  ctx.strokeStyle = `rgba(255,107,26,${crackPulse})`;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  // Diagonal big crack
-  ctx.moveTo(sx - 7, sy - 16);
-  ctx.lineTo(sx - 4, sy - 12);
-  ctx.lineTo(sx - 6, sy - 8);
-  ctx.lineTo(sx - 2, sy - 3);
-  // Second
-  ctx.moveTo(sx + 5, sy - 15);
-  ctx.lineTo(sx + 2, sy - 11);
-  ctx.lineTo(sx + 6, sy - 7);
-  ctx.lineTo(sx + 3, sy - 2);
-  // Third (sternum)
-  ctx.moveTo(sx, sy - 16);
-  ctx.lineTo(sx - 1, sy - 11);
-  ctx.lineTo(sx + 1, sy - 6);
-  ctx.lineTo(sx, sy - 2);
-  ctx.stroke();
-  // Hot inner
-  ctx.strokeStyle = `rgba(255,224,128,${crackPulse * 0.7})`;
+  // FISSURES INTERNES MULTIPLES (signature)
+  const crackPulse = 0.8 + Math.sin(time * 0.07) * 0.2;
+  ctx.strokeStyle = hexToRgba(actor.accentColor, crackPulse);
   ctx.lineWidth = 0.6;
   ctx.beginPath();
-  ctx.moveTo(sx - 6, sy - 15); ctx.lineTo(sx - 5, sy - 11);
-  ctx.moveTo(sx + 4, sy - 14); ctx.lineTo(sx + 4, sy - 10);
+  ctx.moveTo(cx - 5, cy - 4 + breathe); ctx.lineTo(cx - 2, cy + 2 + breathe);
+  ctx.moveTo(cx + 4, cy - 3 + breathe); ctx.lineTo(cx + 1, cy + 3 + breathe);
+  ctx.moveTo(cx, cy - 5 + breathe); ctx.lineTo(cx, cy + 4 + breathe);
+  ctx.stroke();
+  ctx.strokeStyle = hexToRgba(actor.glowColor, crackPulse);
+  ctx.lineWidth = 0.3;
+  ctx.beginPath();
+  ctx.moveTo(cx - 4, cy - 2 + breathe); ctx.lineTo(cx - 3, cy + 1 + breathe);
+  ctx.moveTo(cx + 3, cy - 1 + breathe); ctx.lineTo(cx + 2, cy + 2 + breathe);
   ctx.stroke();
 
-  // Arms (pendants, longs)
-  ctx.fillStyle = p.fleshDark;
-  ctx.fillRect(sx - 13, sy - 16, 4, 14);
-  ctx.fillRect(sx + 9, sy - 16, 4, 14);
-  ctx.fillStyle = p.flesh;
-  ctx.fillRect(sx - 13, sy - 16, 1, 14);
-  ctx.fillRect(sx + 12, sy - 16, 1, 14);
+  // BRAS PENDANTS (signature, mort vivant)
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.fillRect(cx - 9, cy - 4 + breathe, 2, 10);
+  ctx.fillRect(cx + 7, cy - 4 + breathe, 2, 10);
+  // Mains griffues calcinées
+  ctx.fillStyle = actor.hairColor;
+  ctx.fillRect(cx - 9, cy + 6 + breathe, 2, 2);
+  ctx.fillRect(cx + 7, cy + 6 + breathe, 2, 2);
+  // Griffes (3 per main)
+  ctx.fillStyle = actor.hairColor;
+  for(let i = 0; i < 3; i++){
+    ctx.fillRect(cx - 9 + i * 0.7, cy + 8 + breathe, 0.4, 1.5);
+    ctx.fillRect(cx + 7 + i * 0.7, cy + 8 + breathe, 0.4, 1.5);
+  }
 
-  // Hands (poings serrés, calcinés)
-  ctx.fillStyle = '#1a0805';
-  ctx.fillRect(sx - 14, sy - 2, 5, 4);
-  ctx.fillRect(sx + 9, sy - 2, 5, 4);
-  // Glow on knuckles
-  ctx.fillStyle = `rgba(255,107,26,${crackPulse * 0.8})`;
-  ctx.fillRect(sx - 13, sy - 1, 3, 1);
-  ctx.fillRect(sx + 10, sy - 1, 3, 1);
-
-  // Head/Skull (calciné, mâchoire exposée)
-  // Top of head : encore un peu de chair
-  ctx.fillStyle = p.fleshDark;
+  // CRÂNE CALCINÉ avec MÂCHOIRE EXPOSÉE (signature)
+  // Skull mass
+  ctx.fillStyle = actor.bodyColor;
   ctx.beginPath();
-  ctx.moveTo(sx - 7, sy - 30);
-  ctx.lineTo(sx + 7, sy - 30);
-  ctx.lineTo(sx + 6, sy - 24);
-  ctx.lineTo(sx - 6, sy - 24);
-  ctx.closePath();
+  ctx.ellipse(cx, cy - 11 + breathe, 4.5, 5, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = shade(actor.bodyColor, -0.3);
+  ctx.beginPath();
+  ctx.ellipse(cx + 1.5, cy - 11 + breathe, 2.5, 4.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Skull cracks
+  ctx.strokeStyle = hexToRgba(actor.accentColor, crackPulse);
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 3, cy - 14 + breathe); ctx.lineTo(cx - 2, cy - 11 + breathe);
+  ctx.moveTo(cx + 2, cy - 14 + breathe); ctx.lineTo(cx + 3, cy - 11 + breathe);
+  ctx.stroke();
 
-  // Skull (chair partie sur la moitié inférieure)
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx - 6, sy - 24, 12, 6);
-  // Shadow on right side
-  ctx.fillStyle = p.boneDark;
-  ctx.fillRect(sx + 4, sy - 24, 2, 6);
-
-  // Eye sockets (vides, lueur dedans)
+  // EYES (orbites vides avec glow)
   ctx.fillStyle = '#000';
-  ctx.fillRect(sx - 5, sy - 23, 3, 3);
-  ctx.fillRect(sx + 2, sy - 23, 3, 3);
-  // Eye glow
-  const eyeGlow = 0.7 + Math.sin(t * 0.1) * 0.3;
-  ctx.fillStyle = `rgba(255,107,26,${eyeGlow})`;
-  ctx.fillRect(sx - 4, sy - 22, 1, 1);
-  ctx.fillRect(sx + 3, sy - 22, 1, 1);
+  ctx.fillRect(cx - 3, cy - 12 + breathe, 2, 1.5);
+  ctx.fillRect(cx + 1, cy - 12 + breathe, 2, 1.5);
+  const eyePulse = 0.92 + Math.sin(time * 0.09) * 0.08;
+  ctx.fillStyle = hexToRgba(actor.accentColor, eyePulse);
+  ctx.fillRect(cx - 2.5, cy - 11.5 + breathe, 1, 0.5);
+  ctx.fillRect(cx + 1.5, cy - 11.5 + breathe, 1, 0.5);
+  ctx.fillStyle = hexToRgba(actor.glowColor, eyePulse);
+  ctx.fillRect(cx - 2.3, cy - 11.5 + breathe, 0.5, 0.5);
+  ctx.fillRect(cx + 1.7, cy - 11.5 + breathe, 0.5, 0.5);
 
-  // Jaw (mâchoire à moitié décrochée)
-  ctx.fillStyle = p.bone;
-  ctx.fillRect(sx - 5, sy - 18, 10, 3);
-  // Teeth
-  ctx.fillStyle = p.boneDark;
-  ctx.fillRect(sx - 4, sy - 17, 1, 2);
-  ctx.fillRect(sx - 2, sy - 17, 1, 2);
-  ctx.fillRect(sx, sy - 17, 1, 2);
-  ctx.fillRect(sx + 2, sy - 17, 1, 2);
-  ctx.fillRect(sx + 4, sy - 17, 1, 2);
-
-  // Nasal cavity
+  // MÂCHOIRE EXPOSÉE (signature)
   ctx.fillStyle = '#000';
-  ctx.fillRect(sx - 1, sy - 21, 2, 2);
-
-  ctx.restore();
+  ctx.fillRect(cx - 2, cy - 9 + breathe, 4, 2);
+  // Dents
+  ctx.fillStyle = '#a89878';
+  for(let i = 0; i < 4; i++){
+    ctx.fillRect(cx - 2 + i * 1, cy - 9 + breathe, 0.5, 1);
+    ctx.fillRect(cx - 2 + i * 1 + 0.5, cy - 8 + breathe, 0.5, 0.5);
+  }
 }
 
-export const attacks = {
-  idle: {
-    id: 'idle', name: 'IDLE', icon: '◇',
-    duration: 9999, looping: true,
-    description: 'Twitches nerveux occasionnels, bobbing de respiration. Cendre qui s\'échappe des fissures.',
-    phases: [{ from: 0, to: 9999, label: 'Loop' }],
-    update(frame){
-      const fx = [];
-      if(frame % 18 === 0){
-        fx.push({ type: 'ash', dx: 0, dy: -16, count: 1 });
-      }
-      return { opts: {}, fx };
-    },
-  },
-
-  charge: {
-    id: 'charge', name: 'CHARGE', icon: '💢',
-    duration: 100,
-    description: 'Charge sur 3 cases au tour 1 du combat. Étourdit 1 tour si la charge touche. Anticipation lourde, traînée de feu.',
-    phases: [
-      { from: 0, to: 25, label: 'Anticipation' },
-      { from: 25, to: 75, label: 'Charge' },
-      { from: 75, to: 100, label: 'Impact' },
-    ],
-    update(frame){
-      const opts = {};
-      const fx = [];
-      if(frame < 25){
-        // Anticipation : se penche, pieds qui tremblent
-        const p = frame / 25;
-        opts.lean = p * 0.18;
-        opts.bodyShift = -p * 4;
-        if(frame % 4 === 0){
-          fx.push({ type: 'ash', dx: -2, dy: 10, count: 2, color: '#5a3525' });
-          fx.push({ type: 'ash', dx: 2, dy: 10, count: 2, color: '#5a3525' });
-        }
-      } else if(frame < 75){
-        // Charge active : avance vite, traînée
-        const p = (frame - 25) / 50;
-        opts.lean = 0.18;
-        opts.bodyShift = -4 + p * 50; // déplace fortement à droite
-        opts.trailIntensity = 1;
-        if(frame % 3 === 0){
-          fx.push({ type: 'sparks', dx: 0, dy: 6, count: 3 });
-          fx.push({ type: 'ash', dx: 0, dy: 4, count: 2, color: '#ffb347' });
-        }
-      } else {
-        // Impact : freine sec, rebond
-        const p = (frame - 75) / 25;
-        opts.lean = 0.18 - p * 0.18;
-        opts.bodyShift = 46 - p * 6;
-        opts.trailIntensity = Math.max(0, 1 - p * 2);
-        if(frame === 75){
-          fx.push({ type: 'shockwave', dx: 50, dy: 8, color: '#ff6f1a', maxRadius: 36 });
-          fx.push({ type: 'sparks', dx: 50, dy: 8, count: 14 });
-          fx.push({ type: 'flash', dx: 50, dy: 0, color: '#ffe080', size: 16 });
-        }
-      }
-      return { opts, fx };
-    },
-  },
-
-  walk: {
-    id: 'walk', name: 'WALK', icon: '🏃',
-    duration: 200,
-    looping: true,
-    description: 'Marche lourde sur 100 frames, retour 100 frames (boucle aller-retour). Tangage marqué, cendres soulevées à chaque pas.',
-    phases: [
-      { from: 0, to: 100, label: 'Avancée' },
-      { from: 100, to: 200, label: 'Retour' },
-    ],
-    update(frame){
-      const opts = {};
-      const fx = [];
-      const half = 100;
-      let p;
-      if(frame < half){
-        p = frame / half;
-        opts.bodyShift = p * 36;
-      } else {
-        p = (frame - half) / half;
-        opts.bodyShift = (1 - p) * 36;
-      }
-      opts.bodyShift += Math.sin(frame * 0.22) * 0.7;
-      if(frame % 12 === 0){
-        fx.push({ type: 'ash', dx: -3, dy: 11, count: 2, color: '#5a3525' });
-        fx.push({ type: 'ash', dx: 3, dy: 11, count: 2, color: '#5a3525' });
-      }
-      return { opts, fx };
-    },
-  },
-};
-
-export const meta = { width: 26, height: 42, groundOffsetY: 0 };
-export default { draw, attacks, palette, meta };
+export default { drawInfernoCharger, infernoChargerConfig };
