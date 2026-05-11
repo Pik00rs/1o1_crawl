@@ -670,8 +670,15 @@
 </div>
 
 <script type="module">
+import { requireAuth } from './src/dashboard/auth.js';
+import { injectUserBar } from './src/dashboard/user-bar.js';
 import { ASCENSION_DATA, PLAYER_PROGRESS } from './src/dashboard/ascension-data.js';
 import { loadAllPlayerData } from './src/dashboard/api.js';
+
+// Garde d'auth : redirige vers login si non connecté
+const _ok = await requireAuth();
+if(!_ok) { throw new Error('redirected to login'); }
+injectUserBar();
 
 // === CONSTANTES ===
 const BASE_HP = 100;       // HP de base sans équipement
