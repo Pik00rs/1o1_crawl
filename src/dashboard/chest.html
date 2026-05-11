@@ -183,6 +183,13 @@
     overflow: hidden;
   }
   .filter-row + .filter-row { margin-top: 4px; }
+  /* La ligne de TRI peut être longue → autorise overflow scroll horizontal sur mobile */
+  #filter-sort {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  #filter-sort::-webkit-scrollbar { height: 3px; }
+  #filter-sort::-webkit-scrollbar-thumb { background: var(--border-2); }
   .filter-label {
     font-size: 8px; letter-spacing: 1.5px;
     color: var(--text-2); text-transform: uppercase;
@@ -274,6 +281,35 @@
   }
   .ilvl-btn.all {
     font-size: 11px;
+  }
+  /* SORT btn — pour les tris récent / tier / rareté */
+  .sort-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.1s;
+    height: 26px;
+    padding: 0 8px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+  .sort-btn:hover {
+    background: var(--bg-3);
+    border-color: var(--border-2);
+    color: var(--text-0);
+  }
+  .sort-btn.active {
+    background: rgba(95, 255, 140, 0.15);
+    border-color: var(--good);
+    color: var(--good);
   }
   .search-input {
     background: var(--bg-2);
@@ -495,6 +531,7 @@
     .filter-label { width: 32px; font-size: 7px; }
     .slot-btn, .rarity-btn { width: 24px; height: 24px; }
     .ilvl-btn { width: 22px; height: 22px; flex-basis: 22px; font-size: 9px; }
+    .sort-btn { height: 24px; padding: 0 6px; font-size: 9px; }
   }
   @media (max-width: 480px) {
     .grid { gap: 2px; }
@@ -512,6 +549,7 @@
     .slot-btn, .rarity-btn { width: 22px; height: 22px; font-size: 12px; }
     .ilvl-btn { width: 20px; height: 20px; flex-basis: 20px; font-size: 8px; }
     .filter-row { gap: 2px; }
+    .sort-btn { height: 22px; padding: 0 5px; font-size: 8px; }
   }
   @media (max-width: 360px) {
     .item-icon { font-size: 18px; }
@@ -539,11 +577,11 @@
     <div class="filter-row" id="filter-ilvl"></div>
     <div class="filter-row" id="filter-sort">
       <span class="filter-label">TRI</span>
-      <button class="filter-btn" data-sort="recent">⏰ Récent</button>
-      <button class="filter-btn" data-sort="ilvl-desc">↓ Tier</button>
-      <button class="filter-btn" data-sort="ilvl-asc">↑ Tier</button>
-      <button class="filter-btn" data-sort="rarity-desc">↓ Rareté</button>
-      <button class="filter-btn" data-sort="rarity-asc">↑ Rareté</button>
+      <button class="sort-btn" data-sort="recent">⏰ Récent</button>
+      <button class="sort-btn" data-sort="ilvl-desc">↓ Tier</button>
+      <button class="sort-btn" data-sort="ilvl-asc">↑ Tier</button>
+      <button class="sort-btn" data-sort="rarity-desc">↓ Rareté</button>
+      <button class="sort-btn" data-sort="rarity-asc">↑ Rareté</button>
     </div>
   </section>
 
@@ -813,7 +851,7 @@ function onIlvlFilterClick(lv){
 function onSortClick(s){
   STATE.sort = s;
   STATE.page = 1;
-  document.querySelectorAll('#filter-sort .filter-btn').forEach(b =>
+  document.querySelectorAll('#filter-sort .sort-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.sort === s));
   render();
 }
@@ -827,7 +865,7 @@ function attachEventHandlers(){
   });
 
   // Sort buttons (déjà rendus en HTML, juste à brancher)
-  document.querySelectorAll('#filter-sort .filter-btn').forEach(b => {
+  document.querySelectorAll('#filter-sort .sort-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.sort === STATE.sort);
     b.addEventListener('click', () => onSortClick(b.dataset.sort));
   });
