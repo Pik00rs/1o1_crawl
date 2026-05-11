@@ -319,9 +319,8 @@
   }
 
   /* ================================================================ ACTOR HUD OVERLAY ================================================================ */
-  /* Overlay HTML par-dessus le canvas iso : icônes de statuts au-dessus des actors.
-     La HP bar elle-même est dessinée par le moteur iso (sur le canvas).
-     On ne fait que superposer les statuts en DOM. */
+  /* Overlay HTML par-dessus le canvas iso : HP bar riche (chiffres + armor + shield) + statuts.
+     Positionné EXACTEMENT au-dessus du sprite, scale avec zoom, suit l'actor. */
   #actor-hud-layer {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
@@ -332,10 +331,79 @@
     transform-origin: center bottom;
     display: flex; flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     pointer-events: none;
     font-family: 'Courier New', monospace;
   }
+  /* Range principale HP + armor + shield */
+  .ah-bars {
+    display: flex; flex-direction: column;
+    gap: 1px;
+    align-items: center;
+  }
+  /* HP bar : verte + chiffres au centre */
+  .ah-hp-wrap {
+    width: 64px; height: 11px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(0,0,0,0.9);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
+  }
+  .ah-hp-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: linear-gradient(180deg, #6fd84a 0%, #2ea83f 100%);
+    transition: width 0.2s ease-out, background 0.2s;
+  }
+  .ah-hp-fill.medium { background: linear-gradient(180deg, #ffd060 0%, #c89030 100%); }
+  .ah-hp-fill.low    { background: linear-gradient(180deg, #ff5252 0%, #c82828 100%); }
+  .ah-hp-fill.flash  { animation: hpFlash 0.4s ease-out; }
+  @keyframes hpFlash {
+    0% { filter: brightness(2.4); }
+    100% { filter: brightness(1); }
+  }
+  .ah-hp-text {
+    position: relative; z-index: 2;
+    font-size: 8.5px; font-weight: 700; line-height: 1;
+    color: #fff;
+    text-shadow: 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000, 0 0 3px #000;
+    letter-spacing: 0.2px;
+    pointer-events: none;
+  }
+  /* Armor bar (sous HP) — affichée seulement si armor > 0 */
+  .ah-armor-wrap {
+    width: 64px; height: 6px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(0,0,0,0.9);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .ah-armor-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: linear-gradient(180deg, #c8c8d8 0%, #6a6a78 100%);
+  }
+  .ah-armor-text {
+    position: relative; z-index: 2;
+    font-size: 7px; font-weight: 700; line-height: 1;
+    color: #fff;
+    text-shadow: 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000;
+    letter-spacing: 0.2px;
+  }
+  /* Shield (bouclier divin = magicResist) — petite icône à gauche */
+  .ah-shield-wrap {
+    display: flex; align-items: center; gap: 2px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(0,0,0,0.9);
+    padding: 1px 4px;
+    height: 11px;
+    font-size: 8px; font-weight: 700;
+    color: #aee6ff;
+    text-shadow: 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000;
+  }
+  .ah-shield-wrap .icon { font-size: 9px; line-height: 1; }
+  /* Statuses pills */
   .ah-statuses {
     display: flex; gap: 2px;
     flex-wrap: wrap;
@@ -343,18 +411,20 @@
     max-width: 80px;
   }
   .ah-status {
-    background: rgba(0,0,0,0.85);
+    background: rgba(0,0,0,0.9);
     border: 1px solid rgba(255,180,80,0.6);
     color: #ffb74d;
-    font-size: 10px;
+    font-size: 9px;
     padding: 1px 3px;
     line-height: 1;
     display: flex; align-items: center; gap: 2px;
   }
-  .ah-status .dur { font-size: 8px; color: #aaa; font-weight: 700; }
-  .ah-status.dmg-status { border-color: rgba(255,82,82,0.6); color: #ff8a80; }
-  .ah-status.cc-status  { border-color: rgba(206,147,216,0.6); color: #ce93d8; }
-  .ah-status.buff-status { border-color: rgba(95,255,140,0.6); color: #5fff8c; }
+  .ah-status .dur { font-size: 7px; color: #fff; font-weight: 700; }
+  .ah-status.dmg-status { border-color: rgba(255,82,82,0.7); color: #ff8a80; }
+  .ah-status.cc-status  { border-color: rgba(206,147,216,0.7); color: #ce93d8; }
+  .ah-status.buff-status { border-color: rgba(95,255,140,0.7); color: #5fff8c; }
+  /* Name au-dessus (optional, désactivé par défaut pour éviter le doublon avec canvas) */
+  .ah-name { display: none; }
   .float-text {
     position: fixed;
     font-weight: 700; font-size: 16px;
@@ -2460,13 +2530,9 @@ function updateActorHuds(){
   if(!layer || !state.actors) return;
 
   const seenIds = new Set();
-  // Offset vertical du HUD au-dessus du sprite (scale avec zoom).
-  // Le sprite occupe ~2 tiles de haut visuellement, on positionne le HUD ~1.5 tile au-dessus du sol.
-  const spriteOffsetCss = (TILE_H || 32) * view.zoom * 1.7;
 
   for(const actor of state.actors){
     if(!actor || actor.isDead){
-      // Si élément encore visible, on le retire
       const el = _actorHudEls.get(actor?.id);
       if(el){ el.remove(); _actorHudEls.delete(actor.id); }
       continue;
@@ -2474,40 +2540,88 @@ function updateActorHuds(){
     const id = actor.id;
     seenIds.add(id);
 
-    // Position screen via anim courant (isoToScreen → CSS pixels)
+    // Position screen via anim courant (isoToScreen → CSS pixels).
+    // L'ancienne HP bar canvas était à : cy - 30, avec cy = sp.y - 10 * zoom.
+    // Donc on positionne le HUD avec transform translate(-50%, -100%) à ce y exact :
+    //   y = sp.y - 10*zoom - 30  (top de la barre dans l'ancien code)
+    // Comme on translate -100% (le HUD pousse vers le haut depuis cette position),
+    // on met top à : sp.y - 10*zoom - 5 (à ras du sprite, le HUD remonte de sa hauteur)
     const anim = render.actorAnims.get(id) || { ax: actor.x, ay: actor.y };
     const elev = getElev(actor.x, actor.y);
     const sp = isoToScreen(anim.ax, anim.ay, elev, viewport, view);
     const screenX = sp.x;
-    const screenY = sp.y - spriteOffsetCss;
+    const screenY = sp.y - 10 * view.zoom - 5; // -5 = petit gap au-dessus du nom
 
     let el = _actorHudEls.get(id);
     if(!el){
       el = document.createElement('div');
       el.className = 'actor-hud';
-      // Structure : juste les statuts (la HP bar est dessinée par iso-engine sur le canvas).
-      el.innerHTML = `<div class="ah-statuses"></div>`;
+      el.innerHTML = `
+        <div class="ah-statuses"></div>
+        <div class="ah-bars">
+          <div class="ah-shield-wrap" style="display:none;"><span class="icon">🛡</span><span class="val">0</span></div>
+          <div class="ah-hp-wrap"><div class="ah-hp-fill"></div><div class="ah-hp-text"></div></div>
+          <div class="ah-armor-wrap" style="display:none;"><div class="ah-armor-fill"></div><div class="ah-armor-text"></div></div>
+        </div>
+      `;
       layer.appendChild(el);
       _actorHudEls.set(id, el);
     }
     el.style.left = screenX + 'px';
     el.style.top = screenY + 'px';
-    // Scale partiel avec le zoom (limité pour lisibilité)
     const hudScale = Math.max(0.7, Math.min(1.4, view.zoom));
     el.style.transform = `translate(-50%, -100%) scale(${hudScale})`;
 
-    // Track HP changes pour le flash (utilisé par les float-texts ailleurs).
+    // === HP BAR ===
+    const hpFill = el.querySelector('.ah-hp-fill');
+    const hpText = el.querySelector('.ah-hp-text');
+    const ratio = Math.max(0, Math.min(1, actor.hp / Math.max(1, actor.maxHp)));
+    hpFill.style.width = (ratio * 100) + '%';
+    hpFill.classList.remove('medium', 'low');
+    if(ratio <= 0.25) hpFill.classList.add('low');
+    else if(ratio <= 0.5) hpFill.classList.add('medium');
+    hpText.textContent = `${Math.max(0, Math.round(actor.hp))}/${actor.maxHp}`;
+
+    // Flash HP changement
+    const lastHp = _actorHpLast.get(id);
+    if(lastHp != null && lastHp !== actor.hp){
+      hpFill.classList.remove('flash');
+      void hpFill.offsetWidth;
+      hpFill.classList.add('flash');
+    }
     _actorHpLast.set(id, actor.hp);
 
-    // Update statuses (mini icones)
+    // === ARMOR ===
+    const armorWrap = el.querySelector('.ah-armor-wrap');
+    const armorFill = el.querySelector('.ah-armor-fill');
+    const armorText = el.querySelector('.ah-armor-text');
+    const armor = actor.armor || 0;
+    if(armor > 0){
+      armorWrap.style.display = '';
+      armorText.textContent = armor;
+      const armorRatio = Math.min(1, armor / 30);
+      armorFill.style.width = (armorRatio * 100) + '%';
+    } else {
+      armorWrap.style.display = 'none';
+    }
+
+    // === SHIELD (bouclier divin = magicResist) ===
+    const shieldWrap = el.querySelector('.ah-shield-wrap');
+    const shieldVal = el.querySelector('.ah-shield-wrap .val');
+    const shield = actor.magicResist || 0;
+    if(shield > 0){
+      shieldWrap.style.display = '';
+      shieldVal.textContent = `${shield}%`;
+    } else {
+      shieldWrap.style.display = 'none';
+    }
+
+    // === STATUSES ===
     const statusesEl = el.querySelector('.ah-statuses');
     const statuses = actor.statuses || [];
     if(statuses.length === 0){
       statusesEl.innerHTML = '';
-      // Masque le HUD si pas de statut (pas de UI parasite vide)
-      el.style.display = 'none';
     } else {
-      el.style.display = '';
       statusesEl.innerHTML = statuses.map(s => {
         const def = DATA.statuses?.[s.id];
         const icon = def?.icon || '◇';
@@ -2517,7 +2631,6 @@ function updateActorHuds(){
     }
   }
 
-  // Cleanup orphans (actors qu'on n'a pas vus cette frame — morts ou retirés)
   for(const [id, el] of _actorHudEls){
     if(!seenIds.has(id)){
       el.remove();
