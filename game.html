@@ -319,7 +319,9 @@
   }
 
   /* ================================================================ ACTOR HUD OVERLAY ================================================================ */
-  /* Overlay HTML par-dessus le canvas iso : mini HP bar + chiffres + icônes de statuts au-dessus de chaque actor */
+  /* Overlay HTML par-dessus le canvas iso : icônes de statuts au-dessus des actors.
+     La HP bar elle-même est dessinée par le moteur iso (sur le canvas).
+     On ne fait que superposer les statuts en DOM. */
   #actor-hud-layer {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
@@ -333,33 +335,6 @@
     gap: 2px;
     pointer-events: none;
     font-family: 'Courier New', monospace;
-  }
-  .ah-hp-wrap {
-    width: 56px; height: 12px;
-    background: rgba(0,0,0,0.85);
-    border: 1px solid rgba(255,255,255,0.2);
-    position: relative;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-  }
-  .ah-hp-fill {
-    position: absolute; left: 0; top: 0; bottom: 0;
-    background: linear-gradient(90deg, #c82828 0%, #ff5252 100%);
-    transition: width 0.2s ease-out, background 0.2s;
-  }
-  .ah-hp-fill.healthy { background: linear-gradient(90deg, #2ea83f 0%, #5fff8c 100%); }
-  .ah-hp-fill.medium  { background: linear-gradient(90deg, #c89030 0%, #ffd060 100%); }
-  .ah-hp-fill.low     { background: linear-gradient(90deg, #c82828 0%, #ff5252 100%); }
-  .ah-hp-fill.flash   { animation: hpFlash 0.4s ease-out; }
-  @keyframes hpFlash {
-    0% { box-shadow: 0 0 12px 4px rgba(255,255,255,0.8) inset, 0 0 12px rgba(255,255,255,0.5); }
-    100% { box-shadow: none; }
-  }
-  .ah-hp-text {
-    position: relative; z-index: 2;
-    font-size: 9px; font-weight: 700;
-    color: #fff; text-shadow: 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 -1px 0 #000;
-    letter-spacing: 0.3px;
   }
   .ah-statuses {
     display: flex; gap: 2px;
@@ -2510,14 +2485,8 @@ function updateActorHuds(){
     if(!el){
       el = document.createElement('div');
       el.className = 'actor-hud';
-      // structure : HP bar + statuses
-      el.innerHTML = `
-        <div class="ah-hp-wrap">
-          <div class="ah-hp-fill"></div>
-          <div class="ah-hp-text"></div>
-        </div>
-        <div class="ah-statuses"></div>
-      `;
+      // Structure : juste les statuts (la HP bar est dessinée par iso-engine sur le canvas).
+      el.innerHTML = `<div class="ah-statuses"></div>`;
       layer.appendChild(el);
       _actorHudEls.set(id, el);
     }
@@ -2527,24 +2496,7 @@ function updateActorHuds(){
     const hudScale = Math.max(0.7, Math.min(1.4, view.zoom));
     el.style.transform = `translate(-50%, -100%) scale(${hudScale})`;
 
-    // Update HP bar
-    const hpFill = el.querySelector('.ah-hp-fill');
-    const hpText = el.querySelector('.ah-hp-text');
-    const ratio = Math.max(0, Math.min(1, actor.hp / Math.max(1, actor.maxHp)));
-    hpFill.style.width = (ratio * 100) + '%';
-    hpFill.classList.toggle('healthy', ratio > 0.5);
-    hpFill.classList.toggle('medium', ratio > 0.25 && ratio <= 0.5);
-    hpFill.classList.toggle('low', ratio <= 0.25);
-    hpText.textContent = `${Math.max(0, Math.round(actor.hp))}/${actor.maxHp}`;
-
-    // Flash si HP a changé depuis dernière frame
-    const lastHp = _actorHpLast.get(id);
-    if(lastHp != null && lastHp !== actor.hp){
-      hpFill.classList.remove('flash');
-      // Force reflow pour relancer l'animation
-      void hpFill.offsetWidth;
-      hpFill.classList.add('flash');
-    }
+    // Track HP changes pour le flash (utilisé par les float-texts ailleurs).
     _actorHpLast.set(id, actor.hp);
 
     // Update statuses (mini icones)
@@ -2552,7 +2504,10 @@ function updateActorHuds(){
     const statuses = actor.statuses || [];
     if(statuses.length === 0){
       statusesEl.innerHTML = '';
+      // Masque le HUD si pas de statut (pas de UI parasite vide)
+      el.style.display = 'none';
     } else {
+      el.style.display = '';
       statusesEl.innerHTML = statuses.map(s => {
         const def = DATA.statuses?.[s.id];
         const icon = def?.icon || '◇';
