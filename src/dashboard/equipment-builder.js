@@ -379,7 +379,7 @@ const PASSIVE_STAT_KEYS = new Set([
   'critChance', 'critMultiplier', 'dodgeChance', 'blockChance',
   'bonusFire', 'bonusIce', 'bonusShock', 'bonusPoison',
   'fireResist', 'iceResist', 'shockResist', 'poisonResist', 'magicResist',
-  'ccReduction',
+  'ccReduction', 'bonusAp',
   // 1ère vague
   'firstHitReductionPct', 'doubleStrikeChance', 'freeMovement', 'armorAdjacent',
   // Multipliers conditionnels offensifs
