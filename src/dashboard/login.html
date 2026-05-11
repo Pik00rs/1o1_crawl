@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Login — REACTOR HOLLOW</title>
+<style>
+  :root {
+    --bg-0: #050608;
+    --bg-1: #0a0d12;
+    --bg-2: #11151c;
+    --bg-3: #1a2028;
+    --border-1: rgba(255, 255, 255, 0.06);
+    --border-2: rgba(255, 255, 255, 0.12);
+    --text-0: #e8e8e8;
+    --text-1: #a0a0a0;
+    --text-2: #606060;
+    --accent: #ff8830;
+    --good: #5fff8c;
+    --bad: #ff5959;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* Background "néon" subtil */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255, 136, 48, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(95, 255, 140, 0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .login-container {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    width: 100%;
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: 0 0 32px rgba(255, 136, 48, 0.1);
+  }
+
+  .logo {
+    font-size: 38px;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 0 8px rgba(255, 136, 48, 0.4));
+  }
+  .game-title {
+    font-size: 18px;
+    letter-spacing: 4px;
+    font-weight: bold;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .game-subtitle {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+
+  .desc {
+    font-size: 11px;
+    color: var(--text-1);
+    line-height: 1.5;
+    margin-bottom: 24px;
+    padding: 12px;
+    background: var(--bg-2);
+    border-left: 2px solid var(--accent);
+    text-align: left;
+  }
+
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #fff;
+    color: #1a1a1a;
+    padding: 14px 16px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .google-btn:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+  }
+  .google-btn:disabled {
+    background: var(--bg-2);
+    color: var(--text-2);
+    border-color: var(--border-2);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .google-icon {
+    width: 18px; height: 18px;
+    flex-shrink: 0;
+  }
+
+  .footer-note {
+    margin-top: 24px;
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 1px;
+  }
+
+  .status {
+    margin-top: 16px;
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.5;
+    text-align: left;
+  }
+  .status.error {
+    background: rgba(255, 89, 89, 0.1);
+    border: 1px solid var(--bad);
+    color: var(--bad);
+  }
+  .status.info {
+    background: rgba(95, 255, 140, 0.08);
+    border: 1px solid var(--good);
+    color: var(--good);
+  }
+  .loader {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--text-2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 480px) {
+    .login-container { padding: 28px 20px; }
+    .game-title { font-size: 15px; }
+    .logo { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<main class="login-container">
+  <div class="logo">⌭</div>
+  <div class="game-title">REACTOR HOLLOW</div>
+  <div class="game-subtitle">— authentification —</div>
+
+  <div class="desc">
+    Connecte-toi avec ton compte Google pour sauvegarder ta progression, ton coffre, tes builds et tes ressources en ligne.
+  </div>
+
+  <button class="google-btn" id="btn-google">
+    <svg class="google-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+      <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+      <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+      <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+    </svg>
+    <span id="btn-google-label">Se connecter avec Google</span>
+  </button>
+
+  <div id="status"></div>
+
+  <div class="footer-note">
+    v1.0-alpha · données sauvegardées sur Supabase
+  </div>
+</main>
+
+<script type="module">
+import { supabase } from './supabase-config.js';
+import { signInWithGoogle, loadSession, isAuthenticated } from './auth.js';
+
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('btn-google');
+const btnLabel = document.getElementById('btn-google-label');
+
+function showStatus(msg, kind){
+  statusEl.className = 'status ' + (kind || 'info');
+  statusEl.innerHTML = msg;
+}
+function clearStatus(){
+  statusEl.className = '';
+  statusEl.innerHTML = '';
+}
+
+async function boot(){
+  // Si déjà connecté → redirige vers l'accueil
+  await loadSession();
+  if(isAuthenticated()){
+    showStatus('<span class="loader"></span> Session active, redirection…', 'info');
+    setTimeout(() => {
+      window.location.href = '../../index.html';
+    }, 600);
+    return;
+  }
+  // Sinon, attend le clic sur le bouton
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btnLabel.textContent = 'Redirection…';
+    clearStatus();
+    try {
+      // Redirection vers l'accueil après login OAuth
+      const redirectTo = `${window.location.origin}${window.location.pathname.replace(/src\/dashboard\/login\.html$/, 'index.html')}`;
+      await signInWithGoogle(redirectTo);
+    } catch(err){
+      btn.disabled = false;
+      btnLabel.textContent = 'Se connecter avec Google';
+      showStatus(`<b>Erreur :</b> ${err.message || err}`, 'error');
+    }
+  });
+}
+
+boot();
+</script>
+
+</body>
+</html>
