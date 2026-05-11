@@ -165,6 +165,33 @@
     text-align: right;
   }
 
+  /* Mini-stats : armure + bouclier divin sous les barres */
+  .mini-stats {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .mini-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #6a5878;
+    text-transform: uppercase;
+  }
+  .mini-stat__icon {
+    font-size: 11px;
+    filter: drop-shadow(0 0 3px rgba(216, 200, 160, 0.4));
+  }
+  .mini-stat__label { color: #8a7888; }
+  .mini-stat__val {
+    color: #ffd060;
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(255, 208, 96, 0.4);
+  }
+
   /* Tier (right) */
   .tier-badge {
     text-align: right;
@@ -508,6 +535,19 @@
           <span class="hero-bar__val" id="avg-tier-val">--</span>
         </div>
       </div>
+      <!-- Mini-stats : armure + bouclier divin -->
+      <div class="mini-stats">
+        <div class="mini-stat">
+          <span class="mini-stat__icon">🛡</span>
+          <span class="mini-stat__label">ARMURE</span>
+          <span class="mini-stat__val" id="armor-val">0</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat__icon">✦</span>
+          <span class="mini-stat__label">BOUCLIER DIVIN</span>
+          <span class="mini-stat__val" id="divine-val">0%</span>
+        </div>
+      </div>
     </div>
   </div>
   <div class="tier-badge">
@@ -703,22 +743,27 @@ const RESOURCES = [
 ];
 
 // === CALCULS DERIVES ===
-function computeMaxHp(equipped){
-  let total = BASE_HP;
+// Retourne { maxHp, armor, divineShield } agrégés depuis les implicits + affixes
+function computeDefensiveStats(equipped){
+  const out = { maxHp: BASE_HP, armor: 0, divineShield: 0 };
   Object.values(equipped || {}).forEach(item => {
     if(!item) return;
-    // Implicit : si c'est un maxHp implicit
-    if(item.implicit && item.implicit.id === 'maxHp' && typeof item.implicit.value === 'number'){
-      total += item.implicit.value;
+    // Implicit
+    if(item.implicit && typeof item.implicit.value === 'number'){
+      const id = item.implicit.id;
+      if(id === 'maxHp')       out.maxHp += item.implicit.value;
+      else if(id === 'armor')  out.armor += item.implicit.value;
+      else if(id === 'divineShield') out.divineShield += item.implicit.value;
     }
-    // Affixes : tous les affixes dont stat === 'maxHp'
+    // Affixes
     (item.affixes || []).forEach(a => {
-      if(a.stat === 'maxHp' && typeof a.value === 'number'){
-        total += a.value;
-      }
+      if(typeof a.value !== 'number') return;
+      if(a.stat === 'maxHp')         out.maxHp += a.value;
+      else if(a.stat === 'armor')    out.armor += a.value;
+      else if(a.stat === 'divineShield') out.divineShield += a.value;
     });
   });
-  return total;
+  return out;
 }
 
 function computeAvgTier(equipped){
@@ -739,10 +784,12 @@ function tierToRoman(n){
 function renderHeroStats(state){
   document.getElementById('hero-name').textContent = 'KAEL';
 
-  // HP : full pour l'instant
-  const hpMax = computeMaxHp(state.equipped);
+  // Stats défensives agrégées : HP max + armure + bouclier divin
+  const def = computeDefensiveStats(state.equipped);
   document.getElementById('hp-fill').style.width = '100%';
-  document.getElementById('hp-val').textContent = `${hpMax}/${hpMax}`;
+  document.getElementById('hp-val').textContent = `${def.maxHp}/${def.maxHp}`;
+  document.getElementById('armor-val').textContent = def.armor;
+  document.getElementById('divine-val').textContent = `${def.divineShield}%`;
 
   // Tier moyen
   const { avg, count } = computeAvgTier(state.equipped);
