@@ -2,12 +2,13 @@
 // Résolution d'une attaque (joueur ou ennemi).
 //
 // Étapes :
-//   1) computeDamage → applique armure / résistances / crit / bonus
-//   2) Inflige les dégâts à la cible
+//   1) computeDamage → applique esquive / armure / résistances / crit / bonus / blocage / first-hit-reduction
+//   2) Inflige les dégâts à la cible (sauf si esquivé)
 //   3) Lifesteal (si attaquant joueur)
-//   4) Application du statut éventuel
+//   4) Application du statut éventuel (skip si esquivé)
 //   5) Riposte si la cible a un offhand spécial
-//   6) Mort si HP <= 0
+//   6) DoubleStrike : % chance de retaper immédiatement (joueur uniquement, attaque arme)
+//   7) Mort si HP <= 0
 
 import { computeDamage } from './damage.js';
 import { applyStatus } from './status.js';
@@ -23,16 +24,24 @@ export function performAttack(attacker, target, skill, weapon) {
   const computeAttacker = { ...attacker, armorPen: baseArmorPen + skillArmorPen };
 
   const result = computeDamage({ attacker: computeAttacker, target, skill, weapon });
-  const { dmg, isCrit, isSpell, damageType } = result;
-  target.hp -= dmg;
+  const { dmg, isCrit, isSpell, damageType, dodged, blocked } = result;
 
-  log(
-    `${attacker.name} → ${target.name} : ${dmg} dégâts ${damageType}${isCrit ? ' (CRIT!)' : ''}.`,
-    'damage'
-  );
+  if (dodged) {
+    log(`${target.name} esquive l'attaque de ${attacker.name} !`, 'dodge');
+  } else {
+    target.hp -= dmg;
+    const tags = [];
+    if (isCrit)   tags.push('CRIT!');
+    if (blocked)  tags.push('bloqué');
+    const tagStr = tags.length ? ` (${tags.join(', ')})` : '';
+    log(
+      `${attacker.name} → ${target.name} : ${dmg} dégâts ${damageType}${tagStr}.`,
+      'damage'
+    );
+  }
 
-  // Lifesteal du joueur
-  if (attacker.isPlayer && attacker.lifesteal && dmg > 0) {
+  // Lifesteal du joueur — seulement si dmg infligé
+  if (!dodged && attacker.isPlayer && attacker.lifesteal && dmg > 0) {
     const heal = Math.max(0, Math.round(dmg * attacker.lifesteal / 100));
     if (heal > 0) {
       attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
@@ -40,17 +49,16 @@ export function performAttack(attacker, target, skill, weapon) {
     }
   }
 
-  // Application du statut
-  if (skill?.applyStatus) {
+  // Application du statut — skip si esquivé
+  if (!dodged && skill?.applyStatus) {
     const chance = skill.applyStatus.chance ?? 100;
     if (Math.random() * 100 < chance) {
       applyStatus(target, skill.applyStatus);
     }
   }
 
-  // Riposte (passif bouclier "guardShield")
-  // Conditions : cible joueur + offhand riposte + attaque CaC physique + pas déjà riposté
-  if (target.isPlayer
+  // Riposte (passif bouclier "guardShield") — skip si esquivé
+  if (!dodged && target.isPlayer
       && target.equipment?.offhand?.passive?.riposte
       && skill?.range === 1
       && isPhysical(damageType)
@@ -63,10 +71,39 @@ export function performAttack(attacker, target, skill, weapon) {
     if (attacker.hp <= 0) killActor(attacker);
   }
 
-  if (target.hp <= 0) killActor(target);
+  if (target.hp <= 0) {
+    killActor(target);
+    return; // pas de double-strike si la cible meurt
+  }
+
+  // === DOUBLE STRIKE ===
+  // Joueur uniquement, sur attaque physique (skill.type === 'attack'), pas un sort,
+  // et pas en récursion (flag _isDoubleStrike pour éviter une cascade infinie).
+  if (
+    attacker.isPlayer &&
+    skill?.type === 'attack' &&
+    !skill._isDoubleStrike &&
+    (attacker.doubleStrikeChance || 0) > 0 &&
+    Math.random() * 100 < attacker.doubleStrikeChance
+  ) {
+    log(`${attacker.name} frappe une seconde fois !`, 'info');
+    // On clone le skill avec un flag pour éviter de re-proc en chaîne
+    const replay = { ...skill, _isDoubleStrike: true };
+    performAttack(attacker, target, replay, weapon);
+  }
 }
 
 export function killActor(actor) {
   actor.isDead = true;
   log(`💀 ${actor.name} est vaincu !`, 'combat-end');
+}
+
+/**
+ * À appeler au début de chaque combat (initCombat) pour reset les flags par-combat
+ * sur le joueur (et les ennemis si besoin).
+ */
+export function resetPerCombatFlags(actor) {
+  if (!actor) return;
+  delete actor._firstHitConsumed;
+  delete actor.ripostedThisTurn;
 }

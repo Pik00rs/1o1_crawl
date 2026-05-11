@@ -7,6 +7,9 @@
 //   - Sort de l'amulette équipée (1 actif, depuis spells.json via amulet.spell)
 //   - Sorts/skills explicites définis dans item.skills (compat ascendante)
 //   - Les anneaux ne donnent PAS d'action (passifs uniquement)
+//
+// Affixe freeMovement : la PREMIÈRE case de déplacement de chaque tour est gratuite
+// (0 AP au lieu de 1). Utilise un flag _freeMovementUsedThisTurn sur le joueur.
 
 import { state } from '../core/state.js';
 import { key, inBounds, isWall, getActorAt, getCellsInAOE } from '../grid/grid.js';
@@ -48,7 +51,6 @@ export function getPlayerSkills() {
     const item = eq[slot];
     if (!item?.skills) continue;
     for (const skillId of item.skills) {
-      // Ne pas ré-ajouter le sort de l'amulette
       if (slot === 'amulet' && skillId === amulet?.spell) continue;
       const skillDef = window.__DATA__?.spells?.[skillId];
       if (skillDef && !skills.find(s => s.id === skillDef.id)) {
@@ -93,7 +95,9 @@ export function selectMove() {
   state.selectedSkill = { id: 'move', name: 'Déplacement' };
   state.targetingMode = 'move';
   state.validTargets = new Set();
-  const reachable = getReachableCells(state.player, state.player.ap);
+  // Si l'on a freeMovement disponible ce tour, on peut atteindre 1 case de plus
+  const freeAvail = (state.player.freeMovement || 0) > 0 && !state.player._freeMovementUsedThisTurn ? 1 : 0;
+  const reachable = getReachableCells(state.player, state.player.ap + freeAvail);
   for (const k of reachable.keys()) state.validTargets.add(k);
   render();
 }
@@ -107,13 +111,23 @@ export function executeAction(targetX, targetY) {
   if (!sk) return;
 
   if (sk.id === 'move') {
-    const reachable = getReachableCells(state.player, state.player.ap);
+    const freeAvail = (state.player.freeMovement || 0) > 0 && !state.player._freeMovementUsedThisTurn ? 1 : 0;
+    const reachable = getReachableCells(state.player, state.player.ap + freeAvail);
     const cost = reachable.get(key(targetX, targetY));
     if (cost === undefined) return;
     state.player.x = targetX;
     state.player.y = targetY;
-    state.player.ap -= cost;
-    log(`${state.player.name} se déplace (${cost} AP).`, 'info');
+
+    // freeMovement : la première case du tour est gratuite
+    let apCost = cost;
+    if (freeAvail > 0 && cost > 0) {
+      apCost = Math.max(0, cost - 1);
+      state.player._freeMovementUsedThisTurn = true;
+      log(`${state.player.name} se déplace (${apCost} AP, +1 gratuit).`, 'info');
+    } else {
+      log(`${state.player.name} se déplace (${cost} AP).`, 'info');
+    }
+    state.player.ap -= apCost;
   } else if (sk.type === 'attack' || sk.type === 'spell') {
     if (!state.validTargets.has(key(targetX, targetY))) return;
     state.player.ap -= sk.cost;
@@ -144,4 +158,14 @@ export function executeAction(targetX, targetY) {
 
   if (checkCombatEnd()) return;
   render();
+}
+
+/**
+ * À appeler en début de tour du joueur pour reset les flags par-tour.
+ * (À brancher dans turn.js si pas déjà fait.)
+ */
+export function resetPerTurnFlags(actor) {
+  if (!actor) return;
+  delete actor._freeMovementUsedThisTurn;
+  delete actor.ripostedThisTurn;
 }

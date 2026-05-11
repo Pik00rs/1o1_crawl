@@ -1,14 +1,14 @@
 // src/js/combat/damage.js
-// Calcul des dégâts. Réécrit pour gérer :
-//   - Dégâts physiques avec armure en diminishing returns (cap 75%)
-//   - Dégâts magiques avec résistances cumulatives (magicResist + résist élémentaire)
-//   - Crit basé sur les stats de l'attaquant
-//   - Bonus de dégâts élémentaires si l'attaquant en a (additif au roll)
-//   - Pénétration d'armure
+// Calcul des dégâts. Étend la version précédente avec :
+//   - Esquive (dodgeChance)        : si proc, dmg = 0
+//   - Blocage (blockChance)        : si proc sur dmg physique, dmg réduit de 50%
+//   - Première frappe réduite      : firstHitReductionPct sur le 1er coup reçu du combat
+//   - Armure des ennemis adjacents : armorAdjacent ajoute +X armor pour chaque ennemi à 1 case
 //
 // Source de vérité des types : damage-types.js
 
 import { isPhysical, isMagic, getResistanceFields } from './damage-types.js';
+import { state } from '../core/state.js';
 
 // =============================================================================
 // HELPERS
@@ -19,37 +19,43 @@ export function rollDamage(range) {
   return range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1));
 }
 
+// Aggrège armor + armorAdjacent (compte les ennemis adjacents au target)
+function getEffectiveArmor(target) {
+  let armor = target.armor || 0;
+  const adjBonusPer = target.armorAdjacent || 0;
+  if (adjBonusPer > 0 && Array.isArray(state.enemies)) {
+    let adjCount = 0;
+    for (const e of state.enemies) {
+      if (e.isDead) continue;
+      if (e === target) continue;
+      const dx = Math.abs((e.x || 0) - (target.x || 0));
+      const dy = Math.abs((e.y || 0) - (target.y || 0));
+      if (Math.max(dx, dy) === 1) adjCount++;
+    }
+    armor += adjBonusPer * adjCount;
+  }
+  return armor;
+}
+
 // =============================================================================
 // CALCUL DES DÉGÂTS BRUTS
 // =============================================================================
 
 function rollBaseDamage({ attacker, skill, weapon }) {
-  // 1) Skill avec damage explicite (ex: Trait de Givre, Boule de Feu)
   if (skill?.damage) return rollDamage(skill.damage);
-
-  // 2) Sinon, dégâts de l'arme
   if (weapon?.damage) return rollDamage(weapon.damage);
-
-  // 3) Sinon, dégâts du joueur (poing nu) ou de l'ennemi (attackPower)
   if (attacker.damage) return rollDamage(attacker.damage);
   if (attacker.attackPower) return rollDamage(attacker.attackPower);
-
-  return 1; // dernier recours
+  return 1;
 }
 
 // =============================================================================
-// BONUS ÉLÉMENTAIRES DE L'ATTAQUANT
+// BONUS ÉLÉMENTAIRES
 // =============================================================================
-// Ces bonus s'ajoutent au roll de base si le type matche.
-// Ex: épée + bonusFire 5 ne donne RIEN (épée = slash). Mais bague de feu sur
-// un sort de feu : +5.
-// Pour les armes physiques, on n'ajoute pas de bonus magiques (par souci
-// de simplicité — le splash élémentaire revient si on veut plus tard).
 
 function applyElementalBonus(dmg, attacker, damageType) {
-  if (!attacker.isPlayer) return dmg; // les ennemis n'ont pas ces bonus
-  if (!isMagic(damageType)) return dmg; // physique : pas de bonus élémentaire
-
+  if (!attacker.isPlayer) return dmg;
+  if (!isMagic(damageType)) return dmg;
   if (damageType === 'fire'   && attacker.bonusFire)   dmg += attacker.bonusFire;
   if (damageType === 'ice'    && attacker.bonusIce)    dmg += attacker.bonusIce;
   if (damageType === 'shock'  && attacker.bonusShock)  dmg += attacker.bonusShock;
@@ -74,17 +80,11 @@ function applyCrit(dmg, attacker, skill) {
 // =============================================================================
 // DÉFENSES
 // =============================================================================
-// Physique : armor → diminishing returns
-//   armorEff = max(0, target.armor - attacker.armorPen)
-//   reduction = min(0.75, armorEff / (armorEff + 50))
-// Magique : résistances cumulatives, multiplicatives
-//   final = dmg * ∏ (1 - resist_i / 100)
 
 function applyPhysicalDefense(dmg, attacker, target) {
   const armorPen = attacker.armorPen || 0;
-  // armorPiercing : valeur 0..1, ignore X% de l'armure (pour boss spéciaux)
   const armorPiercingFactor = attacker.armorPiercing ? (1 - attacker.armorPiercing) : 1;
-  let armorEff = Math.max(0, (target.armor || 0) - armorPen);
+  let armorEff = Math.max(0, getEffectiveArmor(target) - armorPen);
   armorEff = Math.round(armorEff * armorPiercingFactor);
   const reduction = Math.min(0.75, armorEff / (armorEff + 50));
   return Math.max(1, Math.round(dmg * (1 - reduction)));
@@ -103,44 +103,89 @@ function applyMagicDefense(dmg, target, damageType) {
 }
 
 // =============================================================================
+// AVOIDANCE (esquive / blocage / réduction premier coup)
+// =============================================================================
+
+/**
+ * Tente d'esquive. Si proc → dmg = 0 et flag dodged.
+ */
+function tryDodge(target) {
+  const chance = target.dodgeChance || 0;
+  if (chance <= 0) return false;
+  return Math.random() * 100 < chance;
+}
+
+/**
+ * Tente de bloquer (uniquement vs dmg physique). Si proc → dmg réduit de 50%.
+ */
+function tryBlock(target, damageType) {
+  if (!isPhysical(damageType)) return false;
+  const chance = target.blockChance || 0;
+  if (chance <= 0) return false;
+  return Math.random() * 100 < chance;
+}
+
+/**
+ * Première frappe reçue du combat : réduction en % si target.firstHitReductionPct.
+ * On utilise un flag posé sur le target (target._firstHitConsumed).
+ */
+function applyFirstHitReduction(dmg, target) {
+  const pct = target.firstHitReductionPct || 0;
+  if (pct <= 0) return dmg;
+  if (target._firstHitConsumed) return dmg;
+  target._firstHitConsumed = true;
+  return Math.max(1, Math.round(dmg * (1 - pct / 100)));
+}
+
+// =============================================================================
 // FONCTION PRINCIPALE
 // =============================================================================
 
 export function computeDamage({ attacker, target, skill, weapon }) {
-  // 1) Type de dégâts résolu
-  // Priorité : skill.damageType > weapon.damageType > attacker.damageType > blunt
   const damageType =
     skill?.damageType ||
     weapon?.damageType ||
     attacker.damageType ||
     'blunt';
 
-  // 2) Roll de base
   let dmg = rollBaseDamage({ attacker, skill, weapon });
-
-  // 3) Bonus élémentaire (si applicable)
   dmg = applyElementalBonus(dmg, attacker, damageType);
-
-  // 4) Multiplicateur du skill (ex: heavy attack ×1.5)
   if (skill?.damageMult) dmg = Math.round(dmg * skill.damageMult);
 
-  // 5) Crit
   const critResult = applyCrit(dmg, attacker, skill);
   dmg = critResult.dmg;
 
-  // 6) Défenses selon catégorie
-  if (isPhysical(damageType)) {
-    dmg = applyPhysicalDefense(dmg, attacker, target);
+  // === DÉFENSES (esquive / blocage / armure / résistances / réduction 1er coup) ===
+  // 1) Esquive
+  let dodged = false;
+  if (tryDodge(target)) {
+    dmg = 0;
+    dodged = true;
   } else {
-    dmg = applyMagicDefense(dmg, target, damageType);
+    // 2) Réduction armor / résistances
+    if (isPhysical(damageType)) {
+      dmg = applyPhysicalDefense(dmg, attacker, target);
+    } else {
+      dmg = applyMagicDefense(dmg, target, damageType);
+    }
+    // 3) Blocage (physique only)
+    let blocked = false;
+    if (tryBlock(target, damageType)) {
+      dmg = Math.max(1, Math.round(dmg * 0.5));
+      blocked = true;
+    }
+    // 4) Réduction premier hit (s'applique APRÈS armor/resist pour matter même si déjà réduit)
+    dmg = applyFirstHitReduction(dmg, target);
+    // (exposé en return pour log)
+    var __blocked = blocked;
   }
-
-  // 7) Lifesteal sera géré dans attack.js après mort/survie de la cible
 
   return {
     dmg,
     isCrit: critResult.isCrit,
     isSpell: skill?.type === 'spell',
     damageType,
+    dodged,
+    blocked: typeof __blocked !== 'undefined' ? __blocked : false,
   };
 }
