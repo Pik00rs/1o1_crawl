@@ -16,6 +16,7 @@ const PASSIVE_STAT_KEYS = [
   'bonusFire', 'bonusIce', 'bonusShock', 'bonusPoison',
   'fireResist', 'iceResist', 'shockResist', 'poisonResist', 'magicResist',
   'ccReduction',
+  'firstHitReductionPct', 'doubleStrikeChance', 'freeMovement', 'armorAdjacent',
 ];
 
 // =============================================================================
@@ -143,6 +144,12 @@ export function createPlayer(config = {}) {
 
     // CC
     ccReduction: stats.ccReduction,
+
+    // Affixes câblés au moteur (cf. damage.js, attack.js, actions.js)
+    firstHitReductionPct: stats.firstHitReductionPct || 0,
+    doubleStrikeChance:   stats.doubleStrikeChance   || 0,
+    freeMovement:         stats.freeMovement         || 0,
+    armorAdjacent:        stats.armorAdjacent        || 0,
 
     // État
     statuses: [],
