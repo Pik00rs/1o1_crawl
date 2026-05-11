@@ -1,15 +1,17 @@
 // src/js/combat/actions.js
-// Gestion des actions du joueur (mouvement, sorts, attaques d'arme).
+// Gestion des actions du joueur.
 //
-// Sources d'actions :
-//   - Mouvement (toujours disponible)
-//   - Attaques de l'arme équipée (light + heavy, dérivées via weapon-attacks.js)
-//   - Sort de l'amulette équipée (1 actif, depuis spells.json via amulet.spell)
-//   - Sorts/skills explicites définis dans item.skills (compat ascendante)
-//   - Les anneaux ne donnent PAS d'action (passifs uniquement)
-//
-// Affixe freeMovement : la PREMIÈRE case de déplacement de chaque tour est gratuite
-// (0 AP au lieu de 1). Utilise un flag _freeMovementUsedThisTurn sur le joueur.
+// Affixes câblés :
+//   - freeMovement       : 1ère case de mvt gratuite/tour
+//   - freeOpenerChance   : 1ère action du combat gratuite (cost=0)
+//   - freeShotChance     : tir gratuit % (ranged only)
+//   - spellAPCostReduction : -X AP sur sorts
+//   - spellRange         : +X portée des sorts
+//   - aoeRadius          : +X rayon AOE
+//   - bowRangeBonus      : +X portée si arme bow équipée
+//   - cleavePct          : touche les ennemis adjacents à la cible mêlée
+//   - fly                : pathfinding ignore les murs (TODO : nécessite mod pathfinding.js)
+//   - Tracking _movedThisTurn / _cellsMovedThisTurn / _firstAttackDone pour les conditionnels
 
 import { state } from '../core/state.js';
 import { key, inBounds, isWall, getActorAt, getCellsInAOE } from '../grid/grid.js';
@@ -19,6 +21,19 @@ import { getWeaponAttacks } from './weapon-attacks.js';
 import { log } from '../ui/log.js';
 import { render } from '../ui/render.js';
 import { checkCombatEnd } from '../core/turn.js';
+import { getCleaveTargets, shouldUseFreeOpener, shouldUseFreeShot } from './modifiers.js';
+
+// =============================================================================
+// HELPERS — détecter type d'arme
+// =============================================================================
+
+function isBowEquipped(player) {
+  const mh = player.equipment?.mainhand;
+  if (!mh) return false;
+  // On considère bow par nom ou par damageType+range
+  if (mh.id?.includes('bow') || mh.id?.includes('Bow')) return true;
+  return (mh.range || 1) >= 3 && mh.damageType === 'pierce';
+}
 
 // =============================================================================
 // COLLECTE DES ACTIONS DISPONIBLES
@@ -28,11 +43,15 @@ export function getPlayerSkills() {
   const skills = [];
   const eq = state.player.equipment || {};
 
-  // 1) Attaques d'arme (light + heavy) depuis l'arme principale
+  // 1) Attaques d'arme
   const mainhand = eq.mainhand || eq.weapon || eq.weapon1H || eq.weapon2H;
   if (mainhand) {
     const weaponAttacks = getWeaponAttacks(mainhand);
     for (const atk of weaponAttacks) {
+      // bowRangeBonus : +range pour arc
+      if (state.player.bowRangeBonus && isBowEquipped(state.player)) {
+        atk.range = (atk.range || 1) + state.player.bowRangeBonus;
+      }
       skills.push({ ...atk, source: mainhand, sourceSlot: 'mainhand' });
     }
   }
@@ -42,11 +61,32 @@ export function getPlayerSkills() {
   if (amulet?.spell) {
     const spellDef = window.__DATA__?.spells?.[amulet.spell];
     if (spellDef) {
-      skills.push({ ...spellDef, source: amulet, sourceSlot: 'amulet' });
+      const spell = { ...spellDef, source: amulet, sourceSlot: 'amulet' };
+      // spellRange : +range
+      if (state.player.spellRange) {
+        spell.range = (spell.range || 1) + state.player.spellRange;
+      }
+      // spellAPCostReduction : -cost
+      if (state.player.spellAPCostReduction) {
+        spell.cost = Math.max(0, (spell.cost || 0) - state.player.spellAPCostReduction);
+      }
+      // aoeRadius : +rayon AOE
+      if (state.player.aoeRadius && spell.aoe) {
+        spell.aoe = (spell.aoe || 1) + state.player.aoeRadius;
+      }
+      // amuletSpellPower : boost damage du sort de l'amulette
+      if (state.player.amuletSpellPower && spell.damage && Array.isArray(spell.damage)) {
+        const boost = 1 + state.player.amuletSpellPower / 100;
+        spell.damage = [
+          Math.max(1, Math.round(spell.damage[0] * boost)),
+          Math.max(1, Math.round(spell.damage[1] * boost)),
+        ];
+      }
+      skills.push(spell);
     }
   }
 
-  // 3) Compat ascendante : si un item a un champ "skills" (ancien format)
+  // 3) Compat ascendante : si un item a un champ "skills"
   for (const slot in eq) {
     const item = eq[slot];
     if (!item?.skills) continue;
@@ -63,7 +103,7 @@ export function getPlayerSkills() {
 }
 
 // =============================================================================
-// SÉLECTION D'UN SKILL
+// SÉLECTION
 // =============================================================================
 
 export function selectSkill(skill) {
@@ -95,7 +135,6 @@ export function selectMove() {
   state.selectedSkill = { id: 'move', name: 'Déplacement' };
   state.targetingMode = 'move';
   state.validTargets = new Set();
-  // Si l'on a freeMovement disponible ce tour, on peut atteindre 1 case de plus
   const freeAvail = (state.player.freeMovement || 0) > 0 && !state.player._freeMovementUsedThisTurn ? 1 : 0;
   const reachable = getReachableCells(state.player, state.player.ap + freeAvail);
   for (const k of reachable.keys()) state.validTargets.add(k);
@@ -115,10 +154,14 @@ export function executeAction(targetX, targetY) {
     const reachable = getReachableCells(state.player, state.player.ap + freeAvail);
     const cost = reachable.get(key(targetX, targetY));
     if (cost === undefined) return;
+
+    // Track distance bougée ce tour (pour longMoveDamageMult)
+    state.player._cellsMovedThisTurn = (state.player._cellsMovedThisTurn || 0) + cost;
+    state.player._movedThisTurn = true;
+
     state.player.x = targetX;
     state.player.y = targetY;
 
-    // freeMovement : la première case du tour est gratuite
     let apCost = cost;
     if (freeAvail > 0 && cost > 0) {
       apCost = Math.max(0, cost - 1);
@@ -130,7 +173,24 @@ export function executeAction(targetX, targetY) {
     state.player.ap -= apCost;
   } else if (sk.type === 'attack' || sk.type === 'spell') {
     if (!state.validTargets.has(key(targetX, targetY))) return;
-    state.player.ap -= sk.cost;
+
+    // === COÛT AP : free opener / free shot / free spell on kill ===
+    let cost = sk.cost;
+    let freeMsg = null;
+    if (shouldUseFreeOpener(state.player)) {
+      cost = 0;
+      freeMsg = '⚡ Ouverture gratuite !';
+    } else if (sk.type === 'attack' && shouldUseFreeShot(state.player, sk)) {
+      cost = 0;
+      freeMsg = '⚡ Tir gratuit !';
+    } else if (sk.type === 'spell' && state.player._freeSpellAvailable) {
+      cost = 0;
+      state.player._freeSpellAvailable = false;
+      freeMsg = '⚡ Sort gratuit !';
+    }
+    if (freeMsg) log(freeMsg, 'info');
+
+    state.player.ap -= cost;
     if (sk.cooldown) state.player.cooldowns[sk.id] = sk.cooldown + 1;
 
     if (sk.aoe) {
@@ -147,7 +207,27 @@ export function executeAction(targetX, targetY) {
       log(`${state.player.name} lance ${sk.name} en zone !`, 'info');
     } else {
       const target = getActorAt(targetX, targetY);
-      if (target) performAttack(state.player, target, sk, sk.source);
+      if (target) {
+        performAttack(state.player, target, sk, sk.source);
+
+        // === CLEAVE === : si attaque mêlée et cleavePct > 0, touche les ennemis adjacents
+        if (state.player.cleavePct && sk.type === 'attack' && (sk.range || 1) === 1) {
+          const cleaveTargets = getCleaveTargets(state.player, target, sk);
+          if (cleaveTargets.length > 0) {
+            const cleaveDmgMult = state.player.cleavePct / 100;
+            for (const ct of cleaveTargets) {
+              // On crée un skill miroir avec dégâts réduits par cleavePct
+              const cleaveSkill = {
+                ...sk,
+                _isCleaveHit: true,
+                damageMult: (sk.damageMult || 1) * cleaveDmgMult,
+              };
+              performAttack(state.player, ct, cleaveSkill, sk.source);
+            }
+            log(`${state.player.name} fauche ${cleaveTargets.length} ennemi(s) adjacent(s).`, 'info');
+          }
+        }
+      }
     }
   }
 
@@ -162,10 +242,11 @@ export function executeAction(targetX, targetY) {
 
 /**
  * À appeler en début de tour du joueur pour reset les flags par-tour.
- * (À brancher dans turn.js si pas déjà fait.)
  */
 export function resetPerTurnFlags(actor) {
   if (!actor) return;
   delete actor._freeMovementUsedThisTurn;
+  delete actor._movedThisTurn;
+  delete actor._cellsMovedThisTurn;
   delete actor.ripostedThisTurn;
 }
