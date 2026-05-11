@@ -925,6 +925,8 @@ import { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, hydr
 import { getEnemySprite } from '../js/render/enemies/index.js';
 import { generateDungeonRun, BIOME_AFFINITY, RARITY_WEIGHTS_BY_ILVL } from '../js/dungeon/generator.js';
 import { loadCatalog, getItem } from './items-catalog.js';
+import { loadEquipped as apiLoadEquipped } from './api.js';
+import { buildPlayerFromEquipped } from './equipment-builder.js';
 
 // Hydrate la progression depuis Supabase AVANT toute lecture/render
 try {
@@ -933,6 +935,9 @@ try {
 } catch(err){
   console.error('[ascension] hydrate progress failed:', err);
 }
+
+// Précharge le catalog (utile pour buildPlayerFromEquipped au moment du lancement)
+try { await loadCatalog(); } catch(e){ console.warn('catalog preload failed:', e); }
 
 // === STATE ===
 let currentBiome = null;
@@ -1172,17 +1177,40 @@ function openDungeonPanel(dungeon, cardEl){
     btn.textContent = '◇ GÉNÉRATION...';
     try {
       const run = await generateDungeonRun(currentBiome, dungeon.level);
-      // Format consommé par game.html (readPlaytestRun) :
-      //   { rooms: [{width, height, walls, playerStart, enemies}], player, ...rest }
-      // Notre generator produit déjà des rooms compatibles. On ajoute le bloc player
-      // et les métadonnées dont on a besoin pour gérer la transition multi-room côté game.html.
+
+      // === ÉQUIPEMENT RÉEL DU JOUEUR ===
+      // On lit l'équipement Supabase et on construit { equipment, stats } au format
+      // que createPlayer({ equipment, stats }) consomme dans player.js.
+      // Cela bypass complètement le preset 'stuff' et le loadout par défaut.
+      let realEquipment = null;
+      let realStats = null;
+      try {
+        const equippedFromDb = await apiLoadEquipped();
+        const built = buildPlayerFromEquipped(equippedFromDb, 1);
+        realEquipment = built.equipment;
+        realStats = built.stats;
+        console.log('[ascension] player equipment from DB:', realEquipment);
+        console.log('[ascension] player stats computed:', realStats);
+      } catch(eqErr){
+        console.error('[ascension] failed to build player from equipped, falling back to default:', eqErr);
+      }
+
+      // Payload pour game.html. Si on a réussi à construire equipment+stats depuis la DB,
+      // on les met dans player. Sinon fallback au preset 'balanced' (ancien comportement).
       const payload = {
         ...run,
-        player: {
-          level: 1,
-          stuff: 'balanced',
-          customModifiers: [],
-        },
+        player: realEquipment
+          ? {
+              level: 1,
+              equipment: realEquipment,
+              stats: realStats,
+              customModifiers: [],
+            }
+          : {
+              level: 1,
+              stuff: 'balanced',
+              customModifiers: [],
+            },
       };
       localStorage.setItem('rh_active_run', JSON.stringify(payload));
       // Navigue vers le moteur de combat. La page est à la racine du repo
