@@ -11,12 +11,45 @@ import { DATA } from '../data/loader.js';
 
 // Stats agrégeables depuis les passifs d'items
 const PASSIVE_STAT_KEYS = [
+  // Base déjà supportées
   'lifesteal', 'armorPen', 'hpRegen',
   'critChance', 'critMultiplier', 'dodgeChance', 'blockChance',
   'bonusFire', 'bonusIce', 'bonusShock', 'bonusPoison',
   'fireResist', 'iceResist', 'shockResist', 'poisonResist', 'magicResist',
   'ccReduction',
+  // 1ère vague (déjà câblée)
   'firstHitReductionPct', 'doubleStrikeChance', 'freeMovement', 'armorAdjacent',
+  // ====== NOUVEAUX (53 affixes câblés) ======
+  // Multipliers conditionnels offensifs
+  'fullHpDamageMult', 'missingHpDamagePct', 'executeDamageMult',
+  'firstStrikeDamageMult', 'firstStrikeChance',
+  'afterMoveDamageMult', 'noMoveDamageMult', 'longMoveDamageMult',
+  'armorDamageMult', 'afflictedDamageBonus', 'backstabDamageMult',
+  'perBleedStackDamage', 'pierceDamagePct', 'maxRangeDamage',
+  'headshotDamagePct',
+  // Réductions conditionnelles défensives
+  'lowHpReductionPct', 'fortifyPct',
+  // Crit alt (élémentaire)
+  'elemCritChance', 'elemCritDamage', 'elemLifesteal', 'elemStatusDuration',
+  // Status
+  'bleedDamage', 'bleedResist', 'stunOnCritChance',
+  // On-hit triggers
+  'triggerExplosion', 'triggerParalyzed', 'triggerElectrocuted', 'triggerSick',
+  // On-kill
+  'cdReducOnKill', 'killReloadChance', 'freeSpellOnKillChance',
+  // Avoidance / reflects
+  'parryChance', 'riposteChance', 'thornsMeleePct', 'blockThornsDamage',
+  // Attack repeat
+  'multishotChance', 'cleavePct', 'spellEchoChance',
+  // Free actions
+  'freeOpenerChance', 'freeShotChance',
+  // Item modifiers
+  'spellRange', 'spellAPCostReduction', 'aoeRadius', 'bowRangeBonus',
+  'amuletElemDamage', 'amuletSpellPower',
+  // Movement
+  'fly',
+  // Loot (hors combat — sera lu dans loot-roller.js plus tard)
+  'magicFind', 'essenceFind',
 ];
 
 // =============================================================================
@@ -145,11 +178,84 @@ export function createPlayer(config = {}) {
     // CC
     ccReduction: stats.ccReduction,
 
-    // Affixes câblés au moteur (cf. damage.js, attack.js, actions.js)
+    // Affixes câblés au moteur (cf. damage.js, attack.js, actions.js, modifiers.js)
     firstHitReductionPct: stats.firstHitReductionPct || 0,
     doubleStrikeChance:   stats.doubleStrikeChance   || 0,
     freeMovement:         stats.freeMovement         || 0,
     armorAdjacent:        stats.armorAdjacent        || 0,
+
+    // Multipliers conditionnels offensifs
+    fullHpDamageMult:     stats.fullHpDamageMult     || 0,
+    missingHpDamagePct:   stats.missingHpDamagePct   || 0,
+    executeDamageMult:    stats.executeDamageMult    || 0,
+    firstStrikeDamageMult: stats.firstStrikeDamageMult || 0,
+    firstStrikeChance:    stats.firstStrikeChance    || 0,
+    afterMoveDamageMult:  stats.afterMoveDamageMult  || 0,
+    noMoveDamageMult:     stats.noMoveDamageMult     || 0,
+    longMoveDamageMult:   stats.longMoveDamageMult   || 0,
+    armorDamageMult:      stats.armorDamageMult      || 0,
+    afflictedDamageBonus: stats.afflictedDamageBonus || 0,
+    backstabDamageMult:   stats.backstabDamageMult   || 0,
+    perBleedStackDamage:  stats.perBleedStackDamage  || 0,
+    pierceDamagePct:      stats.pierceDamagePct      || 0,
+    maxRangeDamage:       stats.maxRangeDamage       || 0,
+    headshotDamagePct:    stats.headshotDamagePct    || 0,
+
+    // Réductions conditionnelles défensives
+    lowHpReductionPct:    stats.lowHpReductionPct    || 0,
+    fortifyPct:           stats.fortifyPct           || 0,
+
+    // Crit alt (élémentaire)
+    elemCritChance:       stats.elemCritChance       || 0,
+    elemCritDamage:       stats.elemCritDamage       || 0,
+    elemLifesteal:        stats.elemLifesteal        || 0,
+    elemStatusDuration:   stats.elemStatusDuration   || 0,
+
+    // Status
+    bleedDamage:          stats.bleedDamage          || 0,
+    bleedResist:          stats.bleedResist          || 0,
+    stunOnCritChance:     stats.stunOnCritChance     || 0,
+
+    // Triggers on-hit
+    triggerExplosion:     stats.triggerExplosion     || 0,
+    triggerParalyzed:     stats.triggerParalyzed     || 0,
+    triggerElectrocuted:  stats.triggerElectrocuted  || 0,
+    triggerSick:          stats.triggerSick          || 0,
+
+    // On-kill
+    cdReducOnKill:        stats.cdReducOnKill        || 0,
+    killReloadChance:     stats.killReloadChance     || 0,
+    freeSpellOnKillChance: stats.freeSpellOnKillChance || 0,
+
+    // Avoidance / reflects
+    parryChance:          stats.parryChance          || 0,
+    riposteChance:        stats.riposteChance        || 0,
+    thornsMeleePct:       stats.thornsMeleePct       || 0,
+    blockThornsDamage:    stats.blockThornsDamage    || 0,
+
+    // Attack repeat
+    multishotChance:      stats.multishotChance      || 0,
+    cleavePct:            stats.cleavePct            || 0,
+    spellEchoChance:      stats.spellEchoChance      || 0,
+
+    // Free actions
+    freeOpenerChance:     stats.freeOpenerChance     || 0,
+    freeShotChance:       stats.freeShotChance       || 0,
+
+    // Item modifiers
+    spellRange:           stats.spellRange           || 0,
+    spellAPCostReduction: stats.spellAPCostReduction || 0,
+    aoeRadius:            stats.aoeRadius            || 0,
+    bowRangeBonus:        stats.bowRangeBonus        || 0,
+    amuletElemDamage:     stats.amuletElemDamage     || 0,
+    amuletSpellPower:     stats.amuletSpellPower     || 0,
+
+    // Movement
+    fly:                  stats.fly                  || 0,
+
+    // Loot (utilisé hors combat dans loot-roller.js plus tard)
+    magicFind:            stats.magicFind            || 0,
+    essenceFind:          stats.essenceFind          || 0,
 
     // État
     statuses: [],
