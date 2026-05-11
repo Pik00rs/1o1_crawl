@@ -15,7 +15,7 @@
 
 export const PLAYER_BASE_STATS = {
   // Vitalité
-  baseMaxHp: 50,        // PV max au niveau 1
+  baseMaxHp: 100,        // PV max au niveau 1
   hpPerLevel: 7,        // PV gagnés par niveau
 
   // Action Points
