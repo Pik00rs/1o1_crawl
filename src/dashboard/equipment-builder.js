@@ -53,8 +53,10 @@ const STAT_ALIAS = {
 };
 
 // Base stats du joueur (alignées avec player-stats.js — copie pour pas dépendre de l'import)
+// IMPORTANT : baseMaxHp doit matcher celui de src/js/entities/player-stats.js
+// (sinon HP en combat ≠ HP affiché sur l'accueil).
 const BASE_STATS = {
-  baseMaxHp: 50, hpPerLevel: 7,
+  baseMaxHp: 100, hpPerLevel: 7,
   baseMaxAp: 6, bonusAp: 1,
   baseDamage: [4, 7], damageType: 'blunt',
   baseArmor: 0, baseDodgeChance: 5, baseBlockChance: 0,
