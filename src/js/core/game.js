@@ -1,6 +1,5 @@
 // src/js/core/game.js
 // Point d'entrée du jeu : initialisation, restart, exposition globale.
-// Supporte aussi les "custom runs" injectés par le module Playtest.
 
 import { state, resetState } from './state.js';
 import { DATA, loadAllData } from '../data/loader.js';
@@ -10,8 +9,8 @@ import { computeInitiative, startTurn, getCurrentActor, endTurn } from './turn.j
 import { hideCombatEnd } from '../ui/combat-end.js';
 import { render } from '../ui/render.js';
 import { log } from '../ui/log.js';
+import { resetPerCombatFlags } from '../combat/attack.js';
 
-// Stocke la config player active (pour restart)
 let activePlayerConfig = null;
 
 function initCombat(roomId = 'tutorial') {
@@ -23,13 +22,15 @@ function initCombat(roomId = 'tutorial') {
   state.gridHeight = room.height;
   state.walls = new Set(room.walls);
 
-  // Crée le joueur avec la config active (custom ou défaut)
   const playerCfg = {
     ...(activePlayerConfig || {}),
     x: room.playerStart.x,
     y: room.playerStart.y,
   };
   state.player = createPlayer(playerCfg);
+
+  // Reset les flags par-combat (firstHitConsumed, fortify, backstabbedTargets, etc.)
+  resetPerCombatFlags(state.player);
 
   state.enemies = room.enemies.map((e, i) =>
     createEnemy(`${e.type}_${i}`, e.type, e.x, e.y)
@@ -52,10 +53,6 @@ export function restartCombat() {
   initCombat('tutorial');
 }
 
-/**
- * Définit la config du joueur pour les prochains combats.
- * Appelée par game.html quand un custom run est détecté.
- */
 export function setPlayerConfig(config) {
   activePlayerConfig = config;
 }
@@ -63,21 +60,17 @@ export function setPlayerConfig(config) {
 export async function startGame(opts = {}) {
   await loadAllData();
 
-  // Permet à game.html d'injecter des rooms custom AVANT le démarrage
   if (opts.injectRooms) {
     for (const [id, room] of Object.entries(opts.injectRooms)) {
       DATA.rooms[id] = room;
     }
   }
-  // Et la config player custom
   if (opts.playerConfig) {
     activePlayerConfig = opts.playerConfig;
   }
 
-  // Expose DATA globalement (utilisé dans actions.js pour résoudre les skills par id)
   window.__DATA__ = DATA;
 
-  // End turn button
   document.getElementById('end-turn-btn').onclick = () => {
     const cur = getCurrentActor();
     if (cur?.isPlayer && !state.combatOver) {
@@ -86,9 +79,6 @@ export async function startGame(opts = {}) {
     }
   };
 
-  // Restart button (dans le modal)
   window.restartCombat = restartCombat;
-
-  // Démarre sur la room tutorial (qui peut avoir été overridée par injectRooms)
   initCombat(opts.startRoom || 'tutorial');
 }
