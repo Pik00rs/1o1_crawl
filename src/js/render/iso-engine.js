@@ -167,7 +167,7 @@ function drawActor(ctx, actor, biome, time, viewport, view, options, hover){
   renderer(ctx, 0, 0, actor, time, { fxLevel });
   ctx.restore();
 
-  // Name + Intent au-dessus (HP bar gérée par overlay DOM cf. game.html updateActorHuds)
+  // Intent au-dessus de l'ennemi (HP/armor/shield/statuts/nom gérés par overlay DOM cf. game.html updateActorHuds)
   if(!actor.isPlayer && actor.maxHp){
     const cy = sp.y - 10 * zoom + (Math.sin(actor.idle ?? 0) * 1.2 * zoom);
 
@@ -189,12 +189,7 @@ function drawActor(ctx, actor, biome, time, viewport, view, options, hover){
       ctx.textAlign = 'center';
       ctx.fillText('▸ ' + actor.intent.name, sp.x, cy - 34);
     }
-
-    // Name
-    ctx.fillStyle = '#ffb74d';
-    ctx.font = 'bold 9px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(actor.name || '?', sp.x, cy - 46);
+    // Nom retiré : géré par overlay DOM (cf. game.html updateActorHuds).
   } else if(actor.isPlayer && actor.name){
     const cy = sp.y - 10 * zoom + (Math.sin(actor.idle ?? 0) * 1.2 * zoom);
     ctx.fillStyle = '#aee6ff';
