@@ -31,7 +31,7 @@ import {
   isBackstabAttack,
   markBackstabbed,
 } from './modifiers.js';
-import { state } from '../core/state.js';
+import { state, pushCombatEvent } from '../core/state.js';
 
 export function performAttack(attacker, target, skill, weapon) {
   if (target.isDead) return;
@@ -51,8 +51,10 @@ export function performAttack(attacker, target, skill, weapon) {
   // === LOG + APPLY DMG ===
   if (dodged) {
     log(`${target.name} esquive l'attaque de ${attacker.name} !`, 'dodge');
+    pushCombatEvent({ type: 'miss', x: target.x, y: target.y, value: 'DODGE' });
   } else if (parried) {
     log(`${target.name} pare l'attaque de ${attacker.name} !`, 'dodge');
+    pushCombatEvent({ type: 'miss', x: target.x, y: target.y, value: 'PARRY' });
   } else {
     target.hp -= dmg;
     const tags = [];
@@ -61,6 +63,14 @@ export function performAttack(attacker, target, skill, weapon) {
     if (wasBackstab && attacker.backstabDamageMult) tags.push('dans le dos');
     const tagStr = tags.length ? ` (${tags.join(', ')})` : '';
     log(`${attacker.name} → ${target.name} : ${dmg} dégâts ${damageType}${tagStr}.`, 'damage');
+    pushCombatEvent({
+      type: 'damage',
+      x: target.x, y: target.y,
+      value: dmg,
+      isCrit,
+      blocked,
+      damageType,
+    });
   }
 
   // Mark backstab consumed (1er hit du combat)
@@ -71,9 +81,7 @@ export function performAttack(attacker, target, skill, weapon) {
 
   // === LIFESTEAL ===
   if (!dodged && !parried && attacker.isPlayer && dmg > 0) {
-    // lifesteal standard
     let lsPct = attacker.lifesteal || 0;
-    // elemLifesteal : ajoute X% si attaque magique
     if (attacker.elemLifesteal && skill?.damageType && ['fire','ice','shock','poison','magic'].includes(skill.damageType)) {
       lsPct += attacker.elemLifesteal;
     }
@@ -82,6 +90,7 @@ export function performAttack(attacker, target, skill, weapon) {
       if (heal > 0) {
         attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
         if (heal >= 2) log(`${attacker.name} récupère ${heal} PV (vol de vie).`, 'heal');
+        pushCombatEvent({ type: 'heal', x: attacker.x, y: attacker.y, value: heal });
       }
     }
   }
@@ -106,7 +115,6 @@ export function performAttack(attacker, target, skill, weapon) {
       if (t.type === 'status') {
         applyStatus(target, { id: t.id, duration: t.duration, power: 0 }, attacker);
       } else if (t.type === 'explosion') {
-        // Dégâts d'explosion à tous les ennemis adjacents au target
         const explDmg = Math.max(3, Math.round(dmg * 0.3));
         for (const e of state.enemies || []) {
           if (e === target || e.isDead) continue;
@@ -115,6 +123,7 @@ export function performAttack(attacker, target, skill, weapon) {
           if (Math.max(dx, dy) === 1) {
             e.hp -= explDmg;
             log(`💥 Explosion : ${e.name} subit ${explDmg} dégâts.`, 'damage');
+            pushCombatEvent({ type: 'damage', x: e.x, y: e.y, value: explDmg, damageType: 'fire' });
             if (e.hp <= 0) killActor(e, attacker);
           }
         }
@@ -130,6 +139,7 @@ export function performAttack(attacker, target, skill, weapon) {
     if (reflected > 0 && !attacker.isDead) {
       attacker.hp -= reflected;
       log(`${target.name} renvoie ${reflected} dégâts.`, 'damage');
+      pushCombatEvent({ type: 'damage', x: attacker.x, y: attacker.y, value: reflected, damageType: 'blunt' });
       if (attacker.hp <= 0) killActor(attacker, target);
     }
   }
@@ -144,6 +154,7 @@ export function performAttack(attacker, target, skill, weapon) {
       const riposteDmg = Math.max(1, offhandFlat + Math.floor(Math.random() * 4) + (procByChance ? 3 : 0));
       attacker.hp -= riposteDmg;
       log(`${target.name} riposte pour ${riposteDmg} dégâts !`, 'damage');
+      pushCombatEvent({ type: 'damage', x: attacker.x, y: attacker.y, value: riposteDmg, damageType: 'blunt' });
       if (attacker.hp <= 0) killActor(attacker, target);
     }
   }

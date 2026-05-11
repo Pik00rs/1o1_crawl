@@ -10,6 +10,7 @@
 
 import { DATA } from '../data/loader.js';
 import { log } from '../ui/log.js';
+import { pushCombatEvent } from '../core/state.js';
 import {
   getEffectiveBleedPower,
   getEffectiveStatusDuration,
@@ -55,8 +56,11 @@ export function tickDoTStatuses(actor) {
       const def = DATA.statuses?.[s.id];
       const statusName = def?.name || s.id;
       log(`${actor.name} subit ${dmg} dégâts (${statusName}).`, 'damage');
+      // Map status → damageType for color
+      const dmgType = s.id === 'burning' ? 'fire' : s.id === 'bleeding' ? 'slash' : 'poison';
+      pushCombatEvent({ type: 'damage', x: actor.x, y: actor.y, value: dmg, damageType: dmgType, fromDoT: true });
     }
-    // electrocuted : -1 AP/tour (consommé au début du tour, donc on touche actor.ap si déjà reset)
+    // electrocuted : -1 AP/tour
     if (s.id === 'electrocuted' && actor.ap > 0) {
       actor.ap = Math.max(0, actor.ap - 1);
       log(`${actor.name} perd 1 AP (électrocuté).`, 'status');
