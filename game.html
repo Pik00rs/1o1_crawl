@@ -619,6 +619,21 @@ import { getPlayerSkills, selectMove, selectSkill, executeAction } from './src/j
 import { getReachableCells } from './src/js/grid/pathfinding.js';
 import { isWall as gridIsWall, getActorAt, key as gridKey, getCellsInAOE } from './src/js/grid/grid.js';
 
+// === Supabase auth + API (pour persistance progression / chest / wallet) ===
+import { requireAuth } from './src/dashboard/auth.js';
+import {
+  markDungeonCleared as apiMarkCleared,
+  loadChest as apiLoadChest,
+  saveChest as apiSaveChest,
+  loadWallet as apiLoadWallet,
+  saveWallet as apiSaveWallet,
+} from './src/dashboard/api.js';
+
+// Garde d'auth : si l'utilisateur n'est pas connecté, on redirige vers login.
+// Vu que game.html peut être ouvert directement par URL, c'est une sécurité.
+const _authOk = await requireAuth();
+if(!_authOk) { throw new Error('redirected to login'); }
+
 import { renderFrame } from './src/js/render/iso-engine.js';
 import { TILE_W, TILE_H, screenToIso, isoToScreen } from './src/js/render/iso-projection.js';
 import { ParticleSystem } from './src/js/render/particles.js';
@@ -839,6 +854,15 @@ async function initCombat(){
       stuff: playtestRun.player?.stuff || 'balanced',
       customModifiers: playtestRun.player?.customModifiers || [],
     };
+    // Si Ascension a injecté un équipement réel (depuis Supabase), on le passe
+    // à createPlayer. Idem pour les stats pré-calculées.
+    // createPlayer bypass alors applyStuff() et buildDefaultLoadout() — voir player.js.
+    if(playtestRun.player?.equipment){
+      playerCfg.equipment = playtestRun.player.equipment;
+    }
+    if(playtestRun.player?.stats){
+      playerCfg.stats = playtestRun.player.stats;
+    }
     // Si la run vient du système Ascension (biomeId présent), aligne le biome de rendu
     if(playtestRun.biomeId && ['cryo','inferno','toxic','crimson','voidnet'].includes(playtestRun.biomeId)){
       render.biomeId = playtestRun.biomeId;
@@ -1856,7 +1880,7 @@ window.restartCombat = async function(){
 
   if(run.rooms.length === 0){
     // Toutes les rooms sont clean → succès du donjon.
-    saveDungeonProgress(run);
+    await saveDungeonProgress(run);
     showDungeonVictoryScreen(run);
     localStorage.removeItem('rh_active_run');
     return;
@@ -1888,22 +1912,45 @@ function showDungeonVictoryScreen(run){
   title.style.color = '#ffd060';
   title.style.textShadow = '0 0 20px rgba(255,208,96,0.6)';
 
-  // Construit le HTML du loot
+  // Construit le HTML du loot — format v3 avec affixes
   const loot = run.finalLoot || { items: [], resource: null };
+  const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
   const itemsHtml = (loot.items || []).map(item => {
     const rar = (item.rarity || 'common').toUpperCase();
     const rarColors = {
-      COMMON: '#a89878', UNCOMMON: '#3df068', RARE: '#3d9cf0',
-      EPIC: '#c040ff', LEGENDARY: '#ffaa20',
+      COMMON: '#a89878', MAGIC: '#6aaaff', RARE: '#ffcc44',
+      EPIC: '#cc44ff', LEGENDARY: '#ff8800', SET: '#66ff66',
     };
     const color = rarColors[rar] || '#a89878';
     const star = item.isBossDrop ? ' ★' : '';
-    const statsLine = Object.entries(item.stats || {})
-      .map(([k, v]) => `${k.toUpperCase()} ${v}`).join(' · ');
+    const ilvlStr = ROMAN[item.ilvl] || (item.ilvl || '?');
+
+    // Compose le nom : préfixe + nom de base + suffixe (selon les affixes)
+    const prefix = (item.affixes || []).find(a => a.type === 'prefix');
+    const suffix = (item.affixes || []).find(a => a.type === 'suffix');
+    let displayName = item.itemId;
+    if(prefix) displayName = `${prefix.name} ${displayName}`;
+    if(suffix) displayName = `${displayName} ${suffix.name}`;
+
+    // Liste des affixes
+    const affixLines = (item.affixes || []).map(a => {
+      const aColor = a.type === 'prefix' ? '#6aaaff' : '#cc44ff';
+      const label = (a.label || '').replace('X', a.value);
+      return `<div style="color:${aColor}; font-size:9px;">+ ${label}</div>`;
+    }).join('');
+
+    // Implicit (armures)
+    let implicitLine = '';
+    if(item.implicit){
+      const label = (item.implicit.label || '').replace('X', item.implicit.value);
+      implicitLine = `<div style="color:#aae; font-size:9px;">◆ ${label}</div>`;
+    }
+
     return `<div style="padding:6px 10px; margin:3px 0; background:#1a0a14; border-left:3px solid ${color}; text-align:left; font-size:11px;">
-      <div style="color:#fff; font-weight:bold;">${item.itemId}${star}</div>
-      <div style="color:#888; font-size:9px; margin-top:2px;">${statsLine}</div>
-      <div style="display:inline-block; margin-top:3px; padding:1px 6px; background:${color}; color:#fff; font-size:8px; letter-spacing:1px;">${rar}</div>
+      <div style="color:${color}; font-weight:bold;">${displayName}${star}</div>
+      <div style="color:#666; font-size:9px; margin-top:2px;">iLvl ${ilvlStr} · ${rar}</div>
+      ${implicitLine}
+      ${affixLines}
     </div>`;
   }).join('');
 
@@ -1965,52 +2012,47 @@ function showDungeonDefeatScreen(run){
   updateDungeonHud(null);
 }
 
-function saveDungeonProgress(run){
-  // Sauvegarde la progression dans localStorage pour qu'Ascension reflète le clear,
-  // et pousse les items du loot dans le chest + ressources dans le wallet.
+async function saveDungeonProgress(run){
+  // Sauvegarde dans Supabase : marque le donjon cleared, push items dans chest, crédite ressources.
   try {
-    // 1. Marquer le donjon comme cleared
-    const PROGRESS_KEY = 'rh_player_progress';
-    const progressRaw = localStorage.getItem(PROGRESS_KEY);
-    const progress = progressRaw ? JSON.parse(progressRaw) : {};
-    if(!progress[run.biomeId]) progress[run.biomeId] = { tier: 1, clearedDungeons: [] };
-    if(!progress[run.biomeId].clearedDungeons.includes(run.level)){
-      progress[run.biomeId].clearedDungeons.push(run.level);
+    // 1. Marquer le donjon comme cleared via api
+    if(run.biomeId && run.level){
+      try {
+        await apiMarkCleared(run.biomeId, run.level);
+      } catch(e){
+        console.error('[game] markDungeonCleared failed:', e);
+      }
     }
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
 
-    // 2. Pousser les items du loot dans le chest
-    // Format identique à ce que chest-data.js consomme :
-    // tableau d'items { uid, itemId, rarity, stats, tier, biome, isBossDrop, droppedAt }
+    // 2. Pousser les items du loot dans le chest Supabase
     if(run.finalLoot && Array.isArray(run.finalLoot.items) && run.finalLoot.items.length > 0){
-      const CHEST_KEY = 'rh_chest_items';
-      const chestRaw = localStorage.getItem(CHEST_KEY);
-      let chest = chestRaw ? JSON.parse(chestRaw) : [];
-      if(!Array.isArray(chest)) chest = [];
-      const now = Date.now();
-      run.finalLoot.items.forEach((item, idx) => {
-        chest.push({
-          uid: `${now.toString(36)}_${idx}_${Math.random().toString(36).slice(2, 7)}`,
-          itemId: item.itemId,
-          rarity: item.rarity,
-          stats: { ...(item.stats || {}) },
-          tier: run.level || 1,
-          biome: run.biomeId || 'unknown',
-          isBossDrop: !!item.isBossDrop,
-          droppedAt: now,
+      try {
+        const chest = await apiLoadChest();
+        run.finalLoot.items.forEach((item) => {
+          if(!item) return;
+          const safe = { ...item };
+          if(!safe.instanceId){
+            safe.instanceId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+          }
+          if(!safe.droppedAt) safe.droppedAt = Date.now();
+          chest.push(safe);
         });
-      });
-      localStorage.setItem(CHEST_KEY, JSON.stringify(chest));
+        await apiSaveChest(chest);
+      } catch(e){
+        console.error('[game] saveChest after dungeon failed:', e);
+      }
     }
 
-    // 3. Crédit ressources au wallet
+    // 3. Crédit ressources au wallet Supabase
     if(run.finalLoot && run.finalLoot.resource){
-      const WALLET_KEY = 'rh_player_wallet';
-      const walletRaw = localStorage.getItem(WALLET_KEY);
-      const wallet = walletRaw ? JSON.parse(walletRaw) : {};
-      const resId = run.finalLoot.resource.id;
-      wallet[resId] = (wallet[resId] || 0) + (run.finalLoot.resource.amount || 0);
-      localStorage.setItem(WALLET_KEY, JSON.stringify(wallet));
+      try {
+        const wallet = await apiLoadWallet();
+        const resId = run.finalLoot.resource.id;
+        wallet[resId] = (wallet[resId] || 0) + (run.finalLoot.resource.amount || 0);
+        await apiSaveWallet(wallet);
+      } catch(e){
+        console.error('[game] saveWallet after dungeon failed:', e);
+      }
     }
   } catch(e){
     console.error('Failed to save dungeon progress:', e);
