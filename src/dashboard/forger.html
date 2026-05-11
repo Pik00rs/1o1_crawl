@@ -800,7 +800,23 @@ function valueAtQuality(qualityPct, valueRange, ilvl){
   return Math.max(0.1, Math.round(rawVal * 10) / 10);
 }
 
-// Récupère la liste des pools partagés entre 2 items
+// Vérifie si 2 items ont EXACTEMENT les mêmes affixPools.
+// C'est la condition pour pouvoir échanger un affixe : 2 items doivent appartenir
+// au même "type" (même set de pools), pas juste partager un pool en commun.
+// Ex: 2 épées 1H ont [physical] → OK
+//     1 épée et 1 carquois : [physical] vs [physical, quiver] → KO (carquois a un pool en plus)
+function haveSamePools(item1, item2){
+  const tpl1 = getItem(item1.itemId);
+  const tpl2 = getItem(item2.itemId);
+  if(!tpl1 || !tpl2) return false;
+  const p1 = [...(tpl1.affixPools || [])].sort();
+  const p2 = [...(tpl2.affixPools || [])].sort();
+  if(p1.length !== p2.length) return false;
+  return p1.every((p, i) => p === p2[i]);
+}
+
+// Helper conservé pour la liste des pools communs (utilisé pour afficher quels pools sont en jeu).
+// Retourne la liste des pools partagés (sera identique à p1 et p2 si haveSamePools = true).
 function getSharedPools(item1, item2){
   const tpl1 = getItem(item1.itemId);
   const tpl2 = getItem(item2.itemId);
@@ -884,9 +900,8 @@ function renderItemSlot(slotId, isSource){
   const otherItemId = isSource ? STATE.targetItemId : STATE.sourceItemId;
   const otherItem = STATE.chest.find(i => i.instanceId === otherItemId);
 
-  // Pour chaque affixe rollable, vérifier si le transfert est valide
-  // - Source : affixe doit appartenir à un pool partagé avec le récepteur
-  // - Target : la STAT de l'affixe ne doit pas déjà exister sur la source comme stat à transférer
+  // Pour chaque affixe, vérifier si le transfert est valide.
+  // Comme les pools sont strictement identiques (filtré au picker), il reste juste l'anti-doublon.
   let affixesHtml = '';
   if(item.affixes && item.affixes.length > 0){
     item.affixes.forEach((a, idx) => {
@@ -904,24 +919,14 @@ function renderItemSlot(slotId, isSource){
         qualityPctText = 'FIXE';
       }
 
-      // Détermine si l'affixe est sélectionnable selon le contexte
+      // Détermine si l'affixe est sélectionnable.
+      // Pré-filtrage assure que les 2 items sont compat (mêmes pools, même iLvl).
+      // Reste : anti-doublon.
       let selectable = true;
       let lockReason = '';
       if(otherItem){
-        const sharedPools = getSharedPools(item, otherItem);
-        if(sharedPools.length === 0){
-          selectable = false;
-          lockReason = 'pas de pool partagé';
-        } else if(item.ilvl !== otherItem.ilvl){
-          selectable = false;
-          lockReason = `iLvl ${item.ilvl} ≠ ${otherItem.ilvl}`;
-        } else if(isSource){
-          // Source : l'affixe sélectionné doit pouvoir aller dans un pool partagé
-          if(!sharedPools.includes(def.pool)){
-            selectable = false;
-            lockReason = `pool ${def.pool} pas dispo sur récepteur`;
-          }
-          // Anti-doublon : si la stat existe déjà sur le récepteur (autre que la position d'écrasement)
+        if(isSource){
+          // Source : interdit si la stat existe déjà sur le target (sauf à la position d'écrasement)
           const targetHasSameStat = otherItem.affixes?.some((oa, oaIdx) => {
             if(oaIdx === STATE.targetAffixIdx) return false; // celle qu'on écrase ne compte pas
             return oa.stat === a.stat;
@@ -931,25 +936,17 @@ function renderItemSlot(slotId, isSource){
             lockReason = 'récepteur a déjà cette stat';
           }
         } else {
-          // Target : on ne peut écraser un affixe que si l'affixe sélectionné chez la source
-          // (s'il y en a un) peut prendre sa place. Sinon par défaut on autorise.
+          // Target : interdit si écraser cet affixe créerait un doublon avec la source sélectionnée
           if(STATE.sourceAffixIdx !== null){
             const sourceAffix = otherItem.affixes?.[STATE.sourceAffixIdx];
-            const sourceDef = sourceAffix ? getAffix(sourceAffix.id) : null;
-            if(sourceDef){
-              // Vérifie pool compat
-              if(!sharedPools.includes(sourceDef.pool)){
-                selectable = false;
-                lockReason = 'incompat pool source';
-              }
-              // Anti-doublon (sauf si on écrase justement l'affixe doublon)
+            if(sourceAffix){
               const wouldDup = item.affixes.some((ta, tIdx) => {
                 if(tIdx === idx) return false; // celui qu'on écrase
                 return ta.stat === sourceAffix.stat;
               });
               if(wouldDup){
                 selectable = false;
-                lockReason = 'écraser cet affixe créerait un doublon';
+                lockReason = 'écraser ici créerait un doublon';
               }
             }
           }
@@ -1035,10 +1032,10 @@ function renderTransferAction(){
     status.className = 'action-status error';
     return;
   }
-  const sharedPools = getSharedPools(source, target);
-  if(sharedPools.length === 0){
+  // Vérification stricte des pools : doivent être exactement identiques
+  if(!haveSamePools(source, target)){
     btn.disabled = true;
-    status.textContent = `Aucun pool d'affixes en commun.`;
+    status.textContent = `Les 2 items doivent appartenir au même type (mêmes pools d'affixes).`;
     status.className = 'action-status error';
     return;
   }
@@ -1053,12 +1050,6 @@ function renderTransferAction(){
   if(!sourceDef){
     btn.disabled = true;
     status.textContent = 'Affixe émetteur introuvable.';
-    status.className = 'action-status error';
-    return;
-  }
-  if(!sharedPools.includes(sourceDef.pool)){
-    btn.disabled = true;
-    status.textContent = `Pool "${sourceDef.pool}" pas disponible sur le récepteur.`;
     status.className = 'action-status error';
     return;
   }
@@ -1322,7 +1313,7 @@ function openPicker(target){
   if(target === 'source'){
     titleText = 'Choisir l\'émetteur (sera détruit)';
     candidates = filterPickerForSource();
-    emptyMsg = 'Aucun item compatible. Il faut un item :<br>- Même iLvl que le récepteur<br>- Au moins un pool d\'affixes en commun<br>- Non équipé<br>- Avec au moins un affixe transférable';
+    emptyMsg = 'Aucun item compatible.<br>Il faut un item du <b>même type</b> (mêmes pools d\'affixes) que le récepteur, <b>même iLvl</b>, non équipé, avec au moins 1 affixe.';
   } else if(target === 'target'){
     titleText = 'Choisir le récepteur (sera gardé)';
     candidates = filterPickerForTarget();
@@ -1389,7 +1380,7 @@ function pickItem(instanceId){
 // - exclut le target déjà sélectionné
 // - exclut les items équipés (on ne peut pas détruire ce qui est équipé)
 // - exclut les items sans affixes (rien à transférer)
-// - exclut les items qui ne partagent PAS de pool avec le target
+// - exclut les items qui n'ont PAS EXACTEMENT les mêmes affixPools que le target
 // - exclut les items qui n'ont PAS le même iLvl que le target
 function filterPickerForSource(){
   const target = STATE.chest.find(i => i.instanceId === STATE.targetItemId);
@@ -1400,16 +1391,8 @@ function filterPickerForSource(){
     if(!item.affixes || item.affixes.length === 0) return false;
     // Même iLvl
     if(item.ilvl !== target.ilvl) return false;
-    // Au moins un pool partagé
-    const shared = getSharedPools(item, target);
-    if(shared.length === 0) return false;
-    // Au moins un affixe rollable dans un pool partagé
-    const hasUsableAffix = item.affixes.some(a => {
-      const def = getAffix(a.id);
-      if(!def) return false;
-      return shared.includes(def.pool);
-    });
-    if(!hasUsableAffix) return false;
+    // Pools EXACTEMENT identiques (épée ↔ épée, dague, marteau, arc, pistolet ; staff ↔ staff ; etc.)
+    if(!haveSamePools(item, target)) return false;
     return true;
   });
 }
