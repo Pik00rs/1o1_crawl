@@ -170,3 +170,23 @@ export const CHARACTER_CONFIGS = {
 export const CHARACTER_IDS = Object.keys(CHARACTER_RENDERERS);
 export const DEFAULT_RENDERER = hero.drawHero;
 export const DEFAULT_CONFIG = hero.heroConfig;
+
+// ─── Helpers compat avec iso-engine.js et autres consommateurs ───
+// L'ancien API exposait `getCharacterRenderer(id)` et `getCharacterConfig(id)`
+// pour retrouver le couple draw + palette d'un actor en jeu.
+// On les ré-expose pour ne pas casser le moteur de rendu in-game.
+
+export function getCharacterRenderer(id){
+  return CHARACTER_RENDERERS[id] || DEFAULT_RENDERER;
+}
+
+export function getCharacterConfig(id){
+  return CHARACTER_CONFIGS[id] || DEFAULT_CONFIG;
+}
+
+// Alias legacy : certains fichiers utilisaient `drawCharacter(ctx, id, ...)`
+// On l'expose au cas où.
+export function drawCharacter(ctx, id, cx, cy, actor, time, options){
+  const fn = getCharacterRenderer(id);
+  return fn(ctx, cx, cy, actor, time, options);
+}
