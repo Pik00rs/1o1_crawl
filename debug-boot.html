@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Debug Boot — game.html imports</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;padding:12px;font:12px ui-monospace,Consolas,monospace;background:#0a0a0e;color:#e8e8f0}
+  h1{font-size:14px;margin:0 0 12px;color:#4fc3f7}
+  h2{font-size:12px;margin:14px 0 6px;color:#ffcc40;text-transform:uppercase}
+  .panel{background:#15151c;border:1px solid #2a2a36;border-radius:6px;padding:10px;margin-bottom:10px}
+  .row{display:flex;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #1f1f28;font-size:11px}
+  .badge{display:inline-block;min-width:48px;text-align:center;padding:3px 6px;border-radius:3px;font-weight:bold;font-size:10px;flex-shrink:0}
+  .ok{background:rgba(92,255,160,0.15);color:#5cffa0}
+  .err{background:rgba(255,80,96,0.15);color:#ff5060}
+  .warn{background:rgba(255,204,64,0.15);color:#ffcc40}
+  .id{color:#4fc3f7;font-weight:bold;flex-shrink:0;min-width:0;word-break:break-all;font-size:10px}
+  .msg{color:#888;flex:1;word-break:break-all;font-size:10px}
+  .err-block{background:#2a0a10;border-left:3px solid #ff5060;padding:8px;margin:6px 0;border-radius:0 4px 4px 0;white-space:pre-wrap;font-size:10px;overflow:auto;max-height:400px}
+  .err-block .t{color:#ff5060;font-weight:bold;margin-bottom:4px}
+  .running{color:#ffcc40}
+  button{background:#4fc3f7;color:#000;border:none;padding:10px 20px;cursor:pointer;font-family:inherit;font-weight:bold;margin-top:10px;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<h1>🔬 Debug Boot — Trouve l'import qui plante</h1>
+<p style="font-size:11px;color:#888;margin-bottom:10px">Cette page importe chaque module dans le MÊME ORDRE que game.html. Le dernier "RUNNING..." avant un FAIL = celui qui plante.</p>
+
+<button onclick="runTests()">▶ LANCER LES TESTS</button>
+
+<h2>1. Imports game.html (dans l'ordre)</h2>
+<div class="panel" id="imports-log"></div>
+
+<h2>2. Fetch des fichiers data</h2>
+<div class="panel" id="data-log"></div>
+
+<h2>3. Fetch des biomes JSON</h2>
+<div class="panel" id="biomes-log"></div>
+
+<script>
+function row(parent, badge, badgeClass, id, msg){
+  const r = document.createElement('div');
+  r.className = 'row';
+  r.innerHTML = `<span class="badge ${badgeClass}">${badge}</span><span class="id">${id}</span><span class="msg">${msg||''}</span>`;
+  parent.appendChild(r);
+  return r;
+}
+
+function errBlock(parent, title, detail){
+  const b = document.createElement('div');
+  b.className = 'err-block';
+  b.innerHTML = `<div class="t">❌ ${title}</div>${detail}`;
+  parent.appendChild(b);
+}
+
+async function runTests(){
+  document.getElementById('imports-log').innerHTML = '';
+  document.getElementById('data-log').innerHTML = '';
+  document.getElementById('biomes-log').innerHTML = '';
+  await testImports();
+  await testDataFiles();
+  await testBiomeFiles();
+}
+
+async function testImports(){
+  const log = document.getElementById('imports-log');
+
+  // Liste des imports DANS L'ORDRE de game.html
+  // Si un plante, tous ceux d'après ne se chargent pas
+  const IMPORTS = [
+    './src/js/core/state.js',
+    './src/js/data/loader.js',
+    './src/js/entities/player.js',
+    './src/js/entities/enemy.js',
+    './src/js/core/turn.js',
+    './src/js/combat/actions.js',
+    './src/js/combat/attack.js',
+    './src/js/grid/pathfinding.js',
+    './src/js/grid/grid.js',
+    './src/dashboard/auth.js',
+    './src/dashboard/api.js',
+    './src/js/render/iso-engine.js',
+    './src/js/render/iso-projection.js',
+    './src/js/render/particles.js',
+    './src/js/render/iso-utils.js',
+    './src/js/render/biomes/svg-loader.js',
+    './src/js/render/iso-input.js',
+    './src/js/render/characters/index.js',
+  ];
+
+  for(const path of IMPORTS){
+    const running = row(log, 'RUN', 'warn running', path, 'loading...');
+    try {
+      const m = await import(path);
+      const exp = Object.keys(m).slice(0,4).join(', ');
+      running.querySelector('.badge').className = 'badge ok';
+      running.querySelector('.badge').textContent = 'OK';
+      running.querySelector('.msg').textContent = `exports: ${exp}${Object.keys(m).length > 4 ? '…' : ''}`;
+    } catch(e){
+      running.querySelector('.badge').className = 'badge err';
+      running.querySelector('.badge').textContent = 'FAIL';
+      running.querySelector('.msg').innerHTML = `<span style="color:#ff5060">${e.message}</span>`;
+      errBlock(log, `Import failed: ${path}`, `${e.message}\n\n${e.stack || '(no stack)'}`);
+      // STOP au premier fail : tout ce qui suit dépend probablement de lui
+      row(log, 'SKIP', 'warn', '(reste)', 'imports suivants annulés');
+      return;
+    }
+  }
+}
+
+async function testDataFiles(){
+  const log = document.getElementById('data-log');
+  const FILES = [
+    'weapons', 'armor', 'amulets', 'rings', 'spells', 'statuses',
+    'enemies', 'rooms', 'affixes', 'legendaries', 'sets', 'biomes',
+    'combos', 'forge-config'
+  ];
+  for(const f of FILES){
+    const path = `./src/data/${f}.json`;
+    const running = row(log, 'RUN', 'warn running', path, 'fetching...');
+    try {
+      const res = await fetch(path);
+      if(!res.ok){
+        running.querySelector('.badge').className = 'badge err';
+        running.querySelector('.badge').textContent = `${res.status}`;
+        running.querySelector('.msg').textContent = `HTTP ${res.status}`;
+        continue;
+      }
+      const json = await res.json();
+      const count = Array.isArray(json) ? json.length : Object.keys(json).length;
+      running.querySelector('.badge').className = 'badge ok';
+      running.querySelector('.badge').textContent = 'OK';
+      running.querySelector('.msg').textContent = `${count} keys`;
+    } catch(e){
+      running.querySelector('.badge').className = 'badge err';
+      running.querySelector('.badge').textContent = 'FAIL';
+      running.querySelector('.msg').innerHTML = `<span style="color:#ff5060">${e.message}</span>`;
+    }
+  }
+}
+
+async function testBiomeFiles(){
+  const log = document.getElementById('biomes-log');
+  const BIOMES = ['cryo', 'inferno', 'toxic', 'crimson', 'voidnet'];
+  for(const b of BIOMES){
+    const path = `./tile-library/biomes/${b}.json`;
+    const running = row(log, 'RUN', 'warn running', path, 'fetching...');
+    try {
+      const res = await fetch(path);
+      if(!res.ok){
+        running.querySelector('.badge').className = 'badge err';
+        running.querySelector('.badge').textContent = `${res.status}`;
+        running.querySelector('.msg').textContent = `HTTP ${res.status}`;
+        continue;
+      }
+      const text = await res.text();
+      running.querySelector('.badge').className = 'badge ok';
+      running.querySelector('.badge').textContent = 'OK';
+      running.querySelector('.msg').textContent = `${(text.length/1024).toFixed(1)} KB`;
+    } catch(e){
+      running.querySelector('.badge').className = 'badge err';
+      running.querySelector('.badge').textContent = 'FAIL';
+      running.querySelector('.msg').innerHTML = `<span style="color:#ff5060">${e.message}</span>`;
+    }
+  }
+}
+
+// Auto-run au load
+window.addEventListener('load', () => setTimeout(runTests, 200));
+</script>
+
+</body>
+</html>
