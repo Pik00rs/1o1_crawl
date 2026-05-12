@@ -354,7 +354,7 @@ injectUserBar();
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import { ENEMY_SPRITES, getEnemySprite } from '../js/render/enemies/index.js';
+import { ENEMY_SPRITES, getEnemySprite, attachAttacksBatch } from '../js/render/enemies/index.js';
 import { FxSystem } from '../js/render/enemies/fx-system.js';
 
 // ============================================================================
@@ -1007,6 +1007,8 @@ function render() {
 // ============================================================================
 (async function init() {
   ALL_ENEMIES = await loadEnemies();
+  // Pré-charge les attaques iso pour chaque ennemi (basé sur ses stats)
+  attachAttacksBatch(ALL_ENEMIES);
   document.getElementById('header-sub').textContent =
     `${ALL_ENEMIES.length} ENTITÉS_RÉPERTORIÉES // ${Object.keys(BIOMES).length} BIOMES_ACTIFS // ${Object.keys(ENEMY_SPRITES).length} SPRITES_ACTIFS`;
 
