@@ -528,8 +528,26 @@ function runAttackLoop(){
   const kaelY = h - 40;
 
   if(state.currentAttack && detailSprite){
-    const attack = detailSprite.attacks[state.currentAttack];
-    if(attack){
+    const attack = detailSprite.attacks ? detailSprite.attacks[state.currentAttack] : null;
+    if(!attack){
+      // Attaque référencée mais introuvable dans le sprite — devrait pas
+      // arriver mais on log au cas où, sinon écran noir silencieux.
+      attackCtx.fillStyle = 'rgba(40,20,0,0.85)';
+      attackCtx.fillRect(0, 0, w, h);
+      attackCtx.fillStyle = '#ffcc40';
+      attackCtx.font = 'bold 11px JetBrains Mono, monospace';
+      attackCtx.textAlign = 'center';
+      attackCtx.fillText('⚠ ATTAQUE INTROUVABLE', w / 2, h / 2 - 10);
+      attackCtx.font = '9px JetBrains Mono, monospace';
+      attackCtx.fillStyle = '#a08040';
+      attackCtx.fillText('id: "' + state.currentAttack + '"', w / 2, h / 2 + 8);
+      attackCtx.fillText('enemy: ' + (detailSprite?.id || '?'), w / 2, h / 2 + 22);
+      const available = detailSprite.attacks ? Object.keys(detailSprite.attacks).join(', ') : '(aucune)';
+      attackCtx.fillText('dispo: ' + available, w / 2, h / 2 + 36);
+      requestAnimationFrame(runAttackLoop);
+      return;
+    }
+    {
       try {
       const result = attack.update(state.attackFrame, attack.duration, attackCtx);
       state.attackOpts = result.opts || {};
