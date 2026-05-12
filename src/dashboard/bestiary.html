@@ -530,6 +530,7 @@ function runAttackLoop(){
   if(state.currentAttack && detailSprite){
     const attack = detailSprite.attacks[state.currentAttack];
     if(attack){
+      try {
       const result = attack.update(state.attackFrame, attack.duration, attackCtx);
       state.attackOpts = result.opts || {};
 
@@ -617,6 +618,48 @@ function runAttackLoop(){
         // Replay automatique avec petit délai
         state.attackFrame = 0;
         state.fxSystem.clear();
+      }
+      } catch(err){
+        // ─── ERROR DISPLAY DANS LE CANVAS ATTACK LAB ───
+        // Une attaque a planté. On affiche le détail directement à l'écran
+        // (pas besoin de devtools console).
+        attackCtx.fillStyle = 'rgba(40,0,0,0.85)';
+        attackCtx.fillRect(0, 0, w, h);
+        attackCtx.fillStyle = '#ff5060';
+        attackCtx.font = 'bold 11px JetBrains Mono, monospace';
+        attackCtx.textAlign = 'left';
+        attackCtx.fillText('💥 ATTAQUE CASSÉE', 10, 20);
+        attackCtx.fillStyle = '#ffb347';
+        attackCtx.font = '9px JetBrains Mono, monospace';
+        attackCtx.fillText('Attack: ' + state.currentAttack, 10, 36);
+        attackCtx.fillText('Enemy: ' + (detailSprite?.id || '?'), 10, 48);
+        attackCtx.fillText('Frame: ' + state.attackFrame, 10, 60);
+        attackCtx.fillStyle = '#ff8080';
+        attackCtx.font = '9px JetBrains Mono, monospace';
+        // Wrap long error messages
+        const msg = String(err.message || err);
+        const maxChars = Math.floor((w - 20) / 5.5);
+        const lines = [];
+        let cur = '';
+        for(const word of msg.split(' ')){
+          if((cur + ' ' + word).length > maxChars){
+            lines.push(cur); cur = word;
+          } else cur = cur ? cur + ' ' + word : word;
+        }
+        if(cur) lines.push(cur);
+        lines.forEach((line, i) => attackCtx.fillText(line, 10, 80 + i * 12));
+
+        // Stack abrégée (3 premières lignes)
+        if(err.stack){
+          attackCtx.fillStyle = '#888';
+          attackCtx.font = '8px JetBrains Mono, monospace';
+          const stackLines = err.stack.split('\n').slice(0, 5);
+          const startY = 80 + lines.length * 12 + 10;
+          stackLines.forEach((line, i) => {
+            attackCtx.fillText(line.slice(0, maxChars + 20), 10, startY + i * 11);
+          });
+        }
+        console.error('[ATTACK LAB] crash', state.currentAttack, 'frame', state.attackFrame, err);
       }
     }
   } else {
