@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Debug — Renderers Iso</title>
+<style>
+  :root{
+    --bg:#0a0a0e; --panel:#15151c; --border:#2a2a36;
+    --text:#e8e8f0; --muted:#888; --ok:#5cffa0; --err:#ff5060; --warn:#ffcc40; --info:#4fc3f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 ui-monospace,Consolas,Menlo,monospace;background:var(--bg);color:var(--text);padding:16px}
+  h1{font-size:18px;margin:0 0 12px;color:var(--info)}
+  h2{font-size:14px;margin:18px 0 8px;color:var(--warn);text-transform:uppercase;letter-spacing:1px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px}
+  .row{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1f1f28;font-size:12px}
+  .row:last-child{border-bottom:0}
+  .badge{display:inline-block;min-width:48px;text-align:center;padding:2px 6px;border-radius:3px;font-weight:bold;font-size:11px}
+  .badge.ok{background:rgba(92,255,160,0.15);color:var(--ok)}
+  .badge.err{background:rgba(255,80,96,0.15);color:var(--err)}
+  .badge.warn{background:rgba(255,204,64,0.15);color:var(--warn)}
+  .id{color:var(--info);min-width:280px;font-weight:bold}
+  .msg{color:var(--muted);flex:1;word-break:break-all}
+  .err-block{background:#2a0a10;border-left:4px solid var(--err);padding:10px;margin:8px 0;border-radius:0 4px 4px 0;white-space:pre-wrap;font-size:12px}
+  .err-block .title{color:var(--err);font-weight:bold;margin-bottom:4px}
+  .summary{display:flex;gap:24px;font-size:16px;font-weight:bold}
+  .summary .ok{color:var(--ok)}
+  .summary .err{color:var(--err)}
+  canvas{background:#1a1f2a;border:1px solid var(--border);border-radius:4px;display:block;margin:8px 0;image-rendering:pixelated}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+  .cell{background:#1a1a24;border:1px solid var(--border);border-radius:4px;padding:6px;text-align:center}
+  .cell .label{font-size:10px;color:var(--muted);margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center}
+  .cell.err{border-color:var(--err);background:rgba(255,80,96,0.05)}
+  .cell.err .label{color:var(--err)}
+  details{margin-top:6px}
+  summary{cursor:pointer;color:var(--warn);font-size:11px}
+  pre{font-size:11px;color:#a0a0b0;margin:4px 0;overflow:auto;max-height:200px}
+</style>
+</head>
+<body>
+
+<h1>🔬 Diagnostic Renderers Iso — Reactor Hollow</h1>
+
+<div class="panel">
+  <div id="summary" class="summary">⏳ Chargement…</div>
+</div>
+
+<h2>1. Chargement du registry (index.js)</h2>
+<div class="panel" id="registry-log"></div>
+
+<h2>2. État de chaque renderer (40)</h2>
+<div class="panel" id="renderers-log"></div>
+
+<h2>3. Prévisualisation iso (renderers chargés avec succès)</h2>
+<div class="panel">
+  <div class="grid" id="preview-grid"></div>
+</div>
+
+<h2>4. Test des autres dépendances dashboard (chargement direct)</h2>
+<div class="panel" id="deps-log"></div>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const summary = $('summary');
+const regLog = $('registry-log');
+const rendLog = $('renderers-log');
+const grid = $('preview-grid');
+const depsLog = $('deps-log');
+
+const EXPECTED_RENDERERS = [
+  'hero',
+  // CRIMSON
+  'crimson_brawler','crimson_butcher','crimson_throwblade','crimson_hooked',
+  'crimson_doctor','crimson_gladiator','crimson_minibossExecutioner','crimson_boss',
+  // CRYO
+  'cryo_brute','cryo_caster','cryo_skater','cryo_archer',
+  'cryo_shielder','cryo_sentinel','cryo_minibossWarden','cryo_boss',
+  // INFERNO
+  'inferno_brute','inferno_caster','inferno_charger','inferno_archer',
+  'inferno_engineer','inferno_berserker','inferno_minibossDrone','inferno_boss',
+  // TOXIC
+  'toxic_brute','toxic_spitter','toxic_swarmer','toxic_carrier',
+  'toxic_grafted','toxic_alpha','toxic_minibossSpore','toxic_boss',
+  // VOIDNET
+  'voidnet_glitch','voidnet_daemon','voidnet_executor','voidnet_corrupter',
+  'voidnet_replicator','voidnet_overclocked','voidnet_minibossKernel','voidnet_boss',
+];
+
+function row(parent, badge, badgeClass, id, msg){
+  const r = document.createElement('div');
+  r.className = 'row';
+  r.innerHTML = `<span class="badge ${badgeClass}">${badge}</span><span class="id">${id}</span><span class="msg">${msg||''}</span>`;
+  parent.appendChild(r);
+}
+
+function errBlock(parent, title, detail){
+  const b = document.createElement('div');
+  b.className = 'err-block';
+  b.innerHTML = `<div class="title">❌ ${title}</div>${detail}`;
+  parent.appendChild(b);
+}
+
+// ===========================================================================
+// PHASE 1 : Charger index.js (le registry global)
+// ===========================================================================
+let CHARACTER_RENDERERS = null;
+let CHARACTER_CONFIGS = null;
+let registryLoaded = false;
+
+try {
+  const mod = await import('./src/js/render/characters/index.js');
+  CHARACTER_RENDERERS = mod.CHARACTER_RENDERERS;
+  CHARACTER_CONFIGS = mod.CHARACTER_CONFIGS;
+  registryLoaded = true;
+  row(regLog, 'OK', 'ok', 'src/js/render/characters/index.js', `chargé — ${Object.keys(CHARACTER_RENDERERS||{}).length} renderers exposés`);
+} catch (e) {
+  registryLoaded = false;
+  errBlock(regLog, `Index registry plante au chargement`,
+    `<strong>Message :</strong> ${e.message}\n<strong>Stack :</strong>\n${e.stack || '(stack indisponible)'}`);
+  row(regLog, 'FAIL', 'err', 'src/js/render/characters/index.js', e.message);
+}
+
+// ===========================================================================
+// PHASE 2 : Tester chaque renderer individuellement (pour identifier
+// précisément lesquels plantent même si index plante globalement)
+// ===========================================================================
+const okList = [];
+const errList = [];
+
+if (!registryLoaded){
+  // Index a planté → on essaie chacun en isolation pour trouver le coupable
+  row(rendLog, 'INFO', 'warn', '(test individuel)', `index.js a planté, on isole chaque renderer pour trouver le coupable…`);
+}
+
+for (const id of EXPECTED_RENDERERS){
+  const isHero = id === 'hero';
+  const path = isHero
+    ? './src/js/render/characters/hero.js'
+    : `./src/js/render/characters/enemies/${id}.js`;
+  try {
+    const m = await import(path);
+    // Vérifier qu'il exporte bien default avec drawXxx et xxxConfig
+    const drawFnName = isHero ? 'drawHero' : 'draw' + id.split('_').map(s => s[0].toUpperCase()+s.slice(1)).join('');
+    const configName = isHero ? 'heroConfig' : id.split('_').map((s,i) => i===0?s:s[0].toUpperCase()+s.slice(1)).join('') + 'Config';
+    const hasDraw = !!m.default && typeof m.default[drawFnName] === 'function';
+    const hasConfig = !!m.default && !!m.default[configName];
+    if (hasDraw && hasConfig){
+      okList.push(id);
+      row(rendLog, 'OK', 'ok', id, `${path}`);
+    } else {
+      errList.push({id, msg: `default n'exporte pas { ${drawFnName}, ${configName} }`});
+      row(rendLog, 'PART', 'warn', id, `Manque: ${!hasDraw?drawFnName+'() ':''}${!hasConfig?configName:''}`);
+    }
+  } catch (e){
+    errList.push({id, msg: e.message, stack: e.stack});
+    row(rendLog, 'FAIL', 'err', id, e.message);
+  }
+}
+
+// ===========================================================================
+// PHASE 3 : Affichage preview pour ceux qui marchent
+// ===========================================================================
+if (registryLoaded && CHARACTER_RENDERERS){
+  for (const id of EXPECTED_RENDERERS){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 80; cv.height = 80;
+    const ctx = cv.getContext('2d');
+    const fn = CHARACTER_RENDERERS[id];
+    const cfg = CHARACTER_CONFIGS[id];
+    let label = id;
+    if (typeof fn === 'function' && cfg){
+      try {
+        const actor = { ...cfg, idle: 0, target: null };
+        fn(ctx, 40, 60, actor, 0, { fxLevel: 1 });
+        label += ` ✓`;
+      } catch (e){
+        cell.classList.add('err');
+        label = `${id} 💥 ${e.message}`;
+        ctx.fillStyle = '#ff5060';
+        ctx.fillText('ERR', 30, 40);
+      }
+    } else {
+      cell.classList.add('err');
+      label = `${id} (manquant dans registry)`;
+    }
+    const lbl = document.createElement('div');
+    lbl.className = 'label';
+    lbl.textContent = label;
+    cell.appendChild(cv);
+    cell.appendChild(lbl);
+    grid.appendChild(cell);
+  }
+} else {
+  const note = document.createElement('div');
+  note.style.color = 'var(--err)';
+  note.textContent = 'Preview indisponible — le registry index.js a planté. Voir section 2 pour identifier le renderer responsable.';
+  grid.appendChild(note);
+}
+
+// ===========================================================================
+// PHASE 4 : Test des dépendances dashboard
+// ===========================================================================
+const DEPS_TO_TEST = [
+  ['../js/render/characters/index.js (depuis dashboard)', './src/js/render/characters/index.js'], // même chemin depuis la racine
+  ['ascension-data.js',  './src/dashboard/ascension-data.js'],
+  ['api.js',             './src/dashboard/api.js'],
+  ['auth.js',            './src/dashboard/auth.js'],
+];
+for (const [label, path] of DEPS_TO_TEST){
+  try {
+    const m = await import(path);
+    row(depsLog, 'OK', 'ok', label, `${path} — ${Object.keys(m).length} exports`);
+  } catch (e){
+    row(depsLog, 'FAIL', 'err', label, `${path} — ${e.message}`);
+  }
+}
+
+// ===========================================================================
+// SUMMARY
+// ===========================================================================
+const okCount = okList.length;
+const errCount = errList.length;
+const status = errCount === 0 && registryLoaded
+  ? `<span class="ok">✅ Tout fonctionne : ${okCount}/${EXPECTED_RENDERERS.length} renderers OK</span>`
+  : `<span class="err">❌ ${errCount} erreur(s) sur ${EXPECTED_RENDERERS.length}</span> &nbsp;&nbsp; <span class="ok">✅ ${okCount} OK</span>`;
+summary.innerHTML = status;
+
+if (errCount > 0){
+  const detail = document.createElement('details');
+  detail.style.marginTop = '8px';
+  detail.innerHTML = `<summary>📋 Détail des ${errCount} erreur(s)</summary>` +
+    errList.map(e => `<pre>[${e.id}] ${e.msg}\n${e.stack || ''}</pre>`).join('');
+  summary.appendChild(detail);
+}
+</script>
+
+</body>
+</html>
