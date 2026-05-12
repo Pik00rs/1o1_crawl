@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/inferno_boss.js
 // PYROMANCIEN SUPRÊME — BOSS Inferno final.
 // Lévite, robe noire-rouge, capuche, cœur thermonucléaire, 2 yeux blancs, spirales feu.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoBossConfig = {
   id: 'inferno_boss', name: 'PYROMANCIEN', archetype: 'inferno_boss',

@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/cryo_boss.js
 // CRYO-REINE — BOSS final Cryo.
 // Lévite, robe blanche-bleue, couronne de cristal, cœur de glace.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoBossConfig = {
   id: 'cryo_boss', name: 'CRYO-REINE', archetype: 'cryo_boss',

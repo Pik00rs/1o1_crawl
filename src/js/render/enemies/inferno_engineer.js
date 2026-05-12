@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/inferno_engineer.js
 // Ingénieur Thermique — combinaison ouvrier, casque jaune à lampe, pistolet rivet.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoEngineerConfig = {
   id: 'inferno_engineer', name: 'INGÉNIEUR', archetype: 'inferno_engineer',

@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/cryo_minibossWarden.js
 // Gardien des Cellules — MINIBOSS, manteau lourd cryo, casquette militaire, clé géante.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoMinibossWardenConfig = {
   id: 'cryo_minibossWarden', name: 'GARDIEN', archetype: 'cryo_minibossWarden',

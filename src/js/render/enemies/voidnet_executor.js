@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/voidnet_executor.js
 // Exécuteur — silhouette militaire, lame d'énergie rouge-orange, kill symbol poitrine.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetExecutorConfig = {
   id: 'voidnet_executor', name: 'EXÉCUTEUR', archetype: 'voidnet_executor',

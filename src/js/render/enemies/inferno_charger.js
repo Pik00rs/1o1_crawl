@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/inferno_charger.js
 // Charge Cendreuse — silhouette voûtée, crâne calciné mâchoire exposée.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoChargerConfig = {
   id: 'inferno_charger', name: 'CHARGE CENDREUSE', archetype: 'inferno_charger',

@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/toxic_swarmer.js
 // Essaim Bourdonnant — NON HUMANOÏDE. Nuée d'insectes verts orbitant autour
 // d'un noyau central, yeux rouges multiples brillant à travers.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicSwarmerConfig = {
   id: 'toxic_swarmer', name: 'ESSAIM', archetype: 'toxic_swarmer',

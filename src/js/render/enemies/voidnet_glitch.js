@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/voidnet_glitch.js
 // Erreur Persistante — silhouette avec RGB split magenta/cyan, blocs détachés, scan lines.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetGlitchConfig = {
   id: 'voidnet_glitch', name: 'ERREUR', archetype: 'voidnet_glitch',

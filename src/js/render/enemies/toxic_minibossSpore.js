@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/toxic_minibossSpore.js
 // MÈRE-SPORE — MINIBOSS, NON HUMANOÏDE.
 // Bulbe géant central avec orifices pulsants, tentacules à la base.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicMinibossSporeConfig = {
   id: 'toxic_minibossSpore', name: 'MÈRE-SPORE', archetype: 'toxic_minibossSpore',

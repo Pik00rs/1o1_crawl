@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/voidnet_minibossKernel.js
 // SOUS-NOYAU — MINIBOSS, NON HUMANOÏDE.
 // Polyèdre cubique, faces qui s'ouvrent, hex orbitants.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetMinibossKernelConfig = {
   id: 'voidnet_minibossKernel', name: 'SOUS-NOYAU', archetype: 'voidnet_minibossKernel',

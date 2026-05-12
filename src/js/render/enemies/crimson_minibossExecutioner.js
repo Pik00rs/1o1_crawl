@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/crimson_minibossExecutioner.js
 // Exécuteur — MINIBOSS, cagoule noire, hache à 2 mains, torse nu massif.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonMinibossExecutionerConfig = {
   id: 'crimson_minibossExecutioner', name: 'EXÉCUTEUR', archetype: 'crimson_minibossExecutioner',

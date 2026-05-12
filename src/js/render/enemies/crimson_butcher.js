@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/crimson_butcher.js
 // Boucher — silhouette massive, tablier de cuir taché, masque de cuir, couperet.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonButcherConfig = {
   id: 'crimson_butcher', name: 'BOUCHER', archetype: 'crimson_butcher',

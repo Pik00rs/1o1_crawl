@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/crimson_brawler.js
 // Bagarreur de Fosse — boxeur torse nu avec bandages tachés.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonBrawlerConfig = {
   id: 'crimson_brawler', name: 'BAGARREUR', archetype: 'crimson_brawler',

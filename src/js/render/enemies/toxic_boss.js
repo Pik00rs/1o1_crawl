@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/toxic_boss.js
 // BÊTE PUTRÉFIÉE — BOSS final Toxic, QUADRUPÈDE.
 // Posture quadrupède, pustules violettes dorsales, cœur violet poitrail.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicBossConfig = {
   id: 'toxic_boss', name: 'BÊTE PUTRÉFIÉE', archetype: 'toxic_boss',

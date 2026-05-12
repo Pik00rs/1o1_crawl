@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/toxic_carrier.js
 // Porteur de Plaies — plaques de bactéries vertes brillantes, lame courbée.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicCarrierConfig = {
   id: 'toxic_carrier', name: 'PORTEUR', archetype: 'toxic_carrier',

@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/cryo_archer.js
 // Lanceur d'Aiguilles — silhouette mince, cristaux qui orbitent autour des poignets.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoArcherConfig = {
   id: 'cryo_archer', name: 'LANCEUR D\'AIGUILLES', archetype: 'cryo_archer',

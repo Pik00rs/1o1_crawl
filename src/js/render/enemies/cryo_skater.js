@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/cryo_skater.js
 // Patineur Spectral — silhouette dynamique, lames de glace aux pieds, semi-translucide.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoSkaterConfig = {
   id: 'cryo_skater', name: 'PATINEUR', archetype: 'cryo_skater',

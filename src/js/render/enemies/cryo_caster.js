@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/cryo_caster.js
 // Cryomancien — caster avec orbe de glace et masque chirurgical gelé.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoCasterConfig = {
   id: 'cryo_caster', name: 'CRYOMANCIEN', archetype: 'cryo_caster',

@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/cryo_shielder.js
 // Glacier Vivant — tank massif, bloc de glace avec fissures internes.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoShielderConfig = {
   id: 'cryo_shielder', name: 'GLACIER VIVANT', archetype: 'cryo_shielder',

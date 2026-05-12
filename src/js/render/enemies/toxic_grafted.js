@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/toxic_grafted.js
 // Greffé de Chair — abomination, 4 bras, 2 têtes fusionnées, sutures visibles.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicGraftedConfig = {
   id: 'toxic_grafted', name: 'GREFFÉ', archetype: 'toxic_grafted',

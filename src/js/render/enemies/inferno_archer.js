@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/inferno_archer.js
 // Tireur Phosphore — uniforme + vest tactique + visière orange + arc à flèche phosphore.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoArcherConfig = {
   id: 'inferno_archer', name: 'TIREUR PHOSPHORE', archetype: 'inferno_archer',

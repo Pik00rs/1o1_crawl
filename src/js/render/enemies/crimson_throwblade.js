@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/crimson_throwblade.js
 // Lanceur de Lames — silhouette mince, bandolier en X, masque rouge.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonThrowbladeConfig = {
   id: 'crimson_throwblade', name: 'LANCEUR DE LAMES', archetype: 'crimson_throwblade',

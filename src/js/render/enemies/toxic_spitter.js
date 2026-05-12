@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/toxic_spitter.js
 // Cracheur d'Acide — glandes salivaires gonflées vert, bouche large déformée.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicSpitterConfig = {
   id: 'toxic_spitter', name: 'CRACHEUR', archetype: 'toxic_spitter',

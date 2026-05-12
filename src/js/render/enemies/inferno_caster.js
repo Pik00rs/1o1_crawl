@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/inferno_caster.js
 // Pyromancien Mineur — caster avec orbes de feu, cortex LED orange.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoCasterConfig = {
   id: 'inferno_caster', name: 'PYROMANCIEN', archetype: 'inferno_caster',

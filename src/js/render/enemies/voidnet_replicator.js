@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/voidnet_replicator.js
 // Réplicateur — silhouette double avec écho fantôme cyan derrière.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetReplicatorConfig = {
   id: 'voidnet_replicator', name: 'RÉPLICATEUR', archetype: 'voidnet_replicator',

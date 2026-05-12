@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/crimson_gladiator.js
 // Gladiateur — ÉLITE, casque romain avec crête, bouclier rond, gladius.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonGladiatorConfig = {
   id: 'crimson_gladiator', name: 'GLADIATEUR', archetype: 'crimson_gladiator',

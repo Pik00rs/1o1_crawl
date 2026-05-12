@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/inferno_brute.js
 // Brûlant — silhouette voûtée avec casque de soudeur à fente incandescente,
 // gantelet de forge, fissures orange sur le corps.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoBruteConfig = {
   id: 'inferno_brute', name: 'BRÛLANT', archetype: 'inferno_brute',

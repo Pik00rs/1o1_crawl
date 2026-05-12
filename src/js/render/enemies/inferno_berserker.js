@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/inferno_berserker.js
 // Berserker Inferno — ÉLITE, exo-armure fissurée orange, visière rouge, flamberge enflammée.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoBerserkerConfig = {
   id: 'inferno_berserker', name: 'BERSERKER', archetype: 'inferno_berserker',

@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/voidnet_overclocked.js
 // Surchargé — ÉLITE, vibre intensément, motion blur, arcs électriques cyan.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetOverclockedConfig = {
   id: 'voidnet_overclocked', name: 'SURCHARGÉ', archetype: 'voidnet_overclocked',

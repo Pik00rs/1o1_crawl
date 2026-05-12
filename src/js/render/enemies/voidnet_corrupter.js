@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/voidnet_corrupter.js
 // Corrupteur — silhouette pâle, glyphes magenta orbitants, hood.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetCorrupterConfig = {
   id: 'voidnet_corrupter', name: 'CORRUPTEUR', archetype: 'voidnet_corrupter',

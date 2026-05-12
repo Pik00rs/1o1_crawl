@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/crimson_doctor.js
 // Docteur de Sang — silhouette grêle, blouse blanche tachée, masque chirurgical.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonDoctorConfig = {
   id: 'crimson_doctor', name: 'DOCTEUR', archetype: 'crimson_doctor',

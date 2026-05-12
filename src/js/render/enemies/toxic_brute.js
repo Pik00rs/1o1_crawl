@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/toxic_brute.js
 // Mutant Putréfié — voûté, peau verte, plaques nécrosées, veines violettes, bave.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicBruteConfig = {
   id: 'toxic_brute', name: 'PUTRÉFIÉ', archetype: 'toxic_brute',

@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/cryo_sentinel.js
 // Sentinelle de Glace — ÉLITE, armure militaire glacée, visière cyan, hallebarde.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoSentinelConfig = {
   id: 'cryo_sentinel', name: 'SENTINELLE', archetype: 'cryo_sentinel',

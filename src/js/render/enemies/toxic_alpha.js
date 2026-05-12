@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/toxic_alpha.js
 // Alpha Putréfié — ÉLITE, mâchoire ressortie, crête dorsale de spores, yeux violets.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const toxicAlphaConfig = {
   id: 'toxic_alpha', name: 'ALPHA', archetype: 'toxic_alpha',

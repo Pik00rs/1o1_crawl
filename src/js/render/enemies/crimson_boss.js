@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/crimson_boss.js
 // CHAMPION DU SANG — BOSS final Crimson.
 // Géant 1.5x, scarifications dorées, couronne de crocs, cœur de sang.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonBossConfig = {
   id: 'crimson_boss', name: 'CHAMPION DU SANG', archetype: 'crimson_boss',

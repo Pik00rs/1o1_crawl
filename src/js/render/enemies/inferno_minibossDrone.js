@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/inferno_minibossDrone.js
 // IGNI-7 — MINIBOSS Drone-Sentinelle, NON HUMANOÏDE.
 // Hexagone flottant, 4 buses thermiques, bouclier cyan, œil rouge cyclope.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const infernoMinibossDroneConfig = {
   id: 'inferno_minibossDrone', name: 'IGNI-7', archetype: 'inferno_minibossDrone',

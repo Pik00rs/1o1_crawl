@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/voidnet_daemon.js
 // Daemon Mineur — robe sombre avec code 0/1, hexagone flottant à la tête.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetDaemonConfig = {
   id: 'voidnet_daemon', name: 'DAEMON', archetype: 'voidnet_daemon',

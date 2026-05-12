@@ -1,6 +1,6 @@
 // src/js/render/characters/enemies/crimson_hooked.js
 // Crocheteur — costaud avec hook au bout d'une chaîne.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const crimsonHookedConfig = {
   id: 'crimson_hooked', name: 'CROCHETEUR', archetype: 'crimson_hooked',

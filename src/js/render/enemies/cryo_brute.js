@@ -3,7 +3,7 @@
 // Silhouette voûtée bleue, cristaux d'épaule (signature), yeux cyan,
 // halo froid permanent. Inspiré du sprite bestiaire 2D toxic.
 
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const cryoBruteConfig = {
   id: 'cryo_brute',

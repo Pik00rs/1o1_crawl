@@ -1,7 +1,7 @@
 // src/js/render/characters/enemies/voidnet_boss.js
 // ARCHITECTE DU VIDE — BOSS final Voidnet.
 // Lévite, robe pixels, couronne hex orbitante, cœur void avec étoiles.
-import { hexToRgba, shade } from '../../iso-utils.js';
+import { hexToRgba, shade } from '../iso-utils.js';
 
 export const voidnetBossConfig = {
   id: 'voidnet_boss', name: 'ARCHITECTE', archetype: 'voidnet_boss',
