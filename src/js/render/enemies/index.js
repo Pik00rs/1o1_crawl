@@ -1,117 +1,81 @@
 // src/js/render/enemies/index.js
-// Registry des sprites ennemis. Chaque ennemi exporte une fonction draw()
-// avec la signature standard : (ctx, sx, sy, time, options).
-// 40 ennemis sprités : 5 biomes × 8 (Inferno + Cryo + Toxic + Voidnet + Crimson).
+// Adapteur de compatibilité pour le bestiaire (et autres consommateurs legacy).
+//
+// Le bestiaire attend une API:
+//   getEnemySprite(id) → { draw(ctx, x, y, t, opts), attacks: {...} }
+//   ENEMY_SPRITES: { id: { draw, attacks, ... } }
+//
+// Nos nouveaux renderers iso ont une signature différente:
+//   draw(ctx, cx, cy, actor, time, options)
+//   actor = palette config (bodyColor, accentColor, ...)
+//
+// On adapte: pour chaque renderer iso, on construit un objet sprite-like
+// qui wrap la signature pour rester compatible avec le bestiaire existant.
 
-// === INFERNO ===
-import * as inferno_brute from './inferno_brute.js';
-import * as inferno_caster from './inferno_caster.js';
-import * as inferno_charger from './inferno_charger.js';
-import * as inferno_archer from './inferno_archer.js';
-import * as inferno_engineer from './inferno_engineer.js';
-import * as inferno_berserker from './inferno_berserker.js';
-import * as inferno_minibossDrone from './inferno_minibossDrone.js';
-import * as inferno_boss from './inferno_boss.js';
-
-// === CRYO ===
-import * as cryo_brute from './cryo_brute.js';
-import * as cryo_caster from './cryo_caster.js';
-import * as cryo_skater from './cryo_skater.js';
-import * as cryo_archer from './cryo_archer.js';
-import * as cryo_shielder from './cryo_shielder.js';
-import * as cryo_sentinel from './cryo_sentinel.js';
-import * as cryo_minibossWarden from './cryo_minibossWarden.js';
-import * as cryo_boss from './cryo_boss.js';
-
-// === TOXIC ===
-import * as toxic_brute from './toxic_brute.js';
-import * as toxic_spitter from './toxic_spitter.js';
-import * as toxic_swarmer from './toxic_swarmer.js';
-import * as toxic_carrier from './toxic_carrier.js';
-import * as toxic_grafted from './toxic_grafted.js';
-import * as toxic_alpha from './toxic_alpha.js';
-import * as toxic_minibossSpore from './toxic_minibossSpore.js';
-import * as toxic_boss from './toxic_boss.js';
-
-// === VOIDNET ===
-import * as voidnet_glitch from './voidnet_glitch.js';
-import * as voidnet_daemon from './voidnet_daemon.js';
-import * as voidnet_executor from './voidnet_executor.js';
-import * as voidnet_corrupter from './voidnet_corrupter.js';
-import * as voidnet_replicator from './voidnet_replicator.js';
-import * as voidnet_overclocked from './voidnet_overclocked.js';
-import * as voidnet_minibossKernel from './voidnet_minibossKernel.js';
-import * as voidnet_boss from './voidnet_boss.js';
-
-// === CRIMSON ===
-import * as crimson_brawler from './crimson_brawler.js';
-import * as crimson_butcher from './crimson_butcher.js';
-import * as crimson_throwblade from './crimson_throwblade.js';
-import * as crimson_hooked from './crimson_hooked.js';
-import * as crimson_doctor from './crimson_doctor.js';
-import * as crimson_gladiator from './crimson_gladiator.js';
-import * as crimson_minibossExecutioner from './crimson_minibossExecutioner.js';
-import * as crimson_boss from './crimson_boss.js';
-
-export const ENEMY_SPRITES = {
-  // Inferno
-  inferno_brute,
-  inferno_caster,
-  inferno_charger,
-  inferno_archer,
-  inferno_engineer,
-  inferno_berserker,
-  inferno_minibossDrone,
-  inferno_boss,
-  // Cryo
-  cryo_brute,
-  cryo_caster,
-  cryo_skater,
-  cryo_archer,
-  cryo_shielder,
-  cryo_sentinel,
-  cryo_minibossWarden,
-  cryo_boss,
-  // Toxic
-  toxic_brute,
-  toxic_spitter,
-  toxic_swarmer,
-  toxic_carrier,
-  toxic_grafted,
-  toxic_alpha,
-  toxic_minibossSpore,
-  toxic_boss,
-  // Voidnet
-  voidnet_glitch,
-  voidnet_daemon,
-  voidnet_executor,
-  voidnet_corrupter,
-  voidnet_replicator,
-  voidnet_overclocked,
-  voidnet_minibossKernel,
-  voidnet_boss,
-  // Crimson
-  crimson_brawler,
-  crimson_butcher,
-  crimson_throwblade,
-  crimson_hooked,
-  crimson_doctor,
-  crimson_gladiator,
-  crimson_minibossExecutioner,
-  crimson_boss,
-};
+import { CHARACTER_RENDERERS, CHARACTER_CONFIGS } from '../characters/index.js';
 
 /**
- * Récupère le sprite d'un ennemi par son id.
- * Retourne null si inconnu (le caller affiche un fallback).
+ * Construit un sprite-adapter à partir d'un renderer iso.
+ * Retourne un objet compatible avec l'ancien format du bestiaire.
  */
-export function getEnemySprite(id){
-  return ENEMY_SPRITES[id] || null;
+function buildSpriteAdapter(id){
+  const drawFn = CHARACTER_RENDERERS[id];
+  const config = CHARACTER_CONFIGS[id];
+  if(!drawFn || !config) return null;
+
+  return {
+    id,
+    name: config.name || id,
+    archetype: config.archetype || id,
+    // Re-expose la palette pour les consommateurs qui regardent dedans
+    palette: {
+      bodyColor: config.bodyColor,
+      accentColor: config.accentColor,
+      glowColor: config.glowColor,
+      skinColor: config.skinColor,
+      hairColor: config.hairColor,
+      capeColor: config.capeColor,
+    },
+    /**
+     * Wrap la signature legacy:
+     *   sprite.draw(ctx, x, y, t, opts)
+     * vers la signature iso:
+     *   draw(ctx, cx, cy, actor, time, options)
+     *
+     * - (x, y) = position des pieds, comme dans le renderer iso (cy = pieds)
+     * - t = frame counter → on l'utilise comme `actor.idle` ET comme `time`
+     *   pour avoir les animations qui tournent.
+     * - opts (ancien) = options d'animation (used by attacks) → ignoré pour idle.
+     */
+    draw(ctx, x, y, t, opts = {}){
+      const actor = {
+        ...config,
+        idle: t,
+        target: opts.moving ? { x: x + 10, y } : null,
+      };
+      drawFn(ctx, x, y, actor, t, { fxLevel: 1, ...opts });
+    },
+    // Pas d'attaques codées dans les renderers iso pour le moment.
+    // Le bestiaire affichera l'idle seul dans l'attack lab.
+    attacks: null,
+  };
 }
 
-/**
- * Liste des ids ayant un sprite custom (le reste utilisera un fallback).
- */
-export function listSpritedEnemies(){
-  return Object.keys(ENEMY_SPRITES);
+// Build registry une seule fois au module load
+const _registry = {};
+for(const id of Object.keys(CHARACTER_RENDERERS)){
+  if(id === 'hero') continue; // Pas un ennemi
+  const adapter = buildSpriteAdapter(id);
+  if(adapter) _registry[id] = adapter;
+}
+
+export const ENEMY_SPRITES = _registry;
+
+export function getEnemySprite(enemyId){
+  return _registry[enemyId] || null;
+}
+
+// Helper diagnostic
+export function listEnemyIds(){
+  return Object.keys(_registry);
 }
