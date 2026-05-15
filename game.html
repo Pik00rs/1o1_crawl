@@ -1113,6 +1113,11 @@ async function initCombat(){
     if(e.displayName && enemy){
       enemy.name = e.displayName;
     }
+    // Stocke le type d'ennemi pour la résolution du renderer iso
+    // (cf. ACTOR_VISUALS + getRenderActors plus bas)
+    if(enemy){
+      enemy.enemyType = e.type;
+    }
     return enemy;
   });
   state.actors = [state.player, ...state.enemies];
@@ -1312,27 +1317,98 @@ function updateActorAnims(){
 // ============================================================================
 // ACTORS POUR LE RENDU (combinent state + anim + visual config)
 // ============================================================================
+
+// Helper: construit un visual depuis un id de renderer (cf. CHARACTER_CONFIGS).
+// La palette vient directement du config exporté par chaque renderer
+// → single source of truth. Édition de palette = côté renderer uniquement.
+function visualFor(rendererId){
+  const cfg = CHARACTER_CONFIGS[rendererId];
+  if(!cfg){
+    console.warn(`[ACTOR_VISUALS] Unknown renderer: ${rendererId}, fallback to hero`);
+    return { archetype: 'hero', character: 'hero' };
+  }
+  return {
+    archetype: cfg.archetype || rendererId,
+    character: rendererId,
+    bodyColor:   cfg.bodyColor,
+    accentColor: cfg.accentColor,
+    glowColor:   cfg.glowColor,
+    skinColor:   cfg.skinColor,
+    hairColor:   cfg.hairColor,
+    capeColor:   cfg.capeColor,
+  };
+}
+
 const ACTOR_VISUALS = {
-  player: {
-    archetype: 'hero',
-    bodyColor: '#3a4a5c', accentColor: '#4fc3f7', glowColor: '#aee6ff',
-    skinColor: '#f4d4a8', hairColor: '#2c3640', capeColor: '#1a2230',
-  },
+  // Joueur
+  player: visualFor('hero'),
+
+  // ─── Fallbacks legacy (au cas où un ennemi sans type spécifique apparait) ───
   enemy_default: {
-    archetype: 'hero',
+    archetype: 'hero', character: 'hero',
     bodyColor: '#4a2c30', accentColor: '#ff8080', glowColor: '#ffaaaa',
     skinColor: '#d4a890', hairColor: '#1a0808', capeColor: '#2a0a0a',
   },
   enemy_caster: {
-    archetype: 'hero',
+    archetype: 'hero', character: 'hero',
     bodyColor: '#5e2c70', accentColor: '#e040fb', glowColor: '#ce93d8',
     skinColor: '#c0a4d0', hairColor: '#3a1c4c', capeColor: '#2a0a35',
   },
   enemy_brute: {
-    archetype: 'hero',
+    archetype: 'hero', character: 'hero',
     bodyColor: '#8b1f15', accentColor: '#ffb74d', glowColor: '#ff8a4d',
     skinColor: '#a06850', hairColor: '#1a0a08', capeColor: '#3a0a05',
   },
+
+  // ═══ CRIMSON (8) ═══
+  crimson_brawler:               visualFor('crimson_brawler'),
+  crimson_butcher:               visualFor('crimson_butcher'),
+  crimson_throwblade:            visualFor('crimson_throwblade'),
+  crimson_hooked:                visualFor('crimson_hooked'),
+  crimson_doctor:                visualFor('crimson_doctor'),
+  crimson_gladiator:             visualFor('crimson_gladiator'),
+  crimson_minibossExecutioner:   visualFor('crimson_minibossExecutioner'),
+  crimson_boss:                  visualFor('crimson_boss'),
+
+  // ═══ CRYO (8) ═══
+  cryo_brute:                    visualFor('cryo_brute'),
+  cryo_caster:                   visualFor('cryo_caster'),
+  cryo_skater:                   visualFor('cryo_skater'),
+  cryo_archer:                   visualFor('cryo_archer'),
+  cryo_shielder:                 visualFor('cryo_shielder'),
+  cryo_sentinel:                 visualFor('cryo_sentinel'),
+  cryo_minibossWarden:           visualFor('cryo_minibossWarden'),
+  cryo_boss:                     visualFor('cryo_boss'),
+
+  // ═══ INFERNO (8) ═══
+  inferno_brute:                 visualFor('inferno_brute'),
+  inferno_caster:                visualFor('inferno_caster'),
+  inferno_charger:               visualFor('inferno_charger'),
+  inferno_archer:                visualFor('inferno_archer'),
+  inferno_engineer:              visualFor('inferno_engineer'),
+  inferno_berserker:             visualFor('inferno_berserker'),
+  inferno_minibossDrone:         visualFor('inferno_minibossDrone'),
+  inferno_boss:                  visualFor('inferno_boss'),
+
+  // ═══ TOXIC (8) ═══
+  toxic_brute:                   visualFor('toxic_brute'),
+  toxic_spitter:                 visualFor('toxic_spitter'),
+  toxic_swarmer:                 visualFor('toxic_swarmer'),
+  toxic_carrier:                 visualFor('toxic_carrier'),
+  toxic_grafted:                 visualFor('toxic_grafted'),
+  toxic_alpha:                   visualFor('toxic_alpha'),
+  toxic_minibossSpore:           visualFor('toxic_minibossSpore'),
+  toxic_boss:                    visualFor('toxic_boss'),
+
+  // ═══ VOIDNET (8) ═══
+  voidnet_glitch:                visualFor('voidnet_glitch'),
+  voidnet_daemon:                visualFor('voidnet_daemon'),
+  voidnet_executor:              visualFor('voidnet_executor'),
+  voidnet_corrupter:             visualFor('voidnet_corrupter'),
+  voidnet_replicator:            visualFor('voidnet_replicator'),
+  voidnet_overclocked:           visualFor('voidnet_overclocked'),
+  voidnet_minibossKernel:        visualFor('voidnet_minibossKernel'),
+  voidnet_boss:                  visualFor('voidnet_boss'),
 };
 
 function getRenderActors(){
@@ -1340,10 +1416,20 @@ function getRenderActors(){
   for(const a of state.actors){
     if(!a || a.isDead) continue;
     const anim = render.actorAnims.get(a.id) || { ax: a.x, ay: a.y, idle: 0, target: null };
-    let visual = ACTOR_VISUALS.enemy_default;
-    if(a.isPlayer) visual = ACTOR_VISUALS.player;
-    else if(a.ai === 'caster') visual = ACTOR_VISUALS.enemy_caster;
-    else if(a.ai === 'aggressive' && a.hp >= 25) visual = ACTOR_VISUALS.enemy_brute;
+
+    // Résolution visual : priorité enemyType (renderer iso spécifique) > AI archetype (legacy fallback)
+    let visual;
+    if(a.isPlayer){
+      visual = ACTOR_VISUALS.player;
+    } else if(a.enemyType && ACTOR_VISUALS[a.enemyType]){
+      visual = ACTOR_VISUALS[a.enemyType];
+    } else if(a.ai === 'caster'){
+      visual = ACTOR_VISUALS.enemy_caster;
+    } else if(a.ai === 'aggressive' && a.hp >= 25){
+      visual = ACTOR_VISUALS.enemy_brute;
+    } else {
+      visual = ACTOR_VISUALS.enemy_default;
+    }
     out.push({
       ...visual,
       isPlayer: a.isPlayer,
