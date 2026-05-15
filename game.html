@@ -818,7 +818,7 @@ import { ParticleSystem } from './src/js/render/particles.js';
 import { rng, pickWeighted } from './src/js/render/iso-utils.js';
 import { getBiome, listBiomeConfigs, listBiomeIds, preloadAllBiomes } from './src/js/render/biomes/svg-loader.js';
 import { createIsoInput } from './src/js/render/iso-input.js';
-import { CHARACTER_CONFIGS } from './src/js/render/characters/index.js';
+import { CHARACTER_CONFIGS, CHARACTER_RENDERERS } from './src/js/render/characters/index.js';
 import {
   tickEnemyAttackFx,
   renderEnemyAttackFx,
@@ -2629,6 +2629,74 @@ function processCombatEvents(){
 const _actorHudEls = new Map(); // actorId → DOM element
 const _actorHpLast = new Map(); // actorId → last HP (pour détecter flash)
 
+// Cache des hauteurs réelles des sprites (mesurées une seule fois).
+// rendererId → hauteur en pixels canvas (à zoom=1).
+const _spriteHeightCache = new Map();
+
+/**
+ * Mesure la hauteur RÉELLE d'un sprite en le dessinant sur un canvas off-screen
+ * puis en scannant les pixels du haut pour trouver le premier pixel non-transparent.
+ * Le sprite est dessiné avec cy=0 (pieds), donc les pixels du sprite ont y<0.
+ * On retourne la valeur absolue du y le plus haut → c'est la hauteur du sprite
+ * au-dessus de ses pieds.
+ *
+ * Mesuré une seule fois par renderer, mis en cache.
+ */
+function measureSpriteHeight(rendererId){
+  if(_spriteHeightCache.has(rendererId)) return _spriteHeightCache.get(rendererId);
+
+  const cfg = CHARACTER_CONFIGS[rendererId];
+  const drawFn = CHARACTER_RENDERERS[rendererId];
+  // Si pas de renderer accessible, fallback selon height category
+  if(!drawFn || !cfg){
+    const heightCat = cfg?.height || 'medium';
+    const fallback = (heightCat === 'boss' || heightCat === 'xlarge') ? 44
+                   : (heightCat === 'large' ? 36
+                   : (heightCat === 'small' ? 22 : 30));
+    _spriteHeightCache.set(rendererId, fallback);
+    return fallback;
+  }
+
+  // Canvas off-screen suffisamment grand : 80×80 centré sur (40, 60) (pieds en bas)
+  const W = 80, H = 80;
+  const FEET_Y = H - 12; // les pieds à 12px du bas
+  const CENTER_X = W / 2;
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const offCtx = off.getContext('2d');
+  offCtx.imageSmoothingEnabled = false;
+
+  // Dessine le sprite en idle (frame 0). On passe un actor avec la palette complète.
+  const actor = { ...cfg, idle: 0, target: null };
+  try {
+    drawFn(offCtx, CENTER_X, FEET_Y, actor, 0, { fxLevel: 0 });
+  } catch(e){
+    // Si le renderer plante, fallback statique
+    const fallback = 30;
+    _spriteHeightCache.set(rendererId, fallback);
+    return fallback;
+  }
+
+  // Scan ligne par ligne depuis le haut : trouve le premier pixel non-transparent.
+  const imgData = offCtx.getImageData(0, 0, W, H);
+  const data = imgData.data;
+  let topY = FEET_Y;
+  for(let y = 0; y < FEET_Y; y++){
+    for(let x = 0; x < W; x++){
+      const a = data[(y * W + x) * 4 + 3];
+      if(a > 16){
+        topY = y;
+        y = FEET_Y; // break outer loop
+        break;
+      }
+    }
+    if(topY !== FEET_Y) break;
+  }
+  const height = Math.max(8, FEET_Y - topY);
+  _spriteHeightCache.set(rendererId, height);
+  return height;
+}
+
 function getStatusCss(statusId){
   // Map status → couleur category
   if(['burning','bleeding','poisoned'].includes(statusId)) return 'dmg-status';
@@ -2659,18 +2727,14 @@ function updateActorHuds(){
     const sp = isoToScreen(anim.ax, anim.ay, elev, viewport, view);
     const screenX = sp.x;
     // sp.y = position des pieds du sprite.
-    // Les sprites iso font ~26-32px de haut (medium) à ~40-44px (boss/xlarge), scalés par view.zoom.
     // Le HUD est positionné via CSS translate(-50%, -100%), donc screenY = BAS du HUD.
-    // Pour que le HUD soit AU-DESSUS de la tête, screenY doit être à ~pieds.y - hauteurSprite - marge.
-    // On lit la `height` depuis CHARACTER_CONFIGS via enemyType (single source of truth).
-    const cfg = actor.isPlayer ? CHARACTER_CONFIGS.hero : (actor.enemyType ? CHARACTER_CONFIGS[actor.enemyType] : null);
-    const heightCat = cfg?.height || 'medium';
-    const spriteH = (heightCat === 'boss' || heightCat === 'xlarge') ? 44
-                  : (heightCat === 'large' ? 36
-                  : (heightCat === 'small' ? 22 : 30));
-    const verticalOffset = actor.isPlayer
-      ? (spriteH * view.zoom + 4)   // joueur : au-dessus de la tête + un peu d'air
-      : (spriteH * view.zoom + 2);  // ennemi : au-dessus de la tête, plus collé
+    // Pour que le HUD soit AU-DESSUS de la tête, screenY doit être à
+    //   pieds.y - hauteurRéelleDuSprite*zoom - marge.
+    // On MESURE la hauteur réelle du sprite (rasterisé une fois sur canvas off-screen),
+    // pas de devinette par catégorie statique → ça marche pour les 40 ennemis sans cas particulier.
+    const rendererId = actor.isPlayer ? 'hero' : actor.enemyType;
+    const spriteH = rendererId ? measureSpriteHeight(rendererId) : 30;
+    const verticalOffset = (spriteH * view.zoom) + (actor.isPlayer ? 6 : 4);
     const screenY = sp.y - verticalOffset;
 
     let el = _actorHudEls.get(id);
