@@ -819,6 +819,11 @@ import { rng, pickWeighted } from './src/js/render/iso-utils.js';
 import { getBiome, listBiomeConfigs, listBiomeIds, preloadAllBiomes } from './src/js/render/biomes/svg-loader.js';
 import { createIsoInput } from './src/js/render/iso-input.js';
 import { CHARACTER_CONFIGS } from './src/js/render/characters/index.js';
+import {
+  tickEnemyAttackFx,
+  renderEnemyAttackFx,
+  clearEnemyAttackFx,
+} from './src/js/combat/attack-fx-bridge.js';
 
 // ============================================================================
 // STUBS DOM : le moteur (turn.js, attack.js, etc.) appelle render()/log() qui
@@ -1026,6 +1031,8 @@ async function initCombat(){
     _actorHudEls.clear();
     _actorHpLast.clear();
   }
+  // Clear FX d'attaques ennemies entre les rooms
+  clearEnemyAttackFx();
 
   const playtestRun = readPlaytestRun();
   const builderMap = readBuilderMap();
@@ -1458,6 +1465,23 @@ function getRenderActors(){
 function getElev(gx, gy){
   const t = render.tileGrid[gridKey(gx, gy)];
   return t ? t.microElev : 0;
+}
+
+// Expose une fonction globale pour que l'IA (aggressive.js, caster.js) puisse
+// projeter une position de grille en coordonnées écran sans dépendre de game.html.
+// Utilisée par attack-fx-bridge.js pour positionner les FX d'attaque.
+if(typeof window !== 'undefined'){
+  window.__getScreenPos__ = (gx, gy) => {
+    try {
+      const anim = state.actors?.find(a => a && a.x === gx && a.y === gy);
+      const animPos = anim ? render.actorAnims.get(anim.id) : null;
+      const ax = animPos ? animPos.ax : gx;
+      const ay = animPos ? animPos.ay : gy;
+      return isoToScreen(ax, ay, getElev(gx, gy), viewport, view);
+    } catch(e){
+      return null;
+    }
+  };
 }
 
 function getValidityAt(gx, gy){
@@ -2742,6 +2766,7 @@ function tick(){
   detectDungeonRoomEnd(); // multi-room : auto-charge la prochaine room dès que clean
   processCombatEvents();  // spawn float texts pour dmg/heal/miss
   updateActorHuds();      // refresh mini HP bars + statuts au-dessus des actors
+  tickEnemyAttackFx();    // avance les animations d'attaques ennemies bestiaire
 }
 setInterval(tick, 16);
 
@@ -3396,6 +3421,9 @@ function renderLoop(){
     view,
     options: { ...visualOptions, targetColor, targetStroke },
   });
+
+  // Dessine les FX des attaques bestiaire jouées par les ennemis (par-dessus le iso)
+  renderEnemyAttackFx(ctx);
 
   // Path overlay (trait blanc + coût AP)
   drawPathOverlay();
