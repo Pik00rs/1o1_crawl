@@ -108,7 +108,7 @@
   },
   "inferno_archer": {
     "id": "inferno_archer",
-    "name": "Tireur de Phosphore",
+    "name": "Tireur Phosphore",
     "icon": "🏹",
     "hp": 17,
     "armor": 2,
@@ -142,7 +142,7 @@
   },
   "inferno_engineer": {
     "id": "inferno_engineer",
-    "name": "Ingénieur Thermique",
+    "name": "Ingénieur Damné",
     "icon": "🔧",
     "hp": 18,
     "armor": 3,
@@ -176,7 +176,7 @@
   },
   "inferno_berserker": {
     "id": "inferno_berserker",
-    "name": "Berserker Carbonisé",
+    "name": "Berserker Ardent",
     "icon": "⚔️",
     "hp": 46,
     "armor": 6,
@@ -215,7 +215,7 @@
   },
   "inferno_minibossDrone": {
     "id": "inferno_minibossDrone",
-    "name": "Drone-Sentinelle Igni-7",
+    "name": "Igni-7 Drone",
     "icon": "🤖",
     "hp": 77,
     "armor": 8,
@@ -376,7 +376,7 @@
   },
   "cryo_skater": {
     "id": "cryo_skater",
-    "name": "Patineur Spectral",
+    "name": "Patineur Glacé",
     "icon": "💨",
     "hp": 13,
     "armor": 1,
@@ -488,7 +488,7 @@
   },
   "cryo_sentinel": {
     "id": "cryo_sentinel",
-    "name": "Sentinelle de Glace",
+    "name": "Sentinelle de Givre",
     "icon": "⚔️",
     "hp": 59,
     "armor": 14,
@@ -527,7 +527,7 @@
   },
   "cryo_minibossWarden": {
     "id": "cryo_minibossWarden",
-    "name": "Gardien des Cellules",
+    "name": "Gardien Glaciaire",
     "icon": "🗝️",
     "hp": 91,
     "armor": 11,
@@ -610,7 +610,7 @@
   },
   "toxic_brute": {
     "id": "toxic_brute",
-    "name": "Mutant Putréfié",
+    "name": "Putréfié",
     "icon": "🦠",
     "hp": 21,
     "armor": 3,
@@ -649,7 +649,7 @@
   },
   "toxic_spitter": {
     "id": "toxic_spitter",
-    "name": "Cracheur d'Acide",
+    "name": "Cracheur Acide",
     "icon": "💚",
     "hp": 15,
     "armor": 1,
@@ -688,7 +688,7 @@
   },
   "toxic_swarmer": {
     "id": "toxic_swarmer",
-    "name": "Essaim Bourdonnant",
+    "name": "Essaim Putride",
     "icon": "🪲",
     "hp": 10,
     "armor": 0,
@@ -727,7 +727,7 @@
   },
   "toxic_carrier": {
     "id": "toxic_carrier",
-    "name": "Porteur de Plaies",
+    "name": "Porteur Infecté",
     "icon": "🩸",
     "hp": 20,
     "armor": 2,
@@ -766,7 +766,7 @@
   },
   "toxic_grafted": {
     "id": "toxic_grafted",
-    "name": "Greffé de Chair",
+    "name": "Greffé Mutant",
     "icon": "🧬",
     "hp": 28,
     "armor": 4,
@@ -805,7 +805,7 @@
   },
   "toxic_alpha": {
     "id": "toxic_alpha",
-    "name": "Alpha Mutant",
+    "name": "Alpha de Meute",
     "icon": "🦂",
     "hp": 53,
     "armor": 5,
@@ -1015,7 +1015,7 @@
   },
   "voidnet_executor": {
     "id": "voidnet_executor",
-    "name": "Exécuteur",
+    "name": "Exécuteur Numérique",
     "icon": "🗡️",
     "hp": 18,
     "armor": 2,
@@ -1127,7 +1127,7 @@
   },
   "voidnet_overclocked": {
     "id": "voidnet_overclocked",
-    "name": "Process Overclocké",
+    "name": "Process Surchargé",
     "icon": "💻",
     "hp": 49,
     "armor": 4,
@@ -1171,7 +1171,7 @@
   },
   "voidnet_minibossKernel": {
     "id": "voidnet_minibossKernel",
-    "name": "Sous-Noyau de Trame",
+    "name": "Sous-Noyau",
     "icon": "🌐",
     "hp": 84,
     "armor": 5,
@@ -1498,7 +1498,7 @@
   },
   "crimson_minibossExecutioner": {
     "id": "crimson_minibossExecutioner",
-    "name": "Exécuteur de l'Arène",
+    "name": "Exécuteur d'Arène",
     "icon": "🪓",
     "hp": 91,
     "armor": 9,
