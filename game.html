@@ -2658,11 +2658,19 @@ function updateActorHuds(){
     const elev = getElev(actor.x, actor.y);
     const sp = isoToScreen(anim.ax, anim.ay, elev, viewport, view);
     const screenX = sp.x;
-    // Pour l'ennemi : le HUD se colle proche du sprite (bas du HUD ~à la hauteur des yeux).
-    // Pour le joueur : on laisse un peu plus d'espace pour ne pas écraser le nom canvas.
+    // sp.y = position des pieds du sprite.
+    // Les sprites iso font ~26-32px de haut (medium) à ~40-44px (boss/xlarge), scalés par view.zoom.
+    // Le HUD est positionné via CSS translate(-50%, -100%), donc screenY = BAS du HUD.
+    // Pour que le HUD soit AU-DESSUS de la tête, screenY doit être à ~pieds.y - hauteurSprite - marge.
+    // On lit la `height` depuis CHARACTER_CONFIGS via enemyType (single source of truth).
+    const cfg = actor.isPlayer ? CHARACTER_CONFIGS.hero : (actor.enemyType ? CHARACTER_CONFIGS[actor.enemyType] : null);
+    const heightCat = cfg?.height || 'medium';
+    const spriteH = (heightCat === 'boss' || heightCat === 'xlarge') ? 44
+                  : (heightCat === 'large' ? 36
+                  : (heightCat === 'small' ? 22 : 30));
     const verticalOffset = actor.isPlayer
-      ? (10 * view.zoom + 5)    // joueur : un peu d'air
-      : (10 * view.zoom - 6);   // ennemi : très collé au sprite
+      ? (spriteH * view.zoom + 4)   // joueur : au-dessus de la tête + un peu d'air
+      : (spriteH * view.zoom + 2);  // ennemi : au-dessus de la tête, plus collé
     const screenY = sp.y - verticalOffset;
 
     let el = _actorHudEls.get(id);
