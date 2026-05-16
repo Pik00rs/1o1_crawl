@@ -1115,6 +1115,10 @@ async function initCombat(){
   }
 
   // Crée les ennemis
+  // Scaling tier : +25% par tier au-dessus de T1 (T2=+25%, T10=+225%).
+  // S'applique sur HP/maxHp et attackPower (range conservé pour ne pas casser l'IA).
+  const runTier = Math.max(1, Math.min(10, Number(playtestRun?.tier) || 1));
+  const tierMult = 1 + (runTier - 1) * 0.25;
   state.enemies = (roomData.enemies || []).map((e, i) => {
     const enemy = createEnemy(`${e.type}_${i}`, e.type, e.x, e.y);
     // Override le nom avec celui d'Ascension (source de vérité côté UI player-facing)
@@ -1125,6 +1129,17 @@ async function initCombat(){
     // (cf. ACTOR_VISUALS + getRenderActors plus bas)
     if(enemy){
       enemy.enemyType = e.type;
+      // Tier scaling sur HP / dégâts
+      if(tierMult > 1){
+        if(typeof enemy.maxHp === 'number') enemy.maxHp = Math.round(enemy.maxHp * tierMult);
+        if(typeof enemy.hp === 'number') enemy.hp = Math.round(enemy.hp * tierMult);
+        if(Array.isArray(enemy.attackPower) && enemy.attackPower.length === 2){
+          enemy.attackPower = [
+            Math.round(enemy.attackPower[0] * tierMult),
+            Math.round(enemy.attackPower[1] * tierMult),
+          ];
+        }
+      }
     }
     return enemy;
   });
@@ -2455,10 +2470,12 @@ function showDungeonDefeatScreen(run){
 async function saveDungeonProgress(run){
   // Sauvegarde dans Supabase : marque le donjon cleared, push items dans chest, crédite ressources.
   try {
-    // 1. Marquer le donjon comme cleared via api
+    // 1. Marquer le donjon comme cleared via api — incluant le tier auquel il a été joué.
+    //    Si run.tier est absent (ancienne run), on tombe sur tier=1 par défaut.
     if(run.biomeId && run.level){
       try {
-        await apiMarkCleared(run.biomeId, run.level);
+        const playedTier = Math.max(1, Math.min(10, Number(run.tier) || 1));
+        await apiMarkCleared(run.biomeId, playedTier, run.level);
       } catch(e){
         console.error('[game] markDungeonCleared failed:', e);
       }
