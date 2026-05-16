@@ -372,50 +372,144 @@ export const ASCENSION_DATA = Object.fromEntries(
 );
 
 // === PLAYER PROGRESS ===
-// Objet MUTABLE qu'on hydrate au boot via `hydrateProgress(data)`.
-// Tant qu'on n'a pas appelé hydrateProgress, tous les biomes sont "vides"
-// (tier 1, aucun donjon clean).
+// Schéma : pour chaque biome, on garde le **tier max débloqué** (peut jouer
+// T1..currentTierUnlocked), le **tier sélectionné** par l'UI, et les donjons
+// clean **par tier** (Option B : refaire chaque tier indépendamment).
+//
+// Pour débloquer T(k+1), il faut avoir clean D6 (le boss) en T(k).
+// Tier max global = 10. À T10, D6 drop 100% T10 (pas de tier+1).
+//
+// Ancienne forme (legacy) : { tier, clearedDungeons } → migrée par hydrateProgress.
+
+export const MAX_TIER = 10;
+
 const DEFAULT_PROGRESS = {
-  inferno: { tier: 1, clearedDungeons: [] },
-  cryo:    { tier: 1, clearedDungeons: [] },
-  toxic:   { tier: 1, clearedDungeons: [] },
-  voidnet: { tier: 1, clearedDungeons: [] },
-  crimson: { tier: 1, clearedDungeons: [] },
+  inferno: { currentTierUnlocked: 1, selectedTier: 1, clearedByTier: {} },
+  cryo:    { currentTierUnlocked: 1, selectedTier: 1, clearedByTier: {} },
+  toxic:   { currentTierUnlocked: 1, selectedTier: 1, clearedByTier: {} },
+  voidnet: { currentTierUnlocked: 1, selectedTier: 1, clearedByTier: {} },
+  crimson: { currentTierUnlocked: 1, selectedTier: 1, clearedByTier: {} },
 };
 
 // Clone profond du défaut au démarrage
 export const PLAYER_PROGRESS = JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
 
+function makeDefaultBiomeProgress(){
+  return { currentTierUnlocked: 1, selectedTier: 1, clearedByTier: {} };
+}
+
 /**
- * Remplit PLAYER_PROGRESS depuis un objet { biomeId: { tier, clearedDungeons } }
- * (typiquement le retour de apiLoadProgress).
- * Les biomes manquants conservent leurs valeurs par défaut.
+ * Remplit PLAYER_PROGRESS depuis un objet retourné par apiLoadProgress.
+ * Accepte deux formats :
+ *  - Legacy : { biomeId: { tier, clearedDungeons: [int] } }
+ *      → migré vers { currentTierUnlocked: tier, selectedTier: tier, clearedByTier: { [tier]: clearedDungeons } }
+ *  - Nouveau : { biomeId: { currentTierUnlocked, selectedTier, clearedByTier } }
  */
 export function hydrateProgress(data){
   // Reset à default pour purger d'anciennes valeurs
   for(const biomeId of Object.keys(DEFAULT_PROGRESS)){
-    PLAYER_PROGRESS[biomeId] = { tier: 1, clearedDungeons: [] };
+    PLAYER_PROGRESS[biomeId] = makeDefaultBiomeProgress();
   }
   if(!data || typeof data !== 'object') return;
   for(const biomeId of Object.keys(data)){
     if(!PLAYER_PROGRESS[biomeId]) continue;
     const src = data[biomeId];
-    PLAYER_PROGRESS[biomeId] = {
-      tier: Number(src.tier) || 1,
-      clearedDungeons: Array.isArray(src.clearedDungeons) ? [...src.clearedDungeons] : [],
-    };
+    if(!src || typeof src !== 'object') continue;
+
+    // Détection du format
+    if(src.clearedByTier && typeof src.clearedByTier === 'object'){
+      // Nouveau format
+      const cur = clampTier(Number(src.currentTierUnlocked) || 1);
+      const sel = clampTier(Number(src.selectedTier) || cur);
+      const cbt = {};
+      for(const k of Object.keys(src.clearedByTier)){
+        const tn = Number(k);
+        if(!Number.isFinite(tn) || tn < 1 || tn > MAX_TIER) continue;
+        cbt[tn] = Array.isArray(src.clearedByTier[k])
+          ? [...new Set(src.clearedByTier[k].map(Number).filter(n => n >= 1 && n <= 6))]
+          : [];
+      }
+      PLAYER_PROGRESS[biomeId] = {
+        currentTierUnlocked: cur,
+        selectedTier: Math.min(sel, cur),
+        clearedByTier: cbt,
+      };
+    } else if(Array.isArray(src.clearedDungeons)){
+      // Legacy format : on met tout dans le tier 1, currentTierUnlocked = tier legacy
+      const legacyTier = clampTier(Number(src.tier) || 1);
+      PLAYER_PROGRESS[biomeId] = {
+        currentTierUnlocked: legacyTier,
+        selectedTier: legacyTier,
+        clearedByTier: { 1: [...new Set(src.clearedDungeons.map(Number).filter(n => n >= 1 && n <= 6))] },
+      };
+    }
   }
 }
 
-// Helper : statut d'un donjon
+function clampTier(t){
+  return Math.max(1, Math.min(MAX_TIER, t | 0));
+}
+
+/** Liste des donjons clean dans le tier sélectionné d'un biome */
+function clearedInSelectedTier(biomeId){
+  const p = PLAYER_PROGRESS[biomeId];
+  if(!p) return [];
+  return p.clearedByTier[p.selectedTier] || [];
+}
+
+/** Helper : statut d'un donjon dans le tier actuellement sélectionné du biome */
 export function getDungeonStatus(biomeId, dungeonLevel){
   const progress = PLAYER_PROGRESS[biomeId];
   if(!progress) return 'locked';
-  if(progress.clearedDungeons.includes(dungeonLevel)) return 'cleared';
-  // Donjon disponible si c'est le 1er ou si le précédent est clean
+  const cleared = clearedInSelectedTier(biomeId);
+  if(cleared.includes(dungeonLevel)) return 'cleared';
   if(dungeonLevel === 1) return 'available';
-  if(progress.clearedDungeons.includes(dungeonLevel - 1)) return 'available';
+  if(cleared.includes(dungeonLevel - 1)) return 'available';
   return 'locked';
 }
 
-export default { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, hydrateProgress, getDungeonStatus, ENEMY_NAMES };
+/** Tier actuellement sélectionné par l'UI pour un biome */
+export function getSelectedTier(biomeId){
+  return PLAYER_PROGRESS[biomeId]?.selectedTier || 1;
+}
+
+/** Tier max débloqué (jouable) pour un biome */
+export function getCurrentTierUnlocked(biomeId){
+  return PLAYER_PROGRESS[biomeId]?.currentTierUnlocked || 1;
+}
+
+/** Change le tier sélectionné (clamped à currentTierUnlocked) */
+export function setSelectedTier(biomeId, tier){
+  const p = PLAYER_PROGRESS[biomeId];
+  if(!p) return;
+  const max = p.currentTierUnlocked;
+  p.selectedTier = Math.max(1, Math.min(max, tier | 0));
+}
+
+/**
+ * Marque un donjon comme clean dans un tier donné. Si le donjon clean est D6
+ * (le boss), débloque le tier suivant (currentTierUnlocked = tier + 1, plafonné à MAX_TIER).
+ * Retourne true si un nouveau tier vient d'être débloqué.
+ */
+export function markCleared(biomeId, tier, dungeonLevel){
+  const p = PLAYER_PROGRESS[biomeId];
+  if(!p) return false;
+  const t = clampTier(tier);
+  const lvl = Math.max(1, Math.min(6, dungeonLevel | 0));
+  if(!p.clearedByTier[t]) p.clearedByTier[t] = [];
+  if(!p.clearedByTier[t].includes(lvl)){
+    p.clearedByTier[t].push(lvl);
+    p.clearedByTier[t].sort((a, b) => a - b);
+  }
+  // Débloquer le tier suivant si on a clean D6
+  let newlyUnlocked = false;
+  if(lvl === 6 && t < MAX_TIER && t >= p.currentTierUnlocked){
+    p.currentTierUnlocked = t + 1;
+    newlyUnlocked = true;
+  }
+  return newlyUnlocked;
+}
+
+export default { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, MAX_TIER,
+  hydrateProgress, getDungeonStatus, getSelectedTier, getCurrentTierUnlocked,
+  setSelectedTier, markCleared, ENEMY_NAMES };

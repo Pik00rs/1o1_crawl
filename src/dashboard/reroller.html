@@ -613,6 +613,7 @@
 
   <!-- FILTERS -->
   <section class="filter-section">
+    <div class="filter-row" id="filter-mode"></div>
     <div class="filter-row" id="filter-slot"></div>
     <div class="filter-row" id="filter-rarity"></div>
     <div class="filter-row" id="filter-ilvl"></div>
@@ -641,8 +642,9 @@
 import { requireAuth } from './auth.js';
 import { injectUserBar } from './user-bar.js';
 import { loadChest as apiLoadChest, saveChest as apiSaveChest,
+         loadEquipped as apiLoadEquipped,
          loadWallet as apiLoadWallet, saveWallet as apiSaveWallet } from './api.js';
-import { refreshMeta } from './player-meta.js';
+import { refreshMeta, isFavorite } from './player-meta.js';
 
 // Garde d'auth
 const _ok = await requireAuth();
@@ -659,9 +661,10 @@ import {
 const STATE = {
   chest: [],
   wallet: {},
+  equipped: {},                // slot → item (chargé via apiLoadEquipped au boot)
   selectedItemId: null,        // instanceId de l'item dans le rerolleur
   selectedAffixIndex: null,    // index de l'affixe à reroll
-  filter: { slot: 'all', rarity: 'all', ilvl: 'all' },
+  filter: { slot: 'all', rarity: 'all', ilvl: 'all', mode: 'all' }, // mode: 'all'|'favorites'|'equipped'|'special'
   page: 1,
   itemsPerPage: 40,
 };
@@ -714,6 +717,7 @@ async function boot(){
 async function loadFromStorage(){
   STATE.chest = await apiLoadChest();
   STATE.wallet = await apiLoadWallet();
+  STATE.equipped = await apiLoadEquipped(); // pour le filtre "Équipés"
 }
 async function saveChest(){ await apiSaveChest(STATE.chest); }
 async function saveWallet(){ await apiSaveWallet(STATE.wallet); }
@@ -753,8 +757,34 @@ function calcRerollCost(item, affix){
   return cost;
 }
 
+// === HELPERS META ===
+function isEquipped(instanceId){
+  return Object.values(STATE.equipped).some(i => i?.instanceId === instanceId);
+}
+
 // === FILTER BUILDERS ===
 function buildFilterButtons(){
+  // -- MODE filter (Tout / Favoris / Équipés / Spéciaux) — calqué sur forger picker --
+  const modeRow = document.getElementById('filter-mode');
+  modeRow.innerHTML = '<span class="filter-label">AFFICHER</span>';
+  const MODES = [
+    { id: 'all',        label: 'Tout' },
+    { id: 'favorites',  label: '★ Favoris' },
+    { id: 'equipped',   label: '⚔ Équipés' },
+    { id: 'special',    label: '⚔+★ Spéciaux' },
+  ];
+  MODES.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'slot-btn' + (m.id === STATE.filter.mode ? ' active' : '');
+    btn.textContent = m.label;
+    btn.dataset.mode = m.id;
+    btn.style.fontSize = '8px';
+    btn.style.padding = '2px 6px';
+    btn.style.width = 'auto';
+    btn.addEventListener('click', () => onModeFilterClick(m.id));
+    modeRow.appendChild(btn);
+  });
+
   const slotRow = document.getElementById('filter-slot');
   slotRow.innerHTML = '<span class="filter-label">SLOT</span>';
   const allBtn = document.createElement('button');
@@ -826,6 +856,12 @@ function onIlvlFilterClick(lv){
     b.classList.toggle('active', b.dataset.ilvl === String(lv)));
   render();
 }
+function onModeFilterClick(m){
+  STATE.filter.mode = m; STATE.page = 1;
+  document.querySelectorAll('#filter-mode .slot-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === String(m)));
+  render();
+}
 
 // === HANDLERS ===
 function attachHandlers(){
@@ -868,6 +904,19 @@ function getFilteredItems(){
     if(STATE.filter.slot !== 'all' && tpl.slot !== STATE.filter.slot) return false;
     if(STATE.filter.rarity !== 'all' && item.rarity !== STATE.filter.rarity) return false;
     if(STATE.filter.ilvl !== 'all' && item.ilvl !== Number(STATE.filter.ilvl)) return false;
+    // Mode (Tout / Favoris / Équipés / Spéciaux) — calqué sur forger
+    switch(STATE.filter.mode){
+      case 'favorites':
+        if(!isFavorite(item.instanceId)) return false;
+        break;
+      case 'equipped':
+        if(!isEquipped(item.instanceId)) return false;
+        break;
+      case 'special':
+        if(!isEquipped(item.instanceId) && !isFavorite(item.instanceId)) return false;
+        break;
+      // 'all' = pas de filtre supplémentaire
+    }
     return true;
   });
 }

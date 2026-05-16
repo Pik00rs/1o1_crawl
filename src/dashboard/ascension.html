@@ -292,6 +292,72 @@
   .biome-header-resource .label { font-size: 10px; color: #6a5878; letter-spacing: 1px; }
   .biome-header-resource .value { font-size: 16px; color: var(--biome-color); margin-top: 2px; }
 
+  /* === TIER SELECTOR === */
+  .tier-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 14px 0 18px;
+    padding: 12px 14px;
+    background: linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+    border: 1px solid var(--biome-color, #444);
+    border-left: 3px solid var(--biome-color, #888);
+    max-width: 900px;
+    flex-wrap: wrap;
+  }
+  .tier-selector-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-2);
+    margin-right: 8px;
+    text-transform: uppercase;
+  }
+  .tier-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.12s;
+    min-width: 36px;
+    height: 30px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tier-btn:hover:not(.locked) {
+    background: var(--bg-3);
+    border-color: var(--biome-color, var(--border-2));
+    color: var(--biome-color, var(--text-1));
+  }
+  .tier-btn.active {
+    background: var(--biome-color, var(--accent));
+    border-color: var(--biome-color, var(--accent));
+    color: #000;
+    box-shadow: 0 0 6px var(--biome-color, var(--accent));
+  }
+  .tier-btn.locked {
+    opacity: 0.32;
+    cursor: not-allowed;
+    color: var(--text-3);
+  }
+  .tier-info {
+    font-size: 9px;
+    color: var(--text-2);
+    margin-left: auto;
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .tier-selector { padding: 8px; gap: 4px; }
+    .tier-btn { min-width: 28px; height: 26px; font-size: 9px; padding: 0 4px; }
+    .tier-selector-label { font-size: 9px; margin-right: 4px; }
+    .tier-info { width: 100%; margin-left: 0; margin-top: 4px; text-align: right; }
+  }
+
   .dungeon-list {
     display: flex;
     flex-direction: column;
@@ -901,6 +967,7 @@
 <!-- STEP 2 : DUNGEON LIST -->
 <div class="step2" id="step2">
   <div class="biome-header-bar" id="biome-header-bar"></div>
+  <div class="tier-selector" id="tier-selector"></div>
   <div class="step-title">▸ Select Dungeon</div>
   <div class="dungeon-list" id="dungeon-list"></div>
 </div>
@@ -914,14 +981,17 @@
 <script type="module">
 import { requireAuth } from './auth.js';
 import { injectUserBar } from './user-bar.js';
-import { loadProgress as apiLoadProgress } from './api.js';
+import { loadProgress as apiLoadProgress, saveSelectedTier as apiSaveSelectedTier } from './api.js';
 
 // Garde d'auth : redirige vers login si non connecté
 const _ok = await requireAuth();
 if(!_ok) { throw new Error('redirected to login'); }
 injectUserBar();
 
-import { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS, hydrateProgress, getDungeonStatus, ENEMY_NAMES } from './ascension-data.js';
+import { ITEM_TEMPLATES, RARITIES, BIOMES, ASCENSION_DATA, PLAYER_PROGRESS,
+         hydrateProgress, getDungeonStatus, ENEMY_NAMES,
+         MAX_TIER, getSelectedTier, getCurrentTierUnlocked, setSelectedTier,
+       } from './ascension-data.js';
 import { getEnemySprite } from '../js/render/enemies/index.js';
 import { generateDungeonRun, BIOME_AFFINITY, RARITY_WEIGHTS_BY_ILVL } from '../js/dungeon/generator.js';
 import { loadCatalog, getItem } from './items-catalog.js';
@@ -969,8 +1039,13 @@ function renderBiomeGrid(){
 
     if(!biome.unlocked) card.classList.add('locked');
 
-    const progress = PLAYER_PROGRESS[biome.id];
-    const cleared = progress.clearedDungeons.length;
+    // Pour la carte biome on affiche le tier max débloqué et le total cumulé clean
+    const ctu = getCurrentTierUnlocked(biome.id);
+    const cbt = PLAYER_PROGRESS[biome.id]?.clearedByTier || {};
+    const totalClearedBiome = Object.values(cbt).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
+    // Pour rester "scoreboard 6/6" lisible, on affiche le clear du tier sélectionné
+    const selT = getSelectedTier(biome.id);
+    const clearedSel = (cbt[selT] || []).length;
 
     card.innerHTML = `
       <div class="biome-card-header">
@@ -981,12 +1056,12 @@ function renderBiomeGrid(){
             <div class="biome-subtitle">${biome.subtitle}</div>
           </div>
         </div>
-        <div class="biome-tier">TIER ${biome.tier}</div>
+        <div class="biome-tier">TIER ${ctu}</div>
       </div>
       <div class="biome-desc">${biome.description}</div>
       <div class="biome-footer">
         <div class="biome-resource">${biome.resource.icon} ${biome.resource.name}</div>
-        <div class="biome-progress"><span class="v">${cleared}</span>/6 cleared</div>
+        <div class="biome-progress">T${selT} · <span class="v">${clearedSel}</span>/6 cleared</div>
       </div>
     `;
     if(biome.unlocked){
@@ -995,10 +1070,13 @@ function renderBiomeGrid(){
     grid.appendChild(card);
   });
 
-  // Header stats
-  const totalCleared = Object.values(PLAYER_PROGRESS).reduce((s, p) => s + p.clearedDungeons.length, 0);
+  // Header stats : on additionne tous les clears tous tiers confondus
+  const totalCleared = Object.values(PLAYER_PROGRESS).reduce((s, p) => {
+    const cbt = p?.clearedByTier || {};
+    return s + Object.values(cbt).reduce((ss, arr) => ss + (Array.isArray(arr) ? arr.length : 0), 0);
+  }, 0);
   document.getElementById('header-stats').innerHTML = `
-    <div class="header-stat">DUNGEONS · <span class="v">${totalCleared}/30</span></div>
+    <div class="header-stat">DUNGEONS · <span class="v">${totalCleared}</span></div>
     <div class="header-stat">BIOMES · <span class="v">5</span></div>
   `;
 }
@@ -1009,6 +1087,7 @@ function openBiome(biomeId){
   document.getElementById('step1').style.display = 'none';
   document.getElementById('step2').classList.add('active');
   renderBiomeHeader();
+  renderTierSelector();
   renderDungeonList();
 }
 
@@ -1028,15 +1107,16 @@ function renderBiomeHeader(){
   bar.style.setProperty('--biome-gradient', `linear-gradient(90deg, ${biome.colorDark}, transparent)`);
   bar.style.borderColor = biome.color;
 
-  const progress = PLAYER_PROGRESS[currentBiome];
-  const cleared = progress.clearedDungeons.length;
+  const selT = getSelectedTier(currentBiome);
+  const ctu = getCurrentTierUnlocked(currentBiome);
+  const clearedInTier = (PLAYER_PROGRESS[currentBiome]?.clearedByTier?.[selT] || []).length;
 
   bar.innerHTML = `
     <button class="back-btn" id="back-btn">◂ BACK</button>
     <div style="font-size: 32px;">${biome.icon}</div>
     <div class="biome-header-content">
       <div class="biome-header-title">${biome.name.toUpperCase()}</div>
-      <div class="biome-header-info">${biome.subtitle} · TIER ${biome.tier} · ${cleared}/6 cleared · loot favorisé : ${biome.lootFavored}</div>
+      <div class="biome-header-info">${biome.subtitle} · TIER ${selT}/${ctu} · ${clearedInTier}/6 cleared · loot favorisé : ${biome.lootFavored}</div>
     </div>
     <div class="biome-header-resource">
       <div class="label">BIOME RESOURCE</div>
@@ -1044,6 +1124,48 @@ function renderBiomeHeader(){
     </div>
   `;
   document.getElementById('back-btn').addEventListener('click', backToStep1);
+}
+
+// === TIER SELECTOR ===
+// Affiche T1..T10. Le tier actuellement sélectionné est mis en avant.
+// Les tiers non encore débloqués sont grisés (clean D6 = tier+1 unlocked).
+function renderTierSelector(){
+  const biome = ASCENSION_DATA[currentBiome];
+  const root = document.getElementById('tier-selector');
+  root.style.setProperty('--biome-color', biome.color);
+  root.style.setProperty('--biome-accent', biome.accent);
+
+  const selT = getSelectedTier(currentBiome);
+  const ctu = getCurrentTierUnlocked(currentBiome);
+
+  let html = '<span class="tier-selector-label">TIER</span>';
+  for(let t = 1; t <= MAX_TIER; t++){
+    const isUnlocked = t <= ctu;
+    const isActive = t === selT;
+    const cls = ['tier-btn'];
+    if(isActive) cls.push('active');
+    if(!isUnlocked) cls.push('locked');
+    const title = !isUnlocked ? `Clean le boss (D6) en T${t-1} pour débloquer` : `Jouer en T${t}`;
+    html += `<button class="${cls.join(' ')}" data-tier="${t}" title="${title}" ${!isUnlocked ? 'disabled' : ''}>T${t}</button>`;
+  }
+  html += `<span class="tier-info">Tier max débloqué : T${ctu} / T${MAX_TIER}</span>`;
+  root.innerHTML = html;
+
+  root.querySelectorAll('.tier-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(btn.classList.contains('locked')) return;
+      const newT = Number(btn.dataset.tier) || 1;
+      if(newT === getSelectedTier(currentBiome)) return;
+      setSelectedTier(currentBiome, newT);
+      // Persiste la sélection en arrière-plan (best-effort)
+      try { await apiSaveSelectedTier(currentBiome, newT); }
+      catch(e){ console.warn('[ascension] saveSelectedTier failed:', e); }
+      // Re-render : statuts donjons changent selon le tier
+      renderBiomeHeader();
+      renderTierSelector();
+      renderDungeonList();
+    });
+  });
 }
 
 function renderDungeonList(){
@@ -1176,7 +1298,8 @@ function openDungeonPanel(dungeon, cardEl){
     btn.disabled = true;
     btn.textContent = '◇ GÉNÉRATION...';
     try {
-      const run = await generateDungeonRun(currentBiome, dungeon.level);
+      const tier = getSelectedTier(currentBiome);
+      const run = await generateDungeonRun(currentBiome, dungeon.level, { tier });
 
       // === ÉQUIPEMENT RÉEL DU JOUEUR ===
       // On lit l'équipement Supabase et on construit { equipment, stats } au format
