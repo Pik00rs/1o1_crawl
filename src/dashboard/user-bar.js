@@ -9,8 +9,18 @@ import { getUser, getProfile, isAdmin, signOut } from './auth.js';
 /**
  * Injecte une barre user en haut à droite (position absolute, ne perturbe pas le layout).
  * À appeler après requireAuth().
+ *
+ * NB : la barre est UNIQUEMENT affichée sur la page d'accueil (index.html / racine).
+ * Sur les autres pages (bestiaire, ascension, game, forger, reroller, etc.),
+ * l'appel est silencieusement ignoré pour ne pas encombrer l'UI.
  */
 export function injectUserBar(){
+  // Gate : afficher uniquement sur la page d'accueil
+  const path = window.location.pathname;
+  const file = path.split('/').pop() || '';
+  const isHomePage = (file === '' || file === 'index.html' || path === '/' || path.endsWith('/1o1_crawl/') || path.endsWith('/1o1-crawl/'));
+  if(!isHomePage) return;
+
   if(document.getElementById('rh-user-bar')) return; // déjà injecté
 
   const user = getUser();
