@@ -86,6 +86,14 @@ export async function generateDungeonRun(biomeId, level, options = {}){
   const dungeon = biomeData.dungeons[level - 1];
   if(!dungeon) throw new Error(`Unknown dungeon level: ${level}`);
 
+  // === TIER ===
+  // Le tier vient de l'UI Ascension (sélecteur par biome). Détermine :
+  //  - ilvl du loot (ilvl = tier, calé sur RARITY_WEIGHTS_BY_ILVL existant)
+  //  - difficulté ennemis (scaling +25% par tier au-delà de T1, voir game.html)
+  // Si non fourni : fallback à 1 (rétro-compat avec anciens callers).
+  const MAX_TIER = 10;
+  const tier = Math.max(1, Math.min(MAX_TIER, (options.tier | 0) || 1));
+
   const seedSource = options.seed !== undefined
     ? (typeof options.seed === 'string' ? strToSeed(options.seed) : options.seed)
     : Math.floor(Math.random() * 0xFFFFFFFF);
@@ -193,11 +201,14 @@ export async function generateDungeonRun(biomeId, level, options = {}){
   });
 
   // === 4. Loot final (utilise le vrai catalog + rollItem) ===
-  const loot = rollLoot(rng, biomeData, dungeon, level, biomeId);
+  // Le tier détermine l'ilvl du loot (ilvl = tier). D6 (boss) mixe 50/50 tier et tier+1
+  // pour récompenser le boss kill (sauf en T10 où tier+1 n'existe pas).
+  const loot = rollLoot(rng, biomeData, dungeon, level, biomeId, tier);
 
   return {
     biomeId,
     level,
+    tier, // <-- exposé pour que game.html puisse l'utiliser au moment de markDungeonCleared
     dungeonName: dungeon.name,
     seed: seedSource,
     roomCount,
@@ -372,15 +383,27 @@ function rollLootItem(rng, biomeId, ilvl, opts = {}){
   });
 }
 
-function rollLoot(rng, biomeData, dungeon, level, biomeId){
+function rollLoot(rng, biomeData, dungeon, level, biomeId, tier = 1){
+  const MAX_TIER = 10;
   const itemCount = rollInt(rng, dungeon.lootCount.min, dungeon.lootCount.max);
   const items = [];
 
+  // Détermine l'ilvl pour CET item donné.
+  // - Donjons D1..D5 → ilvl = tier
+  // - Donjon D6 (boss) → 50% tier, 50% tier+1 (sauf si tier == MAX_TIER → 100% tier)
+  const isBossDungeon = (level === 6 && dungeon.hasBoss);
+  function pickIlvl(){
+    if(isBossDungeon && tier < MAX_TIER){
+      return rng() < 0.5 ? tier : (tier + 1);
+    }
+    return tier;
+  }
+
   // Boss D6 : 1 drop garanti epic (95%) ou legendary (5%)
-  if(level === 6 && dungeon.hasBoss){
+  if(isBossDungeon){
     const isLegendary = rng() < 0.05;
     const guaranteedRarity = isLegendary ? 'legendary' : 'epic';
-    const bossItem = rollLootItem(rng, biomeId, level, {
+    const bossItem = rollLootItem(rng, biomeId, pickIlvl(), {
       rarity: guaranteedRarity,
       isBossDrop: true,
     });
@@ -389,7 +412,7 @@ function rollLoot(rng, biomeData, dungeon, level, biomeId){
 
   const remaining = items.length > 0 ? itemCount - 1 : itemCount;
   for(let i = 0; i < remaining; i++){
-    const item = rollLootItem(rng, biomeId, level);
+    const item = rollLootItem(rng, biomeId, pickIlvl());
     if(item) items.push(item);
   }
 
