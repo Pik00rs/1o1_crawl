@@ -169,55 +169,151 @@ export async function saveBuilds(arr){
   }
 }
 
-// === PROGRESS (donjons clean par biome) ===
-// Forme retournée : { biomeId: { tier, clearedDungeons: [int] } }
+// === PROGRESS (donjons clean par biome × tier) ===
+// Forme retournée :
+//   { biomeId: { currentTierUnlocked, selectedTier, clearedByTier: { [tier]: [int] } } }
+// Le schéma DB stocke en colonnes :
+//   user_id, biome_id, current_tier_unlocked, selected_tier, cleared_by_tier (JSONB)
+// Pour rétro-compat avec l'ancien schéma { tier, cleared_dungeons }, on garde un fallback
+// de lecture si current_tier_unlocked est absent.
 export async function loadProgress(){
   const { data, error } = await supabase
     .from('progress')
-    .select('biome_id, tier, cleared_dungeons')
+    .select('biome_id, tier, cleared_dungeons, current_tier_unlocked, selected_tier, cleared_by_tier')
     .eq('user_id', userId());
   if(error){ console.error('[api] loadProgress:', error); return {}; }
   const out = {};
   (data || []).forEach(r => {
-    out[r.biome_id] = {
-      tier: r.tier || 1,
-      clearedDungeons: Array.isArray(r.cleared_dungeons) ? r.cleared_dungeons : [],
-    };
+    // Nouveau schéma prioritaire
+    if(r.cleared_by_tier && typeof r.cleared_by_tier === 'object'){
+      out[r.biome_id] = {
+        currentTierUnlocked: r.current_tier_unlocked || 1,
+        selectedTier: r.selected_tier || r.current_tier_unlocked || 1,
+        clearedByTier: r.cleared_by_tier,
+      };
+    } else {
+      // Legacy schéma → laissé tel quel, sera migré côté ascension-data.hydrateProgress
+      out[r.biome_id] = {
+        tier: r.tier || 1,
+        clearedDungeons: Array.isArray(r.cleared_dungeons) ? r.cleared_dungeons : [],
+      };
+    }
   });
   return out;
 }
 
 /**
- * Marque un donjon comme cleared (ajout idempotent à clearedDungeons).
+ * Marque un donjon comme cleared dans un tier donné, et débloque le tier suivant
+ * si on a clean D6 (le boss).
  * @param {string} biomeId
- * @param {number} dungeonLevel  1 à 6
+ * @param {number} tier         1 à 10 (tier auquel on a joué le donjon)
+ * @param {number} dungeonLevel 1 à 6
  */
-export async function markDungeonCleared(biomeId, dungeonLevel){
+export async function markDungeonCleared(biomeId, tier, dungeonLevel){
   const uid = userId();
+  const MAX_TIER = 10;
+  const t = Math.max(1, Math.min(MAX_TIER, tier | 0));
+  const lvl = Math.max(1, Math.min(6, dungeonLevel | 0));
+
   // Charge l'état actuel pour ce biome
   const { data: existing, error: errFetch } = await supabase
     .from('progress')
-    .select('cleared_dungeons, tier')
+    .select('current_tier_unlocked, selected_tier, cleared_by_tier, tier, cleared_dungeons')
     .eq('user_id', uid)
     .eq('biome_id', biomeId)
     .maybeSingle();
   if(errFetch){ console.error('[api] markDungeonCleared fetch:', errFetch); return; }
-  const current = existing
-    ? { tier: existing.tier || 1, cleared: Array.isArray(existing.cleared_dungeons) ? existing.cleared_dungeons : [] }
-    : { tier: 1, cleared: [] };
-  if(!current.cleared.includes(dungeonLevel)){
-    current.cleared.push(dungeonLevel);
-    current.cleared.sort((a, b) => a - b);
+
+  // État de départ : migration legacy si besoin
+  let currentTierUnlocked = 1;
+  let selectedTier = 1;
+  let clearedByTier = {};
+  if(existing){
+    if(existing.cleared_by_tier && typeof existing.cleared_by_tier === 'object'){
+      currentTierUnlocked = existing.current_tier_unlocked || 1;
+      selectedTier = existing.selected_tier || currentTierUnlocked;
+      clearedByTier = { ...existing.cleared_by_tier };
+    } else if(Array.isArray(existing.cleared_dungeons)){
+      // Migration : on coule l'ancien dans le tier 1
+      currentTierUnlocked = existing.tier || 1;
+      selectedTier = currentTierUnlocked;
+      clearedByTier = { 1: [...existing.cleared_dungeons] };
+    }
   }
+
+  // Ajoute le clear
+  if(!clearedByTier[t]) clearedByTier[t] = [];
+  if(!clearedByTier[t].includes(lvl)){
+    clearedByTier[t].push(lvl);
+    clearedByTier[t].sort((a, b) => a - b);
+  }
+  // Débloque tier suivant si D6 clean (et qu'on est pas déjà au-delà)
+  if(lvl === 6 && t < MAX_TIER && t >= currentTierUnlocked){
+    currentTierUnlocked = t + 1;
+  }
+
   const { error: errUp } = await supabase
     .from('progress')
     .upsert({
       user_id: uid,
       biome_id: biomeId,
-      tier: current.tier,
-      cleared_dungeons: current.cleared,
+      current_tier_unlocked: currentTierUnlocked,
+      selected_tier: selectedTier,
+      cleared_by_tier: clearedByTier,
+      // On garde aussi les colonnes legacy à jour pour ne pas casser d'éventuels anciens clients
+      tier: currentTierUnlocked,
+      cleared_dungeons: clearedByTier[selectedTier] || [],
     }, { onConflict: 'user_id,biome_id' });
   if(errUp) console.error('[api] markDungeonCleared upsert:', errUp);
+}
+
+/**
+ * Sauvegarde le tier sélectionné par l'UI pour un biome (sans changer rien d'autre).
+ * @param {string} biomeId
+ * @param {number} tier  1 à currentTierUnlocked
+ */
+export async function saveSelectedTier(biomeId, tier){
+  const uid = userId();
+  const MAX_TIER = 10;
+  const t = Math.max(1, Math.min(MAX_TIER, tier | 0));
+
+  // On lit l'état pour valider que tier <= currentTierUnlocked, et on garde les autres champs.
+  const { data: existing } = await supabase
+    .from('progress')
+    .select('current_tier_unlocked, selected_tier, cleared_by_tier, tier, cleared_dungeons')
+    .eq('user_id', uid)
+    .eq('biome_id', biomeId)
+    .maybeSingle();
+  if(!existing){
+    // Pas encore d'entrée pour ce biome : on crée avec tier 1 (impossible de sélectionner T2+ sans avoir clean)
+    const { error } = await supabase
+      .from('progress')
+      .upsert({
+        user_id: uid,
+        biome_id: biomeId,
+        current_tier_unlocked: 1,
+        selected_tier: 1,
+        cleared_by_tier: {},
+        tier: 1,
+        cleared_dungeons: [],
+      }, { onConflict: 'user_id,biome_id' });
+    if(error) console.error('[api] saveSelectedTier upsert (new):', error);
+    return;
+  }
+  const ctu = existing.current_tier_unlocked || existing.tier || 1;
+  const sel = Math.min(t, ctu);
+  const { error } = await supabase
+    .from('progress')
+    .upsert({
+      user_id: uid,
+      biome_id: biomeId,
+      current_tier_unlocked: ctu,
+      selected_tier: sel,
+      cleared_by_tier: existing.cleared_by_tier || {},
+      tier: existing.tier || ctu,
+      cleared_dungeons: existing.cleared_dungeons || [],
+    }, { onConflict: 'user_id,biome_id' });
+  if(error) console.error('[api] saveSelectedTier upsert:', error);
 }
 
 // === BULK LOAD ===
